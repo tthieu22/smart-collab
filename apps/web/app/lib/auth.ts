@@ -157,6 +157,27 @@ class AuthService {
       };
     }
   }
+
+  async changePassword(
+    oldPassword: string,
+    newPassword: string,
+    confirmNewPassword: string
+  ) {
+    try {
+      const response = await apiClient.changePassword({
+        oldPassword,
+        newPassword,
+        confirmNewPassword,
+      });
+      return { success: true, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Change password failed",
+      };
+    }
+  }
 }
 
 export const authService = AuthService.getInstance();

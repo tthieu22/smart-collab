@@ -18,6 +18,11 @@ interface UseAuthReturn {
   logout: () => void;
   refreshUser: () => Promise<void>;
   getUserInfo: () => Promise<User | null>;
+  changePassword: (
+    oldPassword: string,
+    newPassword: string,
+    confirmNewPassword: string
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -119,6 +124,28 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
+  const changePassword = useCallback(
+    async (
+      oldPassword: string,
+      newPassword: string,
+      confirmNewPassword: string
+    ) => {
+      try {
+        const result = await authService.changePassword(
+          oldPassword,
+          newPassword,
+          confirmNewPassword
+        );
+        return result;
+      } catch (err) {
+        const errorMessage = "Change password failed";
+        setError(errorMessage);
+        return { success: false, message: errorMessage };
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
@@ -133,5 +160,6 @@ export function useAuth(): UseAuthReturn {
     logout,
     refreshUser,
     getUserInfo,
+    changePassword,
   };
 }

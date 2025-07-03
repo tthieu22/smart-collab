@@ -85,9 +85,13 @@ export default function ProfilePage() {
           </Descriptions.Item>
         </Descriptions>
         <div style={{ textAlign: "center", marginTop: 32 }}>
-          <Button type="primary" danger onClick={logout}>
-            Đăng xuất
-          </Button>
+          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+            <Button type="default" block onClick={() => router.push("/auth/profile/change-password")}>Đổi mật khẩu</Button>
+            <Button type="default" block onClick={() => router.push("/auth/profile/edit")}>Chỉnh sửa thông tin cá nhân</Button>
+            <Button type="primary" danger block onClick={logout}>
+              Đăng xuất
+            </Button>
+          </Space>
         </div>
       </Card>
     </div>

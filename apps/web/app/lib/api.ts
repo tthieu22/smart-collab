@@ -131,6 +131,17 @@ class ApiClient {
       body: JSON.stringify({ email }),
     });
   }
+
+  async changePassword(data: {
+    oldPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+  }) {
+    return this.request("/users/me/change-password", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
