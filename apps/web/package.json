@@ -11,17 +11,22 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*",
+    "@ant-design/cssinjs": "^1.23.0",
+    "@ant-design/icons": "^6.0.0",
+    "@ant-design/nextjs-registry": "1.0.2",
+    "antd": "^5.26.3",
+    "clsx": "^2.1.0",
     "next": "^15.3.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
+    "@next/bundle-analyzer": "^15.3.4",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
-    "@types/react": "19.1.0",
-    "@types/react-dom": "19.1.1",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "eslint": "^9.29.0",
     "typescript": "5.8.2"
   }

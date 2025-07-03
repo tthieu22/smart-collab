@@ -1,13 +1,9 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tailwindcss";
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 html,
@@ -17,14 +13,8 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+  color: rgb(var(--foreground-rgb));
+  background: #f5f6fa;
 }
 
 a {
@@ -32,19 +22,20 @@ a {
   text-decoration: none;
 }
 
-.imgDark {
-  display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-
-  .imgLight {
-    display: none;
-  }
-  .imgDark {
-    display: unset;
-  }
+/* Ant Design Theme Variables */
+:root {
+  --ant-primary-color: #1677ff;
+  --ant-primary-color-hover: #4096ff;
+  --ant-primary-color-active: #0958d9;
+  --ant-primary-color-outline: rgba(22, 119, 255, 0.2);
+  --ant-primary-1: #e6f4ff;
+  --ant-primary-2: #bae0ff;
+  --ant-primary-3: #91caff;
+  --ant-primary-4: #69b1ff;
+  --ant-primary-5: #4096ff;
+  --ant-primary-6: #1677ff;
+  --ant-primary-7: #0958d9;
+  --ant-primary-8: #004fc4;
+  --ant-primary-9: #003eb3;
+  --ant-primary-10: #003a9e;
 }
