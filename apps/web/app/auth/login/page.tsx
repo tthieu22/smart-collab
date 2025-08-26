@@ -1,31 +1,43 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Form, Alert, Divider } from 'antd';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { Button, Card, Input } from 'antd';
+import { Button, Card, Divider, Input } from 'antd';
 import { authService } from '@/app/lib/auth';
-import { ROUTES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/app/lib/constants';
+import { ROUTES, ERROR_MESSAGES, STORAGE_KEYS } from '@/app/lib/constants';
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || ROUTES.DASHBOARD;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
   const onFinish = async (values: { email: string; password: string }) => {
     try {
+      if (!values.email || !values.password) {
+        setError('Vui lòng nhập email và mật khẩu');
+        return;
+      }
+
       setError('');
       setLoading(true);
 
       const result = await authService.login(values);
-      if (result.success) {
-        console.log(router);
-        console.log(ROUTES.DASHBOARD);
-        router.push(ROUTES.DASHBOARD);
+
+      if (result.success && result.data?.accessToken) {
+        // Lưu token vào cookie để middleware nhận
+        Cookies.set(STORAGE_KEYS.ACCESS_TOKEN, result.data.accessToken, {
+          path: '/',
+        });
+
+        router.push(redirectTo); // chuyển hướng về dashboard hoặc redirect query
       } else {
-        setError(result.message || ERROR_MESSAGES.UNKNOWN_ERROR);
+        setError('Email hoặc mật khẩu không chính xác');
       }
     } catch (err) {
       setError(ERROR_MESSAGES.NETWORK_ERROR);
@@ -33,6 +45,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
   const handleGoogleLogin = () => {
     router.push(process.env.NEXT_PUBLIC_GOOGLE_LOGIN_URL!);
   };
@@ -51,80 +64,79 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <h2
             style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              marginBottom: '8px',
+              fontSize: 24,
+              fontWeight: 600,
+              marginBottom: 8,
               color: '#262626',
             }}
           >
             Đăng nhập
           </h2>
-          <p style={{ color: '#8c8c8c', fontSize: '14px' }}>
+          <p style={{ color: '#8c8c8c', fontSize: 14 }}>
             Chào mừng bạn quay trở lại!
           </p>
         </div>
 
         {error && (
-          <Alert
-            message={error}
-            type='error'
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
+          <div
+            style={{
+              backgroundColor: '#fde2e2',
+              color: '#a8071a',
+              padding: '12px 16px',
+              borderRadius: 4,
+              marginBottom: 16,
+              textAlign: 'center',
+              fontWeight: 500,
+            }}
+          >
+            {error}
+          </div>
         )}
 
-        <Form
-          name='login'
-          onFinish={onFinish}
-          autoComplete='off'
-          layout='vertical'
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            onFinish({
+              email: formData.get('email') as string,
+              password: formData.get('password') as string,
+            });
+          }}
         >
-          <Form.Item
-            name='email'
-            label='Email'
-            rules={[
-              { required: true, message: 'Vui lòng nhập email!' },
-              { type: 'email', message: 'Email không hợp lệ!' },
-            ]}
-          >
+          <div style={{ marginBottom: 16 }}>
+            <label>Email</label>
             <Input
+              name='email'
               prefix={<UserOutlined />}
               placeholder='Nhập email của bạn'
               size='large'
-              autoComplete='username'
+              autoComplete='off'
             />
-          </Form.Item>
+          </div>
 
-          <Form.Item
-            name='password'
-            label='Mật khẩu'
-            rules={[
-              { required: true, message: 'Vui lòng nhập mật khẩu!' },
-              { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' },
-            ]}
-          >
+          <div style={{ marginBottom: 16 }}>
+            <label>Mật khẩu</label>
             <Input.Password
+              name='password'
               prefix={<LockOutlined />}
               placeholder='Nhập mật khẩu của bạn'
               size='large'
-              autoComplete='current-password'
+              autoComplete='off'
             />
-          </Form.Item>
+          </div>
 
-          <Form.Item>
-            <Button
-              type='primary'
-              htmlType='submit'
-              size='large'
-              loading={loading}
-              style={{ width: '100%' }}
-            >
-              Đăng nhập
-            </Button>
-          </Form.Item>
-        </Form>
+          <Button
+            type='primary'
+            htmlType='submit'
+            size='large'
+            loading={loading}
+            style={{ width: '100%' }}
+          >
+            Đăng nhập
+          </Button>
+        </form>
 
-        <Divider>hoặc</Divider>
+        <Divider style={{ margin: '16px 0' }}>hoặc</Divider>
 
         <Button
           icon={<GoogleOutlined />}

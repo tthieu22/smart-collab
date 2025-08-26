@@ -10,12 +10,9 @@ const nextConfig = {
   },
 
   transpilePackages: ['antd', '@ant-design', '@ant-design/icons'],
-
-  experimental: {
-    appDir: true, // bật App Router
-    reactRoot: true, // React 18
+  devIndicators: {
+    buildActivity: false,
   },
-  devIndicators: false,
   ...(process.env.ANALYZE === 'true' && {
     webpack: config => {
       config.plugins.push(
