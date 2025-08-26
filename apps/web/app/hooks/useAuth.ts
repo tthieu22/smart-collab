@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { authService, type User } from "@/app/lib/auth";
-import { ROUTES } from "@/app/lib/constants";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { authService, type User } from '@/app/lib/auth';
+import { ROUTES } from '@/app/lib/constants';
 
 interface UseAuthReturn {
   user: User | null;
@@ -46,7 +46,7 @@ export function useAuth(): UseAuthReturn {
       setUser(currentUser);
       setError(null);
     } catch (err) {
-      setError("Failed to load user data");
+      setError('Failed to load user data');
       setUser(null);
     } finally {
       setLoading(false);
@@ -67,13 +67,13 @@ export function useAuth(): UseAuthReturn {
           } else {
             await refreshUser();
           }
-          return { success: true, message: "Login successful" };
+          return { success: true, message: 'Login successful' };
         } else {
-          setError(result.message || "Login failed");
-          return { success: false, message: result.message || "Login failed" };
+          setError(result.message || 'Login failed');
+          return { success: false, message: result.message || 'Login failed' };
         }
       } catch (err) {
-        const errorMessage = "Login failed";
+        const errorMessage = 'Login failed';
         setError(errorMessage);
         return { success: false, message: errorMessage };
       } finally {
@@ -90,16 +90,16 @@ export function useAuth(): UseAuthReturn {
 
       const result = await authService.register(userData);
       if (result.success) {
-        return { success: true, message: "Registration successful" };
+        return { success: true, message: 'Registration successful' };
       } else {
-        setError(result.message || "Registration failed");
+        setError(result.message || 'Registration failed');
         return {
           success: false,
-          message: result.message || "Registration failed",
+          message: result.message || 'Registration failed',
         };
       }
     } catch (err) {
-      const errorMessage = "Registration failed";
+      const errorMessage = 'Registration failed';
       setError(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
@@ -111,7 +111,7 @@ export function useAuth(): UseAuthReturn {
     authService.logout();
     setUser(null);
     setError(null);
-    router.push(ROUTES.LOGIN);
+    router.push('/');
   }, [router]);
 
   const getUserInfo = useCallback(async () => {
@@ -138,7 +138,7 @@ export function useAuth(): UseAuthReturn {
         );
         return result;
       } catch (err) {
-        const errorMessage = "Change password failed";
+        const errorMessage = 'Change password failed';
         setError(errorMessage);
         return { success: false, message: errorMessage };
       }

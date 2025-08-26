@@ -1,66 +1,72 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
 import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
-import { randomBytes } from 'crypto';
-import * as dayjs from 'dayjs';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const existing = await this.userModel.findOne({
-      email: createUserDto.email,
+  async create(createUserDto: CreateUserDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
     });
     if (existing) {
       throw new Error('Email already exists');
     }
+
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const emailVerificationCode = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
     const emailVerificationCodeExpires = dayjs().add(15, 'minutes').toDate();
-    const createdUser = new this.userModel({
-      ...createUserDto,
-      password: hashedPassword,
-      emailVerificationCode,
-      emailVerificationCodeExpires,
+
+    const createdUser = await this.prisma.user.create({
+      data: {
+        ...createUserDto,
+        password: hashedPassword,
+        emailVerificationCode,
+        emailVerificationCodeExpires,
+      },
     });
-    const savedUser = await createdUser.save();
+
+    // Send verification email
     await this.mailerService.sendMail({
-      to: savedUser.email,
+      to: createdUser.email,
       subject: 'Verify your email',
-      text: `Your verification code is: ${savedUser.emailVerificationCode}`,
+      text: `Your verification code is: ${emailVerificationCode}`,
     });
-    const userObj = savedUser.toObject();
-    delete userObj.password;
-    delete userObj.emailVerificationCode;
-    delete userObj.emailVerificationCodeExpires;
-    return userObj;
+
+    const { password, ...userWithoutPassword } = createdUser;
+    return userWithoutPassword;
   }
 
   async resendVerificationCode(email: string): Promise<void> {
-    const user = await this.userModel.findOne({ email });
+    const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       throw new Error('User not found');
     }
+
     const emailVerificationCode = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
     const emailVerificationCodeExpires = dayjs().add(15, 'minutes').toDate();
 
-    user.emailVerificationCode = emailVerificationCode;
-    user.emailVerificationCodeExpires = emailVerificationCodeExpires;
-    await user.save();
+    // Update user with new verification code
+    await this.prisma.user.update({
+      where: { email },
+      data: {
+        emailVerificationCode,
+        emailVerificationCodeExpires,
+      },
+    });
 
     await this.mailerService.sendMail({
       to: user.email,
@@ -69,26 +75,94 @@ export class UserService {
     });
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
-  async findOne(id: string): Promise<User> {
-    const user = await this.userModel.findById(id).exec();
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const updatedUser = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
-      .exec();
+  async findByGoogleId(googleId: string) {
+    return this.prisma.user.findFirst({ where: { googleId } });
+  }
+
+  async verifyEmail(email: string, code: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (
+      user.emailVerificationCode === code &&
+      user.emailVerificationCodeExpires &&
+      dayjs().isBefore(user.emailVerificationCodeExpires)
+    ) {
+      await this.prisma.user.update({
+        where: { email },
+        data: {
+          isVerified: true,
+          emailVerificationCode: null,
+          emailVerificationCodeExpires: null,
+        },
+      });
+      return true;
+    }
+
+    return false;
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
     if (!updatedUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -96,23 +170,33 @@ export class UserService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.userModel.findByIdAndDelete(id).exec();
+    const result = await this.prisma.user.delete({ where: { id } });
     if (!result) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
   }
 
-  async createGoogleUser(
-    createGoogleUserDto: CreateGoogleUserDto,
-  ): Promise<User> {
-    const existing = await this.userModel.findOne({
-      email: createGoogleUserDto.email,
+  async createGoogleUser(createGoogleUserDto: CreateGoogleUserDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: createGoogleUserDto.email },
     });
     if (existing) {
       throw new Error('Email already exists');
     }
-    const createdUser = new this.userModel(createGoogleUserDto);
-    return createdUser.save();
+
+    // Nếu có googleId, kiểm tra xem đã tồn tại chưa
+    if (createGoogleUserDto.googleId) {
+      const existingGoogleUser = await this.prisma.user.findFirst({
+        where: { googleId: createGoogleUserDto.googleId },
+      });
+      if (existingGoogleUser) {
+        throw new Error('Google account already exists');
+      }
+    }
+
+    return this.prisma.user.create({
+      data: createGoogleUserDto,
+    });
   }
 
   async changePassword(
@@ -123,15 +207,20 @@ export class UserService {
       confirmNewPassword: string;
     },
   ): Promise<void> {
-    const user = await this.userModel.findById(userId);
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     if (!user.password)
       throw new Error('Tài khoản này không hỗ trợ đổi mật khẩu');
+
     const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
     if (!isMatch) throw new Error('Mật khẩu cũ không đúng');
     if (dto.newPassword !== dto.confirmNewPassword)
       throw new Error('Mật khẩu xác nhận không khớp');
-    user.password = await bcrypt.hash(dto.newPassword, 10);
-    await user.save();
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
   }
 }

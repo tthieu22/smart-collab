@@ -18,14 +18,18 @@ export class CreateUserDto {
   password: string;
 
   @IsString()
-  @IsNotEmpty()
-  firstName: string;
+  @IsOptional()
+  firstName?: string;
 
   @IsString()
-  @IsNotEmpty()
-  lastName: string;
+  @IsOptional()
+  lastName?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
 
   @IsBoolean()
   @IsOptional()
-  isEmailVerified?: boolean;
+  isVerified?: boolean;
 }

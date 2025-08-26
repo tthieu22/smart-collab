@@ -5,31 +5,16 @@ const nextConfig = {
   generateEtags: false,
 
   images: {
-    formats: ["image/webp", "image/avif"],
+    formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60,
   },
 
-  turbopack: {
-    resolveExtensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
-  },
+  transpilePackages: ['antd', '@ant-design', '@ant-design/icons'],
 
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        react: require.resolve("react"),
-        "react-dom": require.resolve("react-dom"),
-      };
-    }
-    return config;
-  },
-
-  transpilePackages: ["antd", "@ant-design", "@ant-design/icons"],
-
-  ...(process.env.ANALYZE === "true" && {
-    webpack: (config) => {
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: config => {
       config.plugins.push(
-        new (require("@next/bundle-analyzer")({
+        new (require('@next/bundle-analyzer')({
           enabled: true,
         })())()
       );
@@ -38,4 +23,4 @@ const nextConfig = {
   }),
 };
 
-export default nextConfig;
+module.exports = nextConfig;

@@ -1,5 +1,5 @@
-import router from "next/router";
-import { apiClient } from "./api";
+import router from 'next/router';
+import { apiClient } from './api';
 
 export interface User {
   _id: string;
@@ -41,18 +41,18 @@ class AuthService {
 
   // Token management
   getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("accessToken");
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('accessToken');
   }
 
   setToken(token: string): void {
-    if (typeof window === "undefined") return;
-    localStorage.setItem("accessToken", token);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('accessToken', token);
   }
 
   removeToken(): void {
-    if (typeof window === "undefined") return;
-    localStorage.removeItem("accessToken");
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('accessToken');
   }
 
   // Authentication state
@@ -75,7 +75,7 @@ class AuthService {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : "Login failed",
+        message: error instanceof Error ? error.message : 'Login failed',
       };
     }
   }
@@ -92,7 +92,7 @@ class AuthService {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : "Registration failed",
+        message: error instanceof Error ? error.message : 'Registration failed',
       };
     }
   }
@@ -120,7 +120,7 @@ class AuthService {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : "Verification failed",
+        message: error instanceof Error ? error.message : 'Verification failed',
       };
     }
   }
@@ -129,8 +129,10 @@ class AuthService {
     this.removeToken();
     this.user = null;
 
-    if (typeof window !== "undefined") {
-      window.location.href = "/auth/login";
+    if (typeof window !== 'undefined') {
+      // Remove the accessToken cookie used by middleware
+      document.cookie = 'accessToken=; path=/; max-age=0; samesite=lax';
+      window.location.href = '/';
     }
   }
 
@@ -153,7 +155,7 @@ class AuthService {
         message:
           error instanceof Error
             ? error.message
-            : "Resend verification code failed",
+            : 'Resend verification code failed',
       };
     }
   }
@@ -174,7 +176,7 @@ class AuthService {
       return {
         success: false,
         message:
-          error instanceof Error ? error.message : "Change password failed",
+          error instanceof Error ? error.message : 'Change password failed',
       };
     }
   }

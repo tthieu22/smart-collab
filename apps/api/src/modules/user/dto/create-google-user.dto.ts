@@ -12,14 +12,22 @@ export class CreateGoogleUserDto {
   email: string;
 
   @IsString()
-  @IsNotEmpty()
-  firstName: string;
+  @IsOptional()
+  firstName?: string;
 
   @IsString()
-  @IsNotEmpty()
-  lastName: string;
+  @IsOptional()
+  lastName?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
+
+  @IsString()
+  @IsOptional()
+  googleId?: string;
 
   @IsBoolean()
   @IsOptional()
-  isEmailVerified?: boolean;
+  isVerified?: boolean;
 }

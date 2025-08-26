@@ -48,7 +48,7 @@ export class AuthController {
       const tokens = await this.authService.login(user);
       res.cookie('refresh_token', tokens.refreshToken, {
         httpOnly: true,
-        path: '/auth/refresh',
+        path: '/api/auth/refresh',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax',
         secure: false,
@@ -82,7 +82,7 @@ export class AuthController {
     try {
       const user = req.user as any;
       const payload = {
-        sub: user._id?.toString() || user.id?.toString(),
+        sub: user.id?.toString(),
         email: user.email,
         role: user.role,
       };
@@ -94,12 +94,14 @@ export class AuthController {
       });
       res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
-        path: '/auth/refresh',
+        path: '/api/auth/refresh',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax',
         secure: false,
       });
-      const frontendCallback = process.env.FRONTEND_GOOGLE_CALLBACK_URL;
+      const frontendCallback =
+        process.env.FRONTEND_GOOGLE_CALLBACK_URL ||
+        'http://localhost:3000/auth/google/callback';
       if (frontendCallback) {
         res.redirect(`${frontendCallback}?accessToken=${accessToken}`);
         return;
@@ -121,19 +123,16 @@ export class AuthController {
       const userId =
         (req.user as any).userId ||
         (req.user as any).sub ||
-        (req.user as any)._id;
+        (req.user as any).id;
       const user = await this.userService.findOne(userId);
       if (!user) {
         return { success: false, message: 'User not found' };
       }
-      const userObj = (user as any).toObject
-        ? (user as any).toObject()
-        : { ...user };
-      delete userObj.password;
+      const userWithoutPassword = { ...user };
       return {
         success: true,
         message: 'User data retrieved successfully',
-        data: userObj,
+        data: userWithoutPassword,
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -145,24 +144,18 @@ export class AuthController {
     @Body() body: { email: string; code: string },
   ): Promise<ApiResponse> {
     try {
-      const user = await this.userService.findByEmail(body.email);
-      if (
-        !user ||
-        user.emailVerificationCode !== body.code ||
-        new Date() > new Date(user.emailVerificationCodeExpires || '')
-      ) {
+      const isVerified = await this.userService.verifyEmail(
+        body.email,
+        body.code,
+      );
+      if (isVerified) {
+        return { success: true, message: 'Email verified successfully' };
+      } else {
         return {
           success: false,
           message: 'Invalid or expired verification code',
         };
       }
-
-      user.isEmailVerified = true;
-      user.emailVerificationCode = undefined;
-      user.emailVerificationCodeExpires = undefined;
-      await this.userService.update((user as any)._id, user);
-
-      return { success: true, message: 'Email verified successfully' };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -177,16 +170,44 @@ export class AuthController {
     if (!user || !(await bcrypt.compare(password, user.password || ''))) {
       return { success: false, message: 'Invalid credentials' };
     }
-    if (!user.isEmailVerified) {
+    if (!user.isVerified) {
       return { success: false, message: 'Email not verified' };
     }
 
-    const userObj = { ...user } as any;
-    delete userObj.password;
+    const { password: _, ...userWithoutPassword } = user;
     return {
       success: true,
       message: 'User validated successfully',
-      data: userObj,
+      data: userWithoutPassword,
     };
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ApiResponse> {
+    try {
+      const refreshToken = (req as any).cookies?.refresh_token || '';
+      if (!refreshToken) {
+        throw new UnauthorizedException('Missing refresh token');
+      }
+      const tokens = await this.authService.refresh(refreshToken);
+      res.cookie('refresh_token', tokens.refreshToken, {
+        httpOnly: true,
+        path: '/api/auth/refresh',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: 'lax',
+        secure: false,
+      });
+      return {
+        success: true,
+        message: 'Token refreshed',
+        data: { accessToken: tokens.accessToken },
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
   }
 }
