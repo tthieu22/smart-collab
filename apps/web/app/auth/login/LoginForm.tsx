@@ -8,12 +8,12 @@ import { Input, Button, Card, Divider } from 'antd';
 import Cookies from 'js-cookie';
 import { authService } from '@/app/lib/auth';
 import { ROUTES, STORAGE_KEYS, ERROR_MESSAGES } from '@/app/lib/constants';
-
+import { useNotificationStore } from '@/app/store/notification';
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || ROUTES.DASHBOARD;
-
+  const { addNotification } = useNotificationStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,11 +32,14 @@ export default function LoginForm() {
         Cookies.set(STORAGE_KEYS.ACCESS_TOKEN, result.data.accessToken, {
           path: '/',
         });
+        addNotification("Đăng nhập thành công", "success");
         router.push(redirectTo);
       } else {
+        addNotification("Đăng nhập không thành công", "error");
         setError('Email hoặc mật khẩu không chính xác');
       }
     } catch {
+      addNotification("Đăng nhập không thành công", "error");
       setError(ERROR_MESSAGES.NETWORK_ERROR);
     } finally {
       setLoading(false);

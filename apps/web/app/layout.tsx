@@ -1,5 +1,5 @@
 import { AntdRegistry } from './providers/antd-registry';
-
+import { NotificationProvider } from '@/app/providers/NotificationProvider';
 export default function RootLayout({
   children,
 }: {
@@ -8,7 +8,9 @@ export default function RootLayout({
   return (
     <html lang='en' translate='no'>
       <body>
-        <AntdRegistry>{children}</AntdRegistry>
+        <AntdRegistry>
+          <NotificationProvider>{children}</NotificationProvider>
+        </AntdRegistry>
       </body>
     </html>
   );
