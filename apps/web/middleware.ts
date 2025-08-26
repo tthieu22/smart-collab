@@ -5,25 +5,28 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('accessToken')?.value;
 
-  // Public routes that don't require authentication
+  // Các route công khai (public)
   const publicRoutes = [
     '/auth/login',
     '/auth/register',
     '/auth/verify',
     '/auth/callback',
     '/auth/google/callback',
+    '/', // cho phép trang chủ public
   ];
 
-  // Check if the current path is a public route
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  // Kiểm tra xem route hiện tại có phải public không
+  const isPublicRoute = publicRoutes.some(route => pathname === route);
 
-  // If user is not authenticated and trying to access protected route
-  if (!token && !isPublicRoute && pathname !== '/') {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+  // Người dùng chưa đăng nhập → chặn truy cập vào route protected
+  if (!token && !isPublicRoute) {
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname); // để redirect lại sau khi login
+    return NextResponse.redirect(loginUrl);
   }
 
-  // If user is authenticated and trying to access auth pages
-  if (token && isPublicRoute && pathname !== '/auth/logout') {
+  // Người dùng đã đăng nhập nhưng vào trang auth → chuyển hướng dashboard
+  if (token && isPublicRoute && pathname !== '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -31,14 +34,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

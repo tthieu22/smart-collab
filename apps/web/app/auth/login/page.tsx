@@ -20,8 +20,9 @@ export default function LoginPage() {
       setLoading(true);
 
       const result = await authService.login(values);
-
       if (result.success) {
+        console.log(router);
+        console.log(ROUTES.DASHBOARD);
         router.push(ROUTES.DASHBOARD);
       } else {
         setError(result.message || ERROR_MESSAGES.UNKNOWN_ERROR);
