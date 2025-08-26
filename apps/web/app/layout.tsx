@@ -1,4 +1,4 @@
-import { AntdRegistry } from './providers/antd-registry'
+import { AntdRegistry } from './providers/antd-registry';
 
 export default function RootLayout({
   children,
@@ -6,7 +6,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" translate="no">
+    <html lang='en' translate='no'>
       <body>
         <AntdRegistry>{children}</AntdRegistry>
       </body>

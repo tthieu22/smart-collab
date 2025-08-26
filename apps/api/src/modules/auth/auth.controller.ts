@@ -48,7 +48,7 @@ export class AuthController {
       const tokens = await this.authService.login(user);
       res.cookie('refresh_token', tokens.refreshToken, {
         httpOnly: true,
-        path: '/api/auth/refresh',
+        path: '/auth/refresh',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax',
         secure: false,
@@ -94,7 +94,7 @@ export class AuthController {
       });
       res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
-        path: '/api/auth/refresh',
+        path: '/auth/refresh',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax',
         secure: false,
@@ -196,7 +196,7 @@ export class AuthController {
       const tokens = await this.authService.refresh(refreshToken);
       res.cookie('refresh_token', tokens.refreshToken, {
         httpOnly: true,
-        path: '/api/auth/refresh',
+        path: '/auth/refresh',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax',
         secure: false,
