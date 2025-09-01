@@ -1,218 +1,172 @@
 'use client';
-import { useRef, useState, Suspense } from 'react';
-import { Button, Card, Alert } from 'antd';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { authService } from '@/app/lib/auth';
-import { ERROR_MESSAGES, ROUTES } from '@/app/lib/constants';
 
-function VerifyContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const email = searchParams.get('email') || '';
-  const [loading, setLoading] = useState(false);
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '../../hooks/useAuth';
+
+export default function VerifyEmailPage() {
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Xử lý nhập từng ô
-  const handleChange = (value: string, idx: number) => {
-    if (!/^\d*$/.test(value)) return; // chỉ cho nhập số
-    const newOtp = [...otp];
-    newOtp[idx] = value.slice(-1); // chỉ lấy 1 số cuối
-    setOtp(newOtp);
+  // const { verifyEmail } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-    // Tự động chuyển sang ô tiếp theo nếu có số
-    if (value && idx < 5) {
-      inputsRef.current[idx + 1]?.focus();
+  // Pre-fill email from URL params if available
+  useState(() => {
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
     }
-  };
+  });
 
-  // Xử lý dán mã
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const paste = e.clipboardData
-      .getData('text')
-      .replace(/\D/g, '')
-      .slice(0, 6);
-    if (paste.length === 6) {
-      setOtp(paste.split(''));
-      inputsRef.current[5]?.focus();
-    }
-  };
-
-  // Gửi mã xác thực
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     setSuccess('');
-    try {
-      const code = otp.join('');
-      if (code.length !== 6) {
-        setError('Vui lòng nhập đủ 6 số!');
-        setLoading(false);
-        return;
-      }
-      const result = await authService.verifyEmail(email, code);
-      if (result.success === true) {
-        setSuccess('Xác thực thành công! Bạn có thể đăng nhập.');
-        setTimeout(() => router.push(ROUTES.LOGIN), 1500);
-      } else {
-        setError(result.message || ERROR_MESSAGES.UNKNOWN_ERROR);
-      }
-    } catch {
-      setError(ERROR_MESSAGES.NETWORK_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setIsSubmitting(true);
 
-  // Gửi lại mã
-  const handleResend = async () => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      const result = await authService.resendVerificationCode(email);
-      if (result.success === true) {
-        setSuccess('Đã gửi lại mã xác thực về email!');
-      } else {
-        setError(result.message || ERROR_MESSAGES.UNKNOWN_ERROR);
-      }
-    } catch {
-      setError(ERROR_MESSAGES.NETWORK_ERROR);
-    } finally {
-      setLoading(false);
-    }
+    // try {
+    //   const result = await verifyEmail(email, code);
+
+    //   if (result.success) {
+    //     setSuccess('Email verified successfully! You can now sign in.');
+    //     setTimeout(() => router.push('/auth/login'), 2000);
+    //   } else {
+    //     setError(result.message || 'Verification failed');
+    //   }
+    // } catch (err) {
+    //   setError('An unexpected error occurred');
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: '#f5f6fa',
-      }}
-    >
-      <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <h2
-            style={{
-              fontSize: 24,
-              fontWeight: 600,
-              marginBottom: 8,
-              color: '#262626',
-            }}
-          >
-            Xác thực email
+    <div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-md w-full space-y-8'>
+        <div>
+          <h2 className='mt-6 text-center text-3xl font-extrabold text-gray-900'>
+            Verify your email
           </h2>
-          <p style={{ color: '#8c8c8c', fontSize: 14 }}>
-            Nhập mã xác thực đã gửi về email <b>{email}</b>
+          <p className='mt-2 text-center text-sm text-gray-600'>
+            Enter the verification code sent to your email address
           </p>
         </div>
-        {error && (
-          <Alert
-            message={error}
-            type='error'
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-        )}
-        {success && (
-          <Alert
-            message={success}
-            type='success'
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-        )}
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-            {otp.map((digit, idx) => (
-              <input
-                key={idx}
-                ref={(el: HTMLInputElement | null) => {
-                  inputsRef.current[idx] = el;
-                }}
-                type='text'
-                inputMode='numeric'
-                maxLength={1}
-                value={digit}
-                onChange={e => handleChange(e.target.value, idx)}
-                onPaste={handlePaste}
-                style={{
-                  width: 40,
-                  height: 48,
-                  fontSize: 24,
-                  textAlign: 'center',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: 6,
-                  outline: 'none',
-                }}
-                autoFocus={idx === 0}
-              />
-            ))}
-          </div>
-          <Button
-            type='primary'
-            htmlType='submit'
-            size='large'
-            loading={loading}
-            style={{ width: '100%' }}
-          >
-            Xác thực
-          </Button>
-        </form>
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
-          <Button type='link' onClick={handleResend} disabled={loading}>
-            Gửi lại mã xác thực
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
-}
 
-export default function VerifyPage() {
-  return (
-    <Suspense
-      fallback={
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '100vh',
-            background: '#f5f6fa',
-          }}
-        >
-          <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-            <div style={{ textAlign: 'center' }}>
-              <h2
-                style={{
-                  fontSize: 24,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  color: '#262626',
-                }}
-              >
-                Đang tải...
-              </h2>
+        <form className='mt-8 space-y-6' onSubmit={handleSubmit}>
+          <div className='rounded-md shadow-sm -space-y-px'>
+            <div>
+              <label htmlFor='email' className='sr-only'>
+                Email address
+              </label>
+              <input
+                id='email'
+                name='email'
+                type='email'
+                autoComplete='email'
+                required
+                className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm'
+                placeholder='Email address'
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                disabled={isSubmitting}
+              />
             </div>
-          </Card>
+            <div>
+              <label htmlFor='code' className='sr-only'>
+                Verification code
+              </label>
+              <input
+                id='code'
+                name='code'
+                type='text'
+                autoComplete='off'
+                required
+                className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm'
+                placeholder='Verification code'
+                value={code}
+                onChange={e => setCode(e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className='text-red-600 text-sm text-center bg-red-50 p-3 rounded-md'>
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className='text-green-600 text-sm text-center bg-green-50 p-3 rounded-md'>
+              {success}
+            </div>
+          )}
+
+          <div>
+            <button
+              type='submit'
+              disabled={isSubmitting}
+              className='group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              {isSubmitting ? (
+                <div className='flex items-center'>
+                  <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2'></div>
+                  Verifying...
+                </div>
+              ) : (
+                'Verify Email'
+              )}
+            </button>
+          </div>
+
+          <div className='text-center'>
+            <Link
+              href='/auth/login'
+              className='font-medium text-blue-600 hover:text-blue-500'
+            >
+              Back to login
+            </Link>
+          </div>
+        </form>
+
+        <div className='mt-6'>
+          <div className='relative'>
+            <div className='absolute inset-0 flex items-center'>
+              <div className='w-full border-t border-gray-300' />
+            </div>
+            <div className='relative flex justify-center text-sm'>
+              <span className='px-2 bg-gray-50 text-gray-500'>Need help?</span>
+            </div>
+          </div>
+
+          <div className='mt-6 text-center text-sm text-gray-600'>
+            <p>
+              Didn't receive a verification code?{' '}
+              <Link
+                href='/auth/resend-verification'
+                className='font-medium text-blue-600 hover:text-blue-500'
+              >
+                Resend code
+              </Link>
+            </p>
+            <p className='mt-2'>
+              Or{' '}
+              <Link
+                href='/auth/register'
+                className='font-medium text-blue-600 hover:text-blue-500'
+              >
+                create a new account
+              </Link>
+            </p>
+          </div>
         </div>
-      }
-    >
-      <VerifyContent />
-    </Suspense>
+      </div>
+    </div>
   );
 }

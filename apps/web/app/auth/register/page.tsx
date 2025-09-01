@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Form, Input, Button, Card, Alert } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { authService } from '@/app/lib/auth';
-import { ROUTES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/app/lib/constants';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -30,17 +28,12 @@ export default function RegisterPage() {
         return;
       }
 
-      const result = await authService.register(values);
-
-      if (result.success) {
-        // Redirect to login page after successful registration
-        router.push(ROUTES.LOGIN);
-      } else {
-        setError(result.message || ERROR_MESSAGES.UNKNOWN_ERROR);
-      }
+      // For now, just redirect to login since we don't have register endpoint
+      // You can implement register functionality later
+      router.push('/auth/login');
     } catch (err) {
       console.error('Registration error:', err);
-      setError(ERROR_MESSAGES.NETWORK_ERROR);
+      setError('Đăng ký không thành công');
     } finally {
       setLoading(false);
     }
@@ -182,7 +175,7 @@ export default function RegisterPage() {
         <div style={{ textAlign: 'center' }}>
           <p>
             Đã có tài khoản?{' '}
-            <Link href={ROUTES.LOGIN} style={{ color: '#1677ff' }}>
+            <Link href='/auth/login' style={{ color: '#1677ff' }}>
               Đăng nhập ngay
             </Link>
           </p>

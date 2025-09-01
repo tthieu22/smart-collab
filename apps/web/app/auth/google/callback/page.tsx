@@ -1,128 +1,137 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Typography, Spin } from 'antd';
-import { useNotificationStore } from '@/app/store/notification';
-const { Title, Text } = Typography;
+import { useAuth } from '../../../hooks/useAuth';
 
-function CallbackContent() {
+export default function GoogleCallbackPage() {
+  const [status, setStatus] = useState<'processing' | 'success' | 'error'>(
+    'processing'
+  );
+  const [message, setMessage] = useState('Processing OAuth callback...');
+
+  const { oauthExchange } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string>('');
-  const { addNotification } = useNotificationStore();
+
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
+    const handleOAuthCallback = async () => {
+      const code = searchParams.get('code');
 
-    if (accessToken) {
-      localStorage.setItem('accessToken', accessToken);
-      // Set cookie so middleware can detect authentication
-      document.cookie = `accessToken=${accessToken}; path=/; max-age=900; samesite=lax`;
-      addNotification("Đăng nhập thành công", "success");
-      router.push('/dashboard');
-    } else {
-      addNotification("Đăng nhập không thành công", "error");
-      setError('Không nhận được token từ Google OAuth');
-    }
-  }, [searchParams, router]);
-
-  if (error) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-          background: '#f5f6fa',
-        }}
-      >
-        <Card
-          style={{
-            width: 400,
-            textAlign: 'center',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <Title level={3} style={{ color: '#ff4d4f' }}>
-            Lỗi
-          </Title>
-          <Text type='danger'>{error}</Text>
-          <br />
-          <br />
-          <Text
-            style={{ color: '#1677ff', cursor: 'pointer' }}
-            onClick={() => router.push('/auth/login')}
-          >
-            Quay lại trang đăng nhập
-          </Text>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: '#f5f6fa',
-      }}
-    >
-      <Card
-        style={{
-          width: 400,
-          textAlign: 'center',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <Spin size='large' />
-        <br />
-        <br />
-        <Title level={4} style={{ color: '#262626' }}>
-          Đang xử lý đăng nhập...
-        </Title>
-        <Text type='secondary' style={{ fontSize: '14px' }}>
-          Vui lòng chờ trong giây lát
-        </Text>
-      </Card>
-    </div>
-  );
-}
-
-export default function CallbackPage() {
-  return (
-    <Suspense
-      fallback={
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '100vh',
-            background: '#f5f6fa',
-          }}
-        >
-          <Card
-            style={{
-              width: 400,
-              textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <Spin size='large' />
-            <br />
-            <br />
-            <Title level={4} style={{ color: '#262626' }}>
-              Đang tải...
-            </Title>
-          </Card>
-        </div>
+      if (!code) {
+        setStatus('error');
+        setMessage('No authorization code received from Google');
+        setTimeout(() => router.push('/auth/login'), 3000);
+        return;
       }
-    >
-      <CallbackContent />
-    </Suspense>
+
+      try {
+        setStatus('processing');
+        setMessage('Exchanging authorization code for access token...');
+
+        const result = await oauthExchange(code);
+
+        if (result.success) {
+          setStatus('success');
+          setMessage('Authentication successful! Redirecting to dashboard...');
+          // Redirect will be handled by useAuth hook
+        } else {
+          setStatus('error');
+          setMessage(result.message || 'OAuth exchange failed');
+          setTimeout(() => router.push('/auth/login'), 3000);
+        }
+      } catch (error) {
+        setStatus('error');
+        setMessage('An unexpected error occurred during OAuth exchange');
+        setTimeout(() => router.push('/auth/login'), 3000);
+      }
+    };
+
+    handleOAuthCallback();
+  }, [searchParams, oauthExchange, router]);
+
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'processing':
+        return (
+          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4'></div>
+        );
+      case 'success':
+        return (
+          <div className='rounded-full h-12 w-12 bg-green-100 flex items-center justify-center mx-auto mb-4'>
+            <svg
+              className='h-8 w-8 text-green-600'
+              fill='none'
+              viewBox='0 0 24 24'
+              stroke='currentColor'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M5 13l4 4L19 7'
+              />
+            </svg>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className='rounded-full h-12 w-12 bg-red-100 flex items-center justify-center mx-auto mb-4'>
+            <svg
+              className='h-8 w-8 text-red-600'
+              fill='none'
+              viewBox='0 0 24 24'
+              stroke='currentColor'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M6 18L18 6M6 6l12 12'
+              />
+            </svg>
+          </div>
+        );
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'processing':
+        return 'text-blue-600';
+      case 'success':
+        return 'text-green-600';
+      case 'error':
+        return 'text-red-600';
+    }
+  };
+
+  return (
+    <div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-md w-full space-y-8'>
+        <div className='text-center'>
+          {getStatusIcon()}
+
+          <h2 className='text-2xl font-bold text-gray-900 mb-2'>
+            {status === 'processing' && 'Processing...'}
+            {status === 'success' && 'Success!'}
+            {status === 'error' && 'Error'}
+          </h2>
+
+          <p className={`text-lg ${getStatusColor()}`}>{message}</p>
+
+          {status === 'error' && (
+            <div className='mt-6'>
+              <button
+                onClick={() => router.push('/auth/login')}
+                className='inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+              >
+                Back to Login
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

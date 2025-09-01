@@ -5,16 +5,14 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import { Input, Button, Card, Divider } from 'antd';
-import Cookies from 'js-cookie';
-import { authService } from '@/app/lib/auth';
-import { ROUTES, STORAGE_KEYS, ERROR_MESSAGES } from '@/app/lib/constants';
-import { useNotificationStore } from '@/app/store/notification';
+import { useAuth } from '../../hooks/useAuth';
+import { ROUTES, APP_CONFIG, API_ENDPOINTS } from '../../lib/constants';
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || ROUTES.DASHBOARD;
-  const { addNotification } = useNotificationStore();
-  const [loading, setLoading] = useState(false);
+  const { login, isLoading } = useAuth();
   const [error, setError] = useState('');
 
   const handleSubmit = async (email: string, password: string) => {
@@ -24,30 +22,23 @@ export default function LoginForm() {
     }
 
     setError('');
-    setLoading(true);
 
     try {
-      const result = await authService.login({ email, password });
-      if (result.success && result.data?.accessToken) {
-        Cookies.set(STORAGE_KEYS.ACCESS_TOKEN, result.data.accessToken, {
-          path: '/',
-        });
-        addNotification("Đăng nhập thành công", "success");
-        router.push(redirectTo);
+      const result = await login({ email, password });
+      if (result.success) {
+        // Redirect will be handled by useAuth hook
+        return;
       } else {
-        addNotification("Đăng nhập không thành công", "error");
-        setError('Email hoặc mật khẩu không chính xác');
+        setError(result.message || 'Email hoặc mật khẩu không chính xác');
       }
-    } catch {
-      addNotification("Đăng nhập không thành công", "error");
-      setError(ERROR_MESSAGES.NETWORK_ERROR);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setError('Đăng nhập không thành công');
     }
   };
 
   const handleGoogleLogin = () => {
-    router.push(process.env.NEXT_PUBLIC_GOOGLE_LOGIN_URL!);
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = `${APP_CONFIG.API_BASE_URL}${API_ENDPOINTS.AUTH.GOOGLE}`;
   };
 
   return (
@@ -116,7 +107,7 @@ export default function LoginForm() {
             type='primary'
             htmlType='submit'
             size='large'
-            loading={loading}
+            loading={isLoading}
             style={{ width: '100%' }}
           >
             Đăng nhập
