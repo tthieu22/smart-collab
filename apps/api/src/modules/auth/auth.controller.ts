@@ -16,198 +16,241 @@ import * as bcrypt from 'bcryptjs';
 import { Response, Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Role } from '@prisma/client';
+import { setRefreshCookie, clearRefreshCookie } from './auth.cookies';
+import { randomBytes } from 'crypto';
+import { OtcService } from '../otc/otc.store';
 
-// Standardized response interface
 interface ApiResponse<T = any> {
   success: boolean;
   message: string;
   data?: T;
 }
 
+interface UserWithPassword {
+  id: string;
+  email: string;
+  password: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  avatar: string | null;
+  googleId: string | null;
+  role: Role;
+  isVerified: boolean;
+  emailVerificationCode: string | null;
+  emailVerificationCodeExpires: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(
-    private authService: AuthService,
-    private userService: UserService,
+    private readonly auth: AuthService,
+    private readonly users: UserService,
+    private readonly otcService: OtcService,
   ) {}
 
+  /** 🔑 Login */
   @Post('login')
   @HttpCode(200)
   async login(
-    @Body() loginDto: LoginDto,
+    @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse> {
-    try {
-      const user = await this.userService.findByEmail(loginDto.email);
-      if (
-        !user ||
-        !(await bcrypt.compare(loginDto.password, user.password || ''))
-      ) {
-        return { success: false, message: 'Invalid credentials' };
-      }
-      const tokens = await this.authService.login(user);
-      res.cookie('refresh_token', tokens.refreshToken, {
-        httpOnly: true,
-        path: '/auth/refresh',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-        secure: false,
-      });
-      return {
-        success: true,
-        message: 'Login successful',
-        data: {
-          accessToken: tokens.accessToken,
-          user: { email: user.email, role: user.role },
-        },
-      };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
+    const user = await this.users.findByEmail(dto.email) as UserWithPassword;
 
-  // Google OAuth2
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  async googleAuth(): Promise<ApiResponse> {
-    return { success: true, message: 'Google authentication initiated' };
-  }
-
-  @Get('google/redirect')
-  @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<ApiResponse | void> {
-    try {
-      const user = req.user as any;
-      const payload = {
-        sub: user.id?.toString(),
-        email: user.email,
-        role: user.role,
-      };
-      const accessToken = this.authService['jwtService'].sign(payload, {
-        expiresIn: '15m',
-      });
-      const refreshToken = this.authService['jwtService'].sign(payload, {
-        expiresIn: '7d',
-      });
-      res.cookie('refresh_token', refreshToken, {
-        httpOnly: true,
-        path: '/auth/refresh',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-        secure: false,
-      });
-      const frontendCallback =
-        process.env.FRONTEND_GOOGLE_CALLBACK_URL ||
-        'http://localhost:3000/auth/google/callback';
-      if (frontendCallback) {
-        res.redirect(`${frontendCallback}?accessToken=${accessToken}`);
-        return;
-      }
-      return {
-        success: true,
-        message: 'Google authentication successful',
-        data: { accessToken, user },
-      };
-    } catch (error) {
-      return { success: false, message: error.message };
+    if (!user || !(await bcrypt.compare(dto.password || '', user.password || ''))) {
+      throw new UnauthorizedException('Invalid credentials');
     }
-  }
 
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  async me(@Req() req: Request): Promise<ApiResponse> {
-    try {
-      const userId =
-        (req.user as any).userId ||
-        (req.user as any).sub ||
-        (req.user as any).id;
-      const user = await this.userService.findOne(userId);
-      if (!user) {
-        return { success: false, message: 'User not found' };
-      }
-      const userWithoutPassword = { ...user };
-      return {
-        success: true,
-        message: 'User data retrieved successfully',
-        data: userWithoutPassword,
-      };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  @Post('verify-email')
-  async verifyEmail(
-    @Body() body: { email: string; code: string },
-  ): Promise<ApiResponse> {
-    try {
-      const isVerified = await this.userService.verifyEmail(
-        body.email,
-        body.code,
-      );
-      if (isVerified) {
-        return { success: true, message: 'Email verified successfully' };
-      } else {
-        return {
-          success: false,
-          message: 'Invalid or expired verification code',
-        };
-      }
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  @Post('validate-user')
-  async validateUser(
-    @Body() body: { email: string; password: string },
-  ): Promise<ApiResponse> {
-    const { email, password } = body;
-    const user = await this.userService.findByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.password || ''))) {
-      return { success: false, message: 'Invalid credentials' };
-    }
     if (!user.isVerified) {
       return { success: false, message: 'Email not verified' };
     }
 
-    const { password: _, ...userWithoutPassword } = user;
+    const sessionId = randomBytes(16).toString('hex');
+    const context: Partial<{ device: string; ua: string; ip: string }> = {
+      device: sessionId,
+      ua: req.headers['user-agent'] as string,
+    };
+
+    const tokens = await this.auth.issueTokensForUser(
+      { id: user.id, email: user.email, role: user.role },
+      context,
+    );
+
+    setRefreshCookie(res, tokens.refreshToken, tokens.refreshTokenExpiresAt);
+
     return {
       success: true,
-      message: 'User validated successfully',
-      data: userWithoutPassword,
+      message: 'Login successful',
+      data: {
+        accessToken: tokens.accessToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          avatar: user.avatar,
+          role: user.role,
+        },
+      },
     };
   }
 
+  /** 🌀 Refresh token */
   @Post('refresh')
   @HttpCode(200)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse> {
+    const raw = (req as any).cookies?.refresh_token;
+    if (!raw) throw new UnauthorizedException('Missing refresh token');
+
+    const payload = await this.auth.validateRefreshToken(raw);
+    if (!payload?.userId) throw new UnauthorizedException('Invalid refresh token');
+
+    const sessionId = randomBytes(16).toString('hex');
+      const context: Partial<{ device: string; ua: string; ip: string }> = {
+      device: sessionId,
+      ua: req.headers['user-agent'] as string,
+    };
+
+    const tokens = await this.auth.rotateRefreshToken(payload.userId, raw, context);
+
+    if (!tokens) throw new UnauthorizedException('Failed to refresh token');
+
+    setRefreshCookie(res, tokens.refreshToken, tokens.refreshTokenExpiresAt);
+
+    return { success: true, message: 'Refreshed', data: { accessToken: tokens.accessToken } };
+  }
+
+  /** 👋 Logout current device */
+  @Post('logout')
+  @HttpCode(200)
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<ApiResponse> {
+    const raw = (req as any).cookies?.refresh_token;
+    if (raw) {
+      await this.auth.rotateRefreshToken('', raw, undefined, { revokeOnly: true });
+    }
+    clearRefreshCookie(res);
+    return { success: true, message: 'Logged out' };
+  }
+
+  /** 🔒 Logout all devices */
+  @Post('logout-all')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  async logoutAll(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<ApiResponse> {
+    const userId = (req.user as any)?.sub || (req.user as any)?.id;
+    if (!userId) throw new UnauthorizedException();
+
+    await this.auth.logoutAllDevices(userId);
+    clearRefreshCookie(res);
+
+    return { success: true, message: 'Logged out from all devices' };
+  }
+
+  /** 👤 Current user info */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async me(@Req() req: Request): Promise<ApiResponse> {
+    const userId = (req.user as any)?.sub || (req.user as any)?.id;
+
+    if (!userId) {
+      return { success: false, message: 'User not authenticated' };
+    }
+
     try {
-      const refreshToken = (req as any).cookies?.refresh_token || '';
-      if (!refreshToken) {
-        throw new UnauthorizedException('Missing refresh token');
-      }
-      const tokens = await this.authService.refresh(refreshToken);
-      res.cookie('refresh_token', tokens.refreshToken, {
-        httpOnly: true,
-        path: '/auth/refresh',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-        secure: false,
-      });
-      return {
-        success: true,
-        message: 'Token refreshed',
-        data: { accessToken: tokens.accessToken },
-      };
+      const user = await this.users.findOne(userId);
+      return { success: true, message: 'OK', data: user };
+    } catch (error) {
+      return { success: false, message: error.message || 'User not found' };
+    }
+  }
+
+  /** Google OAuth */
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(): Promise<void> {}
+
+  @Get('google/redirect')
+  @UseGuards(AuthGuard('google'))
+  async googleRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const profile = req.user as any;
+    const email = profile.emails?.[0]?.value || profile.email;
+    const avatar = profile.photos?.[0]?.value || profile._json?.picture;
+    if (!email) throw new Error('Google profile does not contain email');
+
+    const user = await this.auth.upsertGoogleUser({
+      id: profile.id,
+      email,
+      givenName: profile.name?.givenName,
+      familyName: profile.name?.familyName,
+      avatar,
+    });
+
+    const code = randomBytes(24).toString('hex');
+    await this.otcService.putOTC(code, { userId: user.id, email: user.email, role: user.role }, 120);
+
+    const cb = process.env.FRONTEND_GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
+    res.redirect(`${cb}?code=${code}`);
+  }
+
+  /** Google OAuth exchange */
+  @Post('oauth/exchange')
+  @HttpCode(200)
+  async oauthExchange(
+    @Body() body: { code: string },
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ApiResponse<{ accessToken: string }>> {
+    const rec = await this.otcService.takeOTC(body.code);
+    if (!rec) return { success: false, message: 'Invalid or expired code' };
+
+    const sessionId = randomBytes(16).toString('hex');
+    const context: Partial<{ device: string; ua: string; ip: string }> = {
+      device: sessionId,
+      ua: req.headers['user-agent'] as string,
+    };
+
+    const tokens = await this.auth.issueTokensForUser(
+      { id: rec.userId, email: rec.email, role: rec.role as Role },
+      context,
+    );
+
+    setRefreshCookie(res, tokens.refreshToken, tokens.refreshTokenExpiresAt);
+
+    return { success: true, message: 'OAuth exchange success', data: { accessToken: tokens.accessToken } };
+  }
+
+  /** Verify email */
+  @Post('verify-email')
+  async verifyEmail(@Body() body: { email: string; code: string }): Promise<ApiResponse> {
+    try {
+      const isVerified = await this.users.verifyEmail(body.email, body.code);
+      return isVerified
+        ? { success: true, message: 'Email verified successfully' }
+        : { success: false, message: 'Invalid or expired verification code' };
     } catch (error) {
       return { success: false, message: error.message };
     }
+  }
+
+  /** Validate user credentials */
+  @Post('validate-user')
+  async validateUser(@Body() body: { email: string; password: string }): Promise<ApiResponse> {
+    const user = await this.users.findByEmail(body.email) as UserWithPassword;
+
+    if (!user || !(await bcrypt.compare(body.password || '', user.password || ''))) {
+      return { success: false, message: 'Invalid credentials' };
+    }
+
+    if (!user.isVerified) return { success: false, message: 'Email not verified' };
+
+    const { password, ...safeUser } = user;
+    return { success: true, message: 'User validated successfully', data: safeUser };
   }
 }

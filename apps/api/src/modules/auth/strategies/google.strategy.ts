@@ -22,7 +22,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: any,
     done: VerifyCallback,
   ): Promise<any> {
-    const user = await this.authService.validateGoogleLogin(profile);
+    const user = await this.authService.upsertGoogleUser({
+      id: profile.id,
+      email: profile.emails[0].value,
+      givenName: profile.name?.givenName,
+      familyName: profile.name?.familyName,
+      avatar: profile.photos?.[0]?.value,
+    });
+
     done(null, user);
   }
+
 }

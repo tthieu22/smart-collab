@@ -1,76 +1,187 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
-import * as bcrypt from 'bcryptjs';
+import { PrismaService } from '@/prisma/prisma.service';
+import * as argon2 from 'argon2';
+import { randomBytes } from 'crypto';
+import { addDays } from 'date-fns';
+import { Role } from '@prisma/client';
 import { CreateGoogleUserDto } from '../user/dto/create-google-user.dto';
+
+type JwtPayload = { sub: string; email: string; role: Role };
+type TokenMeta = Partial<{ ip: string; ua: string; device: string }>;
+type RotateOptions = { revokeOnly?: boolean };
 
 @Injectable()
 export class AuthService {
+  private readonly accessTokenTTL: string;
+  private readonly refreshTokenTTL: number;
+
   constructor(
-    private userService: UserService,
-    private jwtService: JwtService,
-  ) {}
+    private readonly users: UserService,
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
+  ) {
+    this.accessTokenTTL = this.config.get<string>('JWT_ACCESS_EXPIRES') || '15m';
+    this.refreshTokenTTL = Number(this.config.get<number>('REFRESH_DAYS')) || 7;
+  }
 
-  async validateUser(email: string, password: string) {
-    const user = await this.userService.findByEmail(email);
-    if (
-      user &&
-      typeof user.password === 'string' &&
-      (await bcrypt.compare(password, user.password))
-    ) {
-      const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+  /** 🔐 Tạo Access Token */
+  private signAccessToken(payload: JwtPayload) {
+    return this.jwt.sign(payload, { expiresIn: this.accessTokenTTL });
+  }
+
+  /** 🔑 Sinh Refresh Token mới */
+  private async mintRefreshToken(userId: string, meta?: TokenMeta) {
+    const raw = randomBytes(64).toString('hex');
+    const hashed = await argon2.hash(raw);
+    const expiresAt = addDays(new Date(), this.refreshTokenTTL);
+
+    const tokenRecord = await this.prisma.refreshToken.create({
+      data: {
+        userId,
+        hashedToken: hashed,
+        expiresAt,
+        ip: meta?.ip ?? null,
+        userAgent: meta?.ua ?? null,
+        device: meta?.device ?? null,
+      },
+    });
+
+    return { raw, tokenId: tokenRecord.id, expiresAt };
+  }
+
+  /** 📦 Cấp Access + Refresh Token */
+  async issueTokensForUser(
+    user: { id: string; email: string; role: Role },
+    meta?: TokenMeta,
+  ) {
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const accessToken = this.signAccessToken(payload);
+    const { raw, tokenId, expiresAt } = await this.mintRefreshToken(
+      user.id,
+      meta,
+    );
+
+    return {
+      accessToken,
+      accessTokenExpiresIn: this.accessTokenTTL,
+      refreshToken: `${tokenId}.${raw}`,
+      refreshTokenExpiresAt: expiresAt,
+    };
+  }
+
+  /** ✅ Kiểm tra Refresh Token hợp lệ */
+  async validateRefreshToken(token: string) {
+    const [id, raw] = token.split('.');
+    if (!id || !raw)
+      throw new UnauthorizedException('Invalid refresh token format');
+
+    const tokenRecord = await this.prisma.refreshToken.findFirst({
+      where: { id, revoked: false, expiresAt: { gt: new Date() } },
+    });
+
+    if (!tokenRecord) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
-    return null;
-  }
 
-  async login(user: any) {
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-    return { accessToken, refreshToken };
-  }
-
-  async refresh(refreshToken: string) {
-    try {
-      const decoded = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_SECRET || 'your-secret',
-      });
-      const payload = {
-        sub: decoded.sub,
-        email: decoded.email,
-        role: decoded.role,
-      };
-      const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-      const newRefreshToken = this.jwtService.sign(payload, {
-        expiresIn: '7d',
-      });
-      return { accessToken, refreshToken: newRefreshToken };
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+    const isValid = await argon2.verify(tokenRecord.hashedToken, raw);
+    if (!isValid) {
+      // 🔍 Nếu hash sai → nghi ngờ bị reuse → revoke all
+      await this.logoutAllDevices(tokenRecord.userId);
+      throw new ForbiddenException(
+        'Token reuse detected. All sessions revoked.',
+      );
     }
+
+    return {
+      userId: tokenRecord.userId,
+      tokenId: tokenRecord.id,
+      expiresAt: tokenRecord.expiresAt,
+    };
   }
 
-  async validateGoogleLogin(profile: any) {
-    let user = await this.userService.findByEmail(profile.emails[0].value);
+  /** 🔄 Refresh Token (rotate) */
+  async rotateRefreshToken(
+    userId: string,
+    token: string,
+    meta?: TokenMeta,
+    options?: RotateOptions,
+  ) {
+    const [id] = token.split('.');
+    if (!id) throw new UnauthorizedException('Invalid refresh token');
+
+    if (options?.revokeOnly) {
+      await this.revokeRefreshToken(id);
+      return;
+    }
+
+    await this.revokeRefreshToken(id);
+
+    const user = await this.users.findOne(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    return this.issueTokensForUser(
+      { id: user.id, email: user.email, role: user.role },
+      meta,
+    );
+  }
+
+  /** ❌ Thu hồi Refresh Token */
+  async revokeRefreshToken(tokenId: string) {
+    await this.prisma.refreshToken.update({
+      where: { id: tokenId },
+      data: { revoked: true },
+    });
+  }
+
+  /** 🚪 Logout tất cả thiết bị */
+  async logoutAllDevices(userId: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revoked: false },
+      data: { revoked: true },
+    });
+  }
+
+  /** 🧹 Xóa token hết hạn */
+  async cleanupExpiredTokens() {
+    await this.prisma.refreshToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+  }
+
+  /** 👤 Google OAuth: Upsert user */
+  async upsertGoogleUser(profile: {
+    id: string;
+    email: string;
+    givenName?: string;
+    familyName?: string;
+    avatar?: string;
+  }) {
+    let user = await this.users.findByEmail(profile.email);
     if (!user) {
-      const googleUser: CreateGoogleUserDto = {
-        email: profile.emails[0].value,
-        firstName: profile.name.givenName,
-        lastName: profile.name.familyName,
-        isVerified: true,
+      const dto: CreateGoogleUserDto = {
+        email: profile.email,
         googleId: profile.id,
+        isVerified: true,
+        ...(profile.givenName ? { firstName: profile.givenName } : {}),
+        ...(profile.familyName ? { lastName: profile.familyName } : {}),
+        ...(profile.avatar ? { avatar: profile.avatar } : {}),
       };
-      user = await this.userService.createGoogleUser(googleUser);
+
+      user = await this.users.createGoogleUser(dto);
     }
-
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
-  }
-
-  async findByGoogleId(googleId: string) {
-    // Thêm method này vào UserService nếu cần
-    // Hoặc sử dụng PrismaService trực tiếp
-    return this.userService.findByGoogleId(googleId);
+    return user;
   }
 }

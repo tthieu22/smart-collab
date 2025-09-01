@@ -27,7 +27,8 @@
       "@/lib/*": ["./app/lib/*"],
       "@/hooks/*": ["./app/hooks/*"],
       "@/providers/*": ["./app/providers/*"],
-      "@/store/*": ["./app/store/*"]
+      "@/store/*": ["./app/store/*"],
+      "@/services/*": ["./app/services/*"]
     }
   },
   "include": [
