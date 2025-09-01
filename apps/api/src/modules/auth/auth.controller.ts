@@ -157,16 +157,18 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: Request): Promise<ApiResponse> {
-    const userId = (req.user as any)?.sub || (req.user as any)?.id;
+    // Lấy userId từ JWT payload
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub || (req.user as any)?.id;
 
-    if (!userId) {
+    if (!userId) { 
       return { success: false, message: 'User not authenticated' };
     }
 
     try {
       const user = await this.users.findOne(userId);
       return { success: true, message: 'OK', data: user };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[ERROR] /auth/me:', error);
       return { success: false, message: error.message || 'User not found' };
     }
   }
