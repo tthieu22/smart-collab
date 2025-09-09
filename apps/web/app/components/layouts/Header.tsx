@@ -24,7 +24,7 @@ const { Header: AntHeader } = Layout;
 const { Text } = Typography;
 
 export default function Header() {
-  const { user, logout, logoutAll, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -33,7 +33,7 @@ export default function Header() {
   };
 
   const handleLogoutAll = async () => {
-    await logoutAll();
+    // await logoutAll();
     router.push(ROUTES.LOGIN);
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../store/auth';
 import { useUserStore } from '../store/user';
@@ -27,6 +27,7 @@ export const useAuth = () => {
     useUserStore();
 
   const [isFetchingUser, setIsFetchingUser] = useState(false);
+  const didFetchUser = useRef(false);
 
   /** Refresh token */
   const refreshToken = useCallback(async () => {
@@ -158,9 +159,12 @@ export const useAuth = () => {
 
   /** Auto-fetch user when accessToken exists and user not loaded */
   useEffect(() => {
-    fetchUser().catch(console.error);
-  }, [accessToken, isInitialized, fetchUser]);
-
+    if (!didFetchUser.current && isInitialized && accessToken) {
+      didFetchUser.current = true;
+      fetchUser().catch(console.error);
+    }
+  }, [isInitialized, accessToken, fetchUser]);
+  
   return {
     accessToken,
     user: currentUser,

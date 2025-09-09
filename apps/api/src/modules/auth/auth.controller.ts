@@ -60,7 +60,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse> {
     const user = await this.users.findByEmail(dto.email) as UserWithPassword;
-
+    console.log(user)
     if (!user || !(await bcrypt.compare(dto.password || '', user.password || ''))) {
       throw new UnauthorizedException('Invalid credentials');
     }

@@ -16,7 +16,7 @@ interface AuthState {
   login: (token: string) => void;
   logout: () => void;
   clearAuth: () => void;
-  initializeAuth: () => Promise<void>; // Initialize auth from cookie
+  initializeAuth: () => Promise<boolean>; // Initialize auth from cookie
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -69,27 +69,31 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // Initialize auth from refresh token in cookie
-      initializeAuth: async () => {
-        const { setLoading, setAccessToken, setInitialized } = get();
+      initializeAuth: async (): Promise<boolean> => {
+        const { setLoading, setAccessToken, setInitialized, clearAuth } = get();
+
+        if (get().isInitialized) return true;
 
         try {
           setLoading(true);
 
-          // Try to refresh token from cookie
           const response = await authService.refresh();
 
           if (response.success && response.data?.accessToken) {
             setAccessToken(response.data.accessToken);
+            return true;
           }
+          throw new Error('No valid refresh token');
         } catch (error) {
           console.log('No valid refresh token found or refresh failed');
-          // Don't throw error, just clear auth state
           setAccessToken(null);
+          clearAuth();
+          return false;
         } finally {
           setLoading(false);
           setInitialized(true);
         }
-      },
+      }
     }),
     {
       name: 'auth-store',
