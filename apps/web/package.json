@@ -4,7 +4,7 @@
   "private": true,
   "description": "AuthNexus Web - Next.js frontend with authentication",
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint --max-warnings 0",
@@ -34,6 +34,7 @@
     "@types/node": "20.11.30",
     "@types/react": "18.2.75",
     "@types/react-dom": "18.2.25",
+    "@types/three": "^0.153.0",
     "eslint": "9.29.0",
     "prettier": "3.6.0",
     "typescript": "5.3.3"
