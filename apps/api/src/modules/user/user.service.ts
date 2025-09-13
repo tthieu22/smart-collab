@@ -30,12 +30,18 @@ export class UserService {
 
     const createdUser = await this.prisma.user.create({
       data: {
-        ...createUserDto,
+        email: createUserDto.email,
+        firstName: createUserDto.firstName ?? null,
+        lastName: createUserDto.lastName ?? null,
+        avatar: createUserDto.avatar ?? null,
         password: hashedPassword,
+        role: createUserDto.role ?? 'USER', 
+        isVerified: false,
         emailVerificationCode,
         emailVerificationCodeExpires,
       },
     });
+
 
     // Send verification email
     await this.mailerService.sendMail({

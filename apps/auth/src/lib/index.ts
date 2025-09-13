@@ -15,4 +15,3 @@ export { useUserStore } from '../store/user';
 
 // Hooks
 export { useAuth } from '../hooks/useAuth';
-export { useUser } from '../hooks/useUser';

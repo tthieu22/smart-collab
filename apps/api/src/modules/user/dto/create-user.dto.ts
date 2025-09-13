@@ -5,7 +5,9 @@ import {
   MinLength,
   IsBoolean,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
+import { Role } from '@prisma/client';
 
 export class CreateUserDto {
   @IsEmail()
@@ -19,17 +21,21 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
-  firstName?: string;
+  firstName?: string | null;
 
   @IsString()
   @IsOptional()
-  lastName?: string;
+  lastName?: string | null;
 
   @IsString()
   @IsOptional()
-  avatar?: string;
+  avatar?: string | null;
 
   @IsBoolean()
   @IsOptional()
   isVerified?: boolean;
+
+  @IsOptional()
+  @IsEnum(Role)
+  role?: Role;   // ✅ TypeScript nhận diện được
 }

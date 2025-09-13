@@ -10,6 +10,8 @@ import {
   ValidateUserRequest,
   ValidateUserResponse,
   ApiResponse,
+  RegisterRequest,
+  RegisterResponse,
 } from '../types/auth';
 import { API_ENDPOINTS, APP_CONFIG } from '../lib/constants';
 
@@ -31,7 +33,6 @@ class AuthService {
 
     try {
       const response = await fetch(url, config);
-
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('Unauthorized');
@@ -41,7 +42,6 @@ class AuthService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
       throw error;
     }
   }
@@ -50,6 +50,13 @@ class AuthService {
     return this.request<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, {
       method: 'POST',
       body: JSON.stringify(credentials),
+    });
+  }
+
+  async register(request: RegisterRequest): Promise<RegisterResponse> {
+    return this.request<RegisterResponse>(API_ENDPOINTS.AUTH.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify(request),
     });
   }
 

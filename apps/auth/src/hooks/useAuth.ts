@@ -1,11 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../store/auth';
 import { useUserStore } from '../store/user';
 import { authService } from '../services/auth.service';
-import { LoginCredentials } from '../types/auth';
 import { ROUTES } from '../lib/constants';
 
 export const useAuth = () => {
@@ -14,20 +13,23 @@ export const useAuth = () => {
     accessToken,
     isAuthenticated,
     isLoading,
-    isInitialized,
+    isInitialized, // ✅ auth init
     setLoading,
-    login: storeLogin,
     logout: storeLogout,
     setAccessToken,
     clearAuth,
     initializeAuth,
   } = useAuthStore();
 
-  const { currentUser, setCurrentUser, clearUserStore, setInitialized: setUserInitialized } =
-    useUserStore();
+  const {
+    currentUser,
+    setCurrentUser,
+    clearUserStore,
+    setUserInitialized,
+    isUserInitialized,
+  } = useUserStore();
 
   const [isFetchingUser, setIsFetchingUser] = useState(false);
-  const didFetchUser = useRef(false);
 
   /** Refresh token */
   const refreshToken = useCallback(async () => {
@@ -37,9 +39,8 @@ export const useAuth = () => {
       if (response.success && response.data?.accessToken) {
         setAccessToken(response.data.accessToken);
         return response.data.accessToken;
-      } else {
-        throw new Error(response.message || 'Failed to refresh token');
       }
+      throw new Error(response.message || 'Failed to refresh token');
     } catch (error) {
       console.error('Token refresh failed:', error);
       clearAuth();
@@ -51,7 +52,7 @@ export const useAuth = () => {
     }
   }, [setLoading, setAccessToken, clearAuth, clearUserStore, router]);
 
-  /** Ensure token is valid */
+  /** Ensure token valid */
   const ensureValidToken = useCallback(async () => {
     if (!accessToken) return null;
     if (authService.isTokenExpired(accessToken)) {
@@ -62,7 +63,7 @@ export const useAuth = () => {
 
   /** Fetch current user */
   const fetchUser = useCallback(async () => {
-    if (!accessToken || currentUser || isFetchingUser) return currentUser || null;
+    if (!accessToken || isFetchingUser) return currentUser || null;
 
     setIsFetchingUser(true);
     try {
@@ -72,11 +73,9 @@ export const useAuth = () => {
       const response = await authService.me(validToken);
       if (response.success && response.data) {
         setCurrentUser(response.data);
-        setUserInitialized(true);
         return response.data;
-      } else {
-        throw new Error(response.message || 'Failed to fetch user');
       }
+      return null;
     } catch (error) {
       console.error('Fetch user failed:', error);
       clearAuth();
@@ -85,33 +84,19 @@ export const useAuth = () => {
       return null;
     } finally {
       setIsFetchingUser(false);
+      setUserInitialized(true); // ✅ luôn đánh dấu user init
     }
-  }, [accessToken, currentUser, isFetchingUser, ensureValidToken, setCurrentUser, setUserInitialized, clearAuth, clearUserStore, router]);
-
-  /** Login */
-  const login = useCallback(
-    async (credentials: LoginCredentials) => {
-      try {
-        setLoading(true);
-        const response = await authService.login(credentials);
-        if (response.success && response.data) {
-          storeLogin(response.data.accessToken);
-          setCurrentUser(response.data.user);
-          setUserInitialized(true);
-          router.push(ROUTES.DASHBOARD);
-          return { success: true };
-        } else {
-          return { success: false, message: response.message };
-        }
-      } catch (error) {
-        console.error('Login failed:', error);
-        return { success: false, message: error instanceof Error ? error.message : 'Login failed' };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [storeLogin, setCurrentUser, setLoading, router, setUserInitialized]
-  );
+  }, [
+    accessToken,
+    isFetchingUser,
+    ensureValidToken,
+    setCurrentUser,
+    setUserInitialized,
+    clearAuth,
+    clearUserStore,
+    router,
+    currentUser,
+  ]);
 
   /** Logout */
   const logout = useCallback(async () => {
@@ -137,12 +122,15 @@ export const useAuth = () => {
           await fetchUser();
           router.push(ROUTES.DASHBOARD);
           return { success: true };
-        } else {
-          return { success: false, message: response.message };
         }
+        return { success: false, message: response.message };
       } catch (error) {
         console.error('OAuth exchange failed:', error);
-        return { success: false, message: error instanceof Error ? error.message : 'OAuth exchange failed' };
+        return {
+          success: false,
+          message:
+            error instanceof Error ? error.message : 'OAuth exchange failed',
+        };
       } finally {
         setLoading(false);
       }
@@ -150,28 +138,27 @@ export const useAuth = () => {
     [setAccessToken, fetchUser, setLoading, router]
   );
 
-  /** Initialize auth on mount */
+  /** Init auth on mount */
   useEffect(() => {
     if (!isInitialized) {
       initializeAuth();
     }
   }, [isInitialized, initializeAuth]);
 
-  /** Auto-fetch user when accessToken exists and user not loaded */
+  /** Auto-fetch user when accessToken exists */
   useEffect(() => {
-    if (!didFetchUser.current && isInitialized && accessToken) {
-      didFetchUser.current = true;
+    if (isInitialized && accessToken && !isUserInitialized) {
       fetchUser().catch(console.error);
     }
-  }, [isInitialized, accessToken, fetchUser]);
-  
+  }, [isInitialized, accessToken, isUserInitialized, fetchUser]);
+
   return {
     accessToken,
     user: currentUser,
     isAuthenticated,
     isLoading,
     isInitialized,
-    login,
+    isUserInitialized,
     logout,
     oauthExchange,
     fetchUser,

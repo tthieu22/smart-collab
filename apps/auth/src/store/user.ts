@@ -2,14 +2,13 @@ import { create } from 'zustand';
 import { User } from '../types/auth';
 
 interface UserState {
-  // State
   currentUser: User | null;
   allUsers: User[];
   isLoading: boolean;
   error: string | null;
-  isInitialized: boolean; // Track if we've loaded user data
+  isInitialized: boolean; // ✅ auth init
+  isUserInitialized: boolean; // ✅ user init riêng
 
-  // Actions
   setCurrentUser: (user: User | null) => void;
   setAllUsers: (users: User[]) => void;
   addUser: (user: User) => void;
@@ -19,72 +18,43 @@ interface UserState {
   setError: (error: string | null) => void;
   clearError: () => void;
   setInitialized: (initialized: boolean) => void;
+  setUserInitialized: (initialized: boolean) => void;
   clearUserStore: () => void;
 }
 
-export const useUserStore = create<UserState>((set, get) => ({
-  // Initial state
+export const useUserStore = create<UserState>((set) => ({
   currentUser: null,
   allUsers: [],
   isLoading: false,
   error: null,
   isInitialized: false,
+  isUserInitialized: false, // ✅ thêm
 
-  // Actions
-  setCurrentUser: (user: User | null) => {
-    set({ currentUser: user });
-  },
-
-  setAllUsers: (users: User[]) => {
-    set({ allUsers: users });
-  },
-
-  addUser: (user: User) => {
-    set(state => ({
-      allUsers: [...state.allUsers, user],
-    }));
-  },
-
-  updateUser: (id: string, updatedUser: User) => {
-    set(state => ({
-      allUsers: state.allUsers.map(user =>
-        user.id === id ? updatedUser : user
-      ),
-      currentUser:
-        state.currentUser?.id === id ? updatedUser : state.currentUser,
-    }));
-  },
-
-  removeUser: (id: string) => {
-    set(state => ({
-      allUsers: state.allUsers.filter(user => user.id !== id),
+  setCurrentUser: (user) => set({ currentUser: user }),
+  setAllUsers: (users) => set({ allUsers: users }),
+  addUser: (user) => set((state) => ({ allUsers: [...state.allUsers, user] })),
+  updateUser: (id, updatedUser) =>
+    set((state) => ({
+      allUsers: state.allUsers.map((u) => (u.id === id ? updatedUser : u)),
+      currentUser: state.currentUser?.id === id ? updatedUser : state.currentUser,
+    })),
+  removeUser: (id) =>
+    set((state) => ({
+      allUsers: state.allUsers.filter((u) => u.id !== id),
       currentUser: state.currentUser?.id === id ? null : state.currentUser,
-    }));
-  },
-
-  setLoading: (loading: boolean) => {
-    set({ isLoading: loading });
-  },
-
-  setError: (error: string | null) => {
-    set({ error });
-  },
-
-  clearError: () => {
-    set({ error: null });
-  },
-
-  setInitialized: (initialized: boolean) => {
-    set({ isInitialized: initialized });
-  },
-
-  clearUserStore: () => {
+    })),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error }),
+  clearError: () => set({ error: null }),
+  setInitialized: (initialized) => set({ isInitialized: initialized }),
+  setUserInitialized: (initialized) => set({ isUserInitialized: initialized }), // ✅ thêm
+  clearUserStore: () =>
     set({
       currentUser: null,
       allUsers: [],
       isLoading: false,
       error: null,
       isInitialized: false,
-    });
-  },
+      isUserInitialized: false, // ✅ reset
+    }),
 }));

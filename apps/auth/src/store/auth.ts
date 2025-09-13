@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authService } from '../services/auth.service';
+import { useUserStore } from './user';
 
 interface AuthState {
   accessToken: string | null;
@@ -36,7 +37,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setInitialized: (initialized: boolean) => set({ isInitialized: initialized }),
 
   // Login / logout
-  login: (token: string) => set({ accessToken: token, isAuthenticated: true, isLoading: false }),
+  login: async  (token: string) => {
+    const { setCurrentUser } = useUserStore.getState(); 
+    set({ accessToken: token, isAuthenticated: true, isLoading: true });
+
+    try {
+      const response = await authService.me(token);
+      if (response.success && response.data) {
+        setCurrentUser(response.data);
+      }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
   logout: () => set({ accessToken: null, isAuthenticated: false, isLoading: false }),
   clearAuth: () => set({ accessToken: null, isAuthenticated: false, isLoading: false }),
 

@@ -16,10 +16,11 @@ import * as bcrypt from 'bcryptjs';
 import { Response, Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { Role } from '@prisma/client';
 import { setRefreshCookie, clearRefreshCookie } from './auth.cookies';
 import { randomBytes } from 'crypto';
 import { OtcService } from '../otc/otc.store';
+import { RegisterDto } from './dto/register.dto';
+import { Prisma, Role } from '@prisma/client';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -60,13 +61,19 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse> {
     const user = await this.users.findByEmail(dto.email) as UserWithPassword;
-    console.log(user)
     if (!user || !(await bcrypt.compare(dto.password || '', user.password || ''))) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+      const passwordToCompare = dto.password || '';
+      const hashedPassword = user?.password || '';
+      const isMatch = await bcrypt.compare(passwordToCompare, hashedPassword);
 
+      console.log('DTO password:', passwordToCompare);
+      console.log('User hashed password:', hashedPassword);
+      console.log('bcrypt.compare result:', isMatch);
+
+      return { success: false, message: 'Thông tin tài khoản không chính xác' };
+    }
     if (!user.isVerified) {
-      return { success: false, message: 'Email not verified' };
+      return { success: false, message: 'Email chưa được xác thực', data: { needsVerified: true } };
     }
 
     const sessionId = randomBytes(16).toString('hex');
@@ -74,7 +81,24 @@ export class AuthController {
       device: sessionId,
       ua: req.headers['user-agent'] as string,
     };
-
+    
+    if (!user.password) {
+      return {
+        success: false,
+        message: 'Yêu cầu tạo mật khẩu',
+        data: {
+          needsPassword: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            avatar: user.avatar,
+            role: user.role,
+          },
+        },
+      };
+    }
     const tokens = await this.auth.issueTokensForUser(
       { id: user.id, email: user.email, role: user.role },
       context,
@@ -97,6 +121,34 @@ export class AuthController {
         },
       },
     };
+  }
+
+    
+  
+  /** 📝 Register */
+  @Post('register')
+  @HttpCode(201)
+  async register(@Body() dto: RegisterDto): Promise<ApiResponse> {
+    try {
+      const existing = await this.users.findByEmail(dto.email);
+      if (existing) return { success: false, message: 'Email đã được sử dụng' };
+
+      const newUser = await this.users.create({
+        email: dto.email,
+        password: dto.password,
+        firstName: dto.firstName ?? null,
+        lastName: dto.lastName ?? null,
+        role: Role.USER, 
+      });
+
+      return {
+        success: true,
+        message: 'Đăng ký thành công, vui lòng xác thực email',
+        data: newUser,
+      };
+    } catch (error) {
+      return { success: false, message: error.message || 'Đăng ký thất bại' };
+    }
   }
 
   /** 🌀 Refresh token */

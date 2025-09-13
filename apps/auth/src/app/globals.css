@@ -1,17 +1,22 @@
+/* Reset CSS hiện đại + custom theme */
+
+/* Import Tailwind */
 @import "tailwindcss";
 
+/* -------------------------
+   Biến toàn cục
+-------------------------- */
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "Fira Code", monospace;
 }
-
+.nextjs-toast{
+  display: none !important;
+}
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -19,8 +24,156 @@
   }
 }
 
+/* -------------------------
+   Reset mặc định
+-------------------------- */
+
+/* Box sizing và margin/padding */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Xóa underline link mặc định */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Xóa style list */
+ul,
+ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Xóa italic mặc định ở address, em, i */
+em,
+i {
+  font-style: normal;
+}
+
+/* Reset form elements */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+/* Reset table */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* -------------------------
+   Base styles
+-------------------------- */
+
+html,
 body {
+  height: 100%;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Media responsive images */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Full height container */
+#root,
+#__next {
+  min-height: 100%;
+}
+
+/* overlay toàn màn hình */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 18, 30, 0.35);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  animation: overlay-fade-in 200ms ease-out;
+}
+
+.loading-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 28px rgba(2, 6, 23, 0.48);
+  backdrop-filter: blur(8px);
+  color: #eef2ff;
+  animation: card-pop 220ms cubic-bezier(.2,.9,.2,1);
+}
+
+.loading-inline {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  border-radius: 50%;
+  border-style: solid;
+  border-color: rgba(255,255,255,0.18);
+  border-top-style: solid;
+  animation: spin 1s linear infinite;
+  box-sizing: border-box;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #e6eef8;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes card-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
