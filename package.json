@@ -1,5 +1,5 @@
 {
-  "name": "authnexus",
+  "name": "smart-collab",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -7,6 +7,15 @@
   ],
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:gateway": "pnpm --filter api-gateway start:dev",
+    "dev:auth": "pnpm --filter auth start:dev",
+    "dev:project": "pnpm --filter project start:dev",
+    "dev:task": "pnpm --filter task start:dev",
+    "dev:notification": "pnpm --filter notification start:dev",
+    "dev:realtime": "pnpm --filter realtime start:dev",
+    "dev:ai": "pnpm --filter ai start:dev",
+    "dev:all": "pnpm -r run start:dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint --fix",

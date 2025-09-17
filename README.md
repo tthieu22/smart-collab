@@ -1,204 +1,279 @@
-# AuthNexus
 
-A modern authentication system built with NestJS, Next.js, and MongoDB.
+API Gateway
+pnpm dlx @nestjs/cli new api-gateway --package-manager=pnpm
 
-## 🚀 Features
+Auth / User Service
+pnpm dlx @nestjs/cli new auth --package-manager=pnpm
 
-- **Authentication**: JWT-based authentication with Google OAuth
-- **User Management**: Complete user registration, login, and profile management
-- **Modern Stack**: NestJS backend, Next.js frontend, MongoDB database
-- **Monorepo**: Organized with Turbo and pnpm workspaces
-- **Type Safety**: Full TypeScript support
-- **Docker**: Containerized development and production
+Project Service
+pnpm dlx @nestjs/cli new project --package-manager=pnpm
 
-## 📋 Prerequisites
+Task Service
+pnpm dlx @nestjs/cli new task --package-manager=pnpm
 
-- Node.js >= 18
-- pnpm >= 9.0.0
-- MongoDB
-- Redis (optional)
+Notification Service
+pnpm dlx @nestjs/cli new notification --package-manager=pnpm
 
-## 🛠️ Installation
+Realtime Gateway Service
+pnpm dlx @nestjs/cli new realtime --package-manager=pnpm
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd authnexus
-   ```
+AI Service
+pnpm dlx @nestjs/cli new ai --package-manager=pnpm
 
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+🔗 Dependency Graph (MVP)
+                ┌────────────────┐
+                │   Frontend     │ (Next.js 14)
+                └───────▲────────┘
+                        │ REST/GraphQL + WebSocket
+                        ▼
+                ┌────────────────┐
+                │ API Gateway    │ (NestJS)
+                │ - Auth Guard   │
+                │ - REST routes  │
+                └───────┬────────┘
+                        │ Publish/Consume
+                ┌───────┴───────────────────────────┐
+                │ RabbitMQ (events.exchange, topic) │
+                └───┬─────────┬─────────┬──────────┘
+                    │         │         │
+     ┌──────────────┘         │         └───────────────┐
+     ▼                        ▼                         ▼
+┌─────────────┐        ┌──────────────┐         ┌────────────────┐
+│  Auth Svc   │        │ Project Svc  │         │   Task Svc      │
+│ (Postgres)  │        │ (Postgres)   │         │ (Postgres)      │
+│ user.roles  │        │ project.meta │         │ tasks CRUD      │
+└─────┬───────┘        └──────┬───────┘         └────────┬───────┘
+      │                       │                           │
+      ▼                       ▼                           ▼
+   emits user.*           emits project.*             emits task.*
+   events                  events                      events
+      │                       │                           │
+      └────────────────┬──────┴─────────────┬─────────────┘
+                       ▼                    ▼
+               ┌───────────────┐      ┌────────────────┐
+               │ Notification   │      │ Realtime GW    │
+               │ (Postgres+     │      │ (WebSocket +   │
+               │ Redis + RMQ)   │      │ Redis adapter) │
+               │ consume events │      │ consume events │
+               └───────┬───────┘      └───────┬────────┘
+                       │                     │
+                  in-app notify         emit WS events
+                  email queue           presence tracking
+                       │
+                       ▼
+                ┌─────────────┐
+                │ AI Service   │ (OpenAI + VectorDB)
+                │ - deadline   │
+                │ - summary    │
+                │ - Q&A        │
+                └───────┬─────┘
+                        │
+                   consumes ai.request
+                   publishes ai.response
 
-4. **Set up database**
-   ```bash
-   # Using Docker (recommended)
-   docker-compose up -d mongodb redis
-   
-   # Or install MongoDB locally
-   ```
 
-5. **Generate Prisma client**
-   ```bash
-   pnpm db:generate
-   ```
+🗄️ Service → Infra dependency
+| Service          | Postgres | Redis         | RabbitMQ            | S3/MinIO | VectorDB     |
+| ---------------- | -------- | ------------- | ------------------- | -------- | ------------ |
+| **API Gateway**  | ❌        | ❌             | ✅ (publish/consume) | ❌        | ❌            |
+| **Auth**         | ✅ users  | ❌             | ✅ (user.\* events)  | ❌        | ❌            |
+| **Project**      | ✅        | ❌             | ✅ (project.\*)      | ❌        | ❌            |
+| **Task**         | ✅        | ❌             | ✅ (task.\*)         | ❌        | ❌            |
+| **Notification** | ✅        | ✅ cache/email | ✅ (consume all)     | ❌        | ❌            |
+| **Realtime**     | ❌        | ✅ presence    | ✅ (consume all)     | ❌        | ❌            |
+| **AI**           | ❌        | ✅ cache resp  | ✅ (ai.request)      | ❌        | ✅ embeddings |
+| **Frontend**     | ❌        | ❌             | ❌                   | ✅ upload | ❌            |
 
-## 🚀 Development
+📌 RabbitMQ Exchange/Queue plan
 
-### Start all services
-```bash
-pnpm dev
-```
+events.exchange (topic)
 
-### Start individual services
-```bash
-# API only
-pnpm --filter api dev
+user.* → auth_service emits
 
-# Web only
-pnpm --filter web dev
-```
+project.* → project_service emits
 
-### Database commands
-```bash
-# Generate Prisma client
-pnpm db:generate
+task.* → task_service emits
 
-# Push schema to database
-pnpm db:push
+notification.* → notification_service emits
 
-# Run migrations
-pnpm db:migrate
+ai.* → ai_service emits
 
-# Open Prisma Studio
-pnpm db:studio
+Queues:
 
-# Seed database
-pnpm db:seed
-```
+notification.queue (binds to user.*, project.*, task.*)
 
-## 🧪 Testing
+realtime.queue (binds to all *.created|updated)
 
-```bash
-# Run all tests
-pnpm test
+ai.request.queue (binds to ai.request)
 
-# Run tests in watch mode
-pnpm --filter api test:watch
+📌 Roadmap Hoàn Thành Dự Án SmartCollab
+1. Chuẩn bị môi trường
 
-# Run e2e tests
-pnpm --filter api test:e2e
-```
+ Cài Node.js LTS (20.x) + pnpm
 
-## 🔧 Build
+ Cài Docker + Docker Compose
 
-```bash
-# Build all packages
-pnpm build
+ Cài Postgres, Redis, RabbitMQ qua docker-compose.yml
 
-# Build individual packages
-pnpm --filter api build
-pnpm --filter web build
-```
+ Tạo repo monorepo (Nx hoặc tự quản lý):
 
-## 🐳 Docker
-
-### Development
-```bash
-# Start services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
-
-### Production
-```bash
-# Build and start all services
-docker-compose -f docker-compose.yml up -d --build
-```
-
-## 📁 Project Structure
-
-```
-authnexus/
-├── apps/
-│   ├── api/                 # NestJS backend
-│   │   ├── src/
-│   │   │   ├── modules/     # Feature modules
-│   │   │   ├── common/      # Shared utilities
-│   │   │   └── prisma/      # Database schema
-│   │   └── package.json
-│   └── web/                 # Next.js frontend
-│       ├── app/             # App router
-│       ├── components/      # UI components
-│       └── package.json
-├── packages/
-│   └── typescript-config/   # Shared TypeScript configs
-├── docker/                  # Docker configurations
-├── prisma/                  # Database schema
+smartcollab/
+├── apps/        # chứa microservices và frontend
+├── libs/        # chia sẻ DTO, constants, utils
+├── docker-compose.yml
 └── package.json
-```
 
-## 🔐 Environment Variables
+2. Scaffold các service
 
-Create a `.env` file in the root directory:
+ api-gateway (NestJS – REST/GraphQL entrypoint)
 
-```env
-# Database
-DATABASE_URL="mongodb://localhost:27017/authnexus"
+ auth (NestJS – User/Auth service)
 
-# JWT
-JWT_SECRET="your-super-secret-jwt-key-here"
-JWT_EXPIRES_IN="7d"
+ project (NestJS – quản lý project/team)
 
-# Google OAuth
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-GOOGLE_CALLBACK_URL="http://localhost:3001/auth/google/callback"
+ task (NestJS – quản lý task Kanban/timeline)
 
-# Server
-PORT=3001
-NODE_ENV=development
+ notification (NestJS – consume event + gửi noti/email)
 
-# Frontend URL
-FRONTEND_URL="http://localhost:3000"
-```
+ realtime (NestJS – WebSocket Gateway, presence, pub/sub Redis)
 
-## 📝 Available Scripts
+ ai (NestJS – OpenAI integration)
 
-### Root
-- `pnpm dev` - Start all services in development
-- `pnpm build` - Build all packages
-- `pnpm lint` - Lint all packages
-- `pnpm test` - Run all tests
-- `pnpm format` - Format all code
+ frontend (Next.js 14 – UI)
 
-### API
-- `pnpm --filter api dev` - Start API in development
-- `pnpm --filter api build` - Build API
-- `pnpm --filter api test` - Run API tests
+3. Thiết lập kết nối hạ tầng
 
-### Web
-- `pnpm --filter web dev` - Start web app in development
-- `pnpm --filter web build` - Build web app
-- `pnpm --filter web lint` - Lint web app
+ Tạo thư mục config/ trong mỗi service
 
-## 🤝 Contributing
+rabbitmq.config.ts
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+postgres.config.ts
 
-## 📄 License
+redis.config.ts
 
-This project is licensed under the MIT License.
+ Config microservice transport (RabbitMQ) trong main.ts
+
+ Config DB (TypeORM/Prisma với Postgres) trong app.module.ts
+
+ Config Redis (cache, pub/sub) cho Notification + Realtime
+
+4. Xây dựng Auth/User Service
+
+ Schema User (Postgres)
+
+ Đăng ký, đăng nhập, refresh token (JWT/OAuth2)
+
+ Phân quyền (user, team-admin, org-admin)
+
+ Publish sự kiện user.created, user.logged_in
+
+5. Xây dựng Project Service
+
+ Schema Project (id, name, description, owner, members)
+
+ API: tạo project, thêm thành viên
+
+ Publish sự kiện project.created, project.member_added
+
+ Subscribe user.created để sync user metadata
+
+6. Xây dựng Task Service
+
+ Schema Task (id, project_id, title, description, status, assignee, due_date)
+
+ CRUD task + move (kanban)
+
+ Publish sự kiện task.created, task.updated, task.moved
+
+ Subscribe project.created để auto-init board
+
+7. Xây dựng Notification Service
+
+ Consume task.*, project.*, user.*
+
+ Lưu Notification vào Postgres
+
+ Emit in-app notification qua RabbitMQ → Realtime service
+
+ Queue email notification (chỉ cần log email ở MVP)
+
+8. Xây dựng Realtime Gateway
+
+ NestJS + @nestjs/websockets + Socket.IO
+
+ Redis adapter cho scale out
+
+ Subscribe từ notification exchange → emit tới client
+
+ Presence (ai đang online) với Redis
+
+9. Xây dựng AI Service
+
+ API nội bộ: gọi OpenAI API (Chat Completions, Embeddings)
+
+ Prompt engineering: gợi ý deadline, tóm tắt tiến độ
+
+ Lưu cache response bằng Redis
+
+ Publish sự kiện ai.suggestion_ready
+
+10. API Gateway
+
+ REST/GraphQL endpoints cho frontend
+
+ AuthGuard (JWT)
+
+ Forward request đến các service qua RabbitMQ (RPC)
+
+ Rate-limit + validation
+
+11. Frontend (Next.js 14 + shadcn/ui)
+
+ Trang Login/Register
+
+ Trang Dashboard → Danh sách Project
+
+ Project Board (Kanban, drag & drop)
+
+ Timeline view
+
+ Notification Bell (realtime WS)
+
+ AI Assistant popup (chat box)
+
+12. DevOps / Vận hành
+
+ Dockerfile cho từng service
+
+ docker-compose.override.yml cho dev
+
+ Log cấu trúc (Winston)
+
+ Healthcheck endpoint /health
+
+ GitHub Actions CI/CD (build, test, docker push)
+
+13. Roadmap 14 ngày (MVP)
+
+Day 1-2: Scaffold repo + Docker infra
+
+Day 3-4: Auth service (login/register/JWT)
+
+Day 5-6: Project service (create/join project)
+
+Day 7-8: Task service (CRUD, kanban events)
+
+Day 9: Notification service (consume + emit)
+
+Day 10: Realtime WS gateway
+
+Day 11-12: Frontend (login, dashboard, kanban UI)
+
+Day 13: AI Assistant integration (basic prompt)
+
+Day 14: Test + polish + demo
+
+RabitMQ : http://localhost:15672/
+
+progest  port 5432
