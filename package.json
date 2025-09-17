@@ -24,10 +24,10 @@
     "format": "turbo run format",
     "format:fix": "turbo run format --fix",
     "clean": "turbo run clean && rm -rf node_modules",
-    "db:generate": "cd apps/api && npx prisma generate",
-    "db:push": "cd apps/api && npx prisma db push",
-    "db:migrate": "cd apps/api && npx prisma migrate dev",
-    "db:studio": "cd apps/api && npx prisma studio"
+    "db:generate": "cd apps/auth && npx prisma generate",
+    "db:push": "cd apps/auth && npx prisma db push",
+    "db:migrate": "cd apps/auth && npx prisma migrate dev",
+    "db:studio": "cd apps/auth && npx prisma studio"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
