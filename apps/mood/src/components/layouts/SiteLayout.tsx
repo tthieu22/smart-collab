@@ -1,4 +1,4 @@
-import { Header, Footer, Sidebar } from "@auth/components/layouts";
+import { Header, Footer, Sidebar } from "@mood/components/layouts";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (

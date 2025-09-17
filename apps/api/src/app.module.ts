@@ -28,7 +28,7 @@ import { OtcModule } from './modules/otc/otc.module';
           },
         },
         defaults: {
-          from: configService.get<string>('SMTP_FROM') ?? 'noreply@authnexus.com',
+          from: configService.get<string>('SMTP_FROM') ?? 'noreply@moodnexus.com',
         },
       }),
       inject: [ConfigService],

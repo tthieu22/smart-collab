@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@auth/lib/utils';
+import { cn } from '@mood/lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';

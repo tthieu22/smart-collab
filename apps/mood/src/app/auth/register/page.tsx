@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Form, Input, Button, Card } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { authService } from '@auth/services/auth.service';
-import { ApiError, ApiResponse, RegisterRequest } from '@auth/types/auth';
-import { useNotificationStore } from '@auth/store/notification'; // 👈 dùng store
+import { authService } from '@mood/services/auth.service';
+import { ApiError, ApiResponse, RegisterRequest } from '@mood/types/auth';
+import { useNotificationStore } from '@mood/store/notification'; // 👈 dùng store
 
 export default function RegisterPage() {
   const router = useRouter();

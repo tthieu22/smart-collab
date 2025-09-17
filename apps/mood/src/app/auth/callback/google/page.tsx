@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { authService } from "@auth/services/auth.service";
-import { Loading } from "@auth/components/ui/loading";
+import { authService } from "@mood/services/auth.service";
+import { Loading } from "@mood/components/ui/loading";
 
 export default function GoogleCallbackPage() {
   const router = useRouter();

@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@auth/hooks/useAuth";
-import { Loading } from "@auth/components/ui/loading";
-import { ROUTES } from "@auth/lib/constants";
-import { useUserStore } from "@auth/store/user";
-import { useAuthStore } from "@auth/store/auth";
+import { useAuth } from "@mood/hooks/useAuth";
+import { Loading } from "@mood/components/ui/loading";
+import { ROUTES } from "@mood/lib/constants";
+import { useUserStore } from "@mood/store/user";
+import { useAuthStore } from "@mood/store/auth";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();

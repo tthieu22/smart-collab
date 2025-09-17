@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import { Input, Button, Card, Divider } from 'antd';
-import { authService } from '@auth/services/auth.service';
-import { useAuthStore } from '@auth/store/auth';
-import { useUserStore } from '@auth/store/user';
-import { useNotificationStore } from '@auth/store/notification';
-import { ROUTES, APP_CONFIG, API_ENDPOINTS } from '@auth/lib/constants';
-import type { LoginCredentials, ApiError } from '@auth/types/auth';
+import { authService } from '@mood/services/auth.service';
+import { useAuthStore } from '@mood/store/auth';
+import { useUserStore } from '@mood/store/user';
+import { useNotificationStore } from '@mood/store/notification';
+import { ROUTES, APP_CONFIG, API_ENDPOINTS } from '@mood/lib/constants';
+import type { LoginCredentials, ApiError } from '@mood/types/auth';
 
 export default function LoginPage() {
   const router = useRouter();

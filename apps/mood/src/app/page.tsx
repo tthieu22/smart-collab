@@ -1,4 +1,4 @@
-import SiteLayout from "@auth/components/layouts/SiteLayout";
+import SiteLayout from "@mood/components/layouts/SiteLayout";
 
 export default function HomePage() {
   return (
