@@ -30,7 +30,7 @@
     "db:studio": "cd apps/auth && npx prisma studio"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.18.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "prettier": "^3.6.0",
@@ -42,5 +42,10 @@
   "engines": {
     "node": ">=18",
     "pnpm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@nestjs/microservices": "^11.1.6",
+    "amqp-connection-manager": "^4.1.14",
+    "amqplib": "^0.10.9"
   }
 }
