@@ -44,8 +44,14 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
+    "@nestjs-modules/ioredis": "^2.0.2",
+    "@nestjs-modules/mailer": "^2.0.2",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/microservices": "^11.1.6",
+    "@nestjs/typeorm": "^11.0.0",
     "amqp-connection-manager": "^4.1.14",
-    "amqplib": "^0.10.9"
+    "amqplib": "^0.10.9",
+    "pg": "^8.16.3",
+    "typeorm": "^0.3.26"
   }
 }

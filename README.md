@@ -1,4 +1,3 @@
-
 API Gateway
 pnpm dlx @nestjs/cli new api-gateway --package-manager=pnpm
 
@@ -20,131 +19,130 @@ pnpm dlx @nestjs/cli new realtime --package-manager=pnpm
 AI Service
 pnpm dlx @nestjs/cli new ai --package-manager=pnpm
 
-
 🔗 Dependency Graph (MVP)
-                ┌────────────────┐
-                │   Frontend     │ (Next.js 14)
-                └───────▲────────┘
-                        │ REST/GraphQL + WebSocket
-                        ▼
-                ┌────────────────┐
-                │ API Gateway    │ (NestJS)
-                │ - Auth Guard   │
-                │ - REST routes  │
-                └───────┬────────┘
-                        │ Publish/Consume
-                ┌───────┴───────────────────────────┐
-                │ RabbitMQ (events.exchange, topic) │
-                └───┬─────────┬─────────┬──────────┘
-                    │         │         │
-     ┌──────────────┘         │         └───────────────┐
-     ▼                        ▼                         ▼
-┌─────────────┐        ┌──────────────┐         ┌────────────────┐
-│  Auth Svc   │        │ Project Svc  │         │   Task Svc      │
-│ (Postgres)  │        │ (Postgres)   │         │ (Postgres)      │
-│ user.roles  │        │ project.meta │         │ tasks CRUD      │
-└─────┬───────┘        └──────┬───────┘         └────────┬───────┘
-      │                       │                           │
-      ▼                       ▼                           ▼
-   emits user.*           emits project.*             emits task.*
-   events                  events                      events
-      │                       │                           │
-      └────────────────┬──────┴─────────────┬─────────────┘
-                       ▼                    ▼
-               ┌───────────────┐      ┌────────────────┐
-               │ Notification   │      │ Realtime GW    │
-               │ (Postgres+     │      │ (WebSocket +   │
-               │ Redis + RMQ)   │      │ Redis adapter) │
-               │ consume events │      │ consume events │
-               └───────┬───────┘      └───────┬────────┘
-                       │                     │
-                  in-app notify         emit WS events
-                  email queue           presence tracking
-                       │
-                       ▼
-                ┌─────────────┐
-                │ AI Service   │ (OpenAI + VectorDB)
-                │ - deadline   │
-                │ - summary    │
-                │ - Q&A        │
-                └───────┬─────┘
-                        │
-                   consumes ai.request
-                   publishes ai.response
-
+┌────────────────┐
+│ Frontend │ (Next.js 14)
+└───────▲────────┘
+│ REST/GraphQL + WebSocket
+▼
+┌────────────────┐
+│ API Gateway │ (NestJS)
+│ - Auth Guard │
+│ - REST routes │
+└───────┬────────┘
+│ Publish/Consume
+┌───────┴───────────────────────────┐
+│ RabbitMQ (events.exchange, topic) │
+└───┬─────────┬─────────┬──────────┘
+│ │ │
+┌──────────────┘ │ └───────────────┐
+▼ ▼ ▼
+┌─────────────┐ ┌──────────────┐ ┌────────────────┐
+│ Auth Svc │ │ Project Svc │ │ Task Svc │
+│ (Postgres) │ │ (Postgres) │ │ (Postgres) │
+│ user.roles │ │ project.meta │ │ tasks CRUD │
+└─────┬───────┘ └──────┬───────┘ └────────┬───────┘
+│ │ │
+▼ ▼ ▼
+emits user._ emits project._ emits task.\*
+events events events
+│ │ │
+└────────────────┬──────┴─────────────┬─────────────┘
+▼ ▼
+┌───────────────┐ ┌────────────────┐
+│ Notification │ │ Realtime GW │
+│ (Postgres+ │ │ (WebSocket + │
+│ Redis + RMQ) │ │ Redis adapter) │
+│ consume events │ │ consume events │
+└───────┬───────┘ └───────┬────────┘
+│ │
+in-app notify emit WS events
+email queue presence tracking
+│
+▼
+┌─────────────┐
+│ AI Service │ (OpenAI + VectorDB)
+│ - deadline │
+│ - summary │
+│ - Q&A │
+└───────┬─────┘
+│
+consumes ai.request
+publishes ai.response
 
 🗄️ Service → Infra dependency
-| Service          | Postgres | Redis         | RabbitMQ            | S3/MinIO | VectorDB     |
+| Service | Postgres | Redis | RabbitMQ | S3/MinIO | VectorDB |
 | ---------------- | -------- | ------------- | ------------------- | -------- | ------------ |
-| **API Gateway**  | ❌        | ❌             | ✅ (publish/consume) | ❌        | ❌            |
-| **Auth**         | ✅ users  | ❌             | ✅ (user.\* events)  | ❌        | ❌            |
-| **Project**      | ✅        | ❌             | ✅ (project.\*)      | ❌        | ❌            |
-| **Task**         | ✅        | ❌             | ✅ (task.\*)         | ❌        | ❌            |
-| **Notification** | ✅        | ✅ cache/email | ✅ (consume all)     | ❌        | ❌            |
-| **Realtime**     | ❌        | ✅ presence    | ✅ (consume all)     | ❌        | ❌            |
-| **AI**           | ❌        | ✅ cache resp  | ✅ (ai.request)      | ❌        | ✅ embeddings |
-| **Frontend**     | ❌        | ❌             | ❌                   | ✅ upload | ❌            |
+| **API Gateway** | ❌ | ❌ | ✅ (publish/consume) | ❌ | ❌ |
+| **Auth** | ✅ users | ❌ | ✅ (user.\* events) | ❌ | ❌ |
+| **Project** | ✅ | ❌ | ✅ (project.\*) | ❌ | ❌ |
+| **Task** | ✅ | ❌ | ✅ (task.\*) | ❌ | ❌ |
+| **Notification** | ✅ | ✅ cache/email | ✅ (consume all) | ❌ | ❌ |
+| **Realtime** | ❌ | ✅ presence | ✅ (consume all) | ❌ | ❌ |
+| **AI** | ❌ | ✅ cache resp | ✅ (ai.request) | ❌ | ✅ embeddings |
+| **Frontend** | ❌ | ❌ | ❌ | ✅ upload | ❌ |
 
 📌 RabbitMQ Exchange/Queue plan
 
 events.exchange (topic)
 
-user.* → auth_service emits
+user.\* → auth_service emits
 
-project.* → project_service emits
+project.\* → project_service emits
 
-task.* → task_service emits
+task.\* → task_service emits
 
-notification.* → notification_service emits
+notification.\* → notification_service emits
 
-ai.* → ai_service emits
+ai.\* → ai_service emits
 
 Queues:
 
-notification.queue (binds to user.*, project.*, task.*)
+notification.queue (binds to user._, project._, task.\*)
 
-realtime.queue (binds to all *.created|updated)
+realtime.queue (binds to all \*.created|updated)
 
 ai.request.queue (binds to ai.request)
 
 📌 Roadmap Hoàn Thành Dự Án SmartCollab
+
 1. Chuẩn bị môi trường
 
- Cài Node.js LTS (20.x) + pnpm
+Cài Node.js LTS (20.x) + pnpm
 
- Cài Docker + Docker Compose
+Cài Docker + Docker Compose
 
- Cài Postgres, Redis, RabbitMQ qua docker-compose.yml
+Cài Postgres, Redis, RabbitMQ qua docker-compose.yml
 
- Tạo repo monorepo (Nx hoặc tự quản lý):
+Tạo repo monorepo (Nx hoặc tự quản lý):
 
 smartcollab/
-├── apps/        # chứa microservices và frontend
-├── libs/        # chia sẻ DTO, constants, utils
+├── apps/ # chứa microservices và frontend
+├── libs/ # chia sẻ DTO, constants, utils
 ├── docker-compose.yml
 └── package.json
 
 2. Scaffold các service
 
- api-gateway (NestJS – REST/GraphQL entrypoint)
+api-gateway (NestJS – REST/GraphQL entrypoint)
 
- auth (NestJS – User/Auth service)
+auth (NestJS – User/Auth service)
 
- project (NestJS – quản lý project/team)
+project (NestJS – quản lý project/team)
 
- task (NestJS – quản lý task Kanban/timeline)
+task (NestJS – quản lý task Kanban/timeline)
 
- notification (NestJS – consume event + gửi noti/email)
+notification (NestJS – consume event + gửi noti/email)
 
- realtime (NestJS – WebSocket Gateway, presence, pub/sub Redis)
+realtime (NestJS – WebSocket Gateway, presence, pub/sub Redis)
 
- ai (NestJS – OpenAI integration)
+ai (NestJS – OpenAI integration)
 
- frontend (Next.js 14 – UI)
+frontend (Next.js 14 – UI)
 
 3. Thiết lập kết nối hạ tầng
 
- Tạo thư mục config/ trong mỗi service
+Tạo thư mục config/ trong mỗi service
 
 rabbitmq.config.ts
 
@@ -152,107 +150,107 @@ postgres.config.ts
 
 redis.config.ts
 
- Config microservice transport (RabbitMQ) trong main.ts
+Config microservice transport (RabbitMQ) trong main.ts
 
- Config DB (TypeORM/Prisma với Postgres) trong app.module.ts
+Config DB (TypeORM/Prisma với Postgres) trong app.module.ts
 
- Config Redis (cache, pub/sub) cho Notification + Realtime
+Config Redis (cache, pub/sub) cho Notification + Realtime
 
 4. Xây dựng Auth/User Service
 
- Schema User (Postgres)
+Schema User (Postgres)
 
- Đăng ký, đăng nhập, refresh token (JWT/OAuth2)
+Đăng ký, đăng nhập, refresh token (JWT/OAuth2)
 
- Phân quyền (user, team-admin, org-admin)
+Phân quyền (user, team-admin, org-admin)
 
- Publish sự kiện user.created, user.logged_in
+Publish sự kiện user.created, user.logged_in
 
 5. Xây dựng Project Service
 
- Schema Project (id, name, description, owner, members)
+Schema Project (id, name, description, owner, members)
 
- API: tạo project, thêm thành viên
+API: tạo project, thêm thành viên
 
- Publish sự kiện project.created, project.member_added
+Publish sự kiện project.created, project.member_added
 
- Subscribe user.created để sync user metadata
+Subscribe user.created để sync user metadata
 
 6. Xây dựng Task Service
 
- Schema Task (id, project_id, title, description, status, assignee, due_date)
+Schema Task (id, project_id, title, description, status, assignee, due_date)
 
- CRUD task + move (kanban)
+CRUD task + move (kanban)
 
- Publish sự kiện task.created, task.updated, task.moved
+Publish sự kiện task.created, task.updated, task.moved
 
- Subscribe project.created để auto-init board
+Subscribe project.created để auto-init board
 
 7. Xây dựng Notification Service
 
- Consume task.*, project.*, user.*
+Consume task._, project._, user.\*
 
- Lưu Notification vào Postgres
+Lưu Notification vào Postgres
 
- Emit in-app notification qua RabbitMQ → Realtime service
+Emit in-app notification qua RabbitMQ → Realtime service
 
- Queue email notification (chỉ cần log email ở MVP)
+Queue email notification (chỉ cần log email ở MVP)
 
 8. Xây dựng Realtime Gateway
 
- NestJS + @nestjs/websockets + Socket.IO
+NestJS + @nestjs/websockets + Socket.IO
 
- Redis adapter cho scale out
+Redis adapter cho scale out
 
- Subscribe từ notification exchange → emit tới client
+Subscribe từ notification exchange → emit tới client
 
- Presence (ai đang online) với Redis
+Presence (ai đang online) với Redis
 
 9. Xây dựng AI Service
 
- API nội bộ: gọi OpenAI API (Chat Completions, Embeddings)
+API nội bộ: gọi OpenAI API (Chat Completions, Embeddings)
 
- Prompt engineering: gợi ý deadline, tóm tắt tiến độ
+Prompt engineering: gợi ý deadline, tóm tắt tiến độ
 
- Lưu cache response bằng Redis
+Lưu cache response bằng Redis
 
- Publish sự kiện ai.suggestion_ready
+Publish sự kiện ai.suggestion_ready
 
 10. API Gateway
 
- REST/GraphQL endpoints cho frontend
+REST/GraphQL endpoints cho frontend
 
- AuthGuard (JWT)
+AuthGuard (JWT)
 
- Forward request đến các service qua RabbitMQ (RPC)
+Forward request đến các service qua RabbitMQ (RPC)
 
- Rate-limit + validation
+Rate-limit + validation
 
 11. Frontend (Next.js 14 + shadcn/ui)
 
- Trang Login/Register
+Trang Login/Register
 
- Trang Dashboard → Danh sách Project
+Trang Dashboard → Danh sách Project
 
- Project Board (Kanban, drag & drop)
+Project Board (Kanban, drag & drop)
 
- Timeline view
+Timeline view
 
- Notification Bell (realtime WS)
+Notification Bell (realtime WS)
 
- AI Assistant popup (chat box)
+AI Assistant popup (chat box)
 
 12. DevOps / Vận hành
 
- Dockerfile cho từng service
+Dockerfile cho từng service
 
- docker-compose.override.yml cho dev
+docker-compose.override.yml cho dev
 
- Log cấu trúc (Winston)
+Log cấu trúc (Winston)
 
- Healthcheck endpoint /health
+Healthcheck endpoint /health
 
- GitHub Actions CI/CD (build, test, docker push)
+GitHub Actions CI/CD (build, test, docker push)
 
 13. Roadmap 14 ngày (MVP)
 
@@ -276,4 +274,4 @@ Day 14: Test + polish + demo
 
 RabitMQ : http://localhost:15672/
 
-progest  port 5050
+progest port 5050

@@ -37,8 +37,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setInitialized: (initialized: boolean) => set({ isInitialized: initialized }),
 
   // Login / logout
-  login: async  (token: string) => {
-    const { setCurrentUser } = useUserStore.getState(); 
+  login: async (token: string) => {
+    const { setCurrentUser } = useUserStore.getState();
     set({ accessToken: token, isAuthenticated: true, isLoading: true });
 
     try {
@@ -50,8 +50,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
     }
   },
-  logout: () => set({ accessToken: null, isAuthenticated: false, isLoading: false }),
-  clearAuth: () => set({ accessToken: null, isAuthenticated: false, isLoading: false }),
+  logout: () =>
+    set({ accessToken: null, isAuthenticated: false, isLoading: false }),
+  clearAuth: () =>
+    set({ accessToken: null, isAuthenticated: false, isLoading: false }),
 
   // Initialize auth: call refresh API, backend will read httpOnly cookie
   initializeAuth: async (): Promise<boolean> => {

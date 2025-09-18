@@ -11,7 +11,8 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
-  const frontendUrl = configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+  const frontendUrl =
+    configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
   const port = configService.get<number>('PORT') ?? 3001;
 
   // Log chỉ hiển thị khi NODE_ENV=developer

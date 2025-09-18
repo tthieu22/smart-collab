@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
 
 import { AntdRegistry } from '@smart/providers/AntdRegistry';
-import { NotificationProvider } from "@smart/providers/NotificationProvider";
-import { AuthProvider } from "@smart/providers/AuthProvider";
+import { NotificationProvider } from '@smart/providers/NotificationProvider';
+import { AuthProvider } from '@smart/providers/AuthProvider';
 
 export const metadata: Metadata = {
-  title: "Mood Map",
-  description: "Mood Map",
+  title: 'Mood Map',
+  description: 'Mood Map',
 };
 
 export default function RootLayout({

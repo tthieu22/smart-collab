@@ -49,12 +49,7 @@ export default function LoginPage() {
 
       if (!res.success || !accessToken || !user) {
         if (res.data?.needsVerified) {
-          addNotification(
-            'Email chưa xác thực',
-            'warning',
-            true,
-            3000,
-          );
+          addNotification('Email chưa xác thực', 'warning', true, 3000);
           router.push(ROUTES.VERIFY);
           return;
         }
@@ -64,12 +59,15 @@ export default function LoginPage() {
             'Vui lòng tạo mật khẩu cho tài khoản Google',
             'warning',
             true,
-            3000,
+            3000
           );
           router.push('/auth/create-password');
           return;
         }
-        addNotification(res.message || 'Email hoặc mật khẩu không chính xác', 'error');
+        addNotification(
+          res.message || 'Email hoặc mật khẩu không chính xác',
+          'error'
+        );
         return;
       }
 
@@ -84,7 +82,10 @@ export default function LoginPage() {
       return;
     } catch (err: unknown) {
       if ((err as ApiError).success === false) {
-        addNotification((err as ApiError).message || 'Đăng nhập không thành công', 'error');
+        addNotification(
+          (err as ApiError).message || 'Đăng nhập không thành công',
+          'error'
+        );
       } else if (err instanceof Error) {
         addNotification(err.message, 'error');
       } else {
@@ -112,8 +113,12 @@ export default function LoginPage() {
     >
       <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
         <header style={{ textAlign: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Đăng nhập</h2>
-          <p style={{ color: '#8c8c8c', fontSize: 14 }}>Chào mừng bạn quay trở lại!</p>
+          <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>
+            Đăng nhập
+          </h2>
+          <p style={{ color: '#8c8c8c', fontSize: 14 }}>
+            Chào mừng bạn quay trở lại!
+          </p>
         </header>
 
         <Input

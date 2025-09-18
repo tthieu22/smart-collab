@@ -1,4 +1,4 @@
-import SiteLayout from "@smart/components/layouts/SiteLayout";
+import SiteLayout from '@smart/components/layouts/SiteLayout';
 
 export default function HomePage() {
   return (

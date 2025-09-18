@@ -8,7 +8,7 @@ export const AntdRegistry = ({ children }: { children: React.ReactNode }) => {
 
   useServerInsertedHTML(() => {
     const styles = extractStyle(cache, true);
-    return <style id='antd' dangerouslySetInnerHTML={{ __html: styles }} />;
+    return <style id="antd" dangerouslySetInnerHTML={{ __html: styles }} />;
   });
 
   return <StyleProvider cache={cache}>{children}</StyleProvider>;

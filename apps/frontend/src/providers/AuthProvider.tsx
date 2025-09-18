@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@smart/hooks/useAuth";
-import { Loading } from "@smart/components/ui/loading";
-import { ROUTES } from "@smart/lib/constants";
-import { useUserStore } from "@smart/store/user";
-import { useAuthStore } from "@smart/store/auth";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@smart/hooks/useAuth';
+import { Loading } from '@smart/components/ui/loading';
+import { ROUTES } from '@smart/lib/constants';
+import { useUserStore } from '@smart/store/user';
+import { useAuthStore } from '@smart/store/auth';
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -15,11 +15,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
 
   useEffect(() => {
-    if (isInitialized ) {
+    if (isInitialized) {
       if (!accessToken) {
         router.replace(ROUTES.LOGIN);
       } else if (isUserInitialized) {
-        if ( !user) {
+        if (!user) {
           router.replace(ROUTES.LOGIN);
         }
       }

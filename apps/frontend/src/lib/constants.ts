@@ -21,7 +21,7 @@ export const API_ENDPOINTS = {
     OAUTH_EXCHANGE: '/auth/oauth/exchange',
     VERIFY_EMAIL: '/auth/verify-email',
     VALIDATE_USER: '/auth/validate-user',
-    REGISTER: '/auth/register'
+    REGISTER: '/auth/register',
   },
   USER: {
     CREATE: '/users',

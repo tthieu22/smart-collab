@@ -1,8 +1,3 @@
-
 export function SidebarMenu() {
-  return (
-      <div>
-          Item
-    </div>
-  );
+  return <div>Item</div>;
 }

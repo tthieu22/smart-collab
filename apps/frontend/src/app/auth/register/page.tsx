@@ -48,16 +48,19 @@ export default function RegisterPage() {
         router.push('/auth/login');
       }
     } catch (err: unknown) {
-        setLoading(false);
+      setLoading(false);
       if ((err as ApiError).success === false) {
-        addNotification((err as ApiError).message || 'Đăng ký không thành công', 'error');
+        addNotification(
+          (err as ApiError).message || 'Đăng ký không thành công',
+          'error'
+        );
       } else if (err instanceof Error) {
         addNotification(err.message, 'error');
       } else {
         addNotification('Đăng ký không thành công', 'error');
       }
-    };
-  }
+    }
+  };
 
   return (
     <div
@@ -71,13 +74,27 @@ export default function RegisterPage() {
     >
       <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '8px', color: '#262626' }}>
+          <h2
+            style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              marginBottom: '8px',
+              color: '#262626',
+            }}
+          >
             Đăng ký
           </h2>
-          <p style={{ color: '#8c8c8c', fontSize: '14px' }}>Tạo tài khoản mới</p>
+          <p style={{ color: '#8c8c8c', fontSize: '14px' }}>
+            Tạo tài khoản mới
+          </p>
         </div>
 
-        <Form name="register" onFinish={onFinish} autoComplete="off" layout="vertical">
+        <Form
+          name="register"
+          onFinish={onFinish}
+          autoComplete="off"
+          layout="vertical"
+        >
           <Form.Item
             name="firstName"
             label="Tên"
@@ -86,7 +103,11 @@ export default function RegisterPage() {
               { min: 2, message: 'Tên phải có ít nhất 2 ký tự!' },
             ]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Nhập tên của bạn" size="large" />
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="Nhập tên của bạn"
+              size="large"
+            />
           </Form.Item>
 
           <Form.Item
@@ -97,7 +118,11 @@ export default function RegisterPage() {
               { min: 2, message: 'Họ phải có ít nhất 2 ký tự!' },
             ]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Nhập họ của bạn" size="large" />
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="Nhập họ của bạn"
+              size="large"
+            />
           </Form.Item>
 
           <Form.Item
@@ -108,7 +133,12 @@ export default function RegisterPage() {
               { type: 'email', message: 'Email không hợp lệ!' },
             ]}
           >
-            <Input prefix={<MailOutlined />} placeholder="Nhập email của bạn" size="large" autoComplete="email" />
+            <Input
+              prefix={<MailOutlined />}
+              placeholder="Nhập email của bạn"
+              size="large"
+              autoComplete="email"
+            />
           </Form.Item>
 
           <Form.Item
@@ -119,7 +149,12 @@ export default function RegisterPage() {
               { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' },
             ]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Nhập mật khẩu của bạn" size="large" autoComplete="new-password" />
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Nhập mật khẩu của bạn"
+              size="large"
+              autoComplete="new-password"
+            />
           </Form.Item>
 
           <Form.Item
@@ -130,11 +165,22 @@ export default function RegisterPage() {
               { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' },
             ]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Nhập lại mật khẩu" size="large" autoComplete="new-password" />
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Nhập lại mật khẩu"
+              size="large"
+              autoComplete="new-password"
+            />
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" size="large" loading={loading} style={{ width: '100%' }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
+              loading={loading}
+              style={{ width: '100%' }}
+            >
               Đăng ký
             </Button>
           </Form.Item>

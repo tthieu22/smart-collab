@@ -37,5 +37,5 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsEnum(Role)
-  role?: Role;   // ✅ TypeScript nhận diện được
+  role?: Role; // ✅ TypeScript nhận diện được
 }

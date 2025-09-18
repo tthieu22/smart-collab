@@ -14,7 +14,9 @@ export class OtcService {
     await this.redis.set(`otc:${code}`, JSON.stringify(payload), 'EX', ttlSec);
   }
 
-  async takeOTC(code: string): Promise<{ userId: string; email: string; role: string } | null> {
+  async takeOTC(
+    code: string,
+  ): Promise<{ userId: string; email: string; role: string } | null> {
     const data = await this.redis.get(`otc:${code}`);
     if (!data) return null;
 

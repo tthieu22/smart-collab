@@ -28,7 +28,8 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
   ) {
-    this.accessTokenTTL = this.config.get<string>('JWT_ACCESS_EXPIRES') || '15m';
+    this.accessTokenTTL =
+      this.config.get<string>('JWT_ACCESS_EXPIRES') || '15m';
     this.refreshTokenTTL = Number(this.config.get<number>('REFRESH_DAYS')) || 7;
   }
 

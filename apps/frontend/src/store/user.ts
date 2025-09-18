@@ -36,7 +36,8 @@ export const useUserStore = create<UserState>((set) => ({
   updateUser: (id, updatedUser) =>
     set((state) => ({
       allUsers: state.allUsers.map((u) => (u.id === id ? updatedUser : u)),
-      currentUser: state.currentUser?.id === id ? updatedUser : state.currentUser,
+      currentUser:
+        state.currentUser?.id === id ? updatedUser : state.currentUser,
     })),
   removeUser: (id) =>
     set((state) => ({

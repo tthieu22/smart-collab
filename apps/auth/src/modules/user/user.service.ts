@@ -35,13 +35,12 @@ export class UserService {
         lastName: createUserDto.lastName ?? null,
         avatar: createUserDto.avatar ?? null,
         password: hashedPassword,
-        role: createUserDto.role ?? 'USER', 
+        role: createUserDto.role ?? 'USER',
         isVerified: false,
         emailVerificationCode,
         emailVerificationCodeExpires,
       },
     });
-
 
     // Send verification email
     await this.mailerService.sendMail({

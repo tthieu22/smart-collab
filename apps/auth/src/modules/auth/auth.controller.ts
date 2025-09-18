@@ -60,8 +60,11 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse> {
-    const user = await this.users.findByEmail(dto.email) as UserWithPassword;
-    if (!user || !(await bcrypt.compare(dto.password || '', user.password || ''))) {
+    const user = (await this.users.findByEmail(dto.email)) as UserWithPassword;
+    if (
+      !user ||
+      !(await bcrypt.compare(dto.password || '', user.password || ''))
+    ) {
       const passwordToCompare = dto.password || '';
       const hashedPassword = user?.password || '';
       const isMatch = await bcrypt.compare(passwordToCompare, hashedPassword);
@@ -73,7 +76,11 @@ export class AuthController {
       return { success: false, message: 'Thông tin tài khoản không chính xác' };
     }
     if (!user.isVerified) {
-      return { success: false, message: 'Email chưa được xác thực', data: { needsVerified: true } };
+      return {
+        success: false,
+        message: 'Email chưa được xác thực',
+        data: { needsVerified: true },
+      };
     }
 
     const sessionId = randomBytes(16).toString('hex');
@@ -81,7 +88,7 @@ export class AuthController {
       device: sessionId,
       ua: req.headers['user-agent'] as string,
     };
-    
+
     if (!user.password) {
       return {
         success: false,
@@ -123,8 +130,6 @@ export class AuthController {
     };
   }
 
-    
-  
   /** 📝 Register */
   @Post('register')
   @HttpCode(201)
@@ -138,7 +143,7 @@ export class AuthController {
         password: dto.password,
         firstName: dto.firstName ?? null,
         lastName: dto.lastName ?? null,
-        role: Role.USER, 
+        role: Role.USER,
       });
 
       return {
@@ -162,30 +167,44 @@ export class AuthController {
     if (!raw) throw new UnauthorizedException('Missing refresh token');
 
     const payload = await this.auth.validateRefreshToken(raw);
-    if (!payload?.userId) throw new UnauthorizedException('Invalid refresh token');
+    if (!payload?.userId)
+      throw new UnauthorizedException('Invalid refresh token');
 
     const sessionId = randomBytes(16).toString('hex');
-      const context: Partial<{ device: string; ua: string; ip: string }> = {
+    const context: Partial<{ device: string; ua: string; ip: string }> = {
       device: sessionId,
       ua: req.headers['user-agent'] as string,
     };
 
-    const tokens = await this.auth.rotateRefreshToken(payload.userId, raw, context);
+    const tokens = await this.auth.rotateRefreshToken(
+      payload.userId,
+      raw,
+      context,
+    );
 
     if (!tokens) throw new UnauthorizedException('Failed to refresh token');
 
     setRefreshCookie(res, tokens.refreshToken, tokens.refreshTokenExpiresAt);
 
-    return { success: true, message: 'Refreshed', data: { accessToken: tokens.accessToken } };
+    return {
+      success: true,
+      message: 'Refreshed',
+      data: { accessToken: tokens.accessToken },
+    };
   }
 
   /** 👋 Logout current device */
   @Post('logout')
   @HttpCode(200)
-  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<ApiResponse> {
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ApiResponse> {
     const raw = (req as any).cookies?.refresh_token;
     if (raw) {
-      await this.auth.rotateRefreshToken('', raw, undefined, { revokeOnly: true });
+      await this.auth.rotateRefreshToken('', raw, undefined, {
+        revokeOnly: true,
+      });
     }
     clearRefreshCookie(res);
     return { success: true, message: 'Logged out' };
@@ -195,7 +214,10 @@ export class AuthController {
   @Post('logout-all')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  async logoutAll(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<ApiResponse> {
+  async logoutAll(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ApiResponse> {
     const userId = (req.user as any)?.sub || (req.user as any)?.id;
     if (!userId) throw new UnauthorizedException();
 
@@ -210,9 +232,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: Request): Promise<ApiResponse> {
     // Lấy userId từ JWT payload
-    const userId = (req.user as any)?.userId || (req.user as any)?.sub || (req.user as any)?.id;
+    const userId =
+      (req.user as any)?.userId ||
+      (req.user as any)?.sub ||
+      (req.user as any)?.id;
 
-    if (!userId) { 
+    if (!userId) {
       return { success: false, message: 'User not authenticated' };
     }
 
@@ -232,7 +257,10 @@ export class AuthController {
 
   @Get('google/redirect')
   @UseGuards(AuthGuard('google'))
-  async googleRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async googleRedirect(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     const profile = req.user as any;
     const email = profile.emails?.[0]?.value || profile.email;
     const avatar = profile.photos?.[0]?.value || profile._json?.picture;
@@ -247,9 +275,15 @@ export class AuthController {
     });
 
     const code = randomBytes(24).toString('hex');
-    await this.otcService.putOTC(code, { userId: user.id, email: user.email, role: user.role }, 120);
+    await this.otcService.putOTC(
+      code,
+      { userId: user.id, email: user.email, role: user.role },
+      120,
+    );
 
-    const cb = process.env.FRONTEND_GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
+    const cb =
+      process.env.FRONTEND_GOOGLE_CALLBACK_URL ||
+      'http://localhost:3000/auth/google/callback';
     res.redirect(`${cb}?code=${code}`);
   }
 
@@ -277,12 +311,18 @@ export class AuthController {
 
     setRefreshCookie(res, tokens.refreshToken, tokens.refreshTokenExpiresAt);
 
-    return { success: true, message: 'OAuth exchange success', data: { accessToken: tokens.accessToken } };
+    return {
+      success: true,
+      message: 'OAuth exchange success',
+      data: { accessToken: tokens.accessToken },
+    };
   }
 
   /** Verify email */
   @Post('verify-email')
-  async verifyEmail(@Body() body: { email: string; code: string }): Promise<ApiResponse> {
+  async verifyEmail(
+    @Body() body: { email: string; code: string },
+  ): Promise<ApiResponse> {
     try {
       const isVerified = await this.users.verifyEmail(body.email, body.code);
       return isVerified
@@ -295,16 +335,26 @@ export class AuthController {
 
   /** Validate user credentials */
   @Post('validate-user')
-  async validateUser(@Body() body: { email: string; password: string }): Promise<ApiResponse> {
-    const user = await this.users.findByEmail(body.email) as UserWithPassword;
+  async validateUser(
+    @Body() body: { email: string; password: string },
+  ): Promise<ApiResponse> {
+    const user = (await this.users.findByEmail(body.email)) as UserWithPassword;
 
-    if (!user || !(await bcrypt.compare(body.password || '', user.password || ''))) {
+    if (
+      !user ||
+      !(await bcrypt.compare(body.password || '', user.password || ''))
+    ) {
       return { success: false, message: 'Invalid credentials' };
     }
 
-    if (!user.isVerified) return { success: false, message: 'Email not verified' };
+    if (!user.isVerified)
+      return { success: false, message: 'Email not verified' };
 
     const { password, ...safeUser } = user;
-    return { success: true, message: 'User validated successfully', data: safeUser };
+    return {
+      success: true,
+      message: 'User validated successfully',
+      data: safeUser,
+    };
   }
 }

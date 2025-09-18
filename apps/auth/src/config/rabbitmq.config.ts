@@ -9,7 +9,7 @@ export const rabbitmqConfig = (
   options: {
     urls: [
       configService.get<string>('RABBITMQ_URL') ??
-      `amqp://${configService.get('RABBITMQ_USER')}:${configService.get('RABBITMQ_PASSWORD')}@${configService.get('RABBITMQ_HOST')}:${configService.get('RABBITMQ_PORT')}`,
+        `amqp://${configService.get('RABBITMQ_USER')}:${configService.get('RABBITMQ_PASSWORD')}@${configService.get('RABBITMQ_HOST')}:${configService.get('RABBITMQ_PORT')}`,
     ],
     queue: queueName,
     queueOptions: {

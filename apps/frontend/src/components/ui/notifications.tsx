@@ -14,9 +14,20 @@ interface NotificationsProps {
   removeNotification: (id: number) => void;
 }
 
-const Notifications: React.FC<NotificationsProps> = ({ notifications, removeNotification }) => {
+const Notifications: React.FC<NotificationsProps> = ({
+  notifications,
+  removeNotification,
+}) => {
   return (
-    <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, width: 300 }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 20,
+        right: 20,
+        zIndex: 9999,
+        width: 300,
+      }}
+    >
       {notifications.map((n) => (
         <Alert
           key={n.id}
@@ -24,7 +35,10 @@ const Notifications: React.FC<NotificationsProps> = ({ notifications, removeNoti
           type={n.type}
           showIcon
           action={
-            <CloseOutlined style={{ cursor: 'pointer' }} onClick={() => removeNotification(n.id)} />
+            <CloseOutlined
+              style={{ cursor: 'pointer' }}
+              onClick={() => removeNotification(n.id)}
+            />
           }
           style={{ marginBottom: 10 }}
         />

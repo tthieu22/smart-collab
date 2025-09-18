@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Card as AntCard, CardProps as AntCardProps } from 'antd';
 import { cn } from '@smart/lib/utils';
@@ -10,15 +10,15 @@ interface CardProps extends Omit<AntCardProps, 'variant'> {
   className?: string;
 }
 
-export function Card({ 
+export function Card({
   variant = 'default',
   padding = 'medium',
   children,
   className,
-  ...props 
+  ...props
 }: CardProps) {
   const baseClasses = 'transition-all duration-200';
-  
+
   const variantClasses = {
     default: 'bg-white border border-gray-200',
     elevated: 'bg-white border border-gray-200 shadow-lg hover:shadow-xl',
@@ -39,10 +39,10 @@ export function Card({
         variantClasses[variant],
         paddingClasses[padding],
         className
-      )} 
+      )}
       {...props}
     >
       {children}
     </AntCard>
   );
-} 
+}

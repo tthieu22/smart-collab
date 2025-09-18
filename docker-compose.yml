@@ -7,7 +7,7 @@ services:
     container_name: authnexus-mongodb
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - '27017:27017'
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
@@ -24,7 +24,7 @@ services:
     container_name: authnexus-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     networks:
@@ -38,7 +38,7 @@ services:
     container_name: authnexus-api
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       - NODE_ENV=production
       - DATABASE_URL=mongodb://admin:password@mongodb:27017/authnexus?authSource=admin
@@ -57,7 +57,7 @@ services:
     container_name: authnexus-web
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://localhost:3001

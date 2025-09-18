@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Input as AntInput, InputProps as AntInputProps } from 'antd';
 import { cn } from '@smart/lib/utils';
@@ -10,22 +10,26 @@ interface InputProps extends Omit<AntInputProps, 'size'> {
   success?: boolean;
   className?: string;
 }
-export function Input({ 
+export function Input({
   variant = 'filled',
   size = 'middle',
   error = false,
   success = false,
   className,
-  ...props 
+  ...props
 }: InputProps) {
-  const baseClasses = 'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0';
-  
+  const baseClasses =
+    'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0';
+
   const variantClasses = {
     default: 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
-    filled: 'bg-gray-50 border-gray-300 focus:bg-white focus:border-blue-500 focus:ring-blue-500',
-    outlined: 'border-2 border-gray-300 focus:border-blue-500 focus:ring-blue-500',
+    filled:
+      'bg-gray-50 border-gray-300 focus:bg-white focus:border-blue-500 focus:ring-blue-500',
+    outlined:
+      'border-2 border-gray-300 focus:border-blue-500 focus:ring-blue-500',
     borderless: 'border-0 bg-transparent focus:ring-blue-500',
-    underlined: 'border-b border-gray-300 focus:border-blue-500 focus:ring-blue-500',
+    underlined:
+      'border-b border-gray-300 focus:border-blue-500 focus:ring-blue-500',
   };
 
   const sizeClasses = {
@@ -42,7 +46,7 @@ export function Input({
   return (
     <AntInput
       className={cn(
-        baseClasses, 
+        baseClasses,
         variantClasses[variant],
         sizeClasses[size],
         error && stateClasses.error,
@@ -53,4 +57,4 @@ export function Input({
       {...props}
     />
   );
-} 
+}

@@ -103,8 +103,8 @@ export interface RegisterResponse extends ApiResponse {
 }
 
 export interface ApiError {
-  success: false;          // luôn false cho lỗi
-  message: string;         // thông báo lỗi
-  code?: number;           // tùy chọn, có thể là HTTP status code
-  details?: unknown;           // tùy chọn, dữ liệu lỗi chi tiết
+  success: false; // luôn false cho lỗi
+  message: string; // thông báo lỗi
+  code?: number; // tùy chọn, có thể là HTTP status code
+  details?: unknown; // tùy chọn, dữ liệu lỗi chi tiết
 }

@@ -9,10 +9,10 @@ interface LoadingProps {
   fullScreen?: boolean;
 }
 
-export function Loading({ 
-  size = 'default', 
-  text = 'Đang tải...', 
-  fullScreen = false 
+export function Loading({
+  size = 'default',
+  text = 'Đang tải...',
+  fullScreen = false,
 }: LoadingProps) {
   const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
