@@ -277,3 +277,76 @@ RabitMQ : http://localhost:15672/
 progest port 5050
 pnpm prisma generate --schema=libs/prisma/schema.prisma
 reder Prisma
+
+Cấu trúc repo   
+
+smart-collab/
+├── apps/
+│   ├── api-gateway/                # NestJS API Gateway
+│   │   ├── src/
+│   │   │   ├── main.ts             # Bootstrap app
+│   │   │   ├── app.module.ts       # Import RabbitMQModule
+│   │   │   └── controllers/
+│   │   └── package.json
+│   │
+│   ├── auth/                       # Auth Service (Postgres)
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── auth.module.ts      # Import PrismaPostgresModule + RabbitMQModule
+│   │   │   ├── user.entity.ts
+│   │   │   ├── user.service.ts
+│   │   │   └── user.controller.ts
+│   │   └── package.json
+│   │
+│   ├── project/                    # Project Service (Postgres)
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── project.module.ts   # Import PrismaPostgresModule + RabbitMQModule
+│   │   │   ├── project.service.ts
+│   │   │   └── project.controller.ts
+│   │   └── package.json
+│   │
+│   ├── task/                       # Task Service (Postgres)
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── task.module.ts      # Import PrismaPostgresModule + RabbitMQModule
+│   │   │   └── task.controller.ts
+│   │   └── package.json
+│   │
+│   ├── notification/               # Notification Service (Postgres + Redis)
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── notification.module.ts # Import PrismaPostgresModule + RedisModule + RabbitMQModule + MailerModule
+│   │   │   └── notification.service.ts
+│   │   └── package.json
+│   │
+│   ├── realtime/                   # Realtime Service (Redis + RabbitMQ)
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── realtime.module.ts  # Import RedisModule + RabbitMQModule
+│   │   │   └── gateway.ts          # WebSocket Gateway
+│   │   └── package.json
+│   │
+│   ├── ai/                         # AI Service (VectorDB + Redis + RabbitMQ)
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── ai.module.ts        # Import RedisModule + RabbitMQModule
+│   │   │   └── ai.service.ts
+│   │   └── package.json
+│   │
+│   └── frontend/                   # Next.js 14
+│       ├── app/
+│       └── package.json
+│
+├── libs/
+│   ├── prisma/                     # Mongo (chưa dùng cho graph này, nhưng có sẵn)
+│   ├── prisma-postgres/            # Postgres ORM
+│   ├── rabbitmq/                   # RabbitMQ common module
+│   ├── redis/                      # Redis common module
+│   ├── mailer/                     # Mailer common module
+│   └── shared/                     # Shared utils
+│
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── package.json
+└── docker-compose.yml              # DB + Redis + RabbitMQ + MinIO

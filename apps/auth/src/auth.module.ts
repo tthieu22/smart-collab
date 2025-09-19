@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { RedisModule } from '@nestjs-modules/ioredis';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -39,7 +37,5 @@ import postgresConfig from './config/postgres.config';
     AuthModule,
     OtcModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

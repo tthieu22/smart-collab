@@ -10,7 +10,11 @@
     "resolveJsonModule": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "incremental": true
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@libs/*": ["libs/*"],
+    }
   },
   "exclude": ["node_modules", "dist"]
 }

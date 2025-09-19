@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
+import { AppModule } from './auth.module';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { rabbitmqConfig } from './config/rabbitmq.config';
