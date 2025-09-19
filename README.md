@@ -275,3 +275,5 @@ Day 14: Test + polish + demo
 RabitMQ : http://localhost:15672/
 
 progest port 5050
+pnpm prisma generate --schema=libs/prisma/schema.prisma
+reder Prisma
