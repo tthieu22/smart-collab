@@ -4,7 +4,6 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
-import { AuthModule } from './modules/auth/auth.module';
 import { OtcModule } from './modules/otc/otc.module';
 import { mailerConfig } from './config/mailer.config';
 import { redisConfig } from './config/redis.config';
@@ -38,4 +37,4 @@ import postgresConfig from './config/postgres.config';
     OtcModule,
   ],
 })
-export class AppModule {}
+export class AuthModule {}

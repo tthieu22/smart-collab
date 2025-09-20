@@ -1,19 +1,26 @@
 import { ConfigService } from '@nestjs/config';
-import { RmqOptions, Transport } from '@nestjs/microservices';
+import { ClientProxy, ClientProxyFactory, Transport, RmqOptions } from '@nestjs/microservices';
 
-export const rabbitmqConfig = (
-  configService: ConfigService,
-  queueName: string,
-): RmqOptions => ({
+export const createRabbitMQClient = (queue: string, configService: ConfigService): ClientProxy => {
+  return ClientProxyFactory.create({
+    transport: Transport.RMQ,
+    options: {
+      urls: [
+        `amqp://${configService.get('RABBITMQ_USER')}:${configService.get('RABBITMQ_PASSWORD')}@${configService.get('RABBITMQ_HOST')}:${configService.get('RABBITMQ_PORT')}`,
+      ],
+      queue,
+      queueOptions: { durable: true },
+    },
+  });
+};
+
+export const getRabbitMQMicroserviceOptions = (queue: string, configService: ConfigService): RmqOptions => ({
   transport: Transport.RMQ,
   options: {
     urls: [
-      configService.get<string>('RABBITMQ_URL') ??
-        `amqp://${configService.get('RABBITMQ_USER')}:${configService.get('RABBITMQ_PASSWORD')}@${configService.get('RABBITMQ_HOST')}:${configService.get('RABBITMQ_PORT')}`,
+      `amqp://${configService.get('RABBITMQ_USER')}:${configService.get('RABBITMQ_PASSWORD')}@${configService.get('RABBITMQ_HOST')}:${configService.get('RABBITMQ_PORT')}`,
     ],
-    queue: queueName,
-    queueOptions: {
-      durable: true,
-    },
+    queue,
+    queueOptions: { durable: true },
   },
 });
