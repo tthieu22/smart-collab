@@ -3,17 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { APP_GUARD } from '@nestjs/core';
-
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ClientsModule } from '@nestjs/microservices';
 import { AuthController } from './controllers/auth.controller';
-import { ProjectController } from './controllers/project.controller';
-import { TaskController } from './controllers/task.controller';
 import { HealthController } from './controllers/health.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuthClientService } from './services/auth/auth-client.service';
+import { CookieService } from './services/auth/cookie.service';
 import appConfig from './config/app.config';
 import { createRabbitMQClient } from './config/rabbitmq.config';
 
@@ -30,9 +26,15 @@ import { createRabbitMQClient } from './config/rabbitmq.config';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('jwt.secret'),
+        secret:
+          configService.get<string>('jwt.secret') ||
+          process.env.JWT_SECRET ||
+          'your-secret-key',
         signOptions: {
-          expiresIn: configService.get<string>('jwt.expiresIn'),
+          expiresIn:
+            configService.get<string>('jwt.expiresIn') ||
+            process.env.JWT_EXPIRES_IN ||
+            '15m',
         },
       }),
     }),
@@ -52,54 +54,51 @@ import { createRabbitMQClient } from './config/rabbitmq.config';
         name: 'AUTH_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (configService: ConfigService) => createRabbitMQClient('auth_queue', configService),
+        useFactory: (configService: ConfigService) =>
+          createRabbitMQClient('auth_queue', configService),
       },
       {
         name: 'PROJECT_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (configService: ConfigService) => createRabbitMQClient('project_queue', configService),
+        useFactory: (configService: ConfigService) =>
+          createRabbitMQClient('project_queue', configService),
       },
       {
         name: 'TASK_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (configService: ConfigService) => createRabbitMQClient('task_queue', configService),
+        useFactory: (configService: ConfigService) =>
+          createRabbitMQClient('task_queue', configService),
       },
       {
         name: 'NOTIFICATION_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (configService: ConfigService) => createRabbitMQClient('notification_queue', configService),
+        useFactory: (configService: ConfigService) =>
+          createRabbitMQClient('notification_queue', configService),
       },
       {
         name: 'REALTIME_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (configService: ConfigService) => createRabbitMQClient('realtime_queue', configService),
+        useFactory: (configService: ConfigService) =>
+          createRabbitMQClient('realtime_queue', configService),
       },
       {
         name: 'AI_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (configService: ConfigService) => createRabbitMQClient('ai_queue', configService),
+        useFactory: (configService: ConfigService) =>
+          createRabbitMQClient('ai_queue', configService),
       },
     ]),
   ],
-  controllers: [
-    AppController,
-    AuthController,
-    ProjectController,
-    TaskController,
-    HealthController,
-  ],
+  controllers: [AuthController, HealthController],
   providers: [
-    AppService,
     JwtStrategy,
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    AuthClientService,
+    CookieService,
   ],
 })
 export class AppModule {}

@@ -134,7 +134,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found');
 
     return this.issueTokensForUser(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role as Role },
       meta,
     );
   }

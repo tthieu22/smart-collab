@@ -5,6 +5,7 @@ import { RedisModule } from '@nestjs-modules/ioredis';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
 import { OtcModule } from './modules/otc/otc.module';
+import { MessageHandlersModule } from './message-handlers/message-handlers.module';
 import { mailerConfig } from './config/mailer.config';
 import { redisConfig } from './config/redis.config';
 import postgresConfig from './config/postgres.config';
@@ -33,8 +34,8 @@ import postgresConfig from './config/postgres.config';
     }),
 
     UserModule,
-    AuthModule,
     OtcModule,
+    MessageHandlersModule,
   ],
 })
 export class AuthModule {}

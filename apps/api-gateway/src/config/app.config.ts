@@ -1,5 +1,5 @@
 export default () => ({
-  port: parseInt(process.env.PORT, 10) || 8000,
+  port: process.env.PORT || 8000,
   nodeEnv: process.env.NODE_ENV || 'development',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   
@@ -14,7 +14,7 @@ export default () => ({
     user: process.env.RABBITMQ_USER || 'admin',
     password: process.env.RABBITMQ_PASSWORD || 'admin',
     host: process.env.RABBITMQ_HOST || '127.0.0.1',
-    port: parseInt(process.env.RABBITMQ_PORT, 10) || 5672,
+    port: process.env.RABBITMQ_PORT || 5672,
   },
   
   // Microservices URLs

@@ -350,3 +350,6 @@ smart-collab/
 ├── tsconfig.base.json
 ├── package.json
 └── docker-compose.yml              # DB + Redis + RabbitMQ + MinIO
+
+
+Client → API Gateway → RabbitMQ (send) → Auth Service (consume + xử lý) → RabbitMQ (return) → API Gateway → Client
