@@ -1,8 +1,7 @@
-// rabbitmq.config.ts
 import { ConfigService } from '@nestjs/config';
-import { Transport, RmqOptions } from '@nestjs/microservices';
+import { RmqOptions, Transport } from '@nestjs/microservices';
 
-export const createRabbitMQClient = (queue: string, configService: ConfigService): RmqOptions => ({
+export const getRabbitMQOptions = (queue: string, configService: ConfigService): RmqOptions => ({
   transport: Transport.RMQ,
   options: {
     urls: [

@@ -353,3 +353,37 @@ smart-collab/
 
 
 Client → API Gateway → RabbitMQ (send) → Auth Service (consume + xử lý) → RabbitMQ (return) → API Gateway → Client
+
+1️⃣ Cài OpenSSL trên Windows
+Cách nhanh bằng chocolatey (nếu bạn đã cài Chocolatey)
+
+Mở PowerShell với quyền admin và chạy:
+
+choco install openssl
+
+
+Sau khi cài xong, bạn cần mở lại PowerShell hoặc thêm OpenSSL vào PATH nếu chưa tự động.
+
+Cách cài bằng installer
+
+Vào trang: https://slproweb.com/products/Win32OpenSSL.html
+
+Tải bản Win64 OpenSSL phù hợp.
+
+Cài đặt và tích chọn Add OpenSSL to system PATH nếu có.
+
+2️⃣ Kiểm tra sau khi cài
+
+Mở PowerShell mới và chạy:
+
+openssl version
+
+
+Nếu hiển thị phiên bản, bạn có thể chạy lệnh tạo key:
+
+openssl genrsa -out key.pem 2048
+openssl req -new -key key.pem -out csr.pem
+openssl x509 -req -days 365 -in csr.pem -signkey key.pem -out cert.pem
+
+
+💡 Ghi chú: Bạn đang làm việc trong thư mục api-gateway\cert, nên các file key.pem và cert.pem sẽ được tạo ở đây.

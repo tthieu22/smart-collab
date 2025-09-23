@@ -1,6 +1,6 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 export interface AuthResponse {
   success: boolean;
@@ -59,8 +59,8 @@ export interface OAuthExchangeRequest {
 }
 
 @Injectable()
-export class AuthClientService {
-  private readonly logger = new Logger(AuthClientService.name);
+export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
@@ -70,7 +70,7 @@ export class AuthClientService {
     try {
       this.logger.log(`Login attempt for email: ${loginDto.email}`);
       const result = await firstValueFrom(
-        this.authClient.send('auth.login', loginDto),
+        this.authClient.send({cmd: 'auth.login'}, loginDto),
       );
       return result;
     } catch (error: any) {
@@ -83,7 +83,7 @@ export class AuthClientService {
     try {
       this.logger.log(`Register attempt for email: ${registerDto.email}`);
       const result = await firstValueFrom(
-        this.authClient.send('auth.register', registerDto),
+        this.authClient.send({ cmd:'auth.register'}, registerDto),
       );
       return result;
     } catch (error: any) {
@@ -91,16 +91,19 @@ export class AuthClientService {
       throw error;
     }
   }
-
   async refresh(refreshDto: RefreshRequest): Promise<AuthResponse> {
     try {
-      this.logger.log('Refresh token attempt');
+      this.logger.log('🔄 Refresh token attempt');
+      this.logger.debug(`📤 Sending message to pattern "auth.refresh" with DTO: ${JSON.stringify(refreshDto)}`);
+
       const result = await firstValueFrom(
-        this.authClient.send('auth.refresh', refreshDto),
+        this.authClient.send({ cmd:'auth.refresh'}, refreshDto),
       );
+
+      this.logger.debug(`✅ Received response from auth.refresh: ${JSON.stringify(result)}`);
       return result;
     } catch (error: any) {
-      this.logger.error('Refresh error:', error);
+      this.logger.error('❌ Refresh error:', error.message || error);
       throw error;
     }
   }
@@ -109,7 +112,7 @@ export class AuthClientService {
     try {
       this.logger.log('Logout attempt');
       const result = await firstValueFrom(
-        this.authClient.send('auth.logout', logoutDto),
+        this.authClient.send({cmd:'auth.logout'}, logoutDto),
       );
       return result;
     } catch (error: any) {
@@ -122,7 +125,7 @@ export class AuthClientService {
     try {
       this.logger.log(`Logout all devices for user: ${logoutAllDto.userId}`);
       const result = await firstValueFrom(
-        this.authClient.send('auth.logoutAll', logoutAllDto),
+        this.authClient.send({cmd:'auth.logoutAll'}, logoutAllDto),
       );
       return result;
     } catch (error: any) {
@@ -135,7 +138,7 @@ export class AuthClientService {
     try {
       this.logger.log(`Get current user: ${getUserDto.userId}`);
       const result = await firstValueFrom(
-        this.authClient.send('auth.me', getUserDto),
+        this.authClient.send({cmd:'auth.me'}, getUserDto),
       );
       return result;
     } catch (error: any) {
@@ -148,7 +151,7 @@ export class AuthClientService {
     try {
       this.logger.log(`Validate user: ${validateDto.email}`);
       const result = await firstValueFrom(
-        this.authClient.send('auth.validateUser', validateDto),
+        this.authClient.send({cmd:'auth.validateUser'}, validateDto),
       );
       return result;
     } catch (error: any) {
@@ -161,7 +164,7 @@ export class AuthClientService {
     try {
       this.logger.log(`Verify email: ${verifyDto.email}`);
       const result = await firstValueFrom(
-        this.authClient.send('auth.verifyEmail', verifyDto),
+        this.authClient.send({cmd: 'auth.verifyEmail'}, verifyDto),
       );
       return result;
     } catch (error: any) {
@@ -174,7 +177,7 @@ export class AuthClientService {
     try {
       this.logger.log(`Google auth for: ${googleDto.email}`);
       const result = await firstValueFrom(
-        this.authClient.send('auth.googleAuth', googleDto),
+        this.authClient.send({cmd: 'auth.googleAuth'}, googleDto),
       );
       return result;
     } catch (error: any) {
@@ -183,16 +186,26 @@ export class AuthClientService {
     }
   }
 
-  async oauthExchange(oauthDto: OAuthExchangeRequest): Promise<AuthResponse> {
-    try {
-      this.logger.log('OAuth exchange');
-      const result = await firstValueFrom(
-        this.authClient.send('auth.oauthExchange', oauthDto),
-      );
-      return result;
-    } catch (error: any) {
-      this.logger.error('OAuth exchange error:', error);
-      throw error;
-    }
+  async upsertGoogleUser(payload: any) {
+    this.logger.log('RPC -> auth.upsertGoogleUser');
+    return firstValueFrom(
+      this.authClient.send({ cmd: 'auth.upsertGoogleUser' }, payload).pipe(timeout(5000)),
+    );
   }
+
+  async generateOAuthCode(payload: { userId: string; email: string; role?: string }) {
+    this.logger.log('RPC -> auth.generateOAuthCode');
+    return firstValueFrom(
+      this.authClient.send({ cmd: 'auth.generateOAuthCode' }, payload).pipe(timeout(5000)),
+    );
+  }
+
+  async oauthExchange(payload: { code: string }) {
+    this.logger.log('RPC -> auth.oauthExchange');
+    console.log("code", payload.code);
+    return firstValueFrom(
+      this.authClient.send({ cmd: 'auth.oauthExchange' }, payload).pipe(timeout(5000)),
+    );
+  }
+
 }

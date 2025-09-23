@@ -10,8 +10,7 @@ import { PrismaService } from '@auth/prisma/prisma.service';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { addDays } from 'date-fns';
-import { Role } from '@prisma/client';
-import { CreateGoogleUserDto } from '../user/dto/create-google-user.dto';
+import { Role, User } from '@prisma/client';
 
 type JwtPayload = { sub: string; email: string; role: Role };
 type TokenMeta = Partial<{ ip: string; ua: string; device: string }>;
@@ -21,6 +20,12 @@ type RotateOptions = { revokeOnly?: boolean };
 export class AuthService {
   private readonly accessTokenTTL: string;
   private readonly refreshTokenTTL: number;
+
+  /** Bộ nhớ tạm cho OAuth Code */
+  private otcs: Record<
+    string,
+    { userId: string; email: string; role?: string; expiresAt: number }
+  > = {};
 
   constructor(
     private readonly users: UserService,
@@ -99,7 +104,6 @@ export class AuthService {
 
     const isValid = await argon2.verify(tokenRecord.hashedToken, raw);
     if (!isValid) {
-      // 🔍 Nếu hash sai → nghi ngờ bị reuse → revoke all
       await this.logoutAllDevices(tokenRecord.userId);
       throw new ForbiddenException(
         'Token reuse detected. All sessions revoked.',
@@ -162,27 +166,68 @@ export class AuthService {
     });
   }
 
-  /** 👤 Google OAuth: Upsert user */
-  async upsertGoogleUser(profile: {
-    id: string;
+  /** 👤 Upsert Google User */
+  async upsertGoogleUser(payload: {
     email: string;
     givenName?: string;
     familyName?: string;
     avatar?: string;
-  }) {
-    let user = await this.users.findByEmail(profile.email);
-    if (!user) {
-      const dto: CreateGoogleUserDto = {
-        email: profile.email,
-        googleId: profile.id,
-        isVerified: true,
-        ...(profile.givenName ? { firstName: profile.givenName } : {}),
-        ...(profile.familyName ? { lastName: profile.familyName } : {}),
-        ...(profile.avatar ? { avatar: profile.avatar } : {}),
-      };
+    id?: string;
+  }): Promise<User> {
+    let user = await this.prisma.user.findUnique({
+      where: { email: payload.email },
+    });
 
-      user = await this.users.createGoogleUser(dto);
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email: payload.email,
+          firstName: payload.givenName ?? null,
+          lastName: payload.familyName ?? null,
+          avatar: payload.avatar ?? null,
+          role: Role.USER,
+          googleId: payload.id ?? null,
+        },
+      });
+    } else {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: payload.id ?? user.googleId,
+          avatar: payload.avatar ?? user.avatar,
+        },
+      });
     }
+
     return user;
+  }
+
+  /** 🔑 Sinh OAuth Code */
+  async generateOAuthCode(payload: {
+    userId: string;
+    email: string;
+    role?: string;
+  }) {
+    const code = randomBytes(24).toString('hex');
+    this.otcs[code] = {
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role as Role,
+      expiresAt: Date.now() + 120000, // 2 phút
+    };
+    return { code };
+  }
+
+  /** 🔄 Đổi OAuth Code lấy Token */
+  async exchangeOAuthCode(code: string) {
+    const rec = this.otcs[code];
+    if (!rec || rec.expiresAt < Date.now()) return null;
+
+    delete this.otcs[code]; // one-time code
+
+    const user = await this.users.findOne(rec.userId);
+    if (!user) return null;
+
+    return this.issueTokensForUser(user);
   }
 }

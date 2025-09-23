@@ -10,11 +10,13 @@ import {
   Req,
   UseGuards,
   UnauthorizedException,
+  Headers,
+  Logger,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { AuthClientService } from '../services/auth/auth-client.service';
+import { AuthService } from './auth.service';
 import { CookieService } from '../services/auth/cookie.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import {
   LoginDto,
   RegisterDto,
@@ -22,6 +24,8 @@ import {
   ValidateUserDto,
   OAuthExchangeDto,
 } from '../dto/auth.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -31,9 +35,11 @@ interface ApiResponse<T = any> {
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
   constructor(
-    private readonly authClient: AuthClientService,
+    private readonly authClient: AuthService,
     private readonly cookieService: CookieService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Post('login')
@@ -162,15 +168,19 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@Req() req: Request): Promise<ApiResponse> {
+  async me(@Headers('authorization') authHeader: string, @Req() req: any): Promise<ApiResponse> {
     try {
-      const userId = (req.user as any)?.sub || (req.user as any)?.id;
+      // Lấy token từ header
+      const token = authHeader?.split(' ')[1]; // "Bearer <token>"
+      console.log('Token:', token);
+
+      const userId = req.user?.userId;
+      console.log(userId);
       if (!userId) {
         throw new UnauthorizedException('User not authenticated');
       }
 
-      const result = await this.authClient.getCurrentUser({ userId });
-      return result;
+      return this.authClient.getCurrentUser({ userId });
     } catch (error: any) {
       throw new HttpException(
         error.message || 'Get user failed',
@@ -178,6 +188,7 @@ export class AuthController {
       );
     }
   }
+
 
   @Post('verify-email')
   async verifyEmail(@Body() verifyDto: VerifyEmailDto): Promise<ApiResponse> {
@@ -206,6 +217,59 @@ export class AuthController {
       );
     }
   }
+    /** Google OAuth */
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(): Promise<void> {
+    console.log('⚡️ [/auth/google] hit -> redirecting to Google OAuth');
+  }
+  @Get('google/redirect')
+  @UseGuards(AuthGuard('google'))
+  async googleRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
+    this.logger.debug('⚡️ [/auth/google/redirect] handler calleed');
+
+    const cb = this.configService.get<string>('FRONTEND_GOOGLE_CALLBACK_URL')
+      ?? 'http://localhost:3000/auth/callback/google';
+
+    try {
+      this.logger.debug('👉 req.user:', req.user);
+
+      // req.user là { success, message, data }
+      const userResp = req.user as any;
+      const user = userResp.data;
+
+      if (!user?.email) {
+        throw new Error('Google profile does not contain email');
+      }
+
+      this.logger.debug('✅ Upserted user:', user);
+
+      const result = await this.authClient.generateOAuthCode({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      if (!result?.success || !result.data?.code) {
+        throw new Error('Failed to generate OAuth code');
+      }
+
+      const code = result.data.code;
+      this.logger.debug(`✅ Generated OAuth code: ${code}`);
+
+      return res.redirect(`${cb}?code=${code}`);
+    } catch (error: any) {
+      this.logger.error(
+        `[ERROR] /auth/google/redirect: ${error.message}`,
+        error.stack,
+      );
+
+      return res.redirect(
+        `${cb}?error=${encodeURIComponent(error.message || 'OAuth failed')}`,
+      );
+    }
+  }
+
 
   @Post('oauth/exchange')
   @HttpCode(200)
@@ -213,10 +277,12 @@ export class AuthController {
     @Body() oauthDto: OAuthExchangeDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse> {
+    console.log('⚡️ [/auth/oauth/exchange] body:', oauthDto);
+
     try {
       const result = await this.authClient.oauthExchange(oauthDto);
+      console.log('✅ oauthExchange result:', result);
 
-      // Xử lý cookies nếu OAuth exchange thành công
       if (result.success && result.data?.refreshToken) {
         this.cookieService.setRefreshCookie(
           res,
@@ -227,6 +293,8 @@ export class AuthController {
 
       return result;
     } catch (error: any) {
+      console.error('[ERROR] /auth/oauth/exchange:', error);
+
       throw new HttpException(
         error.message || 'OAuth exchange failed',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,

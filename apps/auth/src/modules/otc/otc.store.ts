@@ -8,7 +8,7 @@ export class OtcService {
 
   async putOTC(
     code: string,
-    payload: { userId: string; email: string; role: string },
+    payload: { userId: string; email: string; role?: string | undefined },
     ttlSec = 120,
   ): Promise<void> {
     await this.redis.set(`otc:${code}`, JSON.stringify(payload), 'EX', ttlSec);

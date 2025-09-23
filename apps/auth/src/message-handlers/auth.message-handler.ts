@@ -49,7 +49,7 @@ export class AuthMessageHandler {
     private readonly otcService: OtcService,
   ) {}
 
-  @MessagePattern('auth.login')
+  @MessagePattern({cmd:'auth.login'})
   async handleLogin(
     @Payload() loginDto: LoginMessageDto,
   ): Promise<LoginResponseDto> {
@@ -130,7 +130,7 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern('auth.register')
+  @MessagePattern({cmd: 'auth.register'})
   async handleRegister(
     @Payload() registerDto: RegisterMessageDto,
   ): Promise<RegisterResponseDto> {
@@ -171,12 +171,12 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern('auth.refresh')
+  @MessagePattern({cmd:'auth.refresh'})
   async handleRefresh(
     @Payload() refreshDto: RefreshMessageDto,
   ): Promise<RefreshResponseDto> {
     try {
-      console.log("chạy vào đây");
+      console.log("refreshDto.refreshToken",refreshDto.refreshToken)
       const payload = await this.authService.validateRefreshToken(
         refreshDto.refreshToken,
       );
@@ -223,7 +223,7 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern('auth.logout')
+  @MessagePattern({cmd:'auth.logout'})
   async handleLogout(
     @Payload() logoutDto: LogoutMessageDto,
   ): Promise<AuthResponseDto> {
@@ -251,7 +251,7 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern('auth.logoutAll')
+  @MessagePattern({cmd:'auth.logoutAll'})
   async handleLogoutAll(
     @Payload() logoutAllDto: LogoutAllMessageDto,
   ): Promise<AuthResponseDto> {
@@ -269,7 +269,7 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern('auth.me')
+  @MessagePattern({cmd:'auth.me'})
   async handleGetCurrentUser(
     @Payload() getUserDto: GetUserMessageDto,
   ): Promise<UserResponseDto> {
@@ -288,7 +288,7 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern('auth.validateUser')
+  @MessagePattern({cmd:'auth.validateUser'})
   async handleValidateUser(
     @Payload() validateDto: ValidateUserMessageDto,
   ): Promise<UserResponseDto> {
@@ -328,7 +328,7 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern('auth.verifyEmail')
+  @MessagePattern({cmd:'auth.verifyEmail'})
   async handleVerifyEmail(
     @Payload() verifyDto: VerifyEmailMessageDto,
   ): Promise<AuthResponseDto> {
@@ -347,96 +347,37 @@ export class AuthMessageHandler {
       };
     }
   }
-
-  @MessagePattern('auth.googleAuth')
-  async handleGoogleAuth(
-    @Payload() googleDto: GoogleAuthMessageDto,
-  ): Promise<AuthResponseDto> {
+  @MessagePattern({ cmd: 'auth.upsertGoogleUser' })
+  async handleUpsertGoogleUser(@Payload() payload: any) {
     try {
-      const user = await this.authService.upsertGoogleUser({
-        id: googleDto.id,
-        email: googleDto.email,
-        ...(googleDto.givenName && { givenName: googleDto.givenName }),
-        ...(googleDto.familyName && { familyName: googleDto.familyName }),
-        ...(googleDto.avatar && { avatar: googleDto.avatar }),
-      });
-
-      const code = randomBytes(24).toString('hex');
-      await this.otcService.putOTC(
-        code,
-        { userId: user.id, email: user.email, role: user.role },
-        120,
-      );
-
-      return {
-        success: true,
-        message: 'Google auth successful',
-        data: {
-          code,
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            avatar: user.avatar,
-            role: user.role,
-          },
-        },
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: error.message || 'Google auth failed',
-      };
+      const user = await this.authService.upsertGoogleUser(payload);
+      return { success: true, message: 'OK', data: user };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Upsert failed' };
     }
   }
 
-  @MessagePattern('auth.oauthExchange')
-  async handleOAuthExchange(
-    @Payload() oauthDto: OAuthExchangeMessageDto,
-  ): Promise<LoginResponseDto> {
+  @MessagePattern({ cmd: 'auth.generateOAuthCode' })
+  async handleGenerateOAuthCode(@Payload() payload: { userId: string; email: string; role?: string }) {
     try {
-      const rec = await this.otcService.takeOTC(oauthDto.code);
-      if (!rec) {
-        return {
-          success: false,
-          message: 'Invalid or expired code',
-        };
-      }
+      const res = await this.authService.generateOAuthCode(payload);
+      return { success: true, message: 'OK', data: { code: res.code } };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Generate code failed' };
+    }
+  }
 
-      const sessionId = randomBytes(16).toString('hex');
-      const context: Partial<{ device: string; ua: string; ip: string }> = {
-        device: sessionId,
-        ua: 'microservice',
-      };
-
-      const tokens = await this.authService.issueTokensForUser(
-        { id: rec.userId, email: rec.email, role: rec.role as Role },
-        context,
-      );
-
-      return {
-        success: true,
-        message: 'OAuth exchange success',
-        data: {
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          refreshTokenExpiresAt: tokens.refreshTokenExpiresAt.toISOString(),
-          user: {
-            id: rec.userId,
-            email: rec.email,
-            firstName: null,
-            lastName: null,
-            avatar: null,
-            role: rec.role,
-          },
-        },
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: error.message || 'OAuth exchange failed',
-      };
+  @MessagePattern({ cmd: 'auth.oauthExchange' })
+  async handleOAuthExchange(@Payload() payload: { code: string }) {
+    try {
+      const result = await this.authService.exchangeOAuthCode(payload.code);
+      if (!result) return { success: false, message: 'Invalid or expired code' };
+      return { success: true, message: 'OK', data: result };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Exchange failed' };
     }
   }
 }

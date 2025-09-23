@@ -1,14 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const logger = new Logger('API Gateway');
+  // const httpsOptions = {
+  //   key: fs.readFileSync('../cert/key.pem'),
+  //   cert: fs.readFileSync('../cert/cert.pem'),
+  // };
+
+  // const app = await NestFactory.create(AppModule, { httpsOptions });
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin:
@@ -57,10 +63,7 @@ async function bootstrap() {
   const port = configService.get<number>('port') || 8000;
 
   await app.listen(port);
-
-  logger.log(`🚀 API Gateway is running on: http://localhost:${port}`);
-  logger.log(`📊 Health check: http://localhost:${port}/health`);
-  logger.log(`🔧 Environment: ${configService.get<string>('nodeEnv')}`);
+  logger.log(`🔧 Environment: ${configService.get<string>('NODE_ENV')}`);
 }
 
 bootstrap().catch((error) => {
