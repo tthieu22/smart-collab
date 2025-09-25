@@ -13,7 +13,7 @@ export default function GoogleCallbackPage() {
     const code = searchParams.get('code');
     if (code) {
       authService.oauthExchange(code).then(() => {
-        router.push('/dashboard');
+        router.push('/');
       });
     }
   }, [searchParams, router]);

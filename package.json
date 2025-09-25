@@ -30,6 +30,7 @@
     "db:studio": "cd apps/auth && npx prisma studio"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.7",
     "@types/cookie-parser": "^1.4.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.18.0",
@@ -47,6 +48,7 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
+    "@golevelup/nestjs-rabbitmq": "^6.0.2",
     "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",

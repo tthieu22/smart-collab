@@ -1,31 +1,34 @@
-// app.module.ts
+// apps/api-gateway/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ClientsModule } from '@nestjs/microservices';
-import { getRabbitMQOptions } from './config/rabbitmq.config';
-import { AuthModule } from './auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
+import { getRabbitMQOptions } from './config/rabbitmq.config';
+
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     // Config
     ConfigModule.forRoot({
       isGlobal: true,
-      // load: [appConfig],
     }),
-    // ThrottlerModule (Rate limiting)
+
+    // Rate limiting (100 req / 60s)
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          ttl: 60, // 60 giây
-          limit: 100, // 100 requests
+          ttl: 60,
+          limit: 100,
         },
       ],
     }),
-    
+
+    // JWT strategy
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
+    // RPC client để gọi sang Auth service
     ClientsModule.registerAsync([
       {
         name: 'AUTH_SERVICE',
@@ -36,6 +39,7 @@ import { PassportModule } from '@nestjs/passport';
       },
     ]),
 
+    // Import các module controller của Gateway
     AuthModule,
   ],
 })

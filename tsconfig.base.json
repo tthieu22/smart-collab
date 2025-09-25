@@ -13,7 +13,7 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@libs/*": ["libs/*"],
+      "@smartcollab/*": ["libs/*"],
     }
   },
   "exclude": ["node_modules", "dist"]
