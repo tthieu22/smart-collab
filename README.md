@@ -387,3 +387,8 @@ openssl x509 -req -days 365 -in csr.pem -signkey key.pem -out cert.pem
 
 
 💡 Ghi chú: Bạn đang làm việc trong thư mục api-gateway\cert, nên các file key.pem và cert.pem sẽ được tạo ở đây.
+
+Cài riêng prisma cho từng serivce
+cd apps/auth
+pnpm add @prisma/client --ignore-workspace-root-check
+pnpm add -D prisma --ignore-workspace-root-check

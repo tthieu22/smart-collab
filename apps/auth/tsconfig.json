@@ -4,8 +4,11 @@
     "outDir": "../../dist/apps/auth",
     "strict": true,
     "noImplicitAny": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "paths": {
+      "@prisma/client-auth": ["../../node_modules/.node_modules/.prisma/client-auth"]
+    }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "prisma/prisma.module.ts", "prisma/prisma.service.ts"],
   "exclude": ["node_modules", "dist"]
 }
