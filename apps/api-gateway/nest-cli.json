@@ -5,7 +5,10 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "assets": [
-      { "include": "apps/api-gateway/cert/*", "outDir": "dist/apps/api-gateway/cert" }
+      {
+        "include": "cert/*",
+        "outDir": "dist/cert"
+      }
     ]
   }
 }

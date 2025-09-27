@@ -4,7 +4,8 @@ import { AuthService } from '../modules/auth/auth.service';
 import { UserService } from '../modules/user/user.service';
 import { OtcService } from '../modules/otc/otc.store';
 import * as bcrypt from 'bcryptjs';
-import { randomBytes } from 'crypto';import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { randomBytes } from 'crypto';
+
 import {
   LoginMessageDto,
   RegisterMessageDto,
@@ -14,8 +15,6 @@ import {
   GetUserMessageDto,
   ValidateUserMessageDto,
   VerifyEmailMessageDto,
-  GoogleAuthMessageDto,
-  OAuthExchangeMessageDto,
   AuthResponseDto,
   LoginResponseDto,
   RegisterResponseDto,

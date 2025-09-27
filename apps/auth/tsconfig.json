@@ -1,14 +1,18 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/apps/auth",
+    "module": "commonjs",
+    "target": "es2019",
+    "outDir": "dist",
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "paths": {
-      "@prisma/client-auth": ["../../node_modules/.node_modules/.prisma/client-auth"]
-    }
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*", "prisma/prisma.module.ts", "prisma/prisma.service.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

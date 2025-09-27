@@ -81,6 +81,28 @@ publishes ai.response
 | **Realtime** | ❌ | ✅ presence | ✅ (consume all) | ❌ | ❌ |
 | **AI** | ❌ | ✅ cache resp | ✅ (ai.request) | ❌ | ✅ embeddings |
 | **Frontend** | ❌ | ❌ | ❌ | ✅ upload | ❌ |
+# Cài Prisma Client runtime
+pnpm add @prisma/client --filter ./apps/project
+pnpm add @prisma/client --filter ./apps/task
+pnpm add @prisma/client --filter ./apps/notification
+pnpm add @prisma/client --filter ./apps/ai
+
+# Cài Prisma CLI (dev dependency)
+pnpm add -D prisma --filter ./apps/project
+pnpm add -D prisma --filter ./apps/task
+pnpm add -D prisma --filter ./apps/notification
+pnpm add -D prisma --filter ./apps/ai
+
+Thêm scripts trong mỗi package.json service:
+"scripts": {
+  "prisma:generate": "prisma generate",
+  "prisma:migrate": "prisma migrate dev"
+}
+
+
+Chạy generate/migrate chỉ cho service cần:
+pnpm --filter ./apps/project run prisma:generate
+pnpm --filter ./apps/task run prisma:migrate
 
 📌 RabbitMQ Exchange/Queue plan
 
