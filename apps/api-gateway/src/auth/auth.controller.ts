@@ -23,7 +23,7 @@ import {
   VerifyEmailDto,
   ValidateUserDto,
   OAuthExchangeDto,
-} from '../dto/auth.dto';
+} from './dto/auth.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 

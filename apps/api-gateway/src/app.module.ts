@@ -5,8 +5,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ClientsModule } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { getRabbitMQOptions } from './config/rabbitmq.config';
-
 import { AuthModule } from './auth/auth.module';
+import { ProjectModule } from './project/project.module';
 
 @Module({
   imports: [
@@ -16,13 +16,8 @@ import { AuthModule } from './auth/auth.module';
     }),
 
     // Rate limiting (100 req / 60s)
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60,
-          limit: 100,
-        },
-      ],
+     ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60, limit: 100 }],
     }),
 
     // JWT strategy
@@ -38,9 +33,19 @@ import { AuthModule } from './auth/auth.module';
           getRabbitMQOptions('auth_queue', configService),
       },
     ]),
-
+    
+    ClientsModule.registerAsync([
+      {
+        name: 'PROJECT_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) =>
+          getRabbitMQOptions('project_queue', configService),
+      },
+    ]),
     // Import các module controller của Gateway
     AuthModule,
+    ProjectModule,
   ],
 })
 export class AppModule {}
