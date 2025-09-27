@@ -9,7 +9,7 @@ import {
 export class CreateGoogleUserDto {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsOptional()

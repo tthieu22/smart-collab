@@ -6,13 +6,12 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
-import { PrismaService } from '@auth/prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { addDays } from 'date-fns';
-import { Role, User } from '@prisma/client';
 
-type JwtPayload = { sub: string; email: string; role: Role };
+type JwtPayload = { sub: string; email: string; role: string };
 type TokenMeta = Partial<{ ip: string; ua: string; device: string }>;
 type RotateOptions = { revokeOnly?: boolean };
 
@@ -65,7 +64,7 @@ export class AuthService {
 
   /** 📦 Cấp Access + Refresh Token */
   async issueTokensForUser(
-    user: { id: string; email: string; role: Role },
+    user: { id: string; email: string; role: string },
     meta?: TokenMeta,
   ) {
     const payload: JwtPayload = {
@@ -138,7 +137,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found');
 
     return this.issueTokensForUser(
-      { id: user.id, email: user.email, role: user.role as Role },
+      { id: user.id, email: user.email, role: user.role as string },
       meta,
     );
   }
@@ -173,7 +172,7 @@ export class AuthService {
     familyName?: string;
     avatar?: string;
     id?: string;
-  }): Promise<User> {
+  }) {
     let user = await this.prisma.user.findUnique({
       where: { email: payload.email },
     });
@@ -185,7 +184,7 @@ export class AuthService {
           firstName: payload.givenName ?? null,
           lastName: payload.familyName ?? null,
           avatar: payload.avatar ?? null,
-          role: Role.USER,
+          role: "USER",
           googleId: payload.id ?? null,
         },
       });
@@ -212,7 +211,7 @@ export class AuthService {
     this.otcs[code] = {
       userId: payload.userId,
       email: payload.email,
-      role: payload.role as Role,
+      role: payload.role as string,
       expiresAt: Date.now() + 120000, // 2 phút
     };
     return { code };

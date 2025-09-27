@@ -3,21 +3,21 @@ import { IsEmail, IsString, IsOptional, IsNotEmpty } from 'class-validator';
 export class LoginMessageDto {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 }
 
 export class RegisterMessageDto {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 
   @IsString()
   @IsOptional()
@@ -31,55 +31,55 @@ export class RegisterMessageDto {
 export class RefreshMessageDto {
   @IsString()
   @IsNotEmpty()
-  refreshToken: string;
+  refreshToken!: string;
 }
 
 export class LogoutMessageDto {
   @IsString()
   @IsNotEmpty()
-  refreshToken: string;
+  refreshToken!: string;
 }
 
 export class LogoutAllMessageDto {
   @IsString()
   @IsNotEmpty()
-  userId: string;
+  userId!: string;
 }
 
 export class GetUserMessageDto {
   @IsString()
   @IsNotEmpty()
-  userId: string;
+  userId!: string;
 }
 
 export class ValidateUserMessageDto {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 }
 
 export class VerifyEmailMessageDto {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  code: string;
+  code!: string;
 }
 
 export class GoogleAuthMessageDto {
   @IsString()
   @IsNotEmpty()
-  id: string;
+  id!: string;
 
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsOptional()
@@ -97,7 +97,7 @@ export class GoogleAuthMessageDto {
 export class OAuthExchangeMessageDto {
   @IsString()
   @IsNotEmpty()
-  code: string;
+  code!: string;
 }
 
 // Response DTOs

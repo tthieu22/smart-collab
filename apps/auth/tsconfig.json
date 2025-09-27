@@ -1,15 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/apps/api-gateway",
+    "outDir": "../../dist/apps/auth",
     "strict": true,
     "noImplicitAny": true,
-    "strictNullChecks": true,
-    "paths": {
-      "@auth/*": ["src/*"],
-      "@auth/common/*": ["src/common/*"],
-      "@auth/modules/*": ["src/modules/*"]
-    }
+    "strictNullChecks": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

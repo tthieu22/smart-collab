@@ -22,7 +22,6 @@ import {
   RefreshResponseDto,
   UserResponseDto,
 } from './dto/auth-message.dto';
-import { Role} from '@prisma/client'
 
 interface UserWithPassword {
   id: string;
@@ -101,7 +100,7 @@ export class AuthMessageHandler {
       };
 
       const tokens = await this.authService.issueTokensForUser(
-        { id: user.id, email: user.email, role: user.role as Role },
+        { id: user.id, email: user.email, role: user.role },
         context,
       );
 

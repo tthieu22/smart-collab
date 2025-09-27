@@ -5,10 +5,10 @@ import { OtcModule } from '../modules/otc/otc.module';
 import { AuthModule as AuthServiceModule } from '../modules/auth/auth.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { RedisModule } from '@nestjs-modules/ioredis';
-import { PrismaModule } from '@auth/prisma/prisma.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { redisConfig } from '@auth/config/redis.config';
-import { mailerConfig } from '@auth/config/mailer.config';
+import { redisConfig } from '../config/redis.config';
+import { mailerConfig } from '../config/mailer.config';
 
 @Module({
   imports: [

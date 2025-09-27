@@ -32,7 +32,7 @@ export class UserController {
       const user = await this.userService.create(createUserDto);
       return { success: true, data: user };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 
@@ -44,7 +44,7 @@ export class UserController {
       const users = await this.userService.findAll();
       return { success: true, data: users };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 
@@ -56,7 +56,7 @@ export class UserController {
       const user = await this.userService.findOne(userId);
       return { success: true, data: user };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 
@@ -68,7 +68,7 @@ export class UserController {
       const user = await this.userService.update(userId, updateUserDto);
       return { success: true, data: user };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 
@@ -80,7 +80,7 @@ export class UserController {
       const user = await this.userService.update(id, updateUserDto);
       return { success: true, data: user };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 
@@ -92,7 +92,7 @@ export class UserController {
       await this.userService.remove(id);
       return { success: true, data: null };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 
@@ -118,7 +118,7 @@ export class UserController {
         };
       }
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 
@@ -133,7 +133,7 @@ export class UserController {
       await this.userService.changePassword(userId, changePasswordDto);
       return { success: true, message: 'Đổi mật khẩu thành công' };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error };
     }
   }
 }

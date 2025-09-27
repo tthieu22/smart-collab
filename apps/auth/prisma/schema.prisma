@@ -8,19 +8,19 @@ datasource db {
 }
 
 model User {
-  id                           String          @id @default(auto()) @map("_id") @db.ObjectId
-  email                        String          @unique
+  id                           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email                        String   @unique
   password                     String?
   firstName                    String?
   lastName                     String?
   avatar                       String?
   googleId                     String?
-  role                         Role            @default(USER)
-  isVerified                   Boolean         @default(false)
+  role                         String   @default("USER")  // bỏ enum, dùng string
+  isVerified                   Boolean  @default(false)
   emailVerificationCode        String?
   emailVerificationCodeExpires DateTime?
-  createdAt                    DateTime        @default(now())
-  updatedAt                    DateTime        @updatedAt
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
 
   refreshTokens                RefreshToken[]
 }
@@ -37,10 +37,4 @@ model RefreshToken {
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
-}
-
-
-enum Role {
-  USER
-  ADMIN
 }

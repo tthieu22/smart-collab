@@ -20,7 +20,6 @@ import { setRefreshCookie, clearRefreshCookie } from './auth.cookies';
 import { randomBytes } from 'crypto';
 import { OtcService } from '../otc/otc.store';
 import { RegisterDto } from './dto/register.dto';
-import { Prisma, Role } from '@prisma/client';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -36,7 +35,7 @@ interface UserWithPassword {
   lastName: string | null;
   avatar: string | null;
   googleId: string | null;
-  role: Role;
+  role: string;
   isVerified: boolean;
   emailVerificationCode: string | null;
   emailVerificationCodeExpires: Date | null;
@@ -143,7 +142,7 @@ export class AuthController {
         password: dto.password,
         firstName: dto.firstName ?? null,
         lastName: dto.lastName ?? null,
-        role: Role.USER,
+        role: "USER",
       });
 
       return {
@@ -152,7 +151,7 @@ export class AuthController {
         data: newUser,
       };
     } catch (error) {
-      return { success: false, message: error.message || 'Đăng ký thất bại' };
+      return { success: false, message: 'Đăng ký thất bại' };
     }
   }
 
@@ -305,7 +304,7 @@ export class AuthController {
     };
 
     const tokens = await this.auth.issueTokensForUser(
-      { id: rec.userId, email: rec.email, role: rec.role as Role },
+      { id: rec.userId, email: rec.email, role: rec.role },
       context,
     );
 
@@ -329,7 +328,7 @@ export class AuthController {
         ? { success: true, message: 'Email verified successfully' }
         : { success: false, message: 'Invalid or expired verification code' };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: "Lỗi xác thực tài khoản"};
     }
   }
 

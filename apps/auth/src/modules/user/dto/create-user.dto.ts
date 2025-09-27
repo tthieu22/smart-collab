@@ -7,17 +7,16 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { Role } from '@prisma/client';
 
 export class CreateUserDto {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(6)
-  password: string;
+  password!: string;
 
   @IsString()
   @IsOptional()
@@ -36,6 +35,5 @@ export class CreateUserDto {
   isVerified?: boolean;
 
   @IsOptional()
-  @IsEnum(Role)
-  role?: Role; // ✅ TypeScript nhận diện được
+  role?: string; // ✅ TypeScript nhận diện được
 }
