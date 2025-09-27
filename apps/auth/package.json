@@ -5,9 +5,6 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "prisma": {
-    "schema": "src/prisma/schema.prisma"
-  },
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
