@@ -1,7 +1,12 @@
 /* Reset CSS hiện đại + custom theme */
 
 /* Import Tailwind */
-@import 'tailwindcss';
+/* eslint-disable no-unknown-property */
+/* tailwindcss: @tailwind directives */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* -------------------------
    Biến toàn cục
