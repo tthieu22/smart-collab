@@ -1,0 +1,59 @@
+/* Biến màu theo theme */
+:root {
+  --logo-bg: #f0f0f0;
+  --emoji-color: #111;
+}
+
+.mark.dark {
+  --logo-bg: #1f2937; /* xám tối */
+  --emoji-color: #fcd34d; /* vàng nổi bật trên nền tối */
+}
+
+.logo-mark {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 2px 4px;
+  border-radius: 6px;
+  background-color: var(--logo-bg);
+}
+
+.logo-board {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.logo-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  height: 30px;
+}
+
+.logo-emoji {
+  font-size: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1;
+  color: var(--emoji-color);
+  animation: slideY 15s ease-in-out infinite;
+}
+
+.logo-emoji.row-0 {
+  animation-delay: 0s;
+}
+
+.logo-emoji.row-1 {
+  animation-delay: 1.5s;
+}
+
+@keyframes slideY {
+  0% { transform: translateY(0); }
+  25% { transform: translateY(-15px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-15px); }
+  100% { transform: translateY(0); }
+}

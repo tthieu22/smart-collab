@@ -94,6 +94,37 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+html {
+  --bg: #ffffff;
+  --text: #0b1220;
+}
+html.dark {
+  --bg: #0b1220;
+  --text: #e6eef8;
+}
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+.i-box {
+  color: inherit;
+}
+.i-box.active {
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.dark .i-box.active {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.theme-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 /* Media responsive images */
