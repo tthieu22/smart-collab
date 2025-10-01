@@ -8,6 +8,9 @@ interface UserState {
   error: string | null;
   isInitialized: boolean; // ✅ auth init
   isUserInitialized: boolean; // ✅ user init riêng
+  
+  query: string;
+  setQuery: (q: string) => void;
 
   setCurrentUser: (user: User | null) => void;
   setAllUsers: (users: User[]) => void;
@@ -28,8 +31,10 @@ export const useUserStore = create<UserState>((set) => ({
   isLoading: false,
   error: null,
   isInitialized: false,
-  isUserInitialized: false, // ✅ thêm
+  isUserInitialized: false,
+  query: "",
 
+  setQuery: (q) => set({ query: q }),
   setCurrentUser: (user) => set({ currentUser: user }),
   setAllUsers: (users) => set({ allUsers: users }),
   addUser: (user) => set((state) => ({ allUsers: [...state.allUsers, user] })),

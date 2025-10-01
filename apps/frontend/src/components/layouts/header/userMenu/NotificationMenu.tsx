@@ -85,7 +85,7 @@ export function NotificationMenu() {
       placement="bottomRight"
       open={open}
       onOpenChange={setOpen}
-      dropdownRender={() => content}
+      popupRender={() => content}
     >
       <div
         className={`i-box ${open ? "active" : ""}`}

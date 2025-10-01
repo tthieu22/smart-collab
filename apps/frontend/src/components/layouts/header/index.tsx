@@ -1,8 +1,11 @@
+import CreateBoardButton from './CreateBoardButton';
 import { Logo } from './Logo';
 import { Navbar } from './Navbar';
+import { Search } from './Search';
 import { UserMenu } from './userMenu/UserMenu';
 
 export default function Header() {
+  
   return (
     <header
       className="flex items-center justify-between px-6 py-3 shadow border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
@@ -20,6 +23,8 @@ export default function Header() {
       >
         <Logo />
         <Navbar />
+        <Search />
+        <CreateBoardButton />
       </div>
       <UserMenu />
     </header>

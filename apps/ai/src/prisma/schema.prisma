@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_POSTGRE")
+}
+
+model AIRequest {
+  id        String   @id @default(uuid())
+  userId    String
+  query     String
+  createdAt DateTime @default(now())
+
+  response  AIResponse?
+}
+
+model AIResponse {
+  id         String   @id @default(uuid())
+  requestId  String   @unique
+  result     String
+  createdAt  DateTime @default(now())
+
+  request    AIRequest @relation(fields: [requestId], references: [id])
+}

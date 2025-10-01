@@ -1,0 +1,30 @@
+{
+  "name": "realtime",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build"
+  },
+  "dependencies": {
+    "@golevelup/nestjs-rabbitmq": "^6.0.2",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/microservices": "^11.1.6",
+    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.6",
+    "@nestjs/websockets": "^11.1.6",
+    "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.18.0",
+    "@types/socket.io": "^3.0.2",
+    "typescript": "^5.8.2"
+  }
+}
