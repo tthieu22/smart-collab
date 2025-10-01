@@ -7,25 +7,17 @@ import { UserMenu } from './userMenu/UserMenu';
 export default function Header() {
   
   return (
-    <header
-      className="flex items-center justify-between px-6 py-3 shadow border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-      style={{ paddingLeft: 24, paddingRight: 24 }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 24,
-          padding: "4px 8px",
-          border: "1px solid var(--border-color)",
-          borderRadius: 8,
-        }}
-      >
+    <header className="flex items-center justify-between px-2 shadow dark:border-gray-800 dark:border-b">
+      <div className="flex items-center gap-6 p-2">
         <Logo />
         <Navbar />
+      </div>
+
+      <div className="flex items-center gap-5">
         <Search />
         <CreateBoardButton />
       </div>
+
       <UserMenu />
     </header>
   );

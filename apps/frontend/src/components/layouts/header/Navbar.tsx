@@ -12,7 +12,7 @@ export function Navbar() {
   const pathname = usePathname();
 
   const items = [
-    { key: "/", icon: <HomeOutlined /> }
+    { key: "/", icon: <HomeOutlined  style={{ fontSize: 20 }} /> }
   ];
 
   return (
@@ -28,12 +28,12 @@ export function Navbar() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 borderRadius: 8,
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                fontSize: 22, // icon to hơn
+                fontSize: 20, // icon to hơn
               }}
             >
               {item.icon}

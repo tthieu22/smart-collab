@@ -11,6 +11,8 @@ import {
   Card,
   Typography,
   Upload,
+  ColorPicker,
+  Space,
 } from "antd";
 import {
   PlusOutlined,
@@ -27,19 +29,15 @@ export default function CreateBoardButton() {
   const { colors, images } = useBoardStore();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [visibility, setVisibility] = useState("private");
+  const [visibility, setVisibility] = useState("workspace");
   const [background, setBackground] = useState<string | null>(null);
 
   const handleCreate = () => {
     if (!title) return;
-    console.log({
-      title,
-      visibility,
-      background,
-    });
+    console.log({ title, visibility, background });
     setOpen(false);
     setTitle("");
-    setVisibility("private");
+    setVisibility("workspace");
     setBackground(null);
   };
 
@@ -147,104 +145,108 @@ export default function CreateBoardButton() {
   );
 
   const content = (
-    <div className="w-[300px]">
-      {/* Preview */}
-      <Card
-        size="small"
-        className="mb-3 shadow-sm"
-        style={{
-          backgroundImage:
-            background?.startsWith("http") ||
-            background?.startsWith("data:image")
-              ? `url(${background})`
-              : undefined,
-          backgroundColor:
-            background &&
-            !background.startsWith("http") &&
-            !background.startsWith("data:image")
-              ? background
-              : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          height: 120,
-          borderRadius: 10,
-        }}
-      />
+    <div>
+      
+      <Space direction="vertical" size={16}>
+        {/* Preview */}
+        <Card
+          size="small"
+          className="shadow-sm"
+          style={{
+            backgroundImage:
+              background?.startsWith("/background") || background?.startsWith("data:image")
+                ? `url(${background})`
+                : undefined,
+            backgroundColor:
+              background &&
+              !background.startsWith("http") &&
+              !background.startsWith("data:image")
+                ? background
+                : undefined,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            height: 120,
+            borderRadius: 10,
+          }}
+        />
 
-      {/* Ảnh nền */}
-      <div className="mb-4">
-        <Text strong className="block mb-1">
-          Ảnh nền
-        </Text>
-        <Row gutter={8}>
-          {images.map((img) => (
-            <Col span={8} key={img}>
-              {renderImageBox(img)}
+        {/* Ảnh nền */}
+        <div className="">
+          <Text strong className="block mb-1">
+            Ảnh nền
+          </Text>
+          <Row gutter={[8, 8]}>
+            {images.slice(0, 3).map((img) => (
+              <Col span={6} key={img}>
+                {renderImageBox(img)}
+              </Col>
+            ))}
+            <Col span={6}>{renderUploadBox()}</Col>
+          </Row>
+        </div>
+
+        {/* Màu nền */}
+        <div className="">
+          <Text strong className="block mb-1">
+            Màu nền
+          </Text>
+          <Row gutter={8}>
+            {colors.slice(0, 5).map((c) => (
+              <Col span={4} key={c}>
+                {renderColorBox(c)}
+              </Col>
+            ))}
+            {/* Ô custom (Antd ColorPicker) */}
+            <Col span={4}>
+              <ColorPicker
+                value={background || "#1677ff"}
+                onChange={(color) => setBackground(color.toHexString())}
+                trigger="click" // tự handle click
+              >
+                {/* Đây là trigger */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#fff",
+                    height: 34,
+                    borderRadius: 6,
+                    border: "1px dashed #ccc",
+                    cursor: "pointer",
+                  }}
+                >
+                  <BgColorsOutlined style={{ fontSize: 18, color: "#555" }} />
+                </div>
+              </ColorPicker>
             </Col>
-          ))}
-          <Col span={8}>{renderUploadBox()}</Col>
-        </Row>
-      </div>
+          </Row>
+        </div>
 
-      {/* Màu nền */}
-      <div className="mb-4">
-        <Text strong className="block mb-1">
-          Màu nền
-        </Text>
-        <Row gutter={8}>
-          {colors.slice(0, 4).map((c) => (
-            <Col span={4} key={c}>
-              {renderColorBox(c)}
-            </Col>
-          ))}
-          {/* Ô custom */}
-          <Col span={4}>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fff",
-                height: 34,
-                borderRadius: 6,
-                border: "1px dashed #ccc",
-                cursor: "pointer",
-              }}
-            >
-              <BgColorsOutlined style={{ fontSize: 18, color: "#555" }} />
-              <input
-                type="color"
-                onChange={(e) => setBackground(e.target.value)}
-                style={{ display: "none" }}
-              />
-            </label>
-          </Col>
-        </Row>
-      </div>
+        {/* Tiêu đề */}
+        <Input
+          placeholder="Nhập tiêu đề bảng..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="mb-3 rounded-md"
+        />
 
-      {/* Tiêu đề */}
-      <Input
-        placeholder="Nhập tiêu đề bảng..."
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="mb-3 rounded-md"
-      />
+        {/* Visibility */}
+        <Select
+          value={visibility}
+          onChange={setVisibility}
+          className="w-full  rounded-md"
+        >
+          <Option value="private">Cá nhân</Option>
+          <Option value="workspace">Workspace</Option>
+          <Option value="public">Public</Option>
+        </Select>
 
-      {/* Visibility */}
-      <Select
-        value={visibility}
-        onChange={setVisibility}
-        className="w-full mb-4 rounded-md"
-      >
-        <Option value="private">Cá nhân</Option>
-        <Option value="workspace">Workspace</Option>
-        <Option value="public">Public</Option>
-      </Select>
-
-      {/* Nút create */}
-      <Button type="primary" block onClick={handleCreate} className="rounded-md">
-        Create
-      </Button>
+        {/* Nút create */}
+        <Button type="primary" block onClick={handleCreate} className="rounded-md">
+          Create
+        </Button>
+      </Space>
     </div>
   );
 

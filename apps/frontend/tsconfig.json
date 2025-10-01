@@ -22,7 +22,8 @@
       "@smart/hooks/*": ["./src/hooks/*"],
       "@smart/providers/*": ["./src/providers/*"],
       "@smart/store/*": ["./src/store/*"],
-      "@smart/services/*": ["./src/services/*"]
+      "@smart/services/*": ["./src/services/*"],
+      "@smart/public/*": ["./public/backgrounds/*"]
     },
     "plugins": [
       { "name": "next" }

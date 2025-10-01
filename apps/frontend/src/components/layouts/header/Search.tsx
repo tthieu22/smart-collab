@@ -3,63 +3,58 @@
 import { useState, useEffect, useRef } from "react";
 import { Input, List, Card } from "antd";
 import { SearchOutlined, CloseCircleFilled } from "@ant-design/icons";
+import { useUserStore } from "@smart/store/user"; // path tương ứng
 
-interface SearchProps {
-  placeholder?: string;
-  suggestions?: string[];
-  onSearch?: (query: string) => void;
-}
+export function Search({ placeholder = "Search" }) {
+  const { allUsers, query, setQuery } = useUserStore();
 
-export function Search({
-  placeholder = "Search",
-  suggestions = [],
-  onSearch,
-}: SearchProps) {
-  const [query, setQuery] = useState("");
   const [filtered, setFiltered] = useState<string[]>([]);
   const [focused, setFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // lọc gợi ý
+  // Lọc gợi ý khi query hoặc allUsers thay đổi
   useEffect(() => {
-    if (query.trim()) {
-      const results = suggestions.filter((item) =>
-        item.toLowerCase().includes(query.toLowerCase())
-      );
-      setFiltered(results);
-    } else {
-      setFiltered([]);
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) {
+      if (filtered.length > 0) setFiltered([]);
+      return;
     }
-  }, [query, suggestions]);
 
-  // xử lý tìm kiếm
+    const results = allUsers
+      .map((u) => u.email) // giả sử User có trường name
+      .filter((name) => name.toLowerCase().includes(trimmed));
+
+    // chỉ set nếu khác để tránh vòng lặp setState
+    const same =
+      results.length === filtered.length &&
+      results.every((v, i) => v === filtered[i]);
+
+    if (!same) setFiltered(results);
+  }, [query, allUsers]);
+
+  // handle search khi nhấn enter hoặc chọn item
   const handleSearch = (text?: string) => {
     const value = text ?? query;
-    if (onSearch) onSearch(value.trim());
+    setQuery(value); // cập nhật store luôn
     console.log("Searching for:", value);
     setFocused(false);
     setActiveIndex(-1);
   };
 
-  // clear input
   const handleClear = () => {
     setQuery("");
     setFiltered([]);
     setActiveIndex(-1);
-    if (onSearch) onSearch("");
   };
 
-  // di chuyển bằng phím
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((prev) => (prev < filtered.length - 1 ? prev + 1 : 0));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIndex((prev) =>
-        prev > 0 ? prev - 1 : filtered.length - 1
-      );
+      setActiveIndex((prev) => (prev > 0 ? prev - 1 : filtered.length - 1));
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (activeIndex >= 0 && filtered[activeIndex]) {
@@ -71,23 +66,19 @@ export function Search({
     }
   };
 
-  // click ngoài thì đóng
+  // click ngoài đóng popup
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setFocused(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div ref={containerRef} style={{ position: "relative", width: 500 }}>
+    <div ref={containerRef} style={{ position: "relative", width: 600 }}>
       <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -103,7 +94,7 @@ export function Search({
             />
           ) : null
         }
-        allowClear={false} // mình custom clear button
+        allowClear={false}
         onPressEnter={() => handleSearch()}
       />
 
@@ -129,7 +120,6 @@ export function Search({
                   background: idx === activeIndex ? "#e6f7ff" : undefined,
                 }}
                 onMouseDown={() => {
-                  // dùng onMouseDown để tránh mất focus trước khi onClick
                   setQuery(item);
                   handleSearch(item);
                 }}

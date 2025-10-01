@@ -7,10 +7,21 @@ interface BoardStore {
 }
 
 export const useBoardStore = create<BoardStore>(() => ({
-  colors: ["#0079BF", "#D29034", "#519839", "#B04632", "#89609E", "#CD5A91"],
+  colors: [
+    "rgb(0, 121, 191)",   // xanh dương
+    "rgb(210, 144, 52)",  // cam
+    "rgb(81, 152, 57)",   // xanh lá
+    "rgb(176, 70, 50)",   // đỏ gạch
+    "rgb(137, 96, 158)",  // tím nhạt
+    "rgb(205, 90, 145)",  // hồng
+    "rgb(255, 204, 102)", // vàng nhạt
+    "rgb(102, 204, 255)", // xanh da trời
+  ],
   images: [
-    "https://source.unsplash.com/200x100/?nature",
-    "https://source.unsplash.com/200x100/?city",
-    "https://source.unsplash.com/200x100/?tech",
+    "/backgrounds/muaxuan2.png",
+    "/backgrounds/muahe2.png",
+    "/backgrounds/muathu2.png",
+    "/backgrounds/thiennhien.png",
+    "/backgrounds/muaxuan.png",
   ],
 }));

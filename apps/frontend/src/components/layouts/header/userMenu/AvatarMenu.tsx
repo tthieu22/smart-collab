@@ -53,7 +53,7 @@ export function AvatarMenu() {
             handleProfileClick(e);
           }}
         >
-          <Card hoverable bordered={false} style={{ width: 280, padding: 2 }}>
+          <Card hoverable style={{ width: 280, padding: 2 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Avatar size={48} icon={<UserOutlined />}>
                 {currentUser?.email?.charAt(0).toUpperCase() || null}
