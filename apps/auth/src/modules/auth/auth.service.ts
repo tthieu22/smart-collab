@@ -10,6 +10,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { addDays } from 'date-fns';
+import { syncCreateUser, syncUpdateUser } from '../../message-handlers/common/sync.helper';
 
 type JwtPayload = { sub: string; email: string; role: string };
 type TokenMeta = Partial<{ ip: string; ua: string; device: string }>;
@@ -188,6 +189,12 @@ export class AuthService {
           googleId: payload.id ?? null,
         },
       });
+
+      await syncCreateUser({
+        id: user.id,
+        email: user.email,
+      });
+  
     } else {
       user = await this.prisma.user.update({
         where: { id: user.id },
@@ -195,6 +202,11 @@ export class AuthService {
           googleId: payload.id ?? user.googleId,
           avatar: payload.avatar ?? user.avatar,
         },
+      });
+
+      await syncUpdateUser({
+        id: user.id,
+        email: user.email
       });
     }
 

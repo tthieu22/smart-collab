@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import dayjs from 'dayjs';
+import { syncCreateUser, syncDeleteUser, syncUpdateUser } from '../../message-handlers/common/sync.helper';
 
 @Injectable()
 export class UserService {
@@ -40,6 +41,11 @@ export class UserService {
         emailVerificationCode,
         emailVerificationCodeExpires,
       },
+    });
+
+    await syncCreateUser({
+      id: createdUser.id,
+      email: createdUser.email,
     });
 
     // Send verification email
@@ -170,7 +176,10 @@ export class UserService {
         updatedAt: true,
       },
     });
-
+    await syncUpdateUser({
+      id: updatedUser.id,
+      email: updatedUser.email
+    });
     if (!updatedUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -179,6 +188,7 @@ export class UserService {
 
   async remove(id: string): Promise<void> {
     const result = await this.prisma.user.delete({ where: { id } });
+    await syncDeleteUser(id);
     if (!result) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
