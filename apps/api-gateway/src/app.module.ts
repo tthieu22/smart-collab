@@ -7,6 +7,7 @@ import { PassportModule } from '@nestjs/passport';
 import { getRabbitMQOptions } from './config/rabbitmq.config';
 import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -46,6 +47,9 @@ import { ProjectModule } from './project/project.module';
     // Import các module controller của Gateway
     AuthModule,
     ProjectModule,
+
+    // Upload moudle
+    UploadModule,
   ],
 })
 export class AppModule {}

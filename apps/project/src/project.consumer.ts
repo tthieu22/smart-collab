@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe, AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectConsumer {
@@ -9,7 +10,7 @@ export class ProjectConsumer {
     private readonly prisma: PrismaService,
   ) {}
 
-  // CREATE
+  // ================= CREATE PROJECT =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.create',
@@ -18,6 +19,7 @@ export class ProjectConsumer {
   async handleCreateProject(msg: { correlationId: string; name: string; description?: string; ownerId: string }) {
     console.log('📩 [Project Service] project.create:', msg);
 
+    // Tạo project trước để lấy id
     const project = await this.prisma.project.create({
       data: {
         name: msg.name,
@@ -26,16 +28,25 @@ export class ProjectConsumer {
       },
     });
 
+    // Tạo folderPath dựa trên name + id
+    const folderPath = `${msg.name.replace(/\s+/g, '_')}_${project.id}`;
+
+    // Cập nhật project với folderPath
+    const updatedProject = await this.prisma.project.update({
+      where: { id: project.id },
+      data: { folderPath }  as Prisma.ProjectUncheckedUpdateInput,
+    });
+
     await this.amqpConnection.publish('smart-collab', 'project.created', {
       correlationId: msg.correlationId,
       status: 'success',
-      project,
+      project: updatedProject,
     });
 
-    console.log('✅ Project created & event emitted:', project);
+    console.log('✅ Project created & event emitted:', updatedProject);
   }
 
-  // UPDATE
+  // ================= UPDATE PROJECT =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.update',
@@ -44,12 +55,14 @@ export class ProjectConsumer {
   async handleUpdateProject(msg: { correlationId: string; projectId: string; name?: string; description?: string }) {
     console.log('📩 [Project Service] project.update:', msg);
 
+    const dataToUpdate: { name?: string; description?: string } = {};
+    if (msg.name) dataToUpdate.name = msg.name;
+    if (msg.description !== undefined) dataToUpdate.description = msg.description;
+
+    // Cập nhật project nhưng không đổi folderPath
     const project = await this.prisma.project.update({
       where: { id: msg.projectId },
-      data: {
-        name: msg.name,
-        description: msg.description,
-      },
+      data: dataToUpdate,
     });
 
     await this.amqpConnection.publish('smart-collab', 'project.updated', {
@@ -61,7 +74,7 @@ export class ProjectConsumer {
     console.log('♻️ Project updated & event emitted:', project);
   }
 
-  // DELETE
+  // ================= DELETE PROJECT =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.delete',
@@ -86,7 +99,7 @@ export class ProjectConsumer {
     console.log('🗑️ Project deleted & event emitted:', project.id);
   }
 
-  // ADD MEMBER
+  // ================= ADD MEMBER =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.member.add',
@@ -112,7 +125,7 @@ export class ProjectConsumer {
     console.log('➕ Member added & event emitted:', member);
   }
 
-  // REMOVE MEMBER
+  // ================= REMOVE MEMBER =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.member.remove',
@@ -126,9 +139,7 @@ export class ProjectConsumer {
     });
 
     if (member) {
-      await this.prisma.projectMember.delete({
-        where: { id: member.id },
-      });
+      await this.prisma.projectMember.delete({ where: { id: member.id } });
 
       await this.amqpConnection.publish('smart-collab', 'project.member_removed', {
         correlationId: msg.correlationId,
@@ -140,7 +151,7 @@ export class ProjectConsumer {
     }
   }
 
-  // UPDATE MEMBER ROLE
+  // ================= UPDATE MEMBER ROLE =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.member.update_role',
@@ -169,7 +180,7 @@ export class ProjectConsumer {
     }
   }
 
-  // GET PROJECT WITH MEMBERS
+  // ================= GET PROJECT WITH MEMBERS =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.get',
