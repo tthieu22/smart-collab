@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authService } from '../services/auth.service';
 import { useUserStore } from './user';
+import { getProjectSocketManager } from "./realtime"; // dùng getter thay vì import instance trực tiếp
 
 interface AuthState {
   accessToken: string | null;
@@ -19,24 +20,18 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  // Initial state
   accessToken: null,
   isAuthenticated: false,
   isLoading: false,
   isInitialized: false,
 
-  // Set token & auth status
   setAccessToken: (token: string | null) => {
-    set({
-      accessToken: token,
-      isAuthenticated: !!token,
-    });
+    set({ accessToken: token, isAuthenticated: !!token });
   },
 
   setLoading: (loading: boolean) => set({ isLoading: loading }),
   setInitialized: (initialized: boolean) => set({ isInitialized: initialized }),
 
-  // Login / logout
   login: async (token: string) => {
     const { setCurrentUser } = useUserStore.getState();
     set({ accessToken: token, isAuthenticated: true, isLoading: true });
@@ -49,13 +44,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
-  },
-  logout: () =>
-    set({ accessToken: null, isAuthenticated: false, isLoading: false }),
-  clearAuth: () =>
-    set({ accessToken: null, isAuthenticated: false, isLoading: false }),
 
-  // Initialize auth: call refresh API, backend will read httpOnly cookie
+    // Lazy-init socket
+    const socketManager = getProjectSocketManager();
+    socketManager.initSocket(token);
+  },
+
+  logout: () => {
+    set({ accessToken: null, isAuthenticated: false, isLoading: false });
+
+    const socketManager = getProjectSocketManager();
+    socketManager.disconnect();
+  },
+
+  clearAuth: () => {
+    set({ accessToken: null, isAuthenticated: false, isLoading: false });
+
+    const socketManager = getProjectSocketManager();
+    socketManager.disconnect();
+  },
+
   initializeAuth: async (): Promise<boolean> => {
     const { setLoading, setAccessToken, setInitialized, clearAuth } = get();
 
@@ -68,14 +76,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (response.success && response.data?.accessToken) {
         setAccessToken(response.data.accessToken);
+
+        const socketManager = getProjectSocketManager();
+        socketManager.initSocket(response.data.accessToken);
+
         return true;
       }
 
-      // Không có access token từ refresh
       clearAuth();
       return false;
     } catch (error) {
-      console.log('Refresh token invalid or API failed', error);
+      console.log("Refresh token invalid or API failed", error);
       clearAuth();
       return false;
     } finally {

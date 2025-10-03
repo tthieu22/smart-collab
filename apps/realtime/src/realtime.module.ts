@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { RealtimeGateway } from './realtime.gateway';
-import { RealtimeConsumer } from './realtime.consumer';
 import { getGolevelupRabbitMQOptions } from './config/rabbitmq.config';
+import { ProjectRealtimeConsumer } from './project/project.consumer';
+import { MemberRealtimeConsumer } from './project/member.consumer';
 
 @Module({
   imports: [
@@ -15,6 +16,10 @@ import { getGolevelupRabbitMQOptions } from './config/rabbitmq.config';
         getGolevelupRabbitMQOptions(configService),
     }),
   ],
-  providers: [RealtimeGateway, RealtimeConsumer],
+  providers: [
+    RealtimeGateway, 
+    ProjectRealtimeConsumer,
+    MemberRealtimeConsumer
+  ],
 })
 export class RealtimeModule {}
