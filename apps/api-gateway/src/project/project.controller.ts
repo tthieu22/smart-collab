@@ -1,4 +1,10 @@
-import { Controller, Post, Body, Param, Patch, Delete, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -9,11 +15,22 @@ interface CorrelationBody {
 interface CreateProjectBody extends CorrelationBody {
   name: string;
   description?: string;
+  folderPath?: string;
+  color?: string; // thêm color
 }
 
 interface UpdateProjectBody extends CorrelationBody {
   name?: string;
   description?: string;
+  folderPath?: string;
+  publicId?: string;
+  fileUrl?: string;
+  fileType?: string;
+  color?: string; // thêm color
+  fileSize?: number;
+  resourceType?: string;
+  originalFilename?: string;
+  uploadedById?: string;
 }
 
 interface AddMemberBody extends CorrelationBody {
@@ -25,64 +42,55 @@ interface UpdateMemberRoleBody extends CorrelationBody {
   role: string;
 }
 
-interface GetProjectQuery extends CorrelationBody {}
-interface GetAllProjectsQuery extends CorrelationBody {}
-
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Post()
-  async create(@Body() body: CreateProjectBody) {
-    return this.projectService.createProject(body);
-  }
-
-  @Patch(':id')
-  async update(@Param('id') projectId: string, @Body() body: UpdateProjectBody) {
-    return this.projectService.updateProject({ projectId, ...body });
-  }
-
-  @Delete(':id')
-  async remove(@Param('id') projectId: string, @Body() body: CorrelationBody) {
-    return this.projectService.deleteProject({ projectId, correlationId: body.correlationId });
-  }
-
-  @Post(':id/members')
-  async addMember(@Param('id') projectId: string, @Body() body: AddMemberBody) {
-    return this.projectService.addMember({ projectId, ...body });
-  }
-
-  @Delete(':id/members/:userId')
-  async removeMember(
-    @Param('id') projectId: string,
-    @Param('userId') userId: string,
-    @Body() body: CorrelationBody,
-  ) {
-    return this.projectService.removeMember({ projectId, userId, correlationId: body.correlationId });
-  }
-
-  @Patch(':id/members/:userId/role')
-  async updateMemberRole(
-    @Param('id') projectId: string,
-    @Param('userId') userId: string,
-    @Body() body: UpdateMemberRoleBody,
-  ) {
-    return this.projectService.updateMemberRole({
-      projectId,
-      userId,
-      role: body.role,
-      correlationId: body.correlationId,
+  async create(@Body() body: CreateProjectBody, @Req() req: any) {
+    const user = req.user;
+    console.log("user",user)
+    return this.projectService.createProject({
+      ...body,
+      ownerId: user.userId,
     });
   }
 
-  @Get(':id')
-  async getProject(@Param('id') projectId: string, @Body() body: GetProjectQuery) {
-    return this.projectService.getProject({ projectId, correlationId: body.correlationId });
+  @Post('update')
+  async update(@Body() body: UpdateProjectBody & { projectId: string }) {
+    return this.projectService.updateProject(body);
   }
 
-  @Get()
-  async getAllProjects(@Body() body: GetAllProjectsQuery) {
-    return this.projectService.getAllProjects({ correlationId: body.correlationId });
+  @Post('delete')
+  async remove(@Body() body: { projectId: string; correlationId: string }) {
+    return this.projectService.deleteProject(body);
+  }
+
+  @Post('add-member')
+  async addMember(@Body() body: { projectId: string } & AddMemberBody) {
+    return this.projectService.addMember(body);
+  }
+
+  @Post('remove-member')
+  async removeMember(@Body() body: { projectId: string; userId: string; correlationId: string }) {
+    return this.projectService.removeMember(body);
+  }
+
+  @Post('update-member-role')
+  async updateMemberRole(@Body() body: { projectId: string; userId: string } & UpdateMemberRoleBody) {
+    return this.projectService.updateMemberRole(body);
+  }
+
+  /** Lấy thông tin project theo body */
+  @Post('get')
+  async getProject(@Body() body: { projectId: string; correlationId: string }) {
+    return this.projectService.getProject(body);
+  }
+
+  /** Lấy tất cả project theo body */
+  @Post('get-all')
+  async getAllProjects(@Body() body: { correlationId: string }) {
+    return this.projectService.getAllProjects(body);
   }
 }

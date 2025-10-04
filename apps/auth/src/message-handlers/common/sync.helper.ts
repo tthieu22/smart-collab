@@ -15,6 +15,10 @@ async function initSyncTable() {
     CREATE TABLE IF NOT EXISTS "UserCache" (
       id TEXT PRIMARY KEY,
       email VARCHAR(255) NOT NULL,
+      "firstName" VARCHAR(255),
+      "lastName" VARCHAR(255),
+      "avatar" TEXT,
+      role VARCHAR(50) NOT NULL DEFAULT 'USER',
       "createdAt" TIMESTAMP DEFAULT NOW(),
       "updatedAt" TIMESTAMP DEFAULT NOW()
     );
@@ -22,25 +26,35 @@ async function initSyncTable() {
 }
 
 /** Đồng bộ thêm user */
-export async function syncCreateUser(user: { id: string; email: string }) {
+export async function syncCreateUser(user: { id: string; email: string; firstName?: string; lastName?: string; avatar?: string; role?: string }) {
   await initSyncTable();
   await pg.query(
-    `INSERT INTO "UserCache" (id, email)
-     VALUES ($1, $2)
+    `INSERT INTO "UserCache" (id, email, "firstName", "lastName", avatar, role)
+     VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT (id) DO UPDATE 
-       SET email = $2, "updatedAt" = NOW()`,
-    [user.id, user.email],
+       SET email = $2,
+           "firstName" = $3,
+           "lastName" = $4,
+           avatar = $5,
+           role = $6,
+           "updatedAt" = NOW()`,
+    [user.id, user.email, user.firstName || null, user.lastName || null, user.avatar || null, user.role || 'USER'],
   );
 }
 
 /** Đồng bộ sửa user */
-export async function syncUpdateUser(user: { id: string; email: string }) {
+export async function syncUpdateUser(user: { id: string; email: string; firstName?: string; lastName?: string; avatar?: string; role?: string }) {
   await initSyncTable();
   await pg.query(
     `UPDATE "UserCache"
-     SET email=$2, "updatedAt"=NOW()
+     SET email=$2,
+         "firstName"=$3,
+         "lastName"=$4,
+         avatar=$5,
+         role=$6,
+         "updatedAt"=NOW()
      WHERE id=$1`,
-    [user.id, user.email],
+    [user.id, user.email, user.firstName || null, user.lastName || null, user.avatar || null, user.role || 'USER'],
   );
 }
 

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe, AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectConsumer {
@@ -17,33 +16,60 @@ export class ProjectConsumer {
     queue: 'project-service',
   })
   async handleCreateProject(msg: { correlationId: string; name: string; description?: string; ownerId: string }) {
-    console.log('📩 [Project Service] project.create:', msg);
+    console.log('📩 [Project Service] Received project.create:', msg);
 
-    // Tạo project trước để lấy id
-    const project = await this.prisma.project.create({
-      data: {
-        name: msg.name,
-        description: msg.description,
-        ownerId: msg.ownerId,
-      },
-    });
+    try {
+      // Tạo project và connect owner
+      const project = await this.prisma.project.create({
+        data: {
+          name: msg.name,
+          description: msg.description,
+          owner: { connect: { id: msg.ownerId } },
+        },
+      });
 
-    // Tạo folderPath dựa trên name + id
-    const folderPath = `${msg.name.replace(/\s+/g, '_')}_${project.id}`;
+      // Tạo folderPath
+      const folderPath = `${msg.name.replace(/\s+/g, '_')}_${project.id}`;
+      const updatedProject = await this.prisma.project.update({
+        where: { id: project.id },
+        data: { folderPath },
+      });
 
-    // Cập nhật project với folderPath
-    const updatedProject = await this.prisma.project.update({
-      where: { id: project.id },
-      data: { folderPath }  as Prisma.ProjectUncheckedUpdateInput,
-    });
+      // Thêm owner vào ProjectMember
+      const ownerMember = await this.prisma.projectMember.create({
+        data: {
+          projectId: project.id,
+          userId: msg.ownerId,
+          role: 'ADMIN',
+        },
+      });
 
-    await this.amqpConnection.publish('smart-collab', 'project.created', {
-      correlationId: msg.correlationId,
-      status: 'success',
-      project: updatedProject,
-    });
+      // Fetch lại project kèm members và owner để trả về đầy đủ thông tin
+      const fullProject = await this.prisma.project.findUnique({
+        where: { id: project.id },
+        include: {
+          owner: true,
+          members: { include: { user: true } },
+        },
+      });
 
-    console.log('✅ Project created & event emitted:', updatedProject);
+      // Emit sự kiện
+      await this.amqpConnection.publish('smart-collab', 'project.created', {
+        correlationId: msg.correlationId,
+        status: 'success',
+        project: fullProject,
+      });
+
+      console.log('✅ Project created with owner as member:', ownerMember);
+    } catch (error) {
+      console.error('❌ Error in handleCreateProject:', error);
+
+      await this.amqpConnection.publish('smart-collab', 'project.created', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
+    }
   }
 
   // ================= UPDATE PROJECT =================
@@ -59,19 +85,27 @@ export class ProjectConsumer {
     if (msg.name) dataToUpdate.name = msg.name;
     if (msg.description !== undefined) dataToUpdate.description = msg.description;
 
-    // Cập nhật project nhưng không đổi folderPath
     const project = await this.prisma.project.update({
       where: { id: msg.projectId },
       data: dataToUpdate,
     });
 
+    // Fetch lại project với members và owner
+    const fullProject = await this.prisma.project.findUnique({
+      where: { id: project.id },
+      include: {
+        owner: true,
+        members: { include: { user: true } },
+      },
+    });
+
     await this.amqpConnection.publish('smart-collab', 'project.updated', {
       correlationId: msg.correlationId,
       status: 'success',
-      project,
+      project: fullProject,
     });
 
-    console.log('♻️ Project updated & event emitted:', project);
+    console.log('♻️ Project updated & event emitted:', fullProject);
   }
 
   // ================= DELETE PROJECT =================
@@ -90,10 +124,7 @@ export class ProjectConsumer {
     await this.amqpConnection.publish('smart-collab', 'project.deleted', {
       correlationId: msg.correlationId,
       status: 'success',
-      project: {
-        id: project.id,
-        deletedAt: new Date(),
-      },
+      project: { id: project.id, deletedAt: new Date() },
     });
 
     console.log('🗑️ Project deleted & event emitted:', project.id);
@@ -116,13 +147,18 @@ export class ProjectConsumer {
       },
     });
 
+    const fullMember = await this.prisma.projectMember.findUnique({
+      where: { id: member.id },
+      include: { user: true },
+    });
+
     await this.amqpConnection.publish('smart-collab', 'project.member_added', {
       correlationId: msg.correlationId,
       status: 'success',
-      member,
+      member: fullMember,
     });
 
-    console.log('➕ Member added & event emitted:', member);
+    console.log('➕ Member added & event emitted:', fullMember);
   }
 
   // ================= REMOVE MEMBER =================
@@ -170,13 +206,18 @@ export class ProjectConsumer {
         data: { role: msg.role },
       });
 
+      const fullMember = await this.prisma.projectMember.findUnique({
+        where: { id: updatedMember.id },
+        include: { user: true },
+      });
+
       await this.amqpConnection.publish('smart-collab', 'project.member_role_updated', {
         correlationId: msg.correlationId,
         status: 'success',
-        member: updatedMember,
+        member: fullMember,
       });
 
-      console.log('🔄 Member role updated & event emitted:', updatedMember);
+      console.log('🔄 Member role updated & event emitted:', fullMember);
     }
   }
 
@@ -191,7 +232,10 @@ export class ProjectConsumer {
 
     const project = await this.prisma.project.findUnique({
       where: { id: msg.projectId },
-      include: { members: true, owner: true },
+      include: {
+        owner: true,
+        members: { include: { user: true } },
+      },
     });
 
     await this.amqpConnection.publish('smart-collab', 'project.fetched', {
@@ -203,11 +247,15 @@ export class ProjectConsumer {
     console.log('📦 Project fetched & event emitted:', project);
   }
 
+  // ================= LIST PROJECTS =================
   async handleListProjects(msg: { correlationId: string }) {
     console.log('📩 [Project Service] project.list:', msg);
 
     const projects = await this.prisma.project.findMany({
-      include: { members: true, owner: true },
+      include: {
+        owner: true,
+        members: { include: { user: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -217,5 +265,4 @@ export class ProjectConsumer {
       projects,
     });
   }
-
 }

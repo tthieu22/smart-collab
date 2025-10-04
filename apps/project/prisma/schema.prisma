@@ -21,17 +21,31 @@ model UserCache {
 }
 
 model Project {
-  id          String          @id @default(uuid())
-  name        String
-  description String?
-  ownerId     String
-  folderPath  String?         @unique   
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id               String          @id @default(uuid())
+  name             String
+  description      String?
+  ownerId          String
+  folderPath       String?         
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  color            String?
+
+  publicId         String?
+  fileUrl          String?
+  fileType         String?
+  fileSize         Int?
+  resourceType     String?
+  originalFilename String?
+  uploadedById     String?
 
   owner       UserCache       @relation("ProjectOwner", fields: [ownerId], references: [id])
   members     ProjectMember[]
+  
+  @@index([ownerId])
+  @@index([uploadedById])
+  @@unique([folderPath], map: "unique_project_folderPath")
 }
+
 
 model ProjectMember {
   id        String   @id @default(uuid())

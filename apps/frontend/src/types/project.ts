@@ -1,10 +1,10 @@
 export interface UserCache {
   id: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  avatar?: string;
-  role: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatar?: string | null;
+  role: "USER" | "ADMIN" | string;
   updatedAt: string;
 }
 
@@ -13,25 +13,7 @@ export interface ProjectMember {
   userId: string;
   role: string;
   user: UserCache;
-}
-
-export interface ProjectBE {
-  id: string;
-  name: string;
-  description?: string;
-  ownerId: string;
-  folderPath?: string;
-  createdAt: string;
-  updatedAt: string;
-  members: ProjectMember[];
-  tasks?: Task[]; // nếu backend trả task
-}
-
-export interface Member {
-  userId: string;
-  role: string;
-  name?: string;
-  avatar?: string;
+  joinedAt?: string; // có thể mở rộng
 }
 
 export interface Task {
@@ -42,6 +24,34 @@ export interface Task {
   assigneeId?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface ProjectBE {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  folderPath?: string;
+  createdAt: string;
+  updatedAt: string;
+  color?: string | null;
+  publicId?: string | null;
+  fileUrl?: string | null;
+  fileType?: string | null;
+  fileSize?: number | null;
+  resourceType?: string | null;
+  originalFilename?: string | null;
+  uploadedById?: string | null;
+  owner: UserCache;
+  members: ProjectMember[];
+  tasks?: Task[]; // nếu backend trả
+}
+
+export interface Member {
+  userId: string;
+  role: string;
+  name?: string;
+  avatar?: string;
 }
 
 export interface Project {

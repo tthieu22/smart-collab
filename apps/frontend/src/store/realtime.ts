@@ -1,10 +1,11 @@
-// ----------------------------- projectSocketManager.ts -----------------------------
 "use client";
 
 import { io, Socket } from "socket.io-client";
 import { projectStore } from "./project";
 import { useAuthStore } from "./auth";
-import { Member, Project, Task } from "@smart/types/project";
+import { Project, Member, Task } from "@smart/types/project";
+
+type CorrelationCallback = (msg: any) => void;
 
 export class ProjectSocketManager {
   private socket: Socket | null = null;
@@ -12,8 +13,11 @@ export class ProjectSocketManager {
   private accessToken: string | null = null;
   private tokenSubscribed = false;
 
+  // map correlationId -> callback
+  private correlationCallbacks = new Map<string, CorrelationCallback[]>();
+
   constructor() {
-    // Không subscribe ngay trong constructor để tránh ReferenceError
+    // Không subscribe ngay trong constructor
   }
 
   private subscribeToken() {
@@ -47,63 +51,95 @@ export class ProjectSocketManager {
       this.joinAllRooms();
     });
 
-    this.socket.on("connect_error", (err) =>
-      console.error("⚠️ Socket connect_error", err)
-    );
     this.socket.on("disconnect", (reason) =>
       console.log("❌ Socket disconnected", reason)
     );
 
-    // ---------- PROJECT EVENTS ----------
-    this.socket.on("project.created", (msg: { project: Project }) =>
-      projectStore.getState().addProject(msg.project)
-    );
-    this.socket.on("project.updated", (msg: { project: Project }) =>
-      projectStore.getState().updateProject(msg.project)
-    );
-    this.socket.on("project.deleted", (msg: { projectId: string }) =>
-      projectStore.getState().deleteProject(msg.projectId)
+    this.socket.on("connect_error", (err) =>
+      console.error("⚠️ Socket connect_error", err)
     );
 
-    // ---------- MEMBER EVENTS ----------
-    this.socket.on(
+    // ---------------- PROJECT EVENTS ----------------
+    const events = [
+      "project.created",
+      "project.updated",
+      "project.deleted",
       "project.member_added",
-      (msg: { projectId: string; member: Member }) =>
-        projectStore.getState().addMember(msg.projectId, msg.member)
-    );
-    this.socket.on(
       "project.member_removed",
-      (msg: { projectId: string; userId: string }) =>
-        projectStore.getState().removeMember(msg.projectId, msg.userId)
-    );
-    this.socket.on(
       "project.member_role_updated",
-      (msg: { projectId: string; userId: string; role: string }) =>
-        projectStore
-          .getState()
-          .updateMemberRole(msg.projectId, msg.userId, msg.role)
-    );
-
-    // ---------- TASK EVENTS ----------
-    this.socket.on(
       "project.task_added",
-      (msg: { projectId: string; task: Task }) =>
-        projectStore.getState().addTask(msg.projectId, msg.task)
-    );
-    this.socket.on(
       "project.task_updated",
-      (msg: { projectId: string; task: Task }) =>
-        projectStore.getState().updateTask(msg.projectId, msg.task)
-    );
-    this.socket.on(
       "project.task_removed",
-      (msg: { projectId: string; taskId: string }) =>
-        projectStore.getState().removeTask(msg.projectId, msg.taskId)
-    );
+      "project.fetched",
+      "project.listed",
+      "upload.completed",
+      "upload.updated",
+      "upload.deleted",
+      "upload.deleted_all",
+    ];
+
+    events.forEach((event) => {
+      this.socket?.on(event, (msg: any) => {
+        // Cập nhật store nếu là project/member/task
+        this.handleStoreUpdate(event, msg);
+
+        // Gọi callback nếu correlationId match
+        if (msg.correlationId && this.correlationCallbacks.has(msg.correlationId)) {
+          const cbs = this.correlationCallbacks.get(msg.correlationId)!;
+          cbs.forEach((cb) => cb(msg));
+          // Xóa callback sau khi gọi để tránh rò rỉ
+          this.correlationCallbacks.delete(msg.correlationId);
+        }
+      });
+    });
 
     this.socket.connect();
   }
 
+  // ---------------- Helper để subscribe theo correlationId ----------------
+  subscribeCorrelation(correlationId: string, callback: CorrelationCallback) {
+    if (!this.correlationCallbacks.has(correlationId)) {
+      this.correlationCallbacks.set(correlationId, []);
+    }
+    this.correlationCallbacks.get(correlationId)!.push(callback);
+  }
+
+  // ---------------- Store update ----------------
+  private handleStoreUpdate(event: string, msg: any) {
+    switch (event) {
+      case "project.created":
+        projectStore.getState().addProject(msg.project);
+        break;
+      case "project.updated":
+        projectStore.getState().updateProject(msg.project);
+        break;
+      case "project.deleted":
+        projectStore.getState().deleteProject(msg.projectId);
+        break;
+      case "project.member_added":
+        projectStore.getState().addMember(msg.projectId, msg.member);
+        break;
+      case "project.member_removed":
+        projectStore.getState().removeMember(msg.projectId, msg.userId);
+        break;
+      case "project.member_role_updated":
+        projectStore.getState().updateMemberRole(msg.projectId, msg.userId, msg.role);
+        break;
+      case "project.task_added":
+        projectStore.getState().addTask(msg.projectId, msg.task);
+        break;
+      case "project.task_updated":
+        projectStore.getState().updateTask(msg.projectId, msg.task);
+        break;
+      case "project.task_removed":
+        projectStore.getState().removeTask(msg.projectId, msg.taskId);
+        break;
+      default:
+        break; // upload hoặc fetch/list handled by correlation callback
+    }
+  }
+
+  // ---------------- Project room management ----------------
   joinProject(projectId: string) {
     if (!this.socket) this.initSocket(this.accessToken ?? undefined);
     if (this.joinedProjects.has(projectId)) return;
@@ -138,6 +174,7 @@ export class ProjectSocketManager {
     this.socket.disconnect();
     this.socket = null;
     this.joinedProjects.clear();
+    this.correlationCallbacks.clear();
     console.log("❌ Socket fully disconnected");
   }
 }

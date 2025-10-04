@@ -21,6 +21,7 @@ import {
   CheckOutlined,
 } from "@ant-design/icons";
 import { useBoardStore } from "@smart/store/board";
+import { createProjectWithFiles } from "@smart/lib/project-api";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -32,14 +33,36 @@ export default function CreateBoardButton() {
   const [visibility, setVisibility] = useState("workspace");
   const [background, setBackground] = useState<string | null>(null);
 
-  const handleCreate = () => {
-    if (!title) return;
-    console.log({ title, visibility, background });
-    setOpen(false);
+  
+  const handleCreate = async () => {
+  if (!title) return;
+  
+  setOpen(false);
+
+  try {
+    const files: string[] = background?.startsWith("data:image") ? [background] : [];
+    
+    const body: { name: string; description?: string; color?: string } = {
+      name: title,
+      description: `Visibility: ${visibility}`,
+    };
+
+    if (background && !background.startsWith("data:image")) {
+      // Nếu là màu, thêm vào body.color
+      body.color = background;
+    }
+
+    const project = await createProjectWithFiles(body, files);
+
+    console.log("Project created:", project);
+  } catch (err) {
+    console.error("Failed to create project:", err);
+  } finally {
     setTitle("");
     setVisibility("workspace");
     setBackground(null);
-  };
+  }
+};
 
   const boxStyle: React.CSSProperties = {
     width: "60px",

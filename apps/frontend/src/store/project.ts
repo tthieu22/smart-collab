@@ -1,6 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { Project, Member, Task } from "@smart/types/project";
+import type { ProjectBE, ProjectMember } from "@smart/types/project";
 
 interface ProjectState {
   currentProject: Project | null;
@@ -8,12 +9,12 @@ interface ProjectState {
 
   // Project
   setCurrentProject: (project: Project) => void;
-  addProject: (project: Project) => void;
-  updateProject: (project: Project) => void;
+  addProject: (projectBE: ProjectBE) => void;
+  updateProject: (projectBE: ProjectBE) => void;
   deleteProject: (projectId: string) => void;
 
   // Member
-  addMember: (projectId: string, member: Member) => void;
+  addMember: (projectId: string, memberBE: ProjectMember) => void;
   removeMember: (projectId: string, userId: string) => void;
   updateMemberRole: (projectId: string, userId: string, role: string) => void;
 
@@ -26,119 +27,102 @@ interface ProjectState {
   clearProjectStore: () => void;
 }
 
-export const projectStore = create<ProjectState>((set, get) => ({
-  currentProject: null,
-  allProjects: [],
+export const projectStore = create<ProjectState>((set, get) => {
+  const mapProjectBEtoFE = (projectBE: ProjectBE): Project => ({
+    id: projectBE.id,
+    name: projectBE.name,
+    description: projectBE.description,
+    members: projectBE.members?.map((m: ProjectMember) => ({
+      userId: m.userId,
+      role: m.role,
+      name: m.user?.firstName || m.user?.email,
+      avatar: m.user?.avatar ?? undefined,
+    })) || [],
+    tasks: projectBE.tasks || [],
+  });
 
-  setCurrentProject: (project) => set({ currentProject: project }),
-  addProject: (project) =>
-    set((state) => ({ allProjects: [...state.allProjects, project] })),
-  updateProject: (project) =>
-    set((state) => ({
-      allProjects: state.allProjects.map((p) => (p.id === project.id ? project : p)),
-      currentProject:
-        state.currentProject?.id === project.id ? project : state.currentProject,
-    })),
-  deleteProject: (projectId) =>
-    set((state) => ({
-      allProjects: state.allProjects.filter((p) => p.id !== projectId),
-      currentProject:
-        state.currentProject?.id === projectId ? null : state.currentProject,
-    })),
+  const updateProjectState = (projectId: string, updater: (p: Project) => Project) => {
+    set((state) => {
+      const allProjects = state.allProjects.map((p) =>
+        p.id === projectId ? updater(p) : p
+      );
+      const currentProject =
+        state.currentProject?.id === projectId
+          ? updater(state.currentProject)
+          : state.currentProject;
+      return { allProjects, currentProject };
+    });
+  };
 
-  // Member
-  addMember: (projectId, member) =>
-    set((state) => {
-      const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId
-          ? { ...p, members: [...p.members.filter((m) => m.userId !== member.userId), member] }
-          : p
-      );
-      const updatedCurrent =
-        state.currentProject?.id === projectId
-          ? {
-              ...state.currentProject,
-              members: [
-                ...state.currentProject.members.filter((m) => m.userId !== member.userId),
-                member,
-              ],
-            }
-          : state.currentProject;
-      return { allProjects: updatedAll, currentProject: updatedCurrent };
-    }),
-  removeMember: (projectId, userId) =>
-    set((state) => {
-      const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId ? { ...p, members: p.members.filter((m) => m.userId !== userId) } : p
-      );
-      const updatedCurrent =
-        state.currentProject?.id === projectId
-          ? {
-              ...state.currentProject,
-              members: state.currentProject.members.filter((m) => m.userId !== userId),
-            }
-          : state.currentProject;
-      return { allProjects: updatedAll, currentProject: updatedCurrent };
-    }),
-  updateMemberRole: (projectId, userId, role) =>
-    set((state) => {
-      const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId
-          ? { ...p, members: p.members.map((m) => (m.userId === userId ? { ...m, role } : m)) }
-          : p
-      );
-      const updatedCurrent =
-        state.currentProject?.id === projectId
-          ? {
-              ...state.currentProject,
-              members: state.currentProject.members.map((m) =>
-                m.userId === userId ? { ...m, role } : m
-              ),
-            }
-          : state.currentProject;
-      return { allProjects: updatedAll, currentProject: updatedCurrent };
-    }),
+  return {
+    currentProject: null,
+    allProjects: [],
 
-  // Task
-  addTask: (projectId, task) =>
-    set((state) => {
-      const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId ? { ...p, tasks: [...p.tasks.filter((t) => t.id !== task.id), task] } : p
-      );
-      const updatedCurrent =
-        state.currentProject?.id === projectId
-          ? {
-              ...state.currentProject,
-              tasks: [...state.currentProject.tasks.filter((t) => t.id !== task.id), task],
-            }
-          : state.currentProject;
-      return { allProjects: updatedAll, currentProject: updatedCurrent };
-    }),
-  updateTask: (projectId, task) =>
-    set((state) => {
-      const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId ? { ...p, tasks: p.tasks.map((t) => (t.id === task.id ? task : t)) } : p
-      );
-      const updatedCurrent =
-        state.currentProject?.id === projectId
-          ? {
-              ...state.currentProject,
-              tasks: state.currentProject.tasks.map((t) => (t.id === task.id ? task : t)),
-            }
-          : state.currentProject;
-      return { allProjects: updatedAll, currentProject: updatedCurrent };
-    }),
-  removeTask: (projectId, taskId) =>
-    set((state) => {
-      const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId ? { ...p, tasks: p.tasks.filter((t) => t.id !== taskId) } : p
-      );
-      const updatedCurrent =
-        state.currentProject?.id === projectId
-          ? { ...state.currentProject, tasks: state.currentProject.tasks.filter((t) => t.id !== taskId) }
-          : state.currentProject;
-      return { allProjects: updatedAll, currentProject: updatedCurrent };
-    }),
+    setCurrentProject: (project) => set({ currentProject: project }),
+    addProject: (projectBE) =>
+      set((state) => ({ allProjects: [...state.allProjects, mapProjectBEtoFE(projectBE)] })),
+    updateProject: (projectBE) =>
+      set((state) => {
+        const projectFE = mapProjectBEtoFE(projectBE);
+        return {
+          allProjects: state.allProjects.map((p) =>
+            p.id === projectFE.id ? projectFE : p
+          ),
+          currentProject:
+            state.currentProject?.id === projectFE.id ? projectFE : state.currentProject,
+        };
+      }),
+    deleteProject: (projectId) =>
+      set((state) => ({
+        allProjects: state.allProjects.filter((p) => p.id !== projectId),
+        currentProject:
+          state.currentProject?.id === projectId ? null : state.currentProject,
+      })),
 
-  clearProjectStore: () => set({ currentProject: null, allProjects: [] }),
-}));
+    // Member
+    addMember: (projectId, memberBE) =>
+      updateProjectState(projectId, (p) => ({
+        ...p,
+        members: [
+          ...(p.members || []).filter((m) => m.userId !== memberBE.userId),
+          {
+            userId: memberBE.userId,
+            role: memberBE.role,
+            name: memberBE.user?.firstName || memberBE.user?.email,
+            avatar: memberBE.user?.avatar ?? undefined,
+          },
+        ],
+      })),
+    removeMember: (projectId, userId) =>
+      updateProjectState(projectId, (p) => ({
+        ...p,
+        members: (p.members || []).filter((m) => m.userId !== userId),
+      })),
+    updateMemberRole: (projectId, userId, role) =>
+      updateProjectState(projectId, (p) => ({
+        ...p,
+        members: (p.members || []).map((m) =>
+          m.userId === userId ? { ...m, role } : m
+        ),
+      })),
+
+    // Task
+    addTask: (projectId, task) =>
+      updateProjectState(projectId, (p) => ({
+        ...p,
+        tasks: [...(p.tasks || []).filter((t) => t.id !== task.id), task],
+      })),
+    updateTask: (projectId, task) =>
+      updateProjectState(projectId, (p) => ({
+        ...p,
+        tasks: (p.tasks || []).map((t) => (t.id === task.id ? task : t)),
+      })),
+    removeTask: (projectId, taskId) =>
+      updateProjectState(projectId, (p) => ({
+        ...p,
+        tasks: (p.tasks || []).filter((t) => t.id !== taskId),
+      })),
+
+    clearProjectStore: () => set({ currentProject: null, allProjects: [] }),
+  };
+});

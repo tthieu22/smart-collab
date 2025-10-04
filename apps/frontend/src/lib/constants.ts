@@ -35,14 +35,14 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: '/users/me/change-password',
   },
   PROJECT: {
-    CREATE: '',
-    UPDATE: '',
-    DELETE: '',
-    ADD_MEMBER: '',
-    REMOVE_MEMBER: '',
-    UPDATE_MEMBER_ROLE: '',
-    FIND_ALL: '',
-    GET: '',
+    CREATE: '/projects',
+    UPDATE: '/projects/update',
+    DELETE: '/projects/delete',
+    ADD_MEMBER: '/projects/add-member',
+    REMOVE_MEMBER: '/projects/remove-member',
+    UPDATE_MEMBER_ROLE: '/projects/update-member-role',
+    FIND_ALL: '/projects/get-all',
+    GET: '/projects/get',
   }
 } as const;
 
