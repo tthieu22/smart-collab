@@ -1,0 +1,1 @@
+export { default as Project } from '@smart/components/project/Project';

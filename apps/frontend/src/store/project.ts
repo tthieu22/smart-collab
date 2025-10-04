@@ -1,37 +1,11 @@
 "use client";
-
 import { create } from "zustand";
-
-// ------------------- TYPES -------------------
-export interface Member {
-  userId: string;
-  role: string;
-  name?: string;
-  avatar?: string;
-}
-
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status?: "TODO" | "IN_PROGRESS" | "DONE";
-  assigneeId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  members: Member[];
-  tasks: Task[];
-}
+import { Project, Member, Task } from "@smart/types/project";
 
 interface ProjectState {
   currentProject: Project | null;
   allProjects: Project[];
-  
+
   // Project
   setCurrentProject: (project: Project) => void;
   addProject: (project: Project) => void;
@@ -52,20 +26,16 @@ interface ProjectState {
   clearProjectStore: () => void;
 }
 
-// ------------------- STORE -------------------
 export const projectStore = create<ProjectState>((set, get) => ({
   currentProject: null,
   allProjects: [],
 
-  // ---------- PROJECT ----------
   setCurrentProject: (project) => set({ currentProject: project }),
   addProject: (project) =>
     set((state) => ({ allProjects: [...state.allProjects, project] })),
   updateProject: (project) =>
     set((state) => ({
-      allProjects: state.allProjects.map((p) =>
-        p.id === project.id ? project : p
-      ),
+      allProjects: state.allProjects.map((p) => (p.id === project.id ? project : p)),
       currentProject:
         state.currentProject?.id === project.id ? project : state.currentProject,
     })),
@@ -76,41 +46,31 @@ export const projectStore = create<ProjectState>((set, get) => ({
         state.currentProject?.id === projectId ? null : state.currentProject,
     })),
 
-  // ---------- MEMBER ----------
+  // Member
   addMember: (projectId, member) =>
     set((state) => {
       const updatedAll = state.allProjects.map((p) =>
         p.id === projectId
-          ? {
-              ...p,
-              members: [...p.members.filter((m) => m.userId !== member.userId), member],
-            }
+          ? { ...p, members: [...p.members.filter((m) => m.userId !== member.userId), member] }
           : p
       );
-
       const updatedCurrent =
         state.currentProject?.id === projectId
           ? {
               ...state.currentProject,
               members: [
-                ...state.currentProject.members.filter(
-                  (m) => m.userId !== member.userId
-                ),
+                ...state.currentProject.members.filter((m) => m.userId !== member.userId),
                 member,
               ],
             }
           : state.currentProject;
-
       return { allProjects: updatedAll, currentProject: updatedCurrent };
     }),
   removeMember: (projectId, userId) =>
     set((state) => {
       const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId
-          ? { ...p, members: p.members.filter((m) => m.userId !== userId) }
-          : p
+        p.id === projectId ? { ...p, members: p.members.filter((m) => m.userId !== userId) } : p
       );
-
       const updatedCurrent =
         state.currentProject?.id === projectId
           ? {
@@ -118,22 +78,15 @@ export const projectStore = create<ProjectState>((set, get) => ({
               members: state.currentProject.members.filter((m) => m.userId !== userId),
             }
           : state.currentProject;
-
       return { allProjects: updatedAll, currentProject: updatedCurrent };
     }),
   updateMemberRole: (projectId, userId, role) =>
     set((state) => {
       const updatedAll = state.allProjects.map((p) =>
         p.id === projectId
-          ? {
-              ...p,
-              members: p.members.map((m) =>
-                m.userId === userId ? { ...m, role } : m
-              ),
-            }
+          ? { ...p, members: p.members.map((m) => (m.userId === userId ? { ...m, role } : m)) }
           : p
       );
-
       const updatedCurrent =
         state.currentProject?.id === projectId
           ? {
@@ -143,53 +96,36 @@ export const projectStore = create<ProjectState>((set, get) => ({
               ),
             }
           : state.currentProject;
-
       return { allProjects: updatedAll, currentProject: updatedCurrent };
     }),
 
-  // ---------- TASK ----------
+  // Task
   addTask: (projectId, task) =>
     set((state) => {
       const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId
-          ? { ...p, tasks: [...p.tasks.filter((t) => t.id !== task.id), task] }
-          : p
+        p.id === projectId ? { ...p, tasks: [...p.tasks.filter((t) => t.id !== task.id), task] } : p
       );
-
       const updatedCurrent =
         state.currentProject?.id === projectId
           ? {
               ...state.currentProject,
-              tasks: [
-                ...state.currentProject.tasks.filter((t) => t.id !== task.id),
-                task,
-              ],
+              tasks: [...state.currentProject.tasks.filter((t) => t.id !== task.id), task],
             }
           : state.currentProject;
-
       return { allProjects: updatedAll, currentProject: updatedCurrent };
     }),
   updateTask: (projectId, task) =>
     set((state) => {
       const updatedAll = state.allProjects.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              tasks: p.tasks.map((t) => (t.id === task.id ? task : t)),
-            }
-          : p
+        p.id === projectId ? { ...p, tasks: p.tasks.map((t) => (t.id === task.id ? task : t)) } : p
       );
-
       const updatedCurrent =
         state.currentProject?.id === projectId
           ? {
               ...state.currentProject,
-              tasks: state.currentProject.tasks.map((t) =>
-                t.id === task.id ? task : t
-              ),
+              tasks: state.currentProject.tasks.map((t) => (t.id === task.id ? task : t)),
             }
           : state.currentProject;
-
       return { allProjects: updatedAll, currentProject: updatedCurrent };
     }),
   removeTask: (projectId, taskId) =>
@@ -197,19 +133,12 @@ export const projectStore = create<ProjectState>((set, get) => ({
       const updatedAll = state.allProjects.map((p) =>
         p.id === projectId ? { ...p, tasks: p.tasks.filter((t) => t.id !== taskId) } : p
       );
-
       const updatedCurrent =
         state.currentProject?.id === projectId
-          ? {
-              ...state.currentProject,
-              tasks: state.currentProject.tasks.filter((t) => t.id !== taskId),
-            }
+          ? { ...state.currentProject, tasks: state.currentProject.tasks.filter((t) => t.id !== taskId) }
           : state.currentProject;
-
       return { allProjects: updatedAll, currentProject: updatedCurrent };
     }),
 
-  // ---------- RESET ----------
-  clearProjectStore: () =>
-    set({ currentProject: null, allProjects: [] }),
+  clearProjectStore: () => set({ currentProject: null, allProjects: [] }),
 }));

@@ -202,4 +202,20 @@ export class ProjectConsumer {
 
     console.log('📦 Project fetched & event emitted:', project);
   }
+
+  async handleListProjects(msg: { correlationId: string }) {
+    console.log('📩 [Project Service] project.list:', msg);
+
+    const projects = await this.prisma.project.findMany({
+      include: { members: true, owner: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    await this.amqpConnection.publish('smart-collab', 'project.listed', {
+      correlationId: msg.correlationId,
+      status: 'success',
+      projects,
+    });
+  }
+
 }

@@ -2,8 +2,9 @@
 "use client";
 
 import { io, Socket } from "socket.io-client";
-import { projectStore, Project, Member, Task } from "./project";
+import { projectStore } from "./project";
 import { useAuthStore } from "./auth";
+import { Member, Project, Task } from "@smart/types/project";
 
 export class ProjectSocketManager {
   private socket: Socket | null = null;

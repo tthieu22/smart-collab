@@ -1,16 +1,30 @@
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { JwtService } from '@nestjs/jwt';
 
-@WebSocketGateway({
-  cors: { origin: '*' },
-})
+@WebSocketGateway({ cors: { origin: '*' } })
 export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  handleConnection(client: Socket) {
-    console.log(`🔌 Client connected: ${client.id}`);
+  constructor(private readonly jwtService: JwtService) {}
+
+  async handleConnection(client: Socket) {
+    try {
+      const token = client.handshake.auth.token;
+      if (!token) {
+        console.log(`❌ Missing token for client: ${client.id}`);
+        client.disconnect();
+        return;
+      }
+
+      const payload = this.jwtService.verify(token);
+      (client as any).user = payload; // attach user
+      console.log(`🔌 User connected: ${payload.sub} (${client.id})`);
+    } catch (err) {
+      console.log('❌ Invalid token, disconnecting client:', client.id);
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {

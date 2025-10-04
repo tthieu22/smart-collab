@@ -34,6 +34,16 @@ export const API_ENDPOINTS = {
     VERIFY_EMAIL: '/users/verify-email',
     CHANGE_PASSWORD: '/users/me/change-password',
   },
+  PROJECT: {
+    CREATE: '',
+    UPDATE: '',
+    DELETE: '',
+    ADD_MEMBER: '',
+    REMOVE_MEMBER: '',
+    UPDATE_MEMBER_ROLE: '',
+    FIND_ALL: '',
+    GET: '',
+  }
 } as const;
 
 export const APP_CONFIG = {
