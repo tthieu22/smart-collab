@@ -4,91 +4,64 @@ import {
   Body,
   UseGuards,
   Req,
+  Patch,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
-interface CorrelationBody {
-  correlationId: string;
-}
-
-interface CreateProjectBody extends CorrelationBody {
-  name: string;
-  description?: string;
-  folderPath?: string;
-  color?: string; // thêm color
-}
-
-interface UpdateProjectBody extends CorrelationBody {
-  name?: string;
-  description?: string;
-  folderPath?: string;
-  publicId?: string;
-  fileUrl?: string;
-  fileType?: string;
-  color?: string; // thêm color
-  fileSize?: number;
-  resourceType?: string;
-  originalFilename?: string;
-  uploadedById?: string;
-}
-
-interface AddMemberBody extends CorrelationBody {
-  userId: string;
-  role?: string;
-}
-
-interface UpdateMemberRoleBody extends CorrelationBody {
-  role: string;
-}
+import { Project, Member } from './dto/project.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
+  /** CREATE PROJECT */
   @Post()
-  async create(@Body() body: CreateProjectBody, @Req() req: any) {
+  async create(@Body() body: Project, @Req() req: any) {
     const user = req.user;
-    console.log("user",user)
     return this.projectService.createProject({
       ...body,
       ownerId: user.userId,
     });
   }
 
-  @Post('update')
-  async update(@Body() body: UpdateProjectBody & { projectId: string }) {
+  /** UPDATE PROJECT */
+  @Patch('update')
+  async update(@Body() body: Project) {
     return this.projectService.updateProject(body);
   }
 
+  /** DELETE PROJECT */
   @Post('delete')
-  async remove(@Body() body: { projectId: string; correlationId: string }) {
+  async remove(@Body() body: Project) {
     return this.projectService.deleteProject(body);
   }
 
+  /** ADD MEMBER */
   @Post('add-member')
-  async addMember(@Body() body: { projectId: string } & AddMemberBody) {
+  async addMember(@Body() body: Member) {
     return this.projectService.addMember(body);
   }
 
+  /** REMOVE MEMBER */
   @Post('remove-member')
-  async removeMember(@Body() body: { projectId: string; userId: string; correlationId: string }) {
+  async removeMember(@Body() body: Member) {
     return this.projectService.removeMember(body);
   }
 
+  /** UPDATE MEMBER ROLE */
   @Post('update-member-role')
-  async updateMemberRole(@Body() body: { projectId: string; userId: string } & UpdateMemberRoleBody) {
+  async updateMemberRole(@Body() body: Member) {
     return this.projectService.updateMemberRole(body);
   }
 
-  /** Lấy thông tin project theo body */
+  /** GET PROJECT */
   @Post('get')
-  async getProject(@Body() body: { projectId: string; correlationId: string }) {
+  async getProject(@Body() body: Project) {
     return this.projectService.getProject(body);
   }
 
-  /** Lấy tất cả project theo body */
+  /** GET ALL PROJECTS */
   @Post('get-all')
   async getAllProjects(@Body() body: { correlationId: string }) {
     return this.projectService.getAllProjects(body);

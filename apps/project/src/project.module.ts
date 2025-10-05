@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { ProjectConsumer } from './project.consumer';
 import { getGolevelupRabbitMQOptions } from './config/rabbitmq.config';
-import { ProjectService } from './project.service';
 import { PrismaModule } from '../prisma/project.module';
 
 @Module({
@@ -17,6 +16,6 @@ import { PrismaModule } from '../prisma/project.module';
         getGolevelupRabbitMQOptions(configService),
     }),
   ],
-  providers: [ProjectConsumer, ProjectService],
+  providers: [ProjectConsumer],
 })
 export class ProjectModule {}

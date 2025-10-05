@@ -13,7 +13,6 @@ export interface ProjectMember {
   userId: string;
   role: string;
   user: UserCache;
-  joinedAt?: string; // có thể mở rộng
 }
 
 export interface Task {
@@ -26,7 +25,7 @@ export interface Task {
   updatedAt?: string;
 }
 
-export interface ProjectBE {
+export interface Project {
   id: string;
   name: string;
   description?: string;
@@ -44,7 +43,7 @@ export interface ProjectBE {
   uploadedById?: string | null;
   owner: UserCache;
   members: ProjectMember[];
-  tasks?: Task[]; // nếu backend trả
+  tasks?: Task[];
 }
 
 export interface Member {
@@ -52,12 +51,4 @@ export interface Member {
   role: string;
   name?: string;
   avatar?: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  members: Member[];
-  tasks: Task[];
 }

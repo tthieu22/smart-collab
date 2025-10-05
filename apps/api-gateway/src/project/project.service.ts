@@ -1,91 +1,111 @@
 import { Injectable } from '@nestjs/common';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-
-interface CorrelationDTO {
-  correlationId: string;
-}
-
-interface CreateProjectDTO extends CorrelationDTO {
-  name: string;
-  description?: string;
-  folderPath?: string;
-  color?: string; // thêm color
-  ownerId: string; 
-}
-
-interface UpdateProjectDTO extends CorrelationDTO {
-  projectId: string;
-  name?: string;
-  description?: string;
-  folderPath?: string;
-  color?: string; // thêm color
-  publicId?: string;
-  fileUrl?: string;
-  fileType?: string;
-  fileSize?: number;
-  resourceType?: string;
-  originalFilename?: string;
-  uploadedById?: string;
-}
-
-interface MemberDTO extends CorrelationDTO {
-  projectId: string;
-  userId: string;
-  role?: string;
-}
-
-interface MemberRoleDTO extends CorrelationDTO {
-  projectId: string;
-  userId: string;
-  role: string;
-}
+import { Project, Member } from './dto/project.dto'; // dùng interface duy nhất
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(private readonly amqp: AmqpConnection) {}
 
-  private publish(correlationId: string, routingKey: string, payload: any) {
-    return this.amqpConnection.publish('smart-collab', routingKey, { correlationId, ...payload });
+  private sendEvent(event: string, payload: any) {
+    console.log(`📤 Sending event "${event}" to exchange "smart-collab":`, payload);
+    return this.amqp.publish('smart-collab', event, payload);
   }
 
-  async createProject(dto: CreateProjectDTO) {
-    await this.publish(dto.correlationId, 'project.create', dto);
-    console.log(dto);
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Project creation requested', dto };
+  /** Project actions */
+  async createProject(dto: Project) {
+    await this.sendEvent('project.create', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Project creation requested',
+      data: dto,
+    };
   }
 
-  async updateProject(dto: UpdateProjectDTO) {
-    await this.publish(dto.correlationId, 'project.update', dto);
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Project update requested', dto };
+  async updateProject(dto: Project) {
+    await this.sendEvent('project.update', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Project update requested',
+      data: dto,
+    };
   }
 
-  async deleteProject(dto: { projectId: string } & CorrelationDTO) {
-    await this.publish(dto.correlationId, 'project.delete', dto);
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Project deletion requested', dto };
+  async deleteProject(dto: Project) {
+    await this.sendEvent('project.delete', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Project deletion requested',
+      data: dto,
+    };
   }
 
-  async addMember(dto: MemberDTO) {
-    await this.publish(dto.correlationId, 'project.member.add', dto);
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Add member requested', dto };
+  async getProject(dto: Project) {
+    await this.sendEvent('project.get', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Fetch project requested',
+      data: dto,
+    };
   }
 
-  async removeMember(dto: MemberDTO) {
-    await this.publish(dto.correlationId, 'project.member.remove', dto);
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Remove member requested', dto };
+  async getAllProjects(dto: { correlationId: string }) {
+    await this.sendEvent('project.get_all', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Fetch all projects requested',
+      data: dto,
+    };
   }
 
-  async updateMemberRole(dto: MemberRoleDTO) {
-    await this.publish(dto.correlationId, 'project.member.update_role', dto);
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Update member role requested', dto };
+  /** Member actions */
+  async addMember(dto: Member) {
+    await this.sendEvent('project.member_added', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Add member requested',
+      data: dto,
+    };
   }
 
-  async getProject(dto: { projectId: string } & CorrelationDTO) {
-    await this.publish(dto.correlationId, 'project.get', dto);
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Fetch project requested', dto };
+  async removeMember(dto: Member) {
+    await this.sendEvent('project.member_removed', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Remove member requested',
+      data: dto,
+    };
   }
 
-  async getAllProjects(dto: CorrelationDTO) {
-    await this.publish(dto.correlationId, 'project.list', {});
-    return { status: 'queued', correlationId: dto.correlationId, message: 'Fetch all projects requested' };
+  async updateMemberRole(dto: Member) {
+    await this.sendEvent('project.member_role_updated', dto);
+    console.log('📤 Event queued:', dto);
+
+    return {
+      status: 'queued',
+      correlationId: dto.correlationId,
+      message: 'Update member role requested',
+      data: dto,
+    };
   }
 }

@@ -35,34 +35,30 @@ export default function CreateBoardButton() {
 
   
   const handleCreate = async () => {
-  if (!title) return;
-  
-  setOpen(false);
-
-  try {
-    const files: string[] = background?.startsWith("data:image") ? [background] : [];
+    if (!title) return;
     
-    const body: { name: string; description?: string; color?: string } = {
-      name: title,
-      description: `Visibility: ${visibility}`,
-    };
+    setOpen(false);
 
-    if (background && !background.startsWith("data:image")) {
-      // Nếu là màu, thêm vào body.color
-      body.color = background;
+    try {
+      const files: string[] = background?.startsWith("data:image") ? [background] : [];
+      
+      const body: { name: string; description?: string; color?: string } = {
+        name: title,
+        description: `Visibility: ${visibility}`,
+      };
+
+      if (background && !background.startsWith("data:image")) {
+        body.color = background;
+      }
+      await createProjectWithFiles(body, files);
+    } catch (err) {
+      console.error("Failed to create project:", err);
+    } finally {
+      setTitle("");
+      setVisibility("workspace");
+      setBackground(null);
     }
-
-    const project = await createProjectWithFiles(body, files);
-
-    console.log("Project created:", project);
-  } catch (err) {
-    console.error("Failed to create project:", err);
-  } finally {
-    setTitle("");
-    setVisibility("workspace");
-    setBackground(null);
-  }
-};
+  };
 
   const boxStyle: React.CSSProperties = {
     width: "60px",

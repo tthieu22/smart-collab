@@ -2,6 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe, AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from '../prisma/prisma.service';
 
+interface Correlation {
+  correlationId: string;
+}
+
+interface ProjectMessage extends Correlation {
+  projectId?: string;
+  name?: string;
+  description?: string;
+  ownerId?: string;
+  userId?: string;
+  role?: string;
+  folderPath?: string;
+  color?: string;
+  [key: string]: any;
+}
+
 @Injectable()
 export class ProjectConsumer {
   constructor(
@@ -13,58 +29,40 @@ export class ProjectConsumer {
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.create',
-    queue: 'project-service',
+    queue: 'project-service.create',
   })
-  async handleCreateProject(msg: { correlationId: string; name: string; description?: string; ownerId: string }) {
-    console.log('📩 [Project Service] Received project.create:', msg);
-
+  async handleCreateProject(msg: ProjectMessage) {
+    console.log('📩 Received project.create:', msg);
     try {
-      // Tạo project và connect owner
       const project = await this.prisma.project.create({
         data: {
-          name: msg.name,
+          name: msg.name!,
           description: msg.description,
-          owner: { connect: { id: msg.ownerId } },
+          owner: { connect: { id: msg.ownerId! } },
+          color: msg.color,
         },
       });
 
-      // Tạo folderPath
-      const folderPath = `${msg.name.replace(/\s+/g, '_')}_${project.id}`;
-      const updatedProject = await this.prisma.project.update({
-        where: { id: project.id },
-        data: { folderPath },
+      const folderPath = `${msg.name!.replace(/\s+/g, '_')}_${project.id}`;
+      await this.prisma.project.update({ where: { id: project.id }, data: { folderPath } });
+
+      await this.prisma.projectMember.create({
+        data: { projectId: project.id, userId: msg.ownerId!, role: 'ADMIN' },
       });
 
-      // Thêm owner vào ProjectMember
-      const ownerMember = await this.prisma.projectMember.create({
-        data: {
-          projectId: project.id,
-          userId: msg.ownerId,
-          role: 'ADMIN',
-        },
-      });
-
-      // Fetch lại project kèm members và owner để trả về đầy đủ thông tin
       const fullProject = await this.prisma.project.findUnique({
         where: { id: project.id },
-        include: {
-          owner: true,
-          members: { include: { user: true } },
-        },
+        include: { owner: true, members: { include: { user: true } } },
       });
 
-      // Emit sự kiện
-      await this.amqpConnection.publish('smart-collab', 'project.created', {
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.created', {
         correlationId: msg.correlationId,
         status: 'success',
         project: fullProject,
       });
-
-      console.log('✅ Project created with owner as member:', ownerMember);
     } catch (error) {
       console.error('❌ Error in handleCreateProject:', error);
-
-      await this.amqpConnection.publish('smart-collab', 'project.created', {
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.created', {
         correlationId: msg.correlationId,
         status: 'error',
         message: error,
@@ -76,193 +74,205 @@ export class ProjectConsumer {
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.update',
-    queue: 'project-service',
+    queue: 'project-service.update',
   })
-  async handleUpdateProject(msg: { correlationId: string; projectId: string; name?: string; description?: string }) {
-    console.log('📩 [Project Service] project.update:', msg);
+  async handleUpdateProject(msg: ProjectMessage) {
+    try {
+      const updatedProject = await this.prisma.project.update({
+        where: { id: msg.projectId! },
+        data: {
+          name: msg.name,
+          description: msg.description,
+          folderPath: msg.folderPath,
+          color: msg.color,
+          publicId: msg.publicId,
+          fileUrl: msg.fileUrl,
+          fileType: msg.fileType,
+          fileSize: msg.fileSize,
+          resourceType: msg.resourceType,
+          originalFilename: msg.originalFilename,
+          uploadedById: msg.uploadedById,
+        },
+      });
 
-    const dataToUpdate: { name?: string; description?: string } = {};
-    if (msg.name) dataToUpdate.name = msg.name;
-    if (msg.description !== undefined) dataToUpdate.description = msg.description;
-
-    const project = await this.prisma.project.update({
-      where: { id: msg.projectId },
-      data: dataToUpdate,
-    });
-
-    // Fetch lại project với members và owner
-    const fullProject = await this.prisma.project.findUnique({
-      where: { id: project.id },
-      include: {
-        owner: true,
-        members: { include: { user: true } },
-      },
-    });
-
-    await this.amqpConnection.publish('smart-collab', 'project.updated', {
-      correlationId: msg.correlationId,
-      status: 'success',
-      project: fullProject,
-    });
-
-    console.log('♻️ Project updated & event emitted:', fullProject);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.updated', {
+        correlationId: msg.correlationId,
+        status: 'success',
+        project: updatedProject,
+      });
+    } catch (error) {
+      console.error('❌ Error in handleUpdateProject:', error);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.updated', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
+    }
   }
 
   // ================= DELETE PROJECT =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.delete',
-    queue: 'project-service',
+    queue: 'project-service.delete',
   })
-  async handleDeleteProject(msg: { correlationId: string; projectId: string }) {
-    console.log('📩 [Project Service] project.delete:', msg);
+  async handleDeleteProject(msg: ProjectMessage) {
+    try {
+      await this.prisma.project.delete({ where: { id: msg.projectId! } });
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.deleted', {
+        correlationId: msg.correlationId,
+        status: 'success',
+        projectId: msg.projectId,
+      });
+    } catch (error) {
+      console.error('❌ Error in handleDeleteProject:', error);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.deleted', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
+    }
+  }
 
-    const project = await this.prisma.project.delete({
-      where: { id: msg.projectId },
-    });
+  // ================= GET PROJECT =================
+  @RabbitSubscribe({
+    exchange: 'smart-collab',
+    routingKey: 'project.get',
+    queue: 'project-service.get',
+  })
+  async handleGetProject(msg: ProjectMessage) {
+    try {
+      const project = await this.prisma.project.findUnique({
+        where: { id: msg.projectId! },
+        include: { owner: true, members: { include: { user: true } } },
+      });
 
-    await this.amqpConnection.publish('smart-collab', 'project.deleted', {
-      correlationId: msg.correlationId,
-      status: 'success',
-      project: { id: project.id, deletedAt: new Date() },
-    });
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.fetched', {
+        correlationId: msg.correlationId,
+        status: 'success',
+        project,
+      });
+    } catch (error) {
+      console.error('❌ Error in handleGetProject:', error);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.fetched', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
+    }
+  }
 
-    console.log('🗑️ Project deleted & event emitted:', project.id);
+  // ================= GET ALL PROJECTS =================
+  @RabbitSubscribe({
+    exchange: 'smart-collab',
+    routingKey: 'project.get_all',
+    queue: 'project-service.get_all',
+  })
+  async handleGetAllProjects(msg: ProjectMessage) {
+    try {
+      const projects = await this.prisma.project.findMany({
+        include: { owner: true, members: { include: { user: true } } },
+      });
+
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.listed', {
+        correlationId: msg.correlationId,
+        status: 'success',
+        projects,
+      });
+    } catch (error) {
+      console.error('❌ Error in handleGetAllProjects:', error);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.listed', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
+    }
   }
 
   // ================= ADD MEMBER =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
-    routingKey: 'project.member.add',
-    queue: 'project-service',
+    routingKey: 'project.member_added',
+    queue: 'project-service.member_added',
   })
-  async handleAddMember(msg: { correlationId: string; projectId: string; userId: string; role?: string }) {
-    console.log('📩 [Project Service] project.member.add:', msg);
+  async handleAddMember(msg: ProjectMessage) {
+    try {
+      const member = await this.prisma.projectMember.create({
+        data: { projectId: msg.projectId!, userId: msg.userId!, role: msg.role || 'MEMBER' },
+      });
 
-    const member = await this.prisma.projectMember.create({
-      data: {
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.member_added', {
+        correlationId: msg.correlationId,
+        status: 'success',
         projectId: msg.projectId,
         userId: msg.userId,
-        role: msg.role || 'MEMBER',
-      },
-    });
-
-    const fullMember = await this.prisma.projectMember.findUnique({
-      where: { id: member.id },
-      include: { user: true },
-    });
-
-    await this.amqpConnection.publish('smart-collab', 'project.member_added', {
-      correlationId: msg.correlationId,
-      status: 'success',
-      member: fullMember,
-    });
-
-    console.log('➕ Member added & event emitted:', fullMember);
+        member,
+      });
+    } catch (error) {
+      console.error('❌ Error in handleAddMember:', error);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.member_added', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
+    }
   }
 
   // ================= REMOVE MEMBER =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
-    routingKey: 'project.member.remove',
-    queue: 'project-service',
+    routingKey: 'project.member_removed',
+    queue: 'project-service.member_removed',
   })
-  async handleRemoveMember(msg: { correlationId: string; projectId: string; userId: string }) {
-    console.log('📩 [Project Service] project.member.remove:', msg);
-
-    const member = await this.prisma.projectMember.findFirst({
-      where: { projectId: msg.projectId, userId: msg.userId },
-    });
-
-    if (member) {
-      await this.prisma.projectMember.delete({ where: { id: member.id } });
-
-      await this.amqpConnection.publish('smart-collab', 'project.member_removed', {
-        correlationId: msg.correlationId,
-        status: 'success',
-        member: { projectId: msg.projectId, userId: msg.userId },
+  async handleRemoveMember(msg: ProjectMessage) {
+    try {
+      await this.prisma.projectMember.delete({
+        where: { projectId_userId: { projectId: msg.projectId!, userId: msg.userId! } },
       });
 
-      console.log('➖ Member removed & event emitted:', member);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.member_removed', {
+        correlationId: msg.correlationId,
+        status: 'success',
+        projectId: msg.projectId,
+        userId: msg.userId,
+      });
+    } catch (error) {
+      console.error('❌ Error in handleRemoveMember:', error);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.member_removed', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
     }
   }
 
   // ================= UPDATE MEMBER ROLE =================
   @RabbitSubscribe({
     exchange: 'smart-collab',
-    routingKey: 'project.member.update_role',
-    queue: 'project-service',
+    routingKey: 'project.member_role_updated',
+    queue: 'project-service.member_role_updated',
   })
-  async handleUpdateMemberRole(msg: { correlationId: string; projectId: string; userId: string; role: string }) {
-    console.log('📩 [Project Service] project.member.update_role:', msg);
-
-    const member = await this.prisma.projectMember.findFirst({
-      where: { projectId: msg.projectId, userId: msg.userId },
-    });
-
-    if (member) {
-      const updatedMember = await this.prisma.projectMember.update({
-        where: { id: member.id },
-        data: { role: msg.role },
+  async handleUpdateMemberRole(msg: ProjectMessage) {
+    try {
+      const member = await this.prisma.projectMember.update({
+        where: { projectId_userId: { projectId: msg.projectId!, userId: msg.userId! } },
+        data: { role: msg.role! },
       });
 
-      const fullMember = await this.prisma.projectMember.findUnique({
-        where: { id: updatedMember.id },
-        include: { user: true },
-      });
-
-      await this.amqpConnection.publish('smart-collab', 'project.member_role_updated', {
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.member_role_updated', {
         correlationId: msg.correlationId,
         status: 'success',
-        member: fullMember,
+        projectId: msg.projectId,
+        userId: msg.userId,
+        member,
       });
-
-      console.log('🔄 Member role updated & event emitted:', fullMember);
+    } catch (error) {
+      console.error('❌ Error in handleUpdateMemberRole:', error);
+      await this.amqpConnection.publish('smart-collab', 'realtime.project.member_role_updated', {
+        correlationId: msg.correlationId,
+        status: 'error',
+        message: error,
+      });
     }
-  }
-
-  // ================= GET PROJECT WITH MEMBERS =================
-  @RabbitSubscribe({
-    exchange: 'smart-collab',
-    routingKey: 'project.get',
-    queue: 'project-service',
-  })
-  async handleGetProject(msg: { correlationId: string; projectId: string }) {
-    console.log('📩 [Project Service] project.get:', msg);
-
-    const project = await this.prisma.project.findUnique({
-      where: { id: msg.projectId },
-      include: {
-        owner: true,
-        members: { include: { user: true } },
-      },
-    });
-
-    await this.amqpConnection.publish('smart-collab', 'project.fetched', {
-      correlationId: msg.correlationId,
-      status: 'success',
-      project,
-    });
-
-    console.log('📦 Project fetched & event emitted:', project);
-  }
-
-  // ================= LIST PROJECTS =================
-  async handleListProjects(msg: { correlationId: string }) {
-    console.log('📩 [Project Service] project.list:', msg);
-
-    const projects = await this.prisma.project.findMany({
-      include: {
-        owner: true,
-        members: { include: { user: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    await this.amqpConnection.publish('smart-collab', 'project.listed', {
-      correlationId: msg.correlationId,
-      status: 'success',
-      projects,
-    });
   }
 }

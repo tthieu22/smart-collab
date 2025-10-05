@@ -32,7 +32,7 @@ import { MemberRealtimeConsumer } from './project/member.consumer';
   providers: [
     RealtimeGateway,
     ProjectRealtimeConsumer,
-    MemberRealtimeConsumer,
+    // MemberRealtimeConsumer,
   ],
 })
 export class RealtimeModule {}

@@ -19,139 +19,119 @@ const projectSocketManager = getProjectSocketManager();
 export async function fetchAllProjects(): Promise<Project[]> {
   const token = getToken();
   const correlationId = createCorrelationId();
-  try {
-    const projectsBE: any[] = await projectService.getAllProjects({ correlationId }, token);
-    projectsBE.forEach((p) => projectStore.getState().addProject(p));
-    return projectsBE;
-  } catch (err) {
-    console.error("Failed to fetch projects:", err);
-    return [];
-  }
+
+  await projectService.getAllProjects({ correlationId }, token);
+  // BE emit → socket nhận → addProject
+  return projectStore.getState().allProjects;  // luôn lấy từ store
 }
 
 export async function fetchProject(projectId: string): Promise<Project | null> {
   const token = getToken();
   const correlationId = createCorrelationId();
-  try {
-    const projectBE: any = await projectService.getProject({ projectId, correlationId }, token);
-    projectStore.getState().updateProject(projectBE);
-    projectStore.getState().setCurrentProject(projectBE);
-    return projectBE;
-  } catch (err) {
-    console.error("Failed to fetch project:", err);
-    return null;
-  }
+
+  await projectService.getProject({ projectId, correlationId }, token);
+  return projectStore.getState().allProjects.find((p) => p.id === projectId) ?? null;
 }
 
 export async function createProject(body: { name: string; description?: string }) {
   const token = getToken();
   const correlationId = createCorrelationId();
 
-  projectSocketManager.subscribeCorrelation(correlationId, (msg) => {
-    if (msg.project) projectStore.getState().addProject(msg.project);
-    console.log("📩 Socket response (createProject):", msg);
-  });
-
-  const res = await projectService.createProject({ ...body, correlationId }, token);
-  if (res.status === "queued") {
-    console.log("Project creation queued:", res.correlationId);
-  }
-  return res;
+  await projectService.createProject({ ...body, correlationId }, token);
+  return projectStore.getState().allProjects.at(0); // hoặc find theo correlation
 }
 
 export async function updateProject(projectId: string, body: { name?: string; description?: string; color?: string }) {
   const token = getToken();
   const correlationId = createCorrelationId();
 
-  projectSocketManager.subscribeCorrelation(correlationId, (msg) => {
-    if (msg.project) projectStore.getState().updateProject(msg.project);
-    console.log("📩 Socket response (updateProject):", msg);
-  });
-
-  const res = await projectService.updateProject({ projectId, ...body, correlationId }, token);
-  if (res.status === "queued") console.log("Project update queued:", res.correlationId);
-  return res;
+  await projectService.updateProject({ projectId, ...body, correlationId }, token);
+  return projectStore.getState().allProjects.find((p) => p.id === projectId);
 }
 
 export async function deleteProject(projectId: string) {
   const token = getToken();
   const correlationId = createCorrelationId();
 
-  projectSocketManager.subscribeCorrelation(correlationId, (msg) => {
-    console.log("📩 Socket response (deleteProject):", msg);
-    if (msg.status === "deleted") projectStore.getState().deleteProject(projectId);
-  });
-
-  const res = await projectService.deleteProject({ projectId, correlationId }, token);
-  if (res.status === "queued") {
-    projectStore.getState().deleteProject(projectId);
-    console.log("Project deletion queued:", res.correlationId);
-  }
-  return res;
+  await projectService.deleteProject({ projectId, correlationId }, token);
+  return !projectStore.getState().allProjects.some((p) => p.id === projectId);
 }
 
 export async function addMember(projectId: string, userId: string, role?: string) {
   const token = getToken();
   const correlationId = createCorrelationId();
 
-  projectSocketManager.subscribeCorrelation(correlationId, (msg) => {
-    if (msg.member) projectStore.getState().addMember(projectId, msg.member);
-    console.log("📩 Socket response (addMember):", msg);
-  });
-
-  return await projectService.addMember({ projectId, userId, role, correlationId }, token);
+  await projectService.addMember({ projectId, userId, role, correlationId }, token);
+  return projectStore.getState().allProjects
+    .find((p) => p.id === projectId)?.members.find((m) => m.userId === userId);
 }
 
 export async function removeMember(projectId: string, userId: string) {
   const token = getToken();
   const correlationId = createCorrelationId();
 
-  projectSocketManager.subscribeCorrelation(correlationId, (msg) => {
-    console.log("📩 Socket response (removeMember):", msg);
-    if (msg.status === "removed") projectStore.getState().removeMember(projectId, userId);
-  });
-
-  return await projectService.removeMember({ projectId, userId, correlationId }, token);
+  await projectService.removeMember({ projectId, userId, correlationId }, token);
+  return !projectStore.getState().allProjects
+    .find((p) => p.id === projectId)?.members.some((m) => m.userId === userId);
 }
 
 export async function updateMemberRole(projectId: string, userId: string, role: string) {
   const token = getToken();
   const correlationId = createCorrelationId();
 
-  projectSocketManager.subscribeCorrelation(correlationId, (msg) => {
-    if (msg.status === "updated") projectStore.getState().updateMemberRole(projectId, userId, role);
-    console.log("📩 Socket response (updateMemberRole):", msg);
-  });
-
-  return await projectService.updateMemberRole({ projectId, userId, role, correlationId }, token);
+  await projectService.updateMemberRole({ projectId, userId, role, correlationId }, token);
+  return projectStore.getState().allProjects
+    .find((p) => p.id === projectId)?.members.find((m) => m.userId === userId)?.role;
 }
 
-/** Luồng: create → upload → update → fetch → set store */
+
 export async function createProjectWithFiles(
   body: { name: string; description?: string; color?: string },
-  files: string[]
-) {
+  files: string[] = []
+): Promise<Project> {
   const token = getToken();
+  if (!token) throw new Error("No auth token");
+
   const correlationId = createCorrelationId();
 
-  projectSocketManager.subscribeCorrelation(correlationId, (msg) => {
-    console.log("📩 Socket response (createProjectWithFiles):", msg);
-    if (msg.project) projectStore.getState().updateProject(msg.project);
-  });
+  // Hàm helper lắng nghe socket
+  const waitForProject = (corrId: string) =>
+    new Promise<Project>((resolve, reject) => {
+      const unsubscribe = projectSocketManager.subscribeCorrelation(
+        corrId,
+        (msg) => {
+          console.log("📩 Socket response:", msg);
 
-  // 1. Tạo project
-  const createRes = await projectService.createProject({ ...body, correlationId }, token);
-  if (createRes.status !== "queued") throw new Error("Failed to queue project creation");
+          if (msg.status === "success" && msg.project) {
+            resolve(msg.project);
+            unsubscribe();
+          } else if (msg.status === "error") {
+            reject(new Error(msg.error || "Project operation failed"));
+            unsubscribe();
+          }
+        }
+      );
+    });
 
-  const projectId = createRes.dto?.id;
-  if (!projectId) console.warn("Project ID chưa có, upload trước, update sau");
+  // 1️⃣ Tạo project
+  await projectService.createProject({ ...body, correlationId }, token);
+  const projectBE = await waitForProject(correlationId);
 
-  // 2. Upload file
+  // 2️⃣ Lưu vào store
+  projectStore.getState().addProject(projectBE);
+  projectStore.getState().setCurrentProject(projectBE);
+
+  // 3️⃣ Chuẩn bị dữ liệu update
+  const updateData: any = { projectId: projectBE.id, correlationId: createCorrelationId() };
+
+  // 4️⃣ Upload files nếu có
   if (files.length > 0) {
-    const uploadRes = await uploadService.uploadFiles(correlationId, files, token);
+    const uploadCorrelationId = createCorrelationId();
+    const uploadRes = await uploadService.uploadFiles(uploadCorrelationId, files, token);
+
     if (!uploadRes.success) throw new Error("File upload failed");
 
-    const uploadedFiles = uploadRes.data.map((f: any) => ({
+    updateData.files = (uploadRes.data || []).map((f: any) => ({
       publicId: f.public_id,
       url: f.url,
       type: f.type,
@@ -159,16 +139,24 @@ export async function createProjectWithFiles(
       originalFilename: f.original_filename,
       resourceType: f.resource_type,
     }));
-
-    if (projectId) await projectService.updateProject({ projectId, files: uploadedFiles, correlationId }, token);
   }
 
-  // 3. Cập nhật color
-  if (projectId && body.color) {
-    await projectService.updateProject({ projectId, color: body.color, correlationId }, token);
+  // 5️⃣ Cập nhật color nếu có
+  if (body.color) {
+    updateData.color = body.color;
   }
 
-  // 4. Lấy project mới nhất
-  if (projectId) return await fetchProject(projectId);
-  return null;
+  // 6️⃣ Gọi updateProject nếu cần và chờ socket trả về
+  if (updateData.files || updateData.color) {
+    await projectService.updateProject(updateData, token);
+    const updatedProject = await waitForProject(updateData.correlationId);
+    
+    // 7️⃣ Cập nhật store với dữ liệu mới
+    projectStore.getState().updateProject(updatedProject);
+    projectStore.getState().setCurrentProject(updatedProject);
+
+    return updatedProject;
+  }
+
+  return projectBE;
 }
