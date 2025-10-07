@@ -74,7 +74,7 @@ export class ProjectService {
 
   /** Member actions */
   async addMember(dto: Member) {
-    await this.sendEvent('project.member_added', dto);
+    await this.sendEvent('project.member_add', dto);
     console.log('📤 Event queued:', dto);
 
     return {
@@ -86,7 +86,7 @@ export class ProjectService {
   }
 
   async removeMember(dto: Member) {
-    await this.sendEvent('project.member_removed', dto);
+    await this.sendEvent('project.member_remov', dto);
     console.log('📤 Event queued:', dto);
 
     return {
@@ -98,7 +98,7 @@ export class ProjectService {
   }
 
   async updateMemberRole(dto: Member) {
-    await this.sendEvent('project.member_role_updated', dto);
+    await this.sendEvent('project.member_role_update', dto);
     console.log('📤 Event queued:', dto);
 
     return {

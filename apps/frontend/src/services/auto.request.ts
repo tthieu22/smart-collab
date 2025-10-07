@@ -8,9 +8,12 @@ export async function autoRequest<T>(
   const url = `${APP_CONFIG.API_BASE_URL}${endpoint}`;
   const { accessToken, setAccessToken, clearAuth } = useAuthStore.getState();
 
+  // Nếu body là FormData, không set Content-Type
+  const isFormData = options.body instanceof FormData;
+
   const config: RequestInit = {
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...options.headers,
     },
@@ -30,10 +33,8 @@ export async function autoRequest<T>(
       const refreshData = await refreshRes.json();
 
       if (refreshData.success && refreshData.data?.accessToken) {
-        // Cập nhật token mới vào Zustand
         setAccessToken(refreshData.data.accessToken);
 
-        // Retry request với token mới
         config.headers = {
           ...config.headers,
           Authorization: `Bearer ${refreshData.data.accessToken}`,

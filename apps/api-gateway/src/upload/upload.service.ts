@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
 import { Readable } from 'stream';
+import { Express } from 'express';
 
 @Injectable()
 export class UploadService {
@@ -16,7 +17,7 @@ export class UploadService {
   private streamUpload(fileBuffer: Buffer, folder: string): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder },
+        { folder, resource_type: 'auto' },
         (error, result) => {
           if (error) return reject(error);
           if (!result) return reject(new Error('Upload failed: result is undefined'));
@@ -26,6 +27,11 @@ export class UploadService {
       const stream = Readable.from(fileBuffer);
       stream.pipe(uploadStream);
     });
+  }
+
+  async uploadFile(file: Express.Multer.File, folder: string): Promise<UploadApiResponse> {
+    if (!file || !file.buffer) throw new BadRequestException('File is empty');
+    return this.streamUpload(file.buffer, folder);
   }
 
   async uploadBase64(base64Data: string, folder: string): Promise<UploadApiResponse> {
@@ -46,7 +52,6 @@ export class UploadService {
 
   async deleteAllFilesInFolder(folder: string): Promise<any> {
     if (!folder) throw new BadRequestException('folder is required');
-    const result = await cloudinary.api.delete_resources_by_prefix(folder);
-    return result;
+    return cloudinary.api.delete_resources_by_prefix(folder);
   }
 }
