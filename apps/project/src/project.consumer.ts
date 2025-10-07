@@ -11,6 +11,7 @@ interface ProjectMessage extends Correlation {
   name?: string;
   description?: string;
   ownerId?: string;
+  visibility:string,
   userId?: string;
   role?: string;
   folderPath?: string;
@@ -40,6 +41,7 @@ export class ProjectConsumer {
           description: msg.description,
           owner: { connect: { id: msg.ownerId! } },
           color: msg.color,
+          visibility: msg.visibility ?? "private",
         },
       });
 

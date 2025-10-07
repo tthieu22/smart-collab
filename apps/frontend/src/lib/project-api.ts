@@ -3,12 +3,9 @@
 import { projectService } from "@smart/services/project.service";
 import { uploadService } from "@smart/services/upload.service";
 import { projectStore } from "@smart/store/project";
-import { useAuthStore } from "@smart/store/auth";
 import type { Project } from "@smart/types/project";
 import { getProjectSocketManager } from "@smart/store/realtime";
 
-// -------------------- Helper --------------------
-const getToken = () => useAuthStore.getState().accessToken ?? undefined;
 const createCorrelationId = () => crypto.randomUUID();
 
 // Singleton socket manager
@@ -17,80 +14,70 @@ const projectSocketManager = getProjectSocketManager();
 // -------------------- Project API --------------------
 
 export async function fetchAllProjects(): Promise<Project[]> {
-  const token = getToken();
   const correlationId = createCorrelationId();
 
-  await projectService.getAllProjects({ correlationId }, token);
+  await projectService.getAllProjects({ correlationId });
   // BE emit → socket nhận → addProject
   return projectStore.getState().allProjects;  // luôn lấy từ store
 }
 
 export async function fetchProject(projectId: string): Promise<Project | null> {
-  const token = getToken();
   const correlationId = createCorrelationId();
 
-  await projectService.getProject({ projectId, correlationId }, token);
+  await projectService.getProject({ projectId, correlationId });
   return projectStore.getState().allProjects.find((p) => p.id === projectId) ?? null;
 }
 
-export async function createProject(body: { name: string; description?: string }) {
-  const token = getToken();
+export async function createProject(body: { name: string; visibility?: string }) {
   const correlationId = createCorrelationId();
 
-  await projectService.createProject({ ...body, correlationId }, token);
+  await projectService.createProject({ ...body, correlationId });
   return projectStore.getState().allProjects.at(0); // hoặc find theo correlation
 }
 
-export async function updateProject(projectId: string, body: { name?: string; description?: string; color?: string }) {
-  const token = getToken();
+export async function updateProject(projectId: string, body: { name?: string; visibility?: string; color?: string }) {
   const correlationId = createCorrelationId();
 
-  await projectService.updateProject({ projectId, ...body, correlationId }, token);
+  await projectService.updateProject({ projectId, ...body, correlationId });
   return projectStore.getState().allProjects.find((p) => p.id === projectId);
 }
 
 export async function deleteProject(projectId: string) {
-  const token = getToken();
   const correlationId = createCorrelationId();
 
-  await projectService.deleteProject({ projectId, correlationId }, token);
+  await projectService.deleteProject({ projectId, correlationId });
   return !projectStore.getState().allProjects.some((p) => p.id === projectId);
 }
 
 export async function addMember(projectId: string, userId: string, role?: string) {
-  const token = getToken();
   const correlationId = createCorrelationId();
 
-  await projectService.addMember({ projectId, userId, role, correlationId }, token);
+  await projectService.addMember({ projectId, userId, role, correlationId });
   return projectStore.getState().allProjects
     .find((p) => p.id === projectId)?.members.find((m) => m.userId === userId);
 }
 
 export async function removeMember(projectId: string, userId: string) {
-  const token = getToken();
   const correlationId = createCorrelationId();
 
-  await projectService.removeMember({ projectId, userId, correlationId }, token);
+  await projectService.removeMember({ projectId, userId, correlationId });
   return !projectStore.getState().allProjects
     .find((p) => p.id === projectId)?.members.some((m) => m.userId === userId);
 }
 
 export async function updateMemberRole(projectId: string, userId: string, role: string) {
-  const token = getToken();
   const correlationId = createCorrelationId();
 
-  await projectService.updateMemberRole({ projectId, userId, role, correlationId }, token);
+  await projectService.updateMemberRole({ projectId, userId, role, correlationId });
   return projectStore.getState().allProjects
     .find((p) => p.id === projectId)?.members.find((m) => m.userId === userId)?.role;
 }
 
 
 export async function createProjectWithFiles(
-  body: { name: string; description?: string; color?: string },
+  body: { name: string; visibility?: string; color?: string },
   files: string[] = []
 ): Promise<Project> {
-  const token = getToken();
-  if (!token) throw new Error("No auth token");
 
   const correlationId = createCorrelationId();
 
@@ -114,7 +101,7 @@ export async function createProjectWithFiles(
     });
 
   // 1️⃣ Tạo project
-  await projectService.createProject({ ...body, correlationId }, token);
+  await projectService.createProject({ ...body, correlationId });
   const projectBE = await waitForProject(correlationId);
 
   // 2️⃣ Lưu vào store
@@ -127,7 +114,7 @@ export async function createProjectWithFiles(
   // 4️⃣ Upload files nếu có
   if (files.length > 0) {
     const uploadCorrelationId = createCorrelationId();
-    const uploadRes = await uploadService.uploadFiles(uploadCorrelationId, files, token);
+    const uploadRes = await uploadService.uploadFiles(uploadCorrelationId, files);
 
     if (!uploadRes.success) throw new Error("File upload failed");
 
@@ -148,7 +135,7 @@ export async function createProjectWithFiles(
 
   // 6️⃣ Gọi updateProject nếu cần và chờ socket trả về
   if (updateData.files || updateData.color) {
-    await projectService.updateProject(updateData, token);
+    await projectService.updateProject(updateData);
     const updatedProject = await waitForProject(updateData.correlationId);
     
     // 7️⃣ Cập nhật store với dữ liệu mới

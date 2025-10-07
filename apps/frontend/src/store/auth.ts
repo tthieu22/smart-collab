@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ accessToken: token, isAuthenticated: true, isLoading: true });
 
     try {
-      const response = await authService.me(token);
+      const response = await authService.me();
       if (response.success && response.data) {
         setCurrentUser(response.data);
       }
@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Lazy-init socket
     const socketManager = getProjectSocketManager();
-    socketManager.initSocket(token);
+    socketManager.initSocket();
   },
 
   logout: () => {
@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         setAccessToken(response.data.accessToken);
 
         const socketManager = getProjectSocketManager();
-        socketManager.initSocket(response.data.accessToken);
+        socketManager.initSocket();
 
         return true;
       }

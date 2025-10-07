@@ -14,7 +14,7 @@ model UserCache {
   lastName  String?
   avatar    String?
   role      String
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @default(now())
 
   projects  Project[] @relation("ProjectOwner")
   members   ProjectMember[]
@@ -37,6 +37,7 @@ model Project {
   resourceType     String?
   originalFilename String?
   uploadedById     String?
+  visibility       String         @default("private")
 
   owner       UserCache       @relation("ProjectOwner", fields: [ownerId], references: [id])
   members     ProjectMember[]

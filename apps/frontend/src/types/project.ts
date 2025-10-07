@@ -28,7 +28,7 @@ export interface Task {
 export interface Project {
   id: string;
   name: string;
-  description?: string;
+  visibility?: string;
   ownerId: string;
   folderPath?: string;
   createdAt: string;

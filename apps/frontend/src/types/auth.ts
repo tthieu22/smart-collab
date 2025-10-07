@@ -36,7 +36,7 @@ export interface LoginResponse {
 export interface RefreshResponse {
   success: boolean;
   message: string;
-  data?: {
+  data: {
     accessToken: string;
   };
 }

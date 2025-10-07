@@ -34,7 +34,6 @@ export class ProjectSocketManager {
     if (this.socket) return this.socket;
 
     const authToken = useAuthStore.getState().accessToken;
-    console.log("🟢 Initializing socket with token:", authToken);
 
     this.socket = io("http://localhost:3003", {
       auth: { token: authToken },
@@ -45,14 +44,13 @@ export class ProjectSocketManager {
     });
 
     this.socket.on("connect", () => {
-      console.log("✅ Socket connected", this.socket?.id);
+      console.log("Socket connected", this.socket?.id);
       this.joinAllRooms();
     });
 
-    this.socket.on("disconnect", (reason) => console.log("❌ Socket disconnected", reason));
-    this.socket.on("connect_error", (err) => console.error("⚠️ Socket connect_error", err));
+    this.socket.on("disconnect", (reason) => console.log("Socket disconnected", reason));
+    this.socket.on("connect_error", (err) => console.error("Socket connect_error", err));
 
-    // ================= Realtime Events =================
     const events = [
       "realtime.project.created",
       "realtime.project.updated",

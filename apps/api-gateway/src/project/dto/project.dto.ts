@@ -8,6 +8,7 @@ export interface Correlation {
 export interface Project extends Correlation {
   projectId: string;       // dùng cho update, delete, get
   name?: string;
+  visibility: string;
   description?: string;
   folderPath?: string;
   color?: string;
