@@ -29,7 +29,7 @@ model Project {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   color            String?
-
+  background       String?
   publicId         String?
   fileUrl          String?
   fileType         String?

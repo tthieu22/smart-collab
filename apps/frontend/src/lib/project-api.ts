@@ -72,6 +72,7 @@ export async function updateMemberRole(projectId: string, userId: string, role: 
   return projectStore.getState().allProjects
     .find((p) => p.id === projectId)?.members.find((m) => m.userId === userId)?.role;
 }
+
 export async function createProjectWithFiles(
   body: { name: string; visibility?: string; color?: string },
   files: File[] = []

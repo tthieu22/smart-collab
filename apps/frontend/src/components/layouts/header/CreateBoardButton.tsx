@@ -7,14 +7,19 @@ import {
 } from "antd";
 import { PlusOutlined, BgColorsOutlined, UploadOutlined, CheckOutlined } from "@ant-design/icons";
 import { useBoardStore } from "@smart/store/board";
-import { createProjectWithFiles } from "@smart/lib/project-api";
+import { useNotificationStore } from '@smart/store/notification';
+import { projectService } from "@smart/services/project.service";
+import { uploadService } from "@smart/services/upload.service";
+import { projectStore } from "@smart/store/project";
+import type { Project } from "@smart/types/project";
+import { getProjectSocketManager } from "@smart/store/realtime";
 
 const { Option } = Select;
 const { Text } = Typography;
 
 export default function CreateBoardButton() {
   const { colors, images } = useBoardStore();
-
+  const { addNotification } = useNotificationStore();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [visibility, setVisibility] = useState("workspace");
@@ -22,6 +27,8 @@ export default function CreateBoardButton() {
   const [color, setColor] = useState<string | null>(null);
   const [fileObjs, setFileObjs] = useState<File[]>([]);
 
+  // Singleton socket manager
+  const projectSocketManager = getProjectSocketManager();
   useEffect(() => {
     if (open && !background) {
       if (images.length > 0) setBackground(images[0]);
@@ -30,24 +37,80 @@ export default function CreateBoardButton() {
   }, [open, background, images, colors]);
 
   const handleCreate = async () => {
-    if (!title) return;
+    if (!title) {
+      addNotification("Vui lòng nhập tiêu đề bảng", "error");
+      return;
+    }
     setOpen(false);
 
-    // Nếu chưa chọn ảnh hay màu, lấy mặc định
     let finalBackground = background;
     if (!finalBackground) {
       if (images.length > 0) finalBackground = images[0];
       else if (colors.length > 0) finalBackground = colors[0];
     }
 
+    const body: { name: string; visibility?: string; color?: string; background?: string } = { name: title, visibility };
+    if (!fileObjs.length && finalBackground) {
+      if (images.includes(finalBackground)) body.background = finalBackground;
+      else if (colors.includes(finalBackground)) body.color = finalBackground;
+    }
+
     try {
-      const body: { name: string; visibility?: string; color?: string } = { name: title, visibility };
+      const createCorrId = crypto.randomUUID();
+      const waitForProject = (corrId: string) =>
+        new Promise<Project>((resolve, reject) => {
+          const unsubscribe = projectSocketManager.subscribeCorrelation(
+            corrId,
+            (msg: any) => {
+              if (msg.status === "success" && msg.project) {
+                resolve(msg.project);
+                unsubscribe();
+              } else if (msg.status === "error") {
+                reject(new Error(msg.error || "Project operation failed"));
+                unsubscribe();
+              }
+            }
+          );
+        });
 
-      if (!fileObjs.length && color) body.color = color;
+      await projectService.createProject({ ...body, correlationId: createCorrId });
 
-      await createProjectWithFiles(body, fileObjs);
-    } catch (err) {
-      console.error("Failed to create project:", err);
+      let project = await waitForProject(createCorrId);
+
+      projectStore.getState().addProject(project);
+      projectStore.getState().setCurrentProject(project);
+
+      if (fileObjs.length > 0 || body.color) {
+        const updateCorrId = crypto.randomUUID();
+        const updateData: any = { projectId: project.id, correlationId: updateCorrId };
+
+        if (fileObjs.length > 0) {
+          const folder = project.folderPath || project.id;
+          const uploadRes = await uploadService.uploadFiles(folder, fileObjs);
+          if (!uploadRes.success) throw new Error("File upload failed");
+
+          updateData.files = (uploadRes.data || []).map((f: any) => ({
+            publicId: f.public_id,
+            url: f.url,
+            type: f.type,
+            size: f.size,
+            originalFilename: f.original_filename,
+            resourceType: f.resource_type,
+          }));
+        }
+
+        if (body.color) updateData.color = body.color;
+
+        await projectService.updateProject(updateData);
+        project = await waitForProject(updateCorrId);
+
+        projectStore.getState().updateProject(project);
+        projectStore.getState().setCurrentProject(project);
+      }
+
+      addNotification(`Tạo bảng "${project.name}" thành công`, "success");
+    } catch (err: any) {
+      addNotification(err.message || "Tạo bảng thất bại", "error");
     } finally {
       setTitle("");
       setVisibility("workspace");
