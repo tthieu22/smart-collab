@@ -8,7 +8,7 @@ export class ProjectConsumer {
   constructor(
     private readonly amqpConnection: AmqpConnection,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   @RabbitSubscribe({
     exchange: 'smart-collab',
@@ -24,12 +24,26 @@ export class ProjectConsumer {
           description: msg.description,
           owner: { connect: { id: msg.ownerId! } },
           color: msg.color,
+          background: msg.background,
           visibility: msg.visibility ?? "private",
         },
       });
 
-      const folderPath = `${msg.name!.replace(/\s+/g, '_')}_${project.id}`;
-      await this.prisma.project.update({ where: { id: project.id }, data: { folderPath } });
+      const slugify = (str: string) =>
+        str
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') 
+          .replace(/[^a-zA-Z0-9\s_-]/g, '') 
+          .trim()
+          .replace(/\s+/g, '_')
+          .toLowerCase();
+
+      const folderPath = `${slugify(msg.name!)}_${project.id}`;
+
+      await this.prisma.project.update({
+        where: { id: project.id },
+        data: { folderPath },
+      });
 
       await this.prisma.projectMember.create({
         data: { projectId: project.id, userId: msg.ownerId!, role: 'ADMIN' },
@@ -50,10 +64,11 @@ export class ProjectConsumer {
       await this.amqpConnection.publish('project-exchange', 'project.created', {
         correlationId: msg.correlationId,
         status: 'error',
-        message: error,
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }
+
 
   @RabbitSubscribe({
     exchange: 'smart-collab',
@@ -154,6 +169,11 @@ export class ProjectConsumer {
     try {
       const projects = await this.prisma.project.findMany({
         include: { owner: true, members: { include: { user: true } } },
+        // take: 5,          // Lấy tối đa 10 project
+        skip: 0,           // Bỏ qua 0 project đầu tiên
+        orderBy: {
+          createdAt: 'desc' // Lấy theo thứ tự mới nhất
+        },
       });
 
       await this.amqpConnection.publish('project-exchange', 'project.listed', {

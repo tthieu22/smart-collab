@@ -34,7 +34,9 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   color?: string | null;
+  background?: string | null;
   publicId?: string | null;
+  description?: string | null;
   fileUrl?: string | null;
   fileType?: string | null;
   fileSize?: number | null;

@@ -102,6 +102,7 @@ export class ProjectSocketManager {
     switch (event) {
       case "realtime.project.created":
         projectStore.getState().addProject(msg.project);
+        projectStore.getState().setCurrentProject(msg.project);
         break;
       case "realtime.project.updated":
         projectStore.getState().updateProject(msg.project);
@@ -111,6 +112,11 @@ export class ProjectSocketManager {
         break;
       case "realtime.project.fetched":
         projectStore.getState().updateProject(msg.project);
+        break;
+      case "realtime.project.listed":
+        if (Array.isArray(msg.projects)) {
+          msg.projects.forEach((p: any) => projectStore.getState().addProject(p));
+        }
         break;
       case "realtime.project.member_added":
         projectStore.getState().addMember(msg.projectId, msg.member);

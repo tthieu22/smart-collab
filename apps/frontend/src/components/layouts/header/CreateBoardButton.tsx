@@ -13,11 +13,13 @@ import { uploadService } from "@smart/services/upload.service";
 import { projectStore } from "@smart/store/project";
 import type { Project } from "@smart/types/project";
 import { getProjectSocketManager } from "@smart/store/realtime";
+import { useRouter } from "next/navigation";
 
 const { Option } = Select;
 const { Text } = Typography;
 
 export default function CreateBoardButton() {
+  const router = useRouter();
   const { colors, images } = useBoardStore();
   const { addNotification } = useNotificationStore();
   const [open, setOpen] = useState(false);
@@ -109,6 +111,7 @@ export default function CreateBoardButton() {
       }
 
       addNotification(`Tạo bảng "${project.name}" thành công`, "success");
+      router.push(`/projects/${project.id}`);
     } catch (err: any) {
       addNotification(err.message || "Tạo bảng thất bại", "error");
     } finally {
