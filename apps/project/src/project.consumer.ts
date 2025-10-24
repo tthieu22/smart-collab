@@ -8,7 +8,7 @@ export class ProjectConsumer {
   constructor(
     private readonly amqpConnection: AmqpConnection,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   @RabbitSubscribe({
     exchange: 'smart-collab',
@@ -18,26 +18,27 @@ export class ProjectConsumer {
   async handleCreateProject(msg: ProjectMessage) {
     console.log('📩 Received project.create:', msg);
     try {
+      // Tạo project
       const project = await this.prisma.project.create({
         data: {
           name: msg.name!,
           description: msg.description,
-          owner: { connect: { id: msg.ownerId! } },
+          ownerId: msg.ownerId!,
           color: msg.color,
           background: msg.background,
-          visibility: msg.visibility ?? "private",
+          visibility: msg.visibility ?? "PRIVATE",
         },
       });
 
+      // Tạo folderPath
       const slugify = (str: string) =>
         str
           .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '') 
-          .replace(/[^a-zA-Z0-9\s_-]/g, '') 
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9\s_-]/g, '')
           .trim()
           .replace(/\s+/g, '_')
           .toLowerCase();
-
       const folderPath = `${slugify(msg.name!)}_${project.id}`;
 
       await this.prisma.project.update({
@@ -45,13 +46,15 @@ export class ProjectConsumer {
         data: { folderPath },
       });
 
+      // Tạo ProjectMember cho owner
       await this.prisma.projectMember.create({
         data: { projectId: project.id, userId: msg.ownerId!, role: 'ADMIN' },
       });
 
+      // Lấy project full với members
       const fullProject = await this.prisma.project.findUnique({
         where: { id: project.id },
-        include: { owner: true, members: { include: { user: true } } },
+        include: { members: true },
       });
 
       await this.amqpConnection.publish('project-exchange', 'project.created', {
@@ -69,7 +72,6 @@ export class ProjectConsumer {
     }
   }
 
-
   @RabbitSubscribe({
     exchange: 'smart-collab',
     routingKey: 'project.update',
@@ -85,6 +87,7 @@ export class ProjectConsumer {
           description: msg.description,
           folderPath: msg.folderPath,
           color: msg.color,
+          background: msg.background,
           publicId: file?.publicId,
           fileUrl: file?.url,
           fileType: file?.type,
@@ -92,6 +95,7 @@ export class ProjectConsumer {
           resourceType: file?.resourceType,
           originalFilename: file?.originalFilename,
           uploadedById: msg.uploadedById,
+          visibility: msg.visibility,
         },
       });
 
@@ -105,7 +109,7 @@ export class ProjectConsumer {
       await this.amqpConnection.publish('project-exchange', 'project.updated', {
         correlationId: msg.correlationId,
         status: 'error',
-        message: error,
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -128,7 +132,7 @@ export class ProjectConsumer {
       await this.amqpConnection.publish('project-exchange', 'project.deleted', {
         correlationId: msg.correlationId,
         status: 'error',
-        message: error,
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -142,7 +146,7 @@ export class ProjectConsumer {
     try {
       const project = await this.prisma.project.findUnique({
         where: { id: msg.projectId! },
-        include: { owner: true, members: { include: { user: true } } },
+        include: { members: true },
       });
 
       await this.amqpConnection.publish('project-exchange', 'project.fetched', {
@@ -155,7 +159,7 @@ export class ProjectConsumer {
       await this.amqpConnection.publish('project-exchange', 'project.fetched', {
         correlationId: msg.correlationId,
         status: 'error',
-        message: error,
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -168,12 +172,9 @@ export class ProjectConsumer {
   async handleGetAllProjects(msg: ProjectMessage) {
     try {
       const projects = await this.prisma.project.findMany({
-        include: { owner: true, members: { include: { user: true } } },
-        // take: 5,          // Lấy tối đa 10 project
-        skip: 0,           // Bỏ qua 0 project đầu tiên
-        orderBy: {
-          createdAt: 'desc' // Lấy theo thứ tự mới nhất
-        },
+        include: { members: true },
+        skip: 0,
+        orderBy: { createdAt: 'desc' },
       });
 
       await this.amqpConnection.publish('project-exchange', 'project.listed', {
@@ -186,7 +187,7 @@ export class ProjectConsumer {
       await this.amqpConnection.publish('project-exchange', 'project.listed', {
         correlationId: msg.correlationId,
         status: 'error',
-        message: error,
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }

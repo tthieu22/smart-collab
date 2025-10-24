@@ -10,28 +10,30 @@ import {
   CheckOutlined,
 } from "@ant-design/icons";
 import { Dropdown } from "antd";
-import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useBoardStore } from "@smart/store/board";
 
 export function SettingMenu() {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const theme = useBoardStore((s) => s.theme);
+  const setTheme = useBoardStore((s) => s.setTheme);
   const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState<string | null>(null);
+  const [current, setCurrent] = useState<string | null>(theme);
 
-  // sync theme
+  // sync state với store
   useEffect(() => {
-    if (theme) setCurrent(theme);
+    setCurrent(theme);
   }, [theme]);
 
   const handleSet = (val: "light" | "dark" | "system") => {
-    setTheme(val);
+    // lưu vào store nếu light/dark
+    if (val === "light" || val === "dark") setTheme(val);
+    setCurrent(val);
     try {
       localStorage.setItem("theme", val);
     } catch {}
-    setCurrent(val);
 
-    // thêm class dark/light thủ công nếu muốn control ngoài next-themes
+    // thêm class dark/light cho document
     if (val === "dark") {
       document.documentElement.classList.add("dark");
     } else if (val === "light") {
@@ -69,10 +71,7 @@ export function SettingMenu() {
         {
           key: "theme-light",
           label: (
-            <div
-              className="theme-option"
-              onClick={() => handleSet("light")}
-            >
+            <div className="theme-option" onClick={() => handleSet("light")}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <BulbOutlined />
                 <span>Sáng</span>
@@ -84,10 +83,7 @@ export function SettingMenu() {
         {
           key: "theme-dark",
           label: (
-            <div
-              className="theme-option"
-              onClick={() => handleSet("dark")}
-            >
+            <div className="theme-option" onClick={() => handleSet("dark")}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <MoonOutlined />
                 <span>Tối</span>
@@ -99,10 +95,7 @@ export function SettingMenu() {
         {
           key: "theme-system",
           label: (
-            <div
-              className="theme-option"
-              onClick={() => handleSet("system")}
-            >
+            <div className="theme-option" onClick={() => handleSet("system")}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <DesktopOutlined />
                 <span>Hệ thống</span>

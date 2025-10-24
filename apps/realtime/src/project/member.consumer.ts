@@ -7,7 +7,6 @@ import { ProjectMessage } from './dto/project.dto';
 export class MemberRealtimeConsumer {
   constructor(private readonly gateway: RealtimeGateway) {}
 
-  
   @RabbitSubscribe({
     exchange: 'project-exchange',
     routingKey: 'project.member_added',
@@ -15,7 +14,12 @@ export class MemberRealtimeConsumer {
   })
   async handleMemberAdded(msg: ProjectMessage) {
     console.log('📩 [Realtime] project.member_added:', msg);
-    this.gateway.emitEvent('realtime.project.member_added', msg);
+    // nếu có projectId, emit theo room, nếu không, emit toàn cục
+    if (msg.projectId) {
+      this.gateway.emitToProject(msg.projectId, 'realtime.project.member_added', msg);
+    } else {
+      this.gateway.server.emit('realtime.project.member_added', msg);
+    }
   }
 
   @RabbitSubscribe({
@@ -25,7 +29,11 @@ export class MemberRealtimeConsumer {
   })
   async handleMemberRemoved(msg: ProjectMessage) {
     console.log('📩 [Realtime] project.member_removed:', msg);
-    this.gateway.emitEvent('realtime.project.member_removed', msg);
+    if (msg.projectId) {
+      this.gateway.emitToProject(msg.projectId, 'realtime.project.member_removed', msg);
+    } else {
+      this.gateway.server.emit('realtime.project.member_removed', msg);
+    }
   }
 
   @RabbitSubscribe({
@@ -35,6 +43,10 @@ export class MemberRealtimeConsumer {
   })
   async handleMemberRoleUpdated(msg: ProjectMessage) {
     console.log('📩 [Realtime] project.member_role_updated:', msg);
-    this.gateway.emitEvent('realtime.project.member_role_updated', msg);
+    if (msg.projectId) {
+      this.gateway.emitToProject(msg.projectId, 'realtime.project.member_role_updated', msg);
+    } else {
+      this.gateway.server.emit('realtime.project.member_role_updated', msg);
+    }
   }
 }

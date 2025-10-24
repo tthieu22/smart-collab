@@ -4,9 +4,11 @@ import { create } from "zustand";
 interface BoardStore {
   colors: string[];
   images: string[];
+  theme: "light" | "dark" | "system";
+  setTheme: (t: "light" | "dark") => void;
 }
 
-export const useBoardStore = create<BoardStore>(() => ({
+export const useBoardStore = create<BoardStore>((set) => ({
   colors: [
     "rgb(0, 121, 191)",   // xanh dương
     "rgb(210, 144, 52)",  // cam
@@ -24,4 +26,7 @@ export const useBoardStore = create<BoardStore>(() => ({
     "/backgrounds/thiennhien.png",
     "/backgrounds/muaxuan.png",
   ],
+  
+  theme: "light",
+  setTheme: (theme) => set({ theme }),
 }));

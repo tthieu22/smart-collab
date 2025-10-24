@@ -1,3 +1,4 @@
+// realtime.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
@@ -6,6 +7,8 @@ import { RealtimeGateway } from './realtime.gateway';
 import { getGolevelupRabbitMQOptions } from './config/rabbitmq.config';
 import { ProjectRealtimeConsumer } from './project/project.consumer';
 import { MemberRealtimeConsumer } from './project/member.consumer';
+import Redis from 'ioredis';
+import { redisConfig } from './config/redis.config';
 
 @Module({
   imports: [
@@ -32,7 +35,21 @@ import { MemberRealtimeConsumer } from './project/member.consumer';
   providers: [
     RealtimeGateway,
     ProjectRealtimeConsumer,
-    // MemberRealtimeConsumer,
+    MemberRealtimeConsumer,
+
+    // Redis client provider
+    {
+      provide: 'REDIS_CLIENT',
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const redisOptions = redisConfig(configService).options;
+        const client = new Redis(redisOptions);
+        client.on('connect', () => console.log('✅ Redis connected'));
+        client.on('error', (err: any) => console.error('❌ Redis error', err));
+        return client;
+      },
+    },
   ],
+  exports: ['REDIS_CLIENT'],
 })
 export class RealtimeModule {}

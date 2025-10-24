@@ -5,93 +5,142 @@ import { projectStore } from "@smart/store/project";
 import { projectService } from "@smart/services/project.service";
 import type { Project } from "@smart/types/project";
 import { getProjectSocketManager } from "@smart/store/realtime";
+import ProjectActionBar from "@smart/components/project/ProjectActionBar";
+import {
+  InboxOutlined,
+  CalendarOutlined,
+  AppstoreOutlined,
+  SwapOutlined,
+} from "@ant-design/icons";
 
 interface Props {
   params: { id: string };
 }
 
+const LOCAL_STORAGE_KEY = "activeProjectComponents";
+
 export default function ProjectDetailPage({ params }: Props) {
-  const { currentProject, allProjects, addProject, updateProject, setCurrentProject } =
+  const projectId = params.id;
+  const { currentProject, addProject, updateProject, setCurrentProject } =
     projectStore();
   const [loading, setLoading] = useState(true);
-  const projectId = params.id;
 
-  const project =
-    currentProject?.id === projectId
-      ? currentProject
-      : allProjects.find((p) => p.id === projectId) ?? null;
+  // Active components state
+  const [activeComponents, setActiveComponents] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : ["inbox", "board"];
+    }
+    return ["inbox", "board"];
+  });
 
+  const project = currentProject?.id === projectId ? currentProject : null;
+
+  const toggleComponent = (key: string) => {
+    setActiveComponents((prev) => {
+      const updated = prev.includes(key)
+        ? prev.length > 1
+          ? prev.filter((c) => c !== key)
+          : prev
+        : [...prev, key];
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
+  // ------------------ SOCKET EVENTS ------------------
   useEffect(() => {
     const socketManager = getProjectSocketManager();
+    let unsubCreated: () => void;
+    let unsubUpdated: () => void;
 
-    // Tham gia room để nhận realtime cho project này
-    socketManager.joinProject(projectId);
-
-    // Subscribe chung cho tất cả event realtime liên quan
-    const handleMsg = (msg: any) => {
+    // Callback xử lý realtime project updates
+    const handleProjectMsg = (msg: any) => {
       if (!msg?.project) return;
       const p: Project = msg.project;
-      const exists = allProjects.find((pr) => pr.id === p.id);
-      if (exists) updateProject(p);
-      else addProject(p);
 
-      if (p.id === projectId) setCurrentProject(p);
+      const isCurrent = currentProject?.id === p.id;
+      if (isCurrent) {
+        updateProject(p);
+        setCurrentProject(p);
+      } else {
+        addProject(p);
+      }
     };
 
-    const unsubCreated = socketManager.subscribeCorrelation("realtime.project.created", handleMsg);
-    const unsubUpdated = socketManager.subscribeCorrelation("realtime.project.updated", handleMsg);
+    // Join project socket
+    socketManager
+      .joinProject(projectId)
+      .then(() => console.log("Joined project socket:", projectId))
+      .catch(console.error);
+
+    // Subscribe correlation events
+    unsubCreated = socketManager.subscribeCorrelation(
+      "realtime.project.created",
+      handleProjectMsg
+    );
+    unsubUpdated = socketManager.subscribeCorrelation(
+      "realtime.project.updated",
+      handleProjectMsg
+    );
 
     return () => {
+      // Cleanup khi unmount
       unsubCreated();
       unsubUpdated();
+      socketManager.leaveProject(projectId);
     };
-  }, [projectId, allProjects, addProject, updateProject, setCurrentProject]);
+  }, [projectId]);
 
+  // ------------------ INIT PROJECT ------------------
   useEffect(() => {
     let canceled = false;
 
-    async function initProject() {
-      setLoading(true); // reset loading khi id thay đổi
-
+    const initProject = async () => {
+      setLoading(true);
       const socketManager = getProjectSocketManager();
-      const socket = socketManager.initSocket();
-      await socketManager.joinProject(projectId);
-
       const correlationId = crypto.randomUUID();
+
       const projectPromise = new Promise<Project>((resolve, reject) => {
-        const unsubscribe = socketManager.subscribeCorrelation(correlationId, (msg: any) => {
-          if (msg.status === "success" && msg.project) {
-            resolve(msg.project);
-          } else {
-            reject(new Error(msg.message || "Fetch project failed"));
+        const unsubscribe = socketManager.subscribeCorrelation(
+          correlationId,
+          (msg: any) => {
+            if (msg.status === "success" && msg.project) resolve(msg.project);
+            else reject(new Error(msg.message || "Fetch project failed"));
+            unsubscribe();
           }
-          unsubscribe();
-        });
+        );
       });
 
-      await projectService.getProject({ projectId, correlationId });
-      const p = await projectPromise;
+      try {
+        await projectService.getProject({ projectId, correlationId });
+        const p = await projectPromise;
 
-      if (!canceled) {
-        projectStore.getState().addProject(p);
-        projectStore.getState().updateProject(p);
-        setLoading(false);
+        if (!canceled) {
+          addProject(p);
+          updateProject(p);
+          setCurrentProject(p);
+        }
+      } catch (error) {
+        console.error("Fetch project failed:", error);
+      } finally {
+        if (!canceled) setLoading(false);
       }
-    }
+    };
 
-    initProject().catch(console.error);
+    initProject();
 
     return () => {
       canceled = true;
     };
-  }, [projectId]);
+  }, [projectId, addProject, updateProject, setCurrentProject]);
 
-
-
+  // ------------------ UI ------------------
   if (loading) return <p>Đang tải dự án...</p>;
   if (!project) return <p>Không tìm thấy dự án #{projectId}</p>;
 
-  // Full màn hình background
   const backgroundStyle: React.CSSProperties = {
     width: "100vw",
     height: "100vh",
@@ -102,28 +151,33 @@ export default function ProjectDetailPage({ params }: Props) {
     backgroundRepeat: "no-repeat",
     backgroundSize: "cover",
     backgroundPosition: "center",
+    backgroundImage: project.fileUrl
+      ? `url(${project.fileUrl})`
+      : project.background
+      ? `url(${project.background})`
+      : undefined,
+    backgroundColor: project.color ?? undefined,
   };
-
-  if (project.fileUrl) backgroundStyle.backgroundImage = `url(${project.fileUrl})`;
-  else if (project.background) backgroundStyle.backgroundImage = `url(${project.background})`;
-  else if (project.color) backgroundStyle.backgroundColor = project.color;
-  else backgroundStyle.backgroundImage = "url(/backgrounds/muaxuan.png)";
 
   return (
     <div className="relative">
       <div style={backgroundStyle} />
-      <div className="relative z-10 p-1 space-y-4">
+      <ProjectActionBar
+        activeComponents={activeComponents}
+        onToggle={toggleComponent}
+      />
+      <div className="relative z-10 p-4 space-y-4">
         <div className="rounded-lg p-6 shadow bg-white/80">
           <h1 className="text-2xl font-semibold mb-2">
             Chi tiết dự án #{project.id} - {project.name}
           </h1>
           <p>
-            Chủ sở hữu: {project.owner.firstName || ""} {project.owner.lastName || ""} (
-            {project.owner.email})
+            Chủ sở hữu: {project.owner?.firstName || ""}{" "}
+            {project.owner?.lastName || ""} ({project.owner?.email})
           </p>
           <p>Visibility: {project.visibility || "Không xác định"}</p>
-          <p>Members: {project.members.length}</p>
-          {project.tasks && <p>Tasks: {project.tasks.length}</p>}
+          <p>Members: {project.members?.length ?? 0}</p>
+          {project.cards && <p>Cards: {project.cards.length}</p>}
         </div>
 
         {project.description && (
@@ -132,6 +186,22 @@ export default function ProjectDetailPage({ params }: Props) {
             <p>{project.description}</p>
           </div>
         )}
+
+        {/* Render tất cả component active */}
+        <div className="flex gap-4 text-3xl">
+          {activeComponents.includes("inbox") && (
+            <InboxOutlined className="text-blue-500" />
+          )}
+          {activeComponents.includes("calendar") && (
+            <CalendarOutlined className="text-green-500" />
+          )}
+          {activeComponents.includes("board") && (
+            <AppstoreOutlined className="text-purple-500" />
+          )}
+          {activeComponents.includes("switch") && (
+            <SwapOutlined className="text-orange-500" />
+          )}
+        </div>
       </div>
     </div>
   );
