@@ -12,6 +12,13 @@ import {
   AppstoreOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
+import { Loading } from "@smart/components/ui/loading";
+
+import Inbox from "@smart/components/project/inbox/Inbox";
+import Calendar from "@smart/components/project/calendar/Calendar";
+import Board from "@smart/components/project/board/Board";
+import { useBoardStore } from "@smart/store/board";
+import DragDropProvider from "@smart/components/project/dnd/DragDropProvider";
 
 interface Props {
   params: { id: string };
@@ -24,6 +31,8 @@ export default function ProjectDetailPage({ params }: Props) {
   const { currentProject, addProject, updateProject, setCurrentProject } =
     projectStore();
   const [loading, setLoading] = useState(true);
+  
+  const { containers } = useBoardStore();
 
   // Active components state
   const [activeComponents, setActiveComponents] = useState<string[]>(() => {
@@ -101,6 +110,14 @@ export default function ProjectDetailPage({ params }: Props) {
     const initProject = async () => {
       setLoading(true);
       const socketManager = getProjectSocketManager();
+
+      if (!socketManager.isConnected()) {
+        await new Promise<void>((resolve) => {
+          socketManager.onceConnected(resolve);
+          socketManager.initSocket();
+        });
+      }
+
       const correlationId = crypto.randomUUID();
 
       const projectPromise = new Promise<Project>((resolve, reject) => {
@@ -119,9 +136,9 @@ export default function ProjectDetailPage({ params }: Props) {
         const p = await projectPromise;
 
         if (!canceled) {
-          addProject(p);
-          updateProject(p);
-          setCurrentProject(p);
+          projectStore.getState().addProject(p);
+          projectStore.getState().updateProject(p);
+          projectStore.getState().setCurrentProject(p);
         }
       } catch (error) {
         console.error("Fetch project failed:", error);
@@ -135,11 +152,11 @@ export default function ProjectDetailPage({ params }: Props) {
     return () => {
       canceled = true;
     };
-  }, [projectId, addProject, updateProject, setCurrentProject]);
+  }, [projectId]);
 
   // ------------------ UI ------------------
-  if (loading) return <p>Đang tải dự án...</p>;
-  if (!project) return <p>Không tìm thấy dự án #{projectId}</p>;
+  if (loading) return <Loading text="Đang tải dữ liệu" />;
+  if (!project) return <Loading text="Không tim thấy dự án. Chắc là sai ở đâu đó thôi :((" />;
 
   const backgroundStyle: React.CSSProperties = {
     width: "100vw",
@@ -169,38 +186,44 @@ export default function ProjectDetailPage({ params }: Props) {
       <div className="relative z-10 p-4 space-y-4">
         <div className="rounded-lg p-6 shadow bg-white/80">
           <h1 className="text-2xl font-semibold mb-2">
-            Chi tiết dự án #{project.id} - {project.name}
+            {project.name}
           </h1>
-          <p>
-            Chủ sở hữu: {project.owner?.firstName || ""}{" "}
-            {project.owner?.lastName || ""} ({project.owner?.email})
-          </p>
-          <p>Visibility: {project.visibility || "Không xác định"}</p>
-          <p>Members: {project.members?.length ?? 0}</p>
-          {project.cards && <p>Cards: {project.cards.length}</p>}
         </div>
-
-        {project.description && (
-          <div className="rounded-lg p-4 shadow bg-white/80">
-            <h2 className="text-lg font-semibold mb-1">Mô tả dự án</h2>
-            <p>{project.description}</p>
-          </div>
-        )}
-
         {/* Render tất cả component active */}
         <div className="flex gap-4 text-3xl">
-          {activeComponents.includes("inbox") && (
-            <InboxOutlined className="text-blue-500" />
-          )}
-          {activeComponents.includes("calendar") && (
-            <CalendarOutlined className="text-green-500" />
-          )}
-          {activeComponents.includes("board") && (
-            <AppstoreOutlined className="text-purple-500" />
-          )}
-          {activeComponents.includes("switch") && (
-            <SwapOutlined className="text-orange-500" />
-          )}
+        <DragDropProvider>
+          <div className="flex gap-4 text-3xl">
+            {activeComponents.includes("inbox") && (
+              <Inbox
+                cards={project.cards?.filter(c => c.columnId === "inbox") ?? []}
+              />
+            )}
+
+            {activeComponents.includes("calendar") && (
+              <Calendar cards={project.cards ?? []} />
+            )}
+
+            {activeComponents.includes("board") && (
+              <Board
+                board={
+                  project.boards?.[0] ?? {
+                    id: "board-temp",
+                    projectId: project.id,
+                    name: "Board",
+                    columns: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  }
+                }
+              />
+            )}
+
+            {activeComponents.includes("switch") && (
+              <SwapOutlined className="text-orange-500" />
+            )}
+          </div>
+        </DragDropProvider>
+
         </div>
       </div>
     </div>

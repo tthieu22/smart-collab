@@ -13,6 +13,7 @@
     "@ant-design/cssinjs": "^1.23.0",
     "@ant-design/icons": "^5.3.7",
     "@ant-design/nextjs-registry": "^1.0.2",
+    "@hello-pangea/dnd": "^18.0.1",
     "antd": "^5.20.2",
     "axios": "^1.11.0",
     "clsx": "2.1.0",

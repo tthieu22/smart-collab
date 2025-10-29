@@ -209,6 +209,9 @@ export class ProjectSocketManager {
 
   /** Queue join room từng project, retry */
   async joinProject(projectId: string) {
+    if (this.joinedProjects.has(projectId)) return Promise.resolve();
+    if (!this.socket) this.initSocket();
+
     return new Promise<void>((resolve, reject) => {
       this.joinQueue.push({ projectId, resolve, reject, attempt: 0 });
       this.processQueue();
@@ -242,17 +245,30 @@ export class ProjectSocketManager {
         this.socket?.emit("joinProject", item.projectId, (ack: boolean) => {
           if (ack) {
             this.joinedProjects.add(item.projectId);
-            resolve(); 
+            console.log(`✅ Joined project ${item.projectId}`);
+            resolve();
           } else {
             item.attempt++;
-            if (item.attempt < 5) setTimeout(tryJoin, 200 * item.attempt); 
-            else reject("Failed to join after retries");
+            if (item.attempt < 5) {
+              console.warn(`Retry join ${item.projectId}, attempt ${item.attempt}`);
+              setTimeout(tryJoin, 200 * item.attempt);
+            } else {
+              reject(`Failed to join ${item.projectId} after retries`);
+            }
           }
         });
       };
-      tryJoin();
+
+      // 👇 Đảm bảo socket connect trước khi join
+      if (this.socket.connected) {
+        tryJoin();
+      } else {
+        console.log("⏳ Waiting for socket to connect before joining", item.projectId);
+        this.onceConnected(tryJoin);
+      }
     });
   }
+
 
   leaveProject(projectId:string){
     if(!this.socket||!this.joinedProjects.has(projectId)) return;

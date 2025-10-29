@@ -1,16 +1,12 @@
 'use client';
 
 import { cn } from '@smart/lib/utils';
+import { useBoardStore } from '@smart/store/board';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?:
-    | 'default'
-    | 'primary'
-    | 'secondary'
-    | 'ghost'
-    | 'danger'
-    | 'success';
+  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
   size?: 'small' | 'middle' | 'large';
+  active?: boolean;
   loading?: boolean;
   children: React.ReactNode;
 }
@@ -18,32 +14,33 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({
   variant = 'default',
   size = 'middle',
+  active = false,
   loading = false,
   children,
   disabled,
   className,
   ...props
 }: ButtonProps) {
-  const baseClasses =
-    'font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-md flex items-center justify-center';
+  const theme = useBoardStore((s) => s.theme);
 
-  const variantClasses: Record<string, string> = {
-    default:
-      'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:ring-blue-500',
-    primary:
-      'bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-    secondary:
-      'bg-gray-600 border border-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
-    ghost:
-      'bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-blue-500',
-    danger:
-      'bg-red-600 border border-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-    success:
-      'bg-green-600 border border-green-600 text-white hover:bg-green-700 focus:ring-green-500',
+  // Màu giống nút Create Board
+  const variantClasses = {
+    default: theme === 'dark'
+      ? 'bg-gray-700 text-white hover:bg-gray-600'
+      : 'bg-gray-200 text-black hover:bg-gray-300',
+    primary: theme === 'dark'
+      ? 'bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700'
+      : 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700',
+    secondary: theme === 'dark'
+      ? 'bg-gray-600 text-white hover:bg-gray-500'
+      : 'bg-gray-300 text-black hover:bg-gray-400',
+    ghost: 'bg-transparent text-blue-500 hover:bg-blue-100',
+    danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700',
+    success: 'bg-green-500 text-white hover:bg-green-600 active:bg-green-700',
   };
 
   const sizeClasses: Record<string, string> = {
-    small: 'px-3 py-1.5 text-sm',
+    small: 'px-3 py-1 text-sm',
     middle: 'px-4 py-2 text-base',
     large: 'px-6 py-3 text-lg',
   };
@@ -52,9 +49,10 @@ export function Button({
     <button
       disabled={disabled || loading}
       className={cn(
-        baseClasses,
+        'font-medium transition-all duration-150 rounded-lg flex items-center justify-center gap-2',
         variantClasses[variant],
         sizeClasses[size],
+        active && 'ring-2 ring-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.3)]',
         (disabled || loading) && 'opacity-50 cursor-not-allowed',
         className
       )}
