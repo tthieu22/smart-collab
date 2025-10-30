@@ -8,23 +8,45 @@ import { useBoardStore } from '@smart/store/board'; // store theme
 
 export const AntdRegistry = ({ children }: { children: React.ReactNode }) => {
   const cache = React.useMemo(() => createCache(), []);
-  const themeFromStore = useBoardStore((s) => s.theme); // light | dark | system
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const storeTheme = useBoardStore((s) => s.theme);
+  const [mode, setMode] = useState<'light' | 'dark' | null>(null); // null = chưa xác định
 
-  // sync mode với store
+  // Lấy theme từ localStorage nếu có, ưu tiên store > localStorage > system
   useEffect(() => {
-    if (themeFromStore === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      setMode(mq.matches ? 'dark' : 'light');
-      const listener = (e: MediaQueryListEvent) => setMode(e.matches ? 'dark' : 'light');
-      mq.addEventListener('change', listener);
-      return () => mq.removeEventListener('change', listener);
-    } else if (themeFromStore === 'dark') {
-      setMode('dark');
-    } else {
-      setMode('light');
+    let theme: 'light' | 'dark' | 'system' = storeTheme;
+
+    if (!theme && typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+        theme = saved;
+      } else {
+        theme = 'system';
+      }
     }
-  }, [themeFromStore]);
+
+    const applyTheme = (t: typeof theme) => {
+      if (t === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setMode(prefersDark ? 'dark' : 'light');
+
+        const listener = (e: MediaQueryListEvent) => setMode(e.matches ? 'dark' : 'light');
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', listener);
+        return () =>
+          window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', listener);
+      } else {
+        setMode(t);
+      }
+    };
+
+    const cleanup = applyTheme(theme);
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [storeTheme]);
+
+  // Chặn render trước khi mode xác định xong
+  if (!mode) return null;
 
   useServerInsertedHTML(() => {
     const styles = extractStyle(cache, true);

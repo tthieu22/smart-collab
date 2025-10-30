@@ -3,22 +3,17 @@
 import { useEffect, useState } from "react";
 import { projectStore } from "@smart/store/project";
 import { projectService } from "@smart/services/project.service";
-import type { Project } from "@smart/types/project";
 import { getProjectSocketManager } from "@smart/store/realtime";
 import ProjectActionBar from "@smart/components/project/ProjectActionBar";
-import {
-  InboxOutlined,
-  CalendarOutlined,
-  AppstoreOutlined,
-  SwapOutlined,
-} from "@ant-design/icons";
 import { Loading } from "@smart/components/ui/loading";
 
 import Inbox from "@smart/components/project/inbox/Inbox";
 import Calendar from "@smart/components/project/calendar/Calendar";
 import Board from "@smart/components/project/board/Board";
-import { useBoardStore } from "@smart/store/board";
 import DragDropProvider from "@smart/components/project/dnd/DragDropProvider";
+
+import { useBoardStore } from "@smart/store/board"; // store theme
+import { Project } from "@smart/types/project";
 
 interface Props {
   params: { id: string };
@@ -28,13 +23,19 @@ const LOCAL_STORAGE_KEY = "activeProjectComponents";
 
 export default function ProjectDetailPage({ params }: Props) {
   const projectId = params.id;
-  const { currentProject, addProject, updateProject, setCurrentProject } =
-    projectStore();
-  const [loading, setLoading] = useState(true);
-  
-  const { containers } = useBoardStore();
+  const {
+    currentProject,
+    addProject,
+    updateProject,
+    setCurrentProject,
+    boards,
+    columns,
+    cards,
+  } = projectStore();
 
-  // Active components state
+  const theme = useBoardStore((state) => state.theme); // get theme
+  const [loading, setLoading] = useState(true);
+
   const [activeComponents, setActiveComponents] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -62,16 +63,11 @@ export default function ProjectDetailPage({ params }: Props) {
   // ------------------ SOCKET EVENTS ------------------
   useEffect(() => {
     const socketManager = getProjectSocketManager();
-    let unsubCreated: () => void;
-    let unsubUpdated: () => void;
 
-    // Callback xử lý realtime project updates
     const handleProjectMsg = (msg: any) => {
       if (!msg?.project) return;
-      const p: Project = msg.project;
-
-      const isCurrent = currentProject?.id === p.id;
-      if (isCurrent) {
+      const p = msg.project;
+      if (currentProject?.id === p.id) {
         updateProject(p);
         setCurrentProject(p);
       } else {
@@ -79,24 +75,20 @@ export default function ProjectDetailPage({ params }: Props) {
       }
     };
 
-    // Join project socket
-    socketManager
-      .joinProject(projectId)
+    socketManager.joinProject(projectId)
       .then(() => console.log("Joined project socket:", projectId))
       .catch(console.error);
 
-    // Subscribe correlation events
-    unsubCreated = socketManager.subscribeCorrelation(
+    const unsubCreated = socketManager.subscribeCorrelation(
       "realtime.project.created",
       handleProjectMsg
     );
-    unsubUpdated = socketManager.subscribeCorrelation(
+    const unsubUpdated = socketManager.subscribeCorrelation(
       "realtime.project.updated",
       handleProjectMsg
     );
 
     return () => {
-      // Cleanup khi unmount
       unsubCreated();
       unsubUpdated();
       socketManager.leaveProject(projectId);
@@ -119,7 +111,6 @@ export default function ProjectDetailPage({ params }: Props) {
       }
 
       const correlationId = crypto.randomUUID();
-
       const projectPromise = new Promise<Project>((resolve, reject) => {
         const unsubscribe = socketManager.subscribeCorrelation(
           correlationId,
@@ -136,9 +127,9 @@ export default function ProjectDetailPage({ params }: Props) {
         const p = await projectPromise;
 
         if (!canceled) {
-          projectStore.getState().addProject(p);
-          projectStore.getState().updateProject(p);
-          projectStore.getState().setCurrentProject(p);
+          addProject(p);
+          updateProject(p);
+          setCurrentProject(p);
         }
       } catch (error) {
         console.error("Fetch project failed:", error);
@@ -149,31 +140,22 @@ export default function ProjectDetailPage({ params }: Props) {
 
     initProject();
 
-    return () => {
-      canceled = true;
-    };
+    return () => { canceled = true; };
   }, [projectId]);
 
   // ------------------ UI ------------------
   if (loading) return <Loading text="Đang tải dữ liệu" />;
-  if (!project) return <Loading text="Không tim thấy dự án. Chắc là sai ở đâu đó thôi :((" />;
+  if (!project) return <Loading text="Không tìm thấy dự án :(" />;
 
+  // Background dựa vào theme, không lấy từ project
   const backgroundStyle: React.CSSProperties = {
     width: "100vw",
-    height: "100vh",
+    height: "100%",
     position: "fixed",
     top: 0,
     left: 0,
     zIndex: 0,
-    backgroundRepeat: "no-repeat",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundImage: project.fileUrl
-      ? `url(${project.fileUrl})`
-      : project.background
-      ? `url(${project.background})`
-      : undefined,
-    backgroundColor: project.color ?? undefined,
+    backgroundColor: theme === "dark" ? "#1E1E2F" : "#F4F5F7",
   };
 
   return (
@@ -184,47 +166,39 @@ export default function ProjectDetailPage({ params }: Props) {
         onToggle={toggleComponent}
       />
       <div className="relative z-10 p-4 space-y-4">
-        <div className="rounded-lg p-6 shadow bg-white/80">
-          <h1 className="text-2xl font-semibold mb-2">
-            {project.name}
-          </h1>
-        </div>
-        {/* Render tất cả component active */}
-        <div className="flex gap-4 text-3xl">
+        {/* Project content */}
         <DragDropProvider>
-          <div className="flex gap-4 text-3xl">
+          <div className="flex flex-wrap gap-4 text-3xl w-full min-h-[90vh]">
             {activeComponents.includes("inbox") && (
               <Inbox
-                cards={project.cards?.filter(c => c.columnId === "inbox") ?? []}
+                cards={Object.values(cards).filter(c => c.columnId === "inbox")}
+                className="flex-1 min-w-[250px]"
               />
             )}
 
             {activeComponents.includes("calendar") && (
-              <Calendar cards={project.cards ?? []} />
+              <Calendar
+                cards={Object.values(cards)}
+                className="flex-1 min-w-[400px]"
+              />
             )}
 
             {activeComponents.includes("board") && (
               <Board
-                board={
-                  project.boards?.[0] ?? {
-                    id: "board-temp",
-                    projectId: project.id,
-                    name: "Board",
-                    columns: [],
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                  }
-                }
+                board={Object.values(boards)[0] ?? {
+                  id: "board-temp",
+                  projectId: project.id,
+                  name: "Board",
+                  columnIds: [],
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                }}
+                className="flex-1 min-w-[300px]"
               />
             )}
 
-            {activeComponents.includes("switch") && (
-              <SwapOutlined className="text-orange-500" />
-            )}
           </div>
         </DragDropProvider>
-
-        </div>
       </div>
     </div>
   );

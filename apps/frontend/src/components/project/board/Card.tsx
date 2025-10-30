@@ -1,4 +1,5 @@
 "use client";
+
 import { Card as CardType } from "@smart/types/project";
 import { CardDraggable } from "@smart/components/project/dnd/CardDraggable";
 

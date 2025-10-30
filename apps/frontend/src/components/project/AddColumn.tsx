@@ -3,35 +3,33 @@
 import { useState } from "react";
 import { Input } from "@smart/components/ui/input";
 import { Button } from "@smart/components/ui/button";
+import { PlusOutlined } from "@ant-design/icons";
 import { projectStore } from "@smart/store/project";
 import { useBoardStore } from "@smart/store/board";
-import type { Card } from "@smart/types/project";
 
-interface AddCardProps {
-  projectId: string;
-  columnId: string;
+interface AddColumnProps {
+  boardId: string;
 }
 
-export function AddCard({ projectId, columnId }: AddCardProps) {
+export default function AddColumn({ boardId }: AddColumnProps) {
+  const addColumnStore = projectStore((state) => state.addColumn);
+  const theme = useBoardStore((state) => state.theme);
+
   const [showInput, setShowInput] = useState(false);
-  const [title, setTitle] = useState("");
+  const [newColumnTitle, setNewColumnTitle] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const addCard = projectStore((s) => s.addCard);
-  const theme = useBoardStore.getState().theme;
-
   const handleSave = () => {
-    if (!title.trim()) return;
+    if (!newColumnTitle.trim()) return;
     setLoading(true);
-
-    addCard(columnId, title.trim());
-    setTitle("");
+    addColumnStore(boardId, newColumnTitle);
+    setNewColumnTitle("");
     setShowInput(false);
     setLoading(false);
   };
 
   const handleCancel = () => {
-    setTitle("");
+    setNewColumnTitle("");
     setShowInput(false);
   };
 
@@ -52,14 +50,14 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2 p-2">
+    <div className="min-w-[250px] flex flex-col gap-1 p-2">
       {!showInput && (
         <Button
           className={getButtonVariant("primary")}
           size="small"
           onClick={() => setShowInput(true)}
         >
-          + Add Card
+          <PlusOutlined /> Add another list
         </Button>
       )}
 
@@ -67,14 +65,15 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
         <>
           <Input
             autoFocus
-            placeholder="Enter card title..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter column title..."
+            value={newColumnTitle}
+            onChange={(e) => setNewColumnTitle(e.target.value)}
             size="small"
             variant="filled"
             onPressEnter={handleSave}
           />
           <div className="flex gap-2 mt-1">
+            
             <Button
               className={getButtonVariant("ghost")}
               size="small"
@@ -90,6 +89,7 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
             >
               Save
             </Button>
+            
           </div>
         </>
       )}

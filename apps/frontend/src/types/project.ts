@@ -5,7 +5,7 @@ export interface UserCache {
   firstName?: string | null
   lastName?: string | null
   avatar?: string | null
-  role: "USER" | "ADMIN" | string
+  role: "USER" | "ADMIN"
   updatedAt: string
 }
 
@@ -14,25 +14,26 @@ export interface ProjectMember {
   id: string
   projectId: string
   userId: string
-  role: "OWNER" | "ADMIN" | "MEMBER" | string
+  role: "OWNER" | "ADMIN" | "MEMBER"
   joinedAt: string
-  user?: UserCache | null // có thể không luôn có user cache đi kèm
+  user?: UserCache | null
 }
 
 // ------------------ CARD ------------------
 export interface Card {
   id: string
   projectId: string
+  columnId: string // card phải thuộc 1 column để kéo thả
   title: string
   description?: string | null
-  status: "ACTIVE" | "ARCHIVED" | "DELETED" | string
+  status: "ACTIVE" | "ARCHIVED" | "DELETED"
   deadline?: string | null
   priority?: number | null
   createdById?: string | null
   updatedById?: string | null
+  position?: number // thứ tự card trong column
   createdAt: string
   updatedAt: string
-  columnId?: string | null
   views?: CardView[]
   labels?: CardLabel[]
 }
@@ -41,11 +42,14 @@ export interface Card {
 export interface Column {
   id: string
   projectId: string
+  boardId?: string | null
   title: string
-  position: number
+  position: number // thứ tự cột trong board
+  cardIds: string[] // thứ tự các card
   metadata?: Record<string, any> | null
   createdAt: string
   updatedAt: string
+  cards?: Card[] // optional mapping
   views?: CardView[]
 }
 
@@ -54,7 +58,7 @@ export interface CardView {
   id: string
   cardId: string
   projectId: string
-  componentType: string
+  componentType: "board" | "inbox" | "calendar"
   columnId?: string | null
   position: number
   version: number
@@ -75,12 +79,14 @@ export interface CardLabel {
 export interface Board {
   id: string
   projectId: string
-  name: string
-  description?: string | null
-  color?: string | null
+  title: string
+  type: "board" | "inbox" | "calendar" | "kanban" | "timeline"
+  position: number
+  columnIds: string[] // thứ tự cột
+  metadata?: Record<string, any> | null
+  columns?: Column[] // optional mapping
   createdAt: string
   updatedAt: string
-  columns?: Column[]
 }
 
 // ------------------ PROJECT ------------------
@@ -90,7 +96,7 @@ export interface Project {
   description?: string | null
   ownerId: string
   folderPath?: string | null
-  visibility: "PRIVATE" | "PUBLIC" | string
+  visibility: "PRIVATE" | "PUBLIC"
   color?: string | null
   background?: string | null
 
@@ -112,10 +118,36 @@ export interface Project {
   boards?: Board[]
 }
 
-// ------------------ MEMBER (client-side mapping tiện dụng) ------------------
+// ------------------ MEMBER (client-side tiện dụng) ------------------
 export interface Member {
   userId: string
-  role: "OWNER" | "ADMIN" | "MEMBER" | string
+  role: "OWNER" | "ADMIN" | "MEMBER"
   name?: string | null
   avatar?: string | null
+}
+
+// ------------------ DragDropState ------------------
+// Lưu trạng thái toàn bộ boards, columns, cards để dễ quản lý kéo thả
+export interface DragDropState {
+  projects: {
+    [projectId: string]: {
+      project: Project
+      boards: {
+        [boardId: string]: {
+          board: Board
+          columns: {
+            [columnId: string]: {
+              column: Column
+              cards: {
+                [cardId: string]: Card
+              }
+              cardOrder: string[]
+            }
+          }
+          columnOrder: string[]
+        }
+      }
+      boardOrder: string[]
+    }
+  }
 }

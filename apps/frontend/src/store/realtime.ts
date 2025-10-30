@@ -131,29 +131,73 @@ export class ProjectSocketManager {
   private handleStoreUpdate(event: string, msg: any) {
     const store = projectStore.getState();
     switch (event) {
+      // ---------------- Project ----------------
       case "realtime.project.created":
-        store.addProject(msg.project); store.setCurrentProject(msg.project); break;
-      case "realtime.project.updated": case "realtime.project.fetched": store.updateProject(msg.project); break;
-      case "realtime.project.deleted": store.deleteProject(msg.projectId); break;
-      case "realtime.project.listed": if (Array.isArray(msg.projects)) msg.projects.forEach(store.addProject); break;
-      case "realtime.project.member_added": store.addMember(msg.projectId, msg.member); break;
-      case "realtime.project.member_removed": store.removeMember(msg.projectId, msg.userId); break;
-      case "realtime.project.member_role_updated": store.updateMemberRole(msg.projectId, msg.userId, msg.role); break;
-      case "realtime.board.created": case "realtime.board.updated": store.updateBoard(msg.projectId, msg.board); break;
-      case "realtime.board.deleted": store.deleteBoard(msg.projectId, msg.boardId); break;
-      case "realtime.column.created": case "realtime.column.updated": store.updateColumn(msg.projectId, msg.column); break;
-      case "realtime.column.deleted": store.removeColumn(msg.projectId, msg.columnId); break;
-      case "realtime.column.moved": store.moveColumn(msg.projectId, msg.columnId, msg.newIndex); break;
-      case "realtime.card.created": case "realtime.card.updated": store.updateCard(msg.projectId, msg.card); break;
-      case "realtime.card.deleted": store.removeCard(msg.projectId, msg.cardId); break;
-      case "realtime.card.moved": store.moveCard(msg.projectId, msg.cardId, msg.newColumnId, msg.newIndex); break;
-      case "realtime.card.copied": store.copyCard(msg.projectId, msg.card); break;
-      // case "realtime.comment.created": store.createComment?.(msg.projectId, msg.comment); break;
-      // case "realtime.comment.updated": store.updateComment?.(msg.projectId, msg.comment); break;
-      // case "realtime.comment.deleted": store.deleteComment?.(msg.projectId, msg.commentId); break;
-      default: console.warn(`Unhandled realtime event: ${event}`, msg); break;
+        store.addProject(msg.project);
+        store.setCurrentProject(msg.project);
+        break;
+      case "realtime.project.updated":
+      case "realtime.project.fetched":
+        store.updateProject(msg.project);
+        break;
+      case "realtime.project.deleted":
+        store.deleteProject(msg.projectId);
+        break;
+      case "realtime.project.listed":
+        if (Array.isArray(msg.projects)) msg.projects.forEach(store.addProject);
+        break;
+      case "realtime.project.member_added":
+        store.addMember(msg.member);
+        break;
+      case "realtime.project.member_removed":
+        store.removeMember(msg.userId);
+        break;
+      case "realtime.project.member_role_updated":
+        store.updateMember(msg.member);
+        break;
+
+      // ---------------- Board ----------------
+      case "realtime.board.created":
+      case "realtime.board.updated":
+        store.updateBoard(msg.board);
+        break;
+      case "realtime.board.deleted":
+        store.removeBoard(msg.boardId);
+        break;
+
+      // ---------------- Column ----------------
+      case "realtime.column.created":
+      case "realtime.column.updated":
+        store.updateColumn(msg.column);
+        break;
+      case "realtime.column.deleted":
+        store.removeColumn(msg.columnId);
+        break;
+      case "realtime.column.moved":
+        store.moveColumn(msg.columnId, msg.destBoardId, msg.newIndex);
+        break;
+
+      // ---------------- Card ----------------
+      case "realtime.card.created":
+      case "realtime.card.updated":
+        store.updateCard(msg.card);
+        break;
+      case "realtime.card.deleted":
+        store.removeCard(msg.cardId);
+        break;
+      case "realtime.card.moved":
+        store.moveCard(msg.cardId, msg.newColumnId, msg.newIndex);
+        break;
+      case "realtime.card.copied":
+        store.addCard(msg.card.columnId, msg.card.title); // hoặc store.copyCard(msg.card) nếu implement
+        break;
+
+      default:
+        console.warn(`Unhandled realtime event: ${event}`, msg);
+        break;
     }
   }
+
 
   /** Lock-aware action với backoff */
   private async lockAwareAction(event: string, payload: any, callback?: (msg: any) => void, maxRetry = 5) {
