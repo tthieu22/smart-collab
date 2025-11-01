@@ -1,119 +1,135 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe, AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CardMessage } from '../dto/card.dto';
+import { CardService } from './card.service';
 
 @Injectable()
 export class CardConsumer {
   constructor(
     private readonly amqpConnection: AmqpConnection,
-    private readonly prisma: PrismaService,
+    private readonly cardService: CardService,
   ) {}
 
-  // ------------------- Move Card -------------------
   @RabbitSubscribe({
-    exchange: 'smart-collab',
-    routingKey: 'card.move',
-    queue: 'project-service.card_move',
+    exchange: 'realtime-exchange',
+    routingKey: 'card.get',
+    queue: 'project-service.card-get',
   })
-  async handleMoveCard(msg: CardMessage) {
+  async handleGetCard(msg: { cardId: string }) {
     try {
-      // Lấy cardView hiện tại
-      const cardView = await this.prisma.cardView.findUnique({
-        where: { id: msg.cardViewId! },
-      });
-
-      if (!cardView) throw new Error('CardView not found');
-
-      // Check version để tránh xung đột
-      if (cardView.version !== msg.version) {
-        throw new Error('Version conflict');
-      }
-
-      // Move card: cập nhật position, columnId, componentType, version++
-      const updatedCardView = await this.prisma.cardView.update({
-        where: { id: msg.cardViewId! },
-        data: {
-          position: msg.position!,
-          columnId: msg.toColumnId ?? null,
-          componentType: msg.toComponentId!,
-          version: { increment: 1 },
-          updatedAt: new Date(),
-        },
-      });
-
-      await this.amqpConnection.publish('project-exchange', 'card.moved', {
-        correlationId: msg.correlationId,
-        cardView: updatedCardView,
+      const card = await this.cardService.getCardById(msg.cardId);
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
+        status: 'success',
+        action: 'get',
+        card,
       });
     } catch (error) {
-      console.error('❌ handleMoveCard error:', error);
-      await this.amqpConnection.publish('project-exchange', 'card.moved', {
-        correlationId: msg.correlationId,
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
         status: 'error',
+        action: 'get',
         message: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
-  // ------------------- Copy Card -------------------
   @RabbitSubscribe({
-    exchange: 'smart-collab',
-    routingKey: 'card.copy',
-    queue: 'project-service.card_copy',
+    exchange: 'realtime-exchange',
+    routingKey: 'card.create',
+    queue: 'project-service.card-create',
   })
-  async handleCopyCard(msg: CardMessage) {
+  async handleCreateCard(msg: {
+    columnId: string;
+    title: string;
+    description?: string;
+    status?: string;
+    deadline?: Date;
+    priority?: number;
+    createdById?: string;
+  }) {
     try {
-      const newCardView = await this.prisma.cardView.create({
-        data: {
-          cardId: msg.cardId!,
-          projectId: msg.projectId!,
-          columnId: msg.toColumnId ?? null,
-          componentType: msg.toComponentId!,
-          position: msg.position!,
-          version: 1,
-          isPinned: msg.isPinned ?? false,
-          customTitle: msg.customTitle,
-          metadata: msg.metadata,
-          updatedAt: new Date(),
-        },
-      });
-
-      await this.amqpConnection.publish('project-exchange', 'card.copied', {
-        correlationId: msg.correlationId,
-        cardView: newCardView,
+      const card = await this.cardService.createCard(msg);
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
+        status: 'success',
+        action: 'create',
+        card,
       });
     } catch (error) {
-      console.error('❌ handleCopyCard error:', error);
-      await this.amqpConnection.publish('project-exchange', 'card.copied', {
-        correlationId: msg.correlationId,
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
         status: 'error',
+        action: 'create',
         message: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
-  // ------------------- Delete CardView -------------------
   @RabbitSubscribe({
-    exchange: 'smart-collab',
+    exchange: 'realtime-exchange',
+    routingKey: 'card.update',
+    queue: 'project-service.card-update',
+  })
+  async handleUpdateCard(msg: {
+    cardId: string;
+    title?: string;
+    description?: string;
+    status?: string;
+    deadline?: Date;
+    priority?: number;
+    updatedById?: string;
+  }) {
+    try {
+      const card = await this.cardService.updateCard(msg);
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
+        status: 'success',
+        action: 'update',
+        card,
+      });
+    } catch (error) {
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
+        status: 'error',
+        action: 'update',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'realtime-exchange',
     routingKey: 'card.delete',
-    queue: 'project-service.card_delete',
+    queue: 'project-service.card-delete',
   })
-  async handleDeleteCard(msg: CardMessage) {
+  async handleDeleteCard(msg: { cardId: string }) {
     try {
-      await this.prisma.cardView.delete({
-        where: { id: msg.cardViewId! },
-      });
-
-      await this.amqpConnection.publish('project-exchange', 'card.deleted', {
-        correlationId: msg.correlationId,
-        cardViewId: msg.cardViewId,
+      const result = await this.cardService.removeCard(msg.cardId);
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
+        status: 'success',
+        action: 'delete',
+        ...result,
       });
     } catch (error) {
-      console.error('❌ handleDeleteCard error:', error);
-      await this.amqpConnection.publish('project-exchange', 'card.deleted', {
-        correlationId: msg.correlationId,
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
         status: 'error',
+        action: 'delete',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'realtime-exchange',
+    routingKey: 'card.move',
+    queue: 'project-service.card-move',
+  })
+  async handleMoveCard(msg: { cardId: string; destColumnId: string; destIndex: number }) {
+    try {
+      const card = await this.cardService.moveCard(msg.cardId, msg.destColumnId, msg.destIndex);
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
+        status: 'success',
+        action: 'move',
+        card,
+      });
+    } catch (error) {
+      await this.amqpConnection.publish('project-exchange', 'card.result', {
+        status: 'error',
+        action: 'move',
         message: error instanceof Error ? error.message : String(error),
       });
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@smart/lib/utils';
-import { useBoardStore } from '@smart/store/board';
+import { useBoardStore } from '@smart/store/setting';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';

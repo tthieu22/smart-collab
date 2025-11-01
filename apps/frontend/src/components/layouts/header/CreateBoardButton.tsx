@@ -6,7 +6,7 @@ import {
   Upload, ColorPicker, Space
 } from "antd";
 import { PlusOutlined, BgColorsOutlined, UploadOutlined, CheckOutlined } from "@ant-design/icons";
-import { useBoardStore } from "@smart/store/board";
+import { useBoardStore } from "@smart/store/setting";
 import { useNotificationStore } from '@smart/store/notification';
 import { projectService } from "@smart/services/project.service";
 import { uploadService } from "@smart/services/upload.service";

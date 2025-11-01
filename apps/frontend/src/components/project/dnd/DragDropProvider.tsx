@@ -16,12 +16,12 @@ export default function DragDropProvider({ children }: Props) {
 
     if (type === "COLUMN") {
       // Tham số: columnId, destBoardId, destIndex
-      moveColumn(draggableId, destination.droppableId, destination.index);
+    //   moveColumn(draggableId, destination.droppableId, destination.index);
     }
 
     if (type === "CARD") {
       // Tham số: cardId, destColumnId, destIndex
-      moveCard(draggableId, destination.droppableId, destination.index);
+    //   moveCard(draggableId, destination.droppableId, destination.index);
     }
   };
 

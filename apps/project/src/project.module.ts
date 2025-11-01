@@ -1,22 +1,19 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import { ConfigModule } from '@nestjs/config';
 import { ProjectConsumer } from './project.consumer';
-import { getGolevelupRabbitMQOptions } from './config/rabbitmq.config';
 import { PrismaModule } from '../prisma/project.module';
 import { ProjectMemberConsumer } from './project.member.consumer';
+import { BoardModule } from './board/board.module';
+import { SharedRabbitMQModule } from './config/rabbitmq.module';
+import { ProjectService } from './project.service';
 
 @Module({
   imports: [
     PrismaModule,
+    BoardModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    RabbitMQModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        getGolevelupRabbitMQOptions(configService),
-    }),
+    SharedRabbitMQModule
   ],
-  providers: [ProjectConsumer, ProjectMemberConsumer],
+  providers: [ProjectConsumer,ProjectService, ProjectMemberConsumer],
 })
 export class ProjectModule {}

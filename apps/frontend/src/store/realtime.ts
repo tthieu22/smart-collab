@@ -137,11 +137,13 @@ export class ProjectSocketManager {
         store.setCurrentProject(msg.project);
         break;
       case "realtime.project.updated":
-      case "realtime.project.fetched":
         store.updateProject(msg.project);
         break;
+      case "realtime.project.fetched":
+        store.setCurrentProject(msg.project);
+        break;
       case "realtime.project.deleted":
-        store.deleteProject(msg.projectId);
+        store.removeProject(msg.projectId);
         break;
       case "realtime.project.listed":
         if (Array.isArray(msg.projects)) msg.projects.forEach(store.addProject);
@@ -171,10 +173,10 @@ export class ProjectSocketManager {
         store.updateColumn(msg.column);
         break;
       case "realtime.column.deleted":
-        store.removeColumn(msg.columnId);
+        // store.removeColumn(msg.columnId);
         break;
       case "realtime.column.moved":
-        store.moveColumn(msg.columnId, msg.destBoardId, msg.newIndex);
+        // store.moveColumn(msg.columnId, msg.destBoardId, msg.newIndex);
         break;
 
       // ---------------- Card ----------------
@@ -183,14 +185,14 @@ export class ProjectSocketManager {
         store.updateCard(msg.card);
         break;
       case "realtime.card.deleted":
-        store.removeCard(msg.cardId);
+        store.removeCard(msg.columnId, msg.cardId);
         break;
       case "realtime.card.moved":
-        store.moveCard(msg.cardId, msg.newColumnId, msg.newIndex);
+        // store.moveCard(msg.cardId, msg.newColumnId, msg.newIndex);
         break;
-      case "realtime.card.copied":
-        store.addCard(msg.card.columnId, msg.card.title); // hoặc store.copyCard(msg.card) nếu implement
-        break;
+      // case "realtime.card.copied":
+      //   store.addCard(msg.card.columnId, msg.card.title); // hoặc store.copyCard(msg.card) nếu implement
+      //   break;
 
       default:
         console.warn(`Unhandled realtime event: ${event}`, msg);

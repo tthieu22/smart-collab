@@ -59,16 +59,19 @@ model ProjectMember {
 // ------------------ BOARD ------------------
 model Board {
   id        String   @id @default(uuid())
-  projectId String
+  projectId String?
   title     String
-  type      String // board / inbox / calendar / kanban / timeline ...
-  position  Int      @default(0)
-  columnIds String[] @default([]) // Thứ tự column
-  metadata  Json? // Thêm thông tin mở rộng cho board
+  type      String
+  position  Int       @default(0)
+  columnIds String[]  @default([])
+  metadata  Json?
 
-  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  columns Column[]
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  columns   Column[]
+  ownerId   String?
 
+  @@index([projectId])
+  @@index([ownerId])
   @@index([projectId, position])
 }
 

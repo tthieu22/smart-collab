@@ -116,6 +116,8 @@ export interface Project {
   cards?: Card[]
   columns?: Column[]
   boards?: Board[]
+  labels?: CardLabel[]
+  views?: CardView[]
 }
 
 // ------------------ MEMBER (client-side tiện dụng) ------------------

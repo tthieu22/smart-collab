@@ -2,56 +2,51 @@
 
 import { createCache, extractStyle, StyleProvider } from '@ant-design/cssinjs';
 import { useServerInsertedHTML } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ConfigProvider, theme as antdTheme } from 'antd';
-import { useBoardStore } from '@smart/store/board'; // store theme
+import { useBoardStore } from '@smart/store/setting';
 
 export const AntdRegistry = ({ children }: { children: React.ReactNode }) => {
-  const cache = React.useMemo(() => createCache(), []);
+  const cache = useMemo(() => createCache(), []);
   const storeTheme = useBoardStore((s) => s.theme);
-  const [mode, setMode] = useState<'light' | 'dark' | null>(null); // null = chưa xác định
+  const [mode, setMode] = useState<'light' | 'dark' | null>(null);
 
-  // Lấy theme từ localStorage nếu có, ưu tiên store > localStorage > system
+  // Chỉ gọi hook này trên server
+  if (typeof window === 'undefined') {
+    useServerInsertedHTML(() => {
+      const styles = extractStyle(cache, true);
+      return <style id="antd" dangerouslySetInnerHTML={{ __html: styles }} />;
+    });
+  }
+
   useEffect(() => {
-    let theme: 'light' | 'dark' | 'system' = storeTheme;
+    let theme: 'light' | 'dark' | 'system' = storeTheme || 'system';
 
-    if (!theme && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme');
-      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+      if (!storeTheme && (saved === 'light' || saved === 'dark' || saved === 'system')) {
         theme = saved;
-      } else {
-        theme = 'system';
       }
+
+      const applyTheme = (t: typeof theme) => {
+        if (t === 'system') {
+          const media = window.matchMedia('(prefers-color-scheme: dark)');
+          setMode(media.matches ? 'dark' : 'light');
+
+          const listener = (e: MediaQueryListEvent) => setMode(e.matches ? 'dark' : 'light');
+          media.addEventListener('change', listener);
+          return () => media.removeEventListener('change', listener);
+        } else {
+          setMode(t);
+        }
+      };
+
+      const cleanup = applyTheme(theme);
+      return () => cleanup && cleanup();
     }
-
-    const applyTheme = (t: typeof theme) => {
-      if (t === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setMode(prefersDark ? 'dark' : 'light');
-
-        const listener = (e: MediaQueryListEvent) => setMode(e.matches ? 'dark' : 'light');
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', listener);
-        return () =>
-          window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', listener);
-      } else {
-        setMode(t);
-      }
-    };
-
-    const cleanup = applyTheme(theme);
-
-    return () => {
-      if (cleanup) cleanup();
-    };
   }, [storeTheme]);
 
-  // Chặn render trước khi mode xác định xong
   if (!mode) return null;
-
-  useServerInsertedHTML(() => {
-    const styles = extractStyle(cache, true);
-    return <style id="antd" dangerouslySetInnerHTML={{ __html: styles }} />;
-  });
 
   return (
     <StyleProvider cache={cache}>

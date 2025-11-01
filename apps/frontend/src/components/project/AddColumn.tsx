@@ -5,7 +5,7 @@ import { Input } from "@smart/components/ui/input";
 import { Button } from "@smart/components/ui/button";
 import { PlusOutlined } from "@ant-design/icons";
 import { projectStore } from "@smart/store/project";
-import { useBoardStore } from "@smart/store/board";
+import { useBoardStore } from "@smart/store/setting";
 
 interface AddColumnProps {
   boardId: string;
@@ -22,7 +22,7 @@ export default function AddColumn({ boardId }: AddColumnProps) {
   const handleSave = () => {
     if (!newColumnTitle.trim()) return;
     setLoading(true);
-    addColumnStore(boardId, newColumnTitle);
+    // addColumnStore(boardId, newColumnTitle);
     setNewColumnTitle("");
     setShowInput(false);
     setLoading(false);

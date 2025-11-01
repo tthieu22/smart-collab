@@ -23,7 +23,7 @@ export const getNestRabbitMQOptions = (
 
 // 👉 Cho golevelup/nestjs-rabbitmq (event bus)
 export const getGolevelupRabbitMQOptions = (configService: ConfigService) => ({
-  exchanges: [{ name: 'smart-collab', type: 'topic' }],
+  exchanges: [{ name: 'project-exchange', type: 'topic' }],
   uri: `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
     'RABBITMQ_PASSWORD',
   )}@${configService.get('RABBITMQ_HOST')}:${configService.get(

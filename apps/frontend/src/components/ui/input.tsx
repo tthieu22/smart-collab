@@ -2,7 +2,7 @@
 
 import { Input as AntInput, InputProps as AntInputProps } from 'antd';
 import { cn } from '@smart/lib/utils';
-import { useBoardStore } from '@smart/store/board';
+import { useBoardStore } from '@smart/store/setting';
 
 interface InputProps extends Omit<AntInputProps, 'size'> {
   variant?: 'filled' | 'outlined' | 'borderless' | 'underlined';

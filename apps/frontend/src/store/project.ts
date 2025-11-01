@@ -22,34 +22,40 @@ interface ProjectState {
   members: Record<string, ProjectMember>;
   views: Record<string, CardView>;
 
-  /** Thiết lập & reset */
+  boardColumns: Record<string, string[]>;
+  columnCards: Record<string, string[]>;
+
   setCurrentProject: (project: Project) => void;
   clearProjectStore: () => void;
 
-  /** Project */
   addProject: (project: Project) => void;
   updateProject: (project: Project) => void;
-  deleteProject: (projectId: string) => void;
+  removeProject: (projectId: string) => void;
 
-  /** Board */
   addBoard: (board: Board) => void;
   updateBoard: (board: Board) => void;
   removeBoard: (boardId: string) => void;
-  moveBoard: (sourceIndex: number, destinationIndex: number) => void;
 
-  /** Column */
-  addColumn: (boardId: string, title: string) => void;
+  addColumn: (boardId: string, column: Column) => void;
   updateColumn: (column: Column) => void;
-  removeColumn: (columnId: string) => void;
-  moveColumn: (columnId: string, destBoardId: string, destIndex: number) => void;
+  removeColumn: (boardId: string, columnId: string) => void;
+  moveColumn: (
+    srcBoardId: string,
+    destBoardId: string,
+    columnId: string,
+    destIndex: number
+  ) => void;
 
-  /** Card */
-  addCard: (columnId: string, title: string) => void;
+  addCard: (columnId: string, card: Card) => void;
   updateCard: (card: Card) => void;
-  removeCard: (cardId: string) => void;
-  moveCard: (cardId: string, destColumnId: string, destIndex: number) => void;
+  removeCard: (columnId: string, cardId: string) => void;
+  moveCard: (
+    srcColumnId: string,
+    destColumnId: string,
+    cardId: string,
+    destIndex: number
+  ) => void;
 
-  /** Label / Member / View */
   addLabel: (label: CardLabel) => void;
   updateLabel: (label: CardLabel) => void;
   removeLabel: (labelId: string) => void;
@@ -72,180 +78,258 @@ export const projectStore = create<ProjectState>((set, get) => ({
   labels: {},
   members: {},
   views: {},
+  boardColumns: {},
+  columnCards: {},
 
-  // ----------------------------
-  // SETUP
-  // ----------------------------
   setCurrentProject: (project) => {
     const boards: Record<string, Board> = {};
     const columns: Record<string, Column> = {};
     const cards: Record<string, Card> = {};
-    const labels: Record<string, CardLabel> = {};
+    const boardColumns: Record<string, string[]> = {};
+    const columnCards: Record<string, string[]> = {};
     const members: Record<string, ProjectMember> = {};
+    const labels: Record<string, CardLabel> = {};
     const views: Record<string, CardView> = {};
 
-    project.boards?.forEach((b) => boards[b.id] = b);
-    project.columns?.forEach((c) => columns[c.id] = c);
-    project.cards?.forEach((c) => cards[c.id] = c);
-    project.members?.forEach((m) => members[m.id] = m);
+    project.boards?.forEach((b) => {
+      boards[b.id] = b;
+      boardColumns[b.id] = [];
+    });
+    project.boards?.forEach((b) => {
+      boards[b.id] = b;
+      boardColumns[b.id] = [];
 
-    set({ currentProject: project, boards, columns, cards, labels, members, views });
+      b.columns?.forEach((c) => {
+        columns[c.id] = c;
+        if (!c.boardId) return;
+        boardColumns[c.boardId] = boardColumns[c.boardId] || [];
+        boardColumns[c.boardId].push(c.id);
+        columnCards[c.id] = [];
+      });
+    });
+
+    project.cards?.forEach((card) => {
+      cards[card.id] = card;
+      columnCards[card.columnId] = columnCards[card.columnId] || [];
+      columnCards[card.columnId].push(card.id);
+    });
+
+    project.members?.forEach((m) => (members[m.id] = m));
+    project.labels?.forEach((l) => (labels[l.id] = l));
+    project.views?.forEach((v) => (views[v.id] = v));
+    
+    Object.keys(boards).forEach((boardId) => {
+      boards[boardId] = {
+        ...boards[boardId],
+        columnIds: boardColumns[boardId] || [],
+      };
+    });
+
+    // Gán cardIds cho mỗi column
+    Object.keys(columns).forEach((columnId) => {
+      columns[columnId] = {
+        ...columns[columnId],
+        cardIds: columnCards[columnId] || [],
+      };
+    });
+
+    set({
+      currentProject: project,
+      boards,
+      columns,
+      cards,
+      members,
+      labels,
+      views,
+      boardColumns,
+      columnCards,
+    });
   },
 
   clearProjectStore: () =>
-    set({ currentProject: null, allProjects: [], boards: {}, columns: {}, cards: {}, labels: {}, members: {}, views: {} }),
+    set({
+      currentProject: null,
+      allProjects: [],
+      boards: {},
+      columns: {},
+      cards: {},
+      labels: {},
+      members: {},
+      views: {},
+      boardColumns: {},
+      columnCards: {},
+    }),
 
-  // ----------------------------
-  // PROJECT CRUD
-  // ----------------------------
-  addProject: (project) => set((s) => ({ allProjects: [...s.allProjects, project] })),
+  addProject: (project) =>
+    set((s) => ({ allProjects: [...s.allProjects, project] })),
+
   updateProject: (project) =>
     set((s) => ({
-      allProjects: s.allProjects.map((p) => p.id === project.id ? project : p),
-      currentProject: s.currentProject?.id === project.id ? project : s.currentProject,
+      allProjects: s.allProjects.map((p) =>
+        p.id === project.id ? project : p
+      ),
+      currentProject:
+        s.currentProject?.id === project.id ? project : s.currentProject,
     })),
-  deleteProject: (projectId) =>
+
+  removeProject: (projectId) =>
     set((s) => ({
       allProjects: s.allProjects.filter((p) => p.id !== projectId),
-      currentProject: s.currentProject?.id === projectId ? null : s.currentProject,
+      currentProject:
+        s.currentProject?.id === projectId ? null : s.currentProject,
     })),
 
-  // ----------------------------
-  // BOARD CRUD + DND
-  // ----------------------------
-  addBoard: (board) => set((s) => ({ boards: { ...s.boards, [board.id]: board } })),
-  updateBoard: (board) => set((s) => ({ boards: { ...s.boards, [board.id]: board } })),
-  removeBoard: (id) => set((s) => { const boards = { ...s.boards }; delete boards[id]; return { boards }; }),
-  moveBoard: (sourceIndex, destinationIndex) => {
-    const arr = Object.values(get().boards);
-    const [removed] = arr.splice(sourceIndex, 1);
-    arr.splice(destinationIndex, 0, removed);
-    set({ boards: Object.fromEntries(arr.map((b) => [b.id, b])) });
-  },
+  addBoard: (board) =>
+    set((s) => ({
+      boards: { ...s.boards, [board.id]: board },
+      boardColumns: { ...s.boardColumns, [board.id]: [] },
+    })),
 
-  // ----------------------------
-  // COLUMN CRUD + DND
-  // ----------------------------
-  addColumn: (boardId, title) => {
-    const id = crypto.randomUUID();
-    const { boards, columns, currentProject } = get();
-    const board = boards[boardId];
-    if (!board || !currentProject) return;
+  updateBoard: (board) =>
+    set((s) => ({ boards: { ...s.boards, [board.id]: board } })),
 
-    const newColumn: Column = {
-      id,
-      projectId: currentProject.id,
-      title,
-      position: board.columnIds.length,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      views: [],
-      cardIds: [],
-    };
-
-    board.columnIds.push(id);
-    set({ boards: { ...boards }, columns: { ...columns, [id]: newColumn } });
-  },
-
-  updateColumn: (column) => set((s) => ({ columns: { ...s.columns, [column.id]: column } })),
-  removeColumn: (columnId) =>
+  removeBoard: (boardId) =>
     set((s) => {
+      const boards = { ...s.boards };
+      const boardColumns = { ...s.boardColumns };
       const columns = { ...s.columns };
       const cards = { ...s.cards };
-      const boards = { ...s.boards };
-      const col = columns[columnId];
-      if (!col) return s;
-      col.cardIds.forEach((cid) => delete cards[cid]);
-      Object.values(boards).forEach((b) => { b.columnIds = b.columnIds.filter((id) => id !== columnId); });
-      delete columns[columnId];
-      return { columns, boards, cards };
+      const columnCards = { ...s.columnCards };
+
+      const colIds = boardColumns[boardId] || [];
+      colIds.forEach((cid) => {
+        (columnCards[cid] || []).forEach((cardId) => delete cards[cardId]);
+        delete columns[cid];
+        delete columnCards[cid];
+      });
+
+      delete boardColumns[boardId];
+      delete boards[boardId];
+
+      return { boards, boardColumns, columns, cards, columnCards };
     }),
 
-  moveColumn: (columnId, destBoardId, destIndex) =>
+  addColumn: (boardId, column) =>
     set((s) => {
-      const boards = { ...s.boards };
-      const columns = { ...s.columns };
-      const col = columns[columnId];
-      if (!col) return s;
+      const boardColumns = { ...s.boardColumns };
+      boardColumns[boardId] = boardColumns[boardId] || [];
+      boardColumns[boardId].push(column.id);
 
-      const srcBoard = Object.values(boards).find((b) => b.columnIds.includes(columnId));
-      if (srcBoard) srcBoard.columnIds = srcBoard.columnIds.filter((id) => id !== columnId);
-
-      const destBoard = boards[destBoardId];
-      if (!destBoard) return s;
-      destBoard.columnIds.splice(destIndex, 0, columnId);
-      destBoard.columnIds.forEach((id, idx) => { if (columns[id]) columns[id].position = idx; });
-
-      return { boards, columns };
-    }),
-
-  // ----------------------------
-  // CARD CRUD + DND
-  // ----------------------------
-  addCard: (columnId, title) =>
-    set((s) => {
-      const id = crypto.randomUUID();
-      const col = s.columns[columnId];
-      if (!col || !s.currentProject) return s;
-
-      const newCard: Card = {
-        id,
-        projectId: s.currentProject.id,
-        columnId,
-        title,
-        status: "ACTIVE",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      return {
+        columns: { ...s.columns, [column.id]: column },
+        boardColumns,
+        columnCards: { ...s.columnCards, [column.id]: [] },
       };
-
-      col.cardIds.push(id);
-      return { cards: { ...s.cards, [id]: newCard }, columns: { ...s.columns } };
     }),
 
-  updateCard: (card) => set((s) => ({ cards: { ...s.cards, [card.id]: card } })),
-  removeCard: (cardId) =>
+  updateColumn: (column) =>
+    set((s) => ({ columns: { ...s.columns, [column.id]: column } })),
+
+  removeColumn: (boardId, columnId) =>
+    set((s) => {
+      const columns = { ...s.columns };
+      const cards = { ...s.cards };
+      const boardColumns = { ...s.boardColumns };
+      const columnCards = { ...s.columnCards };
+
+      delete columns[columnId];
+      (columnCards[columnId] || []).forEach((cardId) => delete cards[cardId]);
+      delete columnCards[columnId];
+      boardColumns[boardId] = boardColumns[boardId].filter(
+        (id) => id !== columnId
+      );
+
+      return { columns, cards, boardColumns, columnCards };
+    }),
+
+  moveColumn: (srcBoardId, destBoardId, columnId, destIndex) =>
+    set((s) => {
+      const boardColumns = { ...s.boardColumns };
+      const src = [...(boardColumns[srcBoardId] || [])];
+      const dest = [...(boardColumns[destBoardId] || [])];
+      const idx = src.indexOf(columnId);
+      if (idx !== -1) src.splice(idx, 1);
+      dest.splice(destIndex, 0, columnId);
+      boardColumns[srcBoardId] = src;
+      boardColumns[destBoardId] = dest;
+      return { boardColumns };
+    }),
+
+  addCard: (columnId, card) =>
+    set((s) => {
+      const columnCards = { ...s.columnCards };
+      columnCards[columnId] = columnCards[columnId] || [];
+      columnCards[columnId].push(card.id);
+      return { cards: { ...s.cards, [card.id]: card }, columnCards };
+    }),
+
+  updateCard: (card) =>
+    set((s) => ({ cards: { ...s.cards, [card.id]: card } })),
+
+  removeCard: (columnId, cardId) =>
     set((s) => {
       const cards = { ...s.cards };
-      const columns = { ...s.columns };
-      const card = cards[cardId];
-      if (card) {
-        const col = columns[card.columnId!];
-        if (col) col.cardIds = col.cardIds.filter((id) => id !== cardId);
-      }
+      const columnCards = { ...s.columnCards };
       delete cards[cardId];
-      return { cards, columns };
+      columnCards[columnId] = (columnCards[columnId] || []).filter(
+        (id) => id !== cardId
+      );
+      return { cards, columnCards };
     }),
-  moveCard: (cardId, destColumnId, destIndex) =>
+
+  moveCard: (srcColumnId, destColumnId, cardId, destIndex) =>
     set((s) => {
+      const columnCards = { ...s.columnCards };
       const cards = { ...s.cards };
-      const columns = { ...s.columns };
       const card = cards[cardId];
       if (!card) return s;
-
-      const srcCol = columns[card.columnId!];
-      const destCol = columns[destColumnId];
-      if (!destCol) return s;
-
-      if (srcCol) srcCol.cardIds = srcCol.cardIds.filter((id) => id !== cardId);
-      destCol.cardIds.splice(destIndex, 0, cardId);
+      const src = [...(columnCards[srcColumnId] || [])];
+      const dest = [...(columnCards[destColumnId] || [])];
+      const idx = src.indexOf(cardId);
+      if (idx !== -1) src.splice(idx, 1);
+      dest.splice(destIndex, 0, cardId);
+      columnCards[srcColumnId] = src;
+      columnCards[destColumnId] = dest;
       card.columnId = destColumnId;
-      destCol.cardIds.forEach((id, idx) => { if (cards[id]) cards[id].position = idx; });
-
-      return { cards, columns };
+      return { columnCards, cards };
     }),
 
-  // ----------------------------
-  // LABEL / MEMBER / VIEW
-  // ----------------------------
-  addLabel: (label) => set((s) => ({ labels: { ...s.labels, [label.id]: label } })),
-  updateLabel: (label) => set((s) => ({ labels: { ...s.labels, [label.id]: label } })),
-  removeLabel: (id) => set((s) => { const labels = { ...s.labels }; delete labels[id]; return { labels }; }),
+  addLabel: (label) =>
+    set((s) => ({ labels: { ...s.labels, [label.id]: label } })),
 
-  addMember: (member) => set((s) => ({ members: { ...s.members, [member.id]: member } })),
-  updateMember: (member) => set((s) => ({ members: { ...s.members, [member.id]: member } })),
-  removeMember: (id) => set((s) => { const members = { ...s.members }; delete members[id]; return { members }; }),
+  updateLabel: (label) =>
+    set((s) => ({ labels: { ...s.labels, [label.id]: label } })),
 
-  addView: (view) => set((s) => ({ views: { ...s.views, [view.id]: view } })),
-  updateView: (view) => set((s) => ({ views: { ...s.views, [view.id]: view } })),
-  removeView: (id) => set((s) => { const views = { ...s.views }; delete views[id]; return { views }; }),
+  removeLabel: (labelId) =>
+    set((s) => {
+      const labels = { ...s.labels };
+      delete labels[labelId];
+      return { labels };
+    }),
+
+  addMember: (member) =>
+    set((s) => ({ members: { ...s.members, [member.id]: member } })),
+
+  updateMember: (member) =>
+    set((s) => ({ members: { ...s.members, [member.id]: member } })),
+
+  removeMember: (memberId) =>
+    set((s) => {
+      const members = { ...s.members };
+      delete members[memberId];
+      return { members };
+    }),
+
+  addView: (view) =>
+    set((s) => ({ views: { ...s.views, [view.id]: view } })),
+
+  updateView: (view) =>
+    set((s) => ({ views: { ...s.views, [view.id]: view } })),
+
+  removeView: (viewId) =>
+    set((s) => {
+      const views = { ...s.views };
+      delete views[viewId];
+      return { views };
+    }),
 }));

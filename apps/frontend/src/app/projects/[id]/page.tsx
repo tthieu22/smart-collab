@@ -12,7 +12,7 @@ import Calendar from "@smart/components/project/calendar/Calendar";
 import Board from "@smart/components/project/board/Board";
 import DragDropProvider from "@smart/components/project/dnd/DragDropProvider";
 
-import { useBoardStore } from "@smart/store/board"; // store theme
+import { useBoardStore } from "@smart/store/setting"; // store theme
 import { Project } from "@smart/types/project";
 
 interface Props {

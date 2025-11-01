@@ -1,7 +1,7 @@
 "use client";
 
 import { MailOutlined, CalendarOutlined, AppstoreOutlined, SwitcherOutlined } from "@ant-design/icons";
-import { useBoardStore } from "@smart/store/board";
+import { useBoardStore } from "@smart/store/setting";
 
 interface ProjectActionBarProps {
   activeComponents: string[];
@@ -9,6 +9,7 @@ interface ProjectActionBarProps {
 }
 
 export default function ProjectActionBar({ activeComponents, onToggle }: ProjectActionBarProps) {
+  // Dùng store để lấy theme nhưng không dùng biến style nữa, chỉ để biết theme hiện tại (nếu cần)
   const theme = useBoardStore((s) => s.theme);
 
   const buttons = [
@@ -18,17 +19,13 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
     { key: "switch", label: "Switch Board", icon: <SwitcherOutlined /> },
   ];
 
-  // ---------------- Theme CSS (trong suốt hơn) ----------------
-  const baseBg = theme === "dark" ? "bg-black/30" : "bg-white/30";
-  const baseText = theme === "dark" ? "text-white/80" : "text-black/90";
-  const hoverBg = theme === "dark" ? "hover:bg-black/20" : "hover:bg-white/40";
-  const activeBg = theme === "dark" ? "bg-black/60" : "bg-white/60";
-  const activeText = theme === "dark" ? "text-blue-400" : "text-blue-600";
-
   return (
     <div
-      className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2
-        ${baseBg} backdrop-blur-sm border border-white/20 rounded-xl px-1.5 py-1.5 shadow-lg`}
+      className="
+        fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2
+        bg-white/30 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-black/20
+        rounded-xl px-1.5 py-1.5 shadow-lg
+      "
     >
       {buttons.map(({ key, label, icon }) => {
         const isActive = activeComponents.includes(key);
@@ -36,8 +33,13 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
           <button
             key={key}
             onClick={() => onToggle(key)}
-            className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-150
-              ${isActive ? `${activeBg} ${activeText} shadow-[0_0_8px_rgba(59,130,246,0.3)]` : `${baseText} ${hoverBg}`}`}
+            className={`
+              flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-150
+              ${isActive 
+                ? "bg-white/60 dark:bg-black/60 text-blue-600 dark:text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.3)]" 
+                : "text-black/90 dark:text-white/80 hover:bg-white/40 dark:hover:bg-black/20"
+              }
+            `}
           >
             <span className="text-lg">{icon}</span>
             <span>{label}</span>

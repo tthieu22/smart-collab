@@ -1,0 +1,148 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+
+@Injectable()
+export class BoardService {
+  private readonly logger = new Logger(BoardService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
+
+  private getDefaultTitle(type: string) {
+    switch (type) {
+      case 'inbox': return 'Inbox';
+      case 'calendar': return 'Calendar';
+      case 'board':
+      default: return 'Board';
+    }
+  }
+
+  /** 🧩 Tạo board + 1 column mặc định */
+  async createBoard(params: {
+    projectId?: string;
+    ownerId?: string;
+    type: 'board' | 'inbox' | 'calendar';
+    title?: string;
+  }) {
+    const { projectId, ownerId, type, title } = params;
+
+    const existing = await this.prisma.board.findFirst({
+      where: type === 'board' ? { projectId, type } : { ownerId, type },
+    });
+    if (existing) throw new Error(`${type} board already exists`);
+
+    const board = await this.prisma.board.create({
+      data: {
+        projectId: projectId || null,
+        ownerId: ownerId || null,
+        type,
+        title: title || this.getDefaultTitle(type),
+        position: 0,
+        columnIds: [],
+      },
+    });
+
+    // 🧱 Column mặc định
+    const column = await this.prisma.column.create({
+      data: {
+        projectId: projectId || '',
+        boardId: board.id,
+        title: `${type} column`,
+        position: 0,
+      },
+    });
+
+    await this.prisma.board.update({
+      where: { id: board.id },
+      data: { columnIds: [column.id] },
+    });
+
+    const fullBoard = await this.getBoardById(board.id);
+    await this.amqpConnection.publish('project-exchange', 'board.created', { board: fullBoard });
+    return fullBoard;
+  }
+
+  /** 🧭 Lấy full board (columns + cards + labels + views) */
+  async getBoardById(boardId: string) {
+    const board = await this.prisma.board.findUnique({ where: { id: boardId } });
+    if (!board) return null;
+
+    const columns = await this.prisma.column.findMany({
+      where: { boardId: board.id },
+      orderBy: { position: 'asc' },
+    });
+
+    const columnIds = columns.map((c) => c.id);
+    const cards = await this.prisma.card.findMany({
+      where: { columnId: { in: columnIds } },
+      orderBy: { position: 'asc' },
+    });
+
+    const cardIds = cards.map((c) => c.id);
+    const [labels, views] = await Promise.all([
+      this.prisma.cardLabel.findMany({ where: { cardId: { in: cardIds } } }),
+      this.prisma.cardView.findMany({ where: { cardId: { in: cardIds } } }),
+    ]);
+
+    const members = board.projectId
+      ? await this.prisma.projectMember.findMany({ where: { projectId: board.projectId } })
+      : [];
+
+    // 🧩 Chuẩn hóa cấu trúc cho drag-drop
+    const fullColumns = columns.map((col) => ({
+      ...col,
+      cards: cards
+        .filter((c) => c.columnId === col.id)
+        .map((c) => ({
+          ...c,
+          labels: labels.filter((l) => l.cardId === c.id),
+          views: views.filter((v) => v.cardId === c.id),
+        })),
+    }));
+
+    return { ...board, columns: fullColumns, members };
+  }
+
+  /** 📋 Lấy danh sách boards theo project/owner */
+  async getBoards(params: {
+    projectId?: string;
+    ownerId?: string;
+    type: 'board' | 'inbox' | 'calendar';
+  }) {
+    const { projectId, ownerId, type } = params;
+
+    const where =
+      type === 'board'
+        ? { projectId, type }
+        : { ownerId, type };
+
+    const boards = await this.prisma.board.findMany({
+      where,
+      orderBy: { position: 'asc' },
+    });
+
+    const results = await Promise.all(boards.map((b) => this.getBoardById(b.id)));
+    return results;
+  }
+
+  /** ✏️ Cập nhật board */
+  async updateBoard(
+    boardId: string,
+    data: Partial<{ title: string; metadata: any; position: number }>,
+  ) {
+    const board = await this.prisma.board.update({ where: { id: boardId }, data });
+    const fullBoard = await this.getBoardById(board.id);
+    await this.amqpConnection.publish('project-exchange', 'board.updated', { board: fullBoard });
+    return fullBoard;
+  }
+
+  /** ❌ Xóa board */
+  async deleteBoard(boardId: string) {
+    await this.prisma.board.delete({ where: { id: boardId } });
+    await this.amqpConnection.publish('project-exchange', 'board.deleted', { boardId });
+    return { boardId };
+  }
+}

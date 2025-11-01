@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 import { Dropdown } from "antd";
 import { useEffect, useState } from "react";
-import { useBoardStore } from "@smart/store/board";
+import { useBoardStore } from "@smart/store/setting";
 
 export function SettingMenu() {
   const router = useRouter();

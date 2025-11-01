@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Input } from "@smart/components/ui/input";
 import { Button } from "@smart/components/ui/button";
 import { projectStore } from "@smart/store/project";
-import { useBoardStore } from "@smart/store/board";
+import { useBoardStore } from "@smart/store/setting";
 import type { Card } from "@smart/types/project";
 
 interface AddCardProps {
@@ -24,7 +24,7 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
     if (!title.trim()) return;
     setLoading(true);
 
-    addCard(columnId, title.trim());
+    // addCard(columnId, title.trim());
     setTitle("");
     setShowInput(false);
     setLoading(false);
