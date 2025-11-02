@@ -179,7 +179,7 @@ export default function ProjectDetailPage({ params }: Props) {
             {activeComponents.includes("calendar") && (
               <Calendar
                 cards={Object.values(cards)}
-                className="flex-1 min-w-[400px]"
+                className="flex-1 min-w-[300px]"
               />
             )}
 

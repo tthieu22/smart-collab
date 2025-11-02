@@ -96,6 +96,18 @@ class ProjectService {
       body: JSON.stringify(request),
     });
   }
+
+  getCard(id: string) {
+    return autoRequest<ProjectResponse>(`${API_ENDPOINTS.PROJECT.COLUMN.CARD.GET}/${id}`, {
+      method: 'GET',
+    });
+  }
+  getCardByColumn(columnId: string) {
+    return autoRequest<ProjectResponse>(`${API_ENDPOINTS.PROJECT.COLUMN.GET}/${columnId}`, {
+      method: 'GET',
+    });
+  }
+
 }
 
 export const projectService = new ProjectService();

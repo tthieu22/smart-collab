@@ -46,7 +46,7 @@ interface ProjectState {
     destIndex: number
   ) => void;
 
-  addCard: (columnId: string, card: Card) => void;
+  addCard: (columnId: string, card: Card | Card[]) => void;
   updateCard: (card: Card) => void;
   removeCard: (columnId: string, cardId: string) => void;
   moveCard: (
@@ -95,15 +95,16 @@ export const projectStore = create<ProjectState>((set, get) => ({
       boards[b.id] = b;
       boardColumns[b.id] = [];
     });
-    project.boards?.forEach((b) => {
-      boards[b.id] = b;
-      boardColumns[b.id] = [];
 
+    project.boards?.forEach((b) => {
       b.columns?.forEach((c) => {
         columns[c.id] = c;
         if (!c.boardId) return;
         boardColumns[c.boardId] = boardColumns[c.boardId] || [];
-        boardColumns[c.boardId].push(c.id);
+        // Chỉ push nếu chưa tồn tại id column trong boardColumns
+        if (!boardColumns[c.boardId].includes(c.id)) {
+          boardColumns[c.boardId].push(c.id);
+        }
         columnCards[c.id] = [];
       });
     });
@@ -111,25 +112,26 @@ export const projectStore = create<ProjectState>((set, get) => ({
     project.cards?.forEach((card) => {
       cards[card.id] = card;
       columnCards[card.columnId] = columnCards[card.columnId] || [];
-      columnCards[card.columnId].push(card.id);
+      // Chỉ push nếu chưa tồn tại id card trong columnCards
+      if (!columnCards[card.columnId].includes(card.id)) {
+        columnCards[card.columnId].push(card.id);
+      }
     });
 
     project.members?.forEach((m) => (members[m.id] = m));
     project.labels?.forEach((l) => (labels[l.id] = l));
     project.views?.forEach((v) => (views[v.id] = v));
-    
+
     Object.keys(boards).forEach((boardId) => {
       const colIds = boardColumns[boardId];
       boards[boardId] = {
         ...boards[boardId],
         columnIds: colIds.sort(
-          (a, b) =>
-            (columns[a]?.position ?? 0) - (columns[b]?.position ?? 0)
+          (a, b) => (columns[a]?.position ?? 0) - (columns[b]?.position ?? 0)
         ),
       };
     });
 
-    // Gán cardIds cho mỗi column
     Object.keys(columns).forEach((columnId) => {
       columns[columnId] = {
         ...columns[columnId],
@@ -169,9 +171,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
   updateProject: (project) =>
     set((s) => ({
-      allProjects: s.allProjects.map((p) =>
-        p.id === project.id ? project : p
-      ),
+      allProjects: s.allProjects.map((p) => (p.id === project.id ? project : p)),
       currentProject:
         s.currentProject?.id === project.id ? project : s.currentProject,
     })),
@@ -184,10 +184,12 @@ export const projectStore = create<ProjectState>((set, get) => ({
     })),
 
   addBoard: (board) =>
-    set((s) => ({
-      boards: { ...s.boards, [board.id]: board },
-      boardColumns: { ...s.boardColumns, [board.id]: [] },
-    })),
+    set((s) => {
+      const boards = { ...s.boards, [board.id]: board };
+      const boardColumns = { ...s.boardColumns };
+      if (!boardColumns[board.id]) boardColumns[board.id] = [];
+      return { boards, boardColumns };
+    }),
 
   updateBoard: (board) =>
     set((s) => ({ boards: { ...s.boards, [board.id]: board } })),
@@ -215,28 +217,19 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
   addColumn: (boardId, column) =>
     set((s) => {
-      console.group(`[🧱 addColumn] → Board: ${boardId}`);
-      console.log("📥 Input column:", column);
-
       const boardColumns = { ...s.boardColumns };
       const columns = { ...s.columns, [column.id]: column };
 
-      const currentColumns = boardColumns[boardId] || [];
-      const position = column.position ?? currentColumns.length ?? 0;
+      boardColumns[boardId] = boardColumns[boardId] || [];
 
-      console.log("📊 Current boardColumns:", currentColumns);
-      console.log("📍 Insert position:", position);
-
-      boardColumns[boardId] = [...currentColumns];
-      boardColumns[boardId].splice(position, 0, column.id);
-
-      console.log("🧩 After splice:", boardColumns[boardId]);
+      if (!boardColumns[boardId].includes(column.id)) {
+        const position = column.position ?? boardColumns[boardId].length;
+        boardColumns[boardId].splice(position, 0, column.id);
+      }
 
       boardColumns[boardId].sort(
         (a, b) => (columns[a]?.position ?? 0) - (columns[b]?.position ?? 0)
       );
-
-      console.log("✅ After sort:", boardColumns[boardId]);
 
       const updatedBoards = {
         ...s.boards,
@@ -245,9 +238,6 @@ export const projectStore = create<ProjectState>((set, get) => ({
           columnIds: boardColumns[boardId],
         },
       };
-
-      console.log("🪄 Updated boards:", updatedBoards[boardId]);
-      console.groupEnd();
 
       return {
         columns,
@@ -270,9 +260,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
       delete columns[columnId];
       (columnCards[columnId] || []).forEach((cardId) => delete cards[cardId]);
       delete columnCards[columnId];
-      boardColumns[boardId] = boardColumns[boardId].filter(
-        (id) => id !== columnId
-      );
+      boardColumns[boardId] = boardColumns[boardId].filter((id) => id !== columnId);
 
       return { columns, cards, boardColumns, columnCards };
     }),
@@ -290,25 +278,84 @@ export const projectStore = create<ProjectState>((set, get) => ({
       return { boardColumns };
     }),
 
-  addCard: (columnId, card) =>
-    set((s) => {
-      const columnCards = { ...s.columnCards };
-      columnCards[columnId] = columnCards[columnId] || [];
-      columnCards[columnId].push(card.id);
-      return { cards: { ...s.cards, [card.id]: card }, columnCards };
-    }),
+  addCard: (columnId, cardOrCards) =>
+  set((s) => {
+    console.log("🟩 [addCard] columnId:", columnId);
+    console.log("🟩 [addCard] input:", cardOrCards);
+
+    const columnCards = { ...s.columnCards };
+    const cards = { ...s.cards };
+    columnCards[columnId] = columnCards[columnId] || [];
+
+    const cardsToAdd = Array.isArray(cardOrCards) ? cardOrCards : [cardOrCards];
+    console.log("🟩 [addCard] cardsToAdd:", cardsToAdd);
+
+    cardsToAdd.forEach((card) => {
+      const position = card.position ?? columnCards[columnId].length;
+      console.log(`🟩 [addCard] Processing card: ${card.id}, position: ${position}`);
+
+      if (!columnCards[columnId].includes(card.id)) {
+        columnCards[columnId].splice(position, 0, card.id);
+        console.log(`🟩 [addCard] Added cardId to column:`, columnCards[columnId]);
+      } else {
+        console.log(`⚠️ [addCard] Card ${card.id} already exists in column`);
+      }
+
+      cards[card.id] = { ...card, position };
+    });
+
+    columnCards[columnId].sort(
+      (a, b) => (cards[a]?.position ?? 0) - (cards[b]?.position ?? 0)
+    );
+
+    columnCards[columnId].forEach((cid, idx) => {
+      if (cards[cid]) {
+        cards[cid] = { ...cards[cid], position: idx };
+      }
+    });
+
+    console.log("✅ [addCard] Final columnCards:", columnCards[columnId]);
+    console.log("✅ [addCard] Final cards:", cards);
+
+    return { cards, columnCards };
+  }),
+
 
   updateCard: (card) =>
-    set((s) => ({ cards: { ...s.cards, [card.id]: card } })),
+    set((s) => {
+      const cards = { ...s.cards };
+      if (!cards[card.id]) {
+        console.warn(`[updateCard] Card id=${card.id} không tồn tại trong store`);
+        return s;
+      }
+
+      cards[card.id] = { ...cards[card.id], ...card };
+
+      return { cards };
+    }),
 
   removeCard: (columnId, cardId) =>
     set((s) => {
       const cards = { ...s.cards };
       const columnCards = { ...s.columnCards };
+
+      if (!cards[cardId]) {
+        console.warn(`[removeCard] Card id=${cardId} không tồn tại trong store`);
+        return s;
+      }
+
       delete cards[cardId];
-      columnCards[columnId] = (columnCards[columnId] || []).filter(
-        (id) => id !== cardId
-      );
+
+      if (columnCards[columnId]) {
+        columnCards[columnId] = columnCards[columnId].filter((id) => id !== cardId);
+
+        columnCards[columnId].forEach((cid, idx) => {
+          if (cards[cid]) {
+            cards[cid] = { ...cards[cid], position: idx };
+          }
+        });
+      }
+
       return { cards, columnCards };
     }),
 
@@ -316,16 +363,36 @@ export const projectStore = create<ProjectState>((set, get) => ({
     set((s) => {
       const columnCards = { ...s.columnCards };
       const cards = { ...s.cards };
-      const card = cards[cardId];
-      if (!card) return s;
+
+      if (!cards[cardId]) {
+        console.warn(`[moveCard] Card id=${cardId} không tồn tại trong store`);
+        return s;
+      }
+
       const src = [...(columnCards[srcColumnId] || [])];
       const dest = [...(columnCards[destColumnId] || [])];
+
       const idx = src.indexOf(cardId);
       if (idx !== -1) src.splice(idx, 1);
+
       dest.splice(destIndex, 0, cardId);
+
       columnCards[srcColumnId] = src;
       columnCards[destColumnId] = dest;
-      card.columnId = destColumnId;
+
+      cards[cardId] = {
+        ...cards[cardId],
+        columnId: destColumnId,
+        position: destIndex,
+      };
+
+      columnCards[srcColumnId].forEach((cid, idx) => {
+        if (cards[cid]) cards[cid] = { ...cards[cid], position: idx };
+      });
+      columnCards[destColumnId].forEach((cid, idx) => {
+        if (cards[cid]) cards[cid] = { ...cards[cid], position: idx };
+      });
+
       return { columnCards, cards };
     }),
 

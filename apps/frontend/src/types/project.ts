@@ -73,6 +73,7 @@ export interface CardLabel {
   id: string
   cardId: string
   label: string
+  color: string 
 }
 
 // ------------------ BOARD ------------------

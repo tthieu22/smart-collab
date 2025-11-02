@@ -230,3 +230,11 @@ svg {
     transform: scale(1) translateY(0);
   }
 }
+/* Ẩn scroll dọc */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none; 
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

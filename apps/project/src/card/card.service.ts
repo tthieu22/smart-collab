@@ -53,13 +53,14 @@ export class CardService {
     
   /** Tạo card mới */
   async createCard(params: {
-    columnId: string;
-    title: string;
-    description?: string;
-    status?: string;
-    deadline?: Date;
-    priority?: number;
-    createdById?: string;
+    projectId: string,
+    columnId: string,
+    title: string,
+    description?: string,
+    status?: string,
+    deadline?: Date,
+    priority?: number,
+    createdById?: string,
   }) {
     const column = await this.prisma.column.findUnique({ where: { id: params.columnId } });
     if (!column) throw new Error('Column not found');
@@ -75,18 +76,25 @@ export class CardService {
         priority: params.priority || null,
         createdById: params.createdById || null,
       },
-      include: { labels: true, views: true, column: true },
+      include: {
+        labels: true,
+        views: true,
+      },
     });
 
-    // Cập nhật column.cardIds nếu cần gửi về store
-    await this.prisma.column.update({
-      where: { id: params.columnId },
-      data: { position: { increment: 1 } },
-    });
+    const cardToReturn = {
+      id: card.id,
+      columnId: card.columnId,
+      title: card.title,
+      description: card.description || '',
+      position: card.position,
+      labels: card.labels || [],
+      views: card.views || [],
+    };
 
-    // Gửi realtime
-    await this.amqpConnection.publish('project-exchange', 'card.created', { card });
-    return card;
+    await this.amqpConnection.publish('project-exchange', 'card.created', { card: cardToReturn });
+
+    return cardToReturn;
   }
 
   /** Cập nhật card */

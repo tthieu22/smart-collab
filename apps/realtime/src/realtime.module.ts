@@ -14,6 +14,7 @@ import { ColumnService } from './services/column.service';
 import { CardService } from './services/card.service';
 import { EmitService } from './services/emit.service';
 import { ColumnConsumer } from './project/column.consumer';
+import { CardConsumer } from './project/card.consumer';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ColumnConsumer } from './project/column.consumer';
     ProjectRealtimeConsumer,
     MemberRealtimeConsumer,
     ColumnConsumer,
+    CardConsumer,
     BoardService,
     ColumnService,
     CardService,

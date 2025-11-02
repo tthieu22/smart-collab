@@ -1,63 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { RabbitSubscribe, AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { CardService } from './card.service';
 
 @Injectable()
 export class CardConsumer {
-  constructor(
-    private readonly amqpConnection: AmqpConnection,
-    private readonly cardService: CardService,
-  ) {}
-
-  @RabbitSubscribe({
-    exchange: 'realtime-exchange',
-    routingKey: 'card.get',
-    queue: 'project-service.card-get',
-  })
-  async handleGetCard(msg: { cardId: string }) {
-    try {
-      const card = await this.cardService.getCardById(msg.cardId);
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'success',
-        action: 'get',
-        card,
-      });
-    } catch (error) {
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'error',
-        action: 'get',
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+  constructor(private readonly cardService: CardService) {}
 
   @RabbitSubscribe({
     exchange: 'realtime-exchange',
     routingKey: 'card.create',
     queue: 'project-service.card-create',
   })
-  async handleCreateCard(msg: {
-    columnId: string;
-    title: string;
-    description?: string;
-    status?: string;
-    deadline?: Date;
-    priority?: number;
-    createdById?: string;
-  }) {
+  async handleCreateCard(msg: any) {
     try {
-      const card = await this.cardService.createCard(msg);
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'success',
-        action: 'create',
-        card,
-      });
+      await this.cardService.createCard(msg);
     } catch (error) {
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'error',
-        action: 'create',
-        message: error instanceof Error ? error.message : String(error),
-      });
+      console.error('[CardConsumer] createCard failed:', error);
     }
   }
 
@@ -66,28 +24,11 @@ export class CardConsumer {
     routingKey: 'card.update',
     queue: 'project-service.card-update',
   })
-  async handleUpdateCard(msg: {
-    cardId: string;
-    title?: string;
-    description?: string;
-    status?: string;
-    deadline?: Date;
-    priority?: number;
-    updatedById?: string;
-  }) {
+  async handleUpdateCard(msg: any) {
     try {
-      const card = await this.cardService.updateCard(msg);
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'success',
-        action: 'update',
-        card,
-      });
+      await this.cardService.updateCard(msg);
     } catch (error) {
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'error',
-        action: 'update',
-        message: error instanceof Error ? error.message : String(error),
-      });
+      console.error('[CardConsumer] updateCard failed:', error);
     }
   }
 
@@ -96,20 +37,11 @@ export class CardConsumer {
     routingKey: 'card.delete',
     queue: 'project-service.card-delete',
   })
-  async handleDeleteCard(msg: { cardId: string }) {
+  async handleDeleteCard(msg: any) {
     try {
-      const result = await this.cardService.removeCard(msg.cardId);
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'success',
-        action: 'delete',
-        ...result,
-      });
+      await this.cardService.removeCard(msg.cardId);
     } catch (error) {
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'error',
-        action: 'delete',
-        message: error instanceof Error ? error.message : String(error),
-      });
+      console.error('[CardConsumer] removeCard failed:', error);
     }
   }
 
@@ -118,20 +50,24 @@ export class CardConsumer {
     routingKey: 'card.move',
     queue: 'project-service.card-move',
   })
-  async handleMoveCard(msg: { cardId: string; destColumnId: string; destIndex: number }) {
+  async handleMoveCard(msg: any) {
     try {
-      const card = await this.cardService.moveCard(msg.cardId, msg.destColumnId, msg.destIndex);
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'success',
-        action: 'move',
-        card,
-      });
+      await this.cardService.moveCard(msg.cardId, msg.destColumnId, msg.destIndex);
     } catch (error) {
-      await this.amqpConnection.publish('project-exchange', 'card.result', {
-        status: 'error',
-        action: 'move',
-        message: error instanceof Error ? error.message : String(error),
-      });
+      console.error('[CardConsumer] moveCard failed:', error);
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'realtime-exchange',
+    routingKey: 'card.get',
+    queue: 'project-service.card-get',
+  })
+  async handleGetCard(msg: any) {
+    try {
+      await this.cardService.getCardById(msg.cardId);
+    } catch (error) {
+      console.error('[CardConsumer] getCardById failed:', error);
     }
   }
 }

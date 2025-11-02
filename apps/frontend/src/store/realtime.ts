@@ -170,6 +170,7 @@ export class ProjectSocketManager {
       // ---------------- Column ----------------
       case "realtime.column.created":
         store.addColumn(msg.boardId, msg.column);
+        break;
       case "realtime.column.updated":
         store.updateColumn(msg.column);
         break;
@@ -182,6 +183,10 @@ export class ProjectSocketManager {
 
       // ---------------- Card ----------------
       case "realtime.card.created":
+        console.log("Realtime card created:", msg.card.columnId, msg.card);
+
+        store.addCard(msg.card.columnId, msg.card);
+        break;
       case "realtime.card.updated":
         store.updateCard(msg.card);
         break;
@@ -225,6 +230,10 @@ export class ProjectSocketManager {
   }
 
   // -------------------------- CRUD examples --------------------------
+  createCard(projectId: string, columnId: string, title: string, cb?: (msg: any) => void) {
+    console.log("1",projectId, columnId, title);
+    return this.lockAwareAction("card.create", { projectId, columnId, title }, cb);
+  }
   moveCard(projectId: string, cardId: string, newColumnId: string, newIndex: number, cb?: (msg:any)=>void) {
     return this.lockAwareAction("card.move",{projectId,cardId,newColumnId,newIndex}, cb);
   }
@@ -234,6 +243,7 @@ export class ProjectSocketManager {
   deleteCard(projectId:string, cardId:string, cb?: (msg:any)=>void) {
     return this.lockAwareAction("card.delete",{projectId,cardId}, cb);
   }
+
   createColumn(boardId:string, title:string, projectId: string, cb?: (msg:any)=>void) {
     return this.lockAwareAction("column.create",{boardId, title, projectId}, cb);
   }

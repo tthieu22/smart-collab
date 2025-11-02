@@ -16,7 +16,10 @@ export function CardDraggable({ id, index, children }: CardDraggableProps) {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className="bg-white rounded shadow p-2"
+           style={{
+            ...provided.draggableProps.style, // **BẮT BUỘC phải có**
+            userSelect: 'none',
+          }}
         >
           {children}
         </div>

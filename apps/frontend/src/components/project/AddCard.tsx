@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Input } from "@smart/components/ui/input";
 import { Button } from "@smart/components/ui/button";
+import { PlusOutlined } from "@ant-design/icons";
 import { projectStore } from "@smart/store/project";
 import { useBoardStore } from "@smart/store/setting";
-import type { Card } from "@smart/types/project";
+import { getProjectSocketManager } from "@smart/store/realtime";
 
 interface AddCardProps {
   projectId: string;
@@ -13,53 +14,79 @@ interface AddCardProps {
 }
 
 export function AddCard({ projectId, columnId }: AddCardProps) {
+  const theme = useBoardStore((state) => state.theme);
+  const socketManager = getProjectSocketManager();
+
   const [showInput, setShowInput] = useState(false);
-  const [title, setTitle] = useState("");
+  const [newCardTitle, setNewCardTitle] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const addCard = projectStore((s) => s.addCard);
-  const theme = useBoardStore.getState().theme;
-
-  const handleSave = () => {
-    if (!title.trim()) return;
+  const handleSave = async () => {
+    if (!newCardTitle.trim()) return;
     setLoading(true);
 
-    // addCard(columnId, title.trim());
-    setTitle("");
-    setShowInput(false);
-    setLoading(false);
+    console.log("[AddCard] Sending createCard with title:", newCardTitle.trim());
+
+    try {
+      await socketManager.createCard(
+        projectId,
+        columnId,
+        newCardTitle.trim(),
+        (res) => {
+          console.log("📨 [AddCard] card.create response", res);
+          if (res.status === "success" || res.card) {
+            console.log("[AddCard] Card created successfully");
+            setNewCardTitle("");
+            setShowInput(false);
+          } else {
+            console.error("[AddCard] Failed to create card:", res);
+          }
+          setLoading(false);
+        }
+      );
+    } catch (err) {
+      console.error("[AddCard] Error creating card:", err);
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
-    setTitle("");
+    console.log("[AddCard] Create card cancelled");
+    setNewCardTitle("");
     setShowInput(false);
   };
 
   const getButtonVariant = (type: "primary" | "success" | "ghost") => {
     if (theme === "dark") {
       switch (type) {
-        case "primary": return "bg-blue-600 hover:bg-blue-500 text-white";
-        case "success": return "bg-green-600 hover:bg-green-500 text-white";
-        case "ghost": return "bg-gray-800 hover:bg-gray-700 text-white";
+        case "primary":
+          return "bg-blue-600 hover:bg-blue-500 text-white";
+        case "success":
+          return "bg-green-600 hover:bg-green-500 text-white";
+        case "ghost":
+          return "bg-gray-800 hover:bg-gray-700 text-white";
       }
     } else {
       switch (type) {
-        case "primary": return "bg-blue-600 hover:bg-blue-700 text-white";
-        case "success": return "bg-green-600 hover:bg-green-700 text-white";
-        case "ghost": return "bg-gray-200 hover:bg-gray-300 text-black";
+        case "primary":
+          return "bg-blue-600 hover:bg-blue-700 text-white";
+        case "success":
+          return "bg-green-600 hover:bg-green-700 text-white";
+        case "ghost":
+          return "bg-gray-200 hover:bg-gray-300 text-black";
       }
     }
   };
 
   return (
-    <div className="flex flex-col gap-2 p-2">
+    <div className="min-w-[250px] flex flex-col gap-1 p-2">
       {!showInput && (
         <Button
           className={getButtonVariant("primary")}
           size="small"
           onClick={() => setShowInput(true)}
         >
-          + Add Card
+          <PlusOutlined /> Add card
         </Button>
       )}
 
@@ -68,8 +95,8 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
           <Input
             autoFocus
             placeholder="Enter card title..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={newCardTitle}
+            onChange={(e) => setNewCardTitle(e.target.value)}
             size="small"
             variant="filled"
             onPressEnter={handleSave}

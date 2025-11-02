@@ -43,7 +43,14 @@ export const API_ENDPOINTS = {
     UPDATE_MEMBER_ROLE: '/projects/update-member-role',
     FIND_ALL: '/projects/get-all',
     GET: '/projects/get',
-  }
+    COLUMN: {
+      GET :'/projects/column',
+      
+      CARD: {
+        GET: '/projects/card'
+      }
+    }
+  },
 } as const;
 
 export const APP_CONFIG = {

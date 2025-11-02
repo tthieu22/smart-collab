@@ -1,17 +1,35 @@
 import { NestFactory } from '@nestjs/core';
 import { ProjectModule } from './project.module';
 import { Logger } from '@nestjs/common';
+import { getNestRabbitMQOptions, rabbitmqConfig } from './config/rabbitmq.config';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
+
   const app = await NestFactory.create(ProjectModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
-  // Không mở HTTP port vì đây là service nền (event-driven)
-  // Nếu muốn expose REST API thì dùng: await app.listen(3001);
-  await app.listen(3002);
-  console.log('🚀 Project Service running on http://localhost:3002');
+  logger.log('App module created');
 
-  Logger.log('🚀 Project Service is running and listening to RabbitMQ events', 'Bootstrap');
+  const configService = app.get(ConfigService);
+
+  // Lấy config kết nối RabbitMQ
+  const rmqOptions = rabbitmqConfig('project_queue');
+
+  // Kết nối microservice RabbitMQ
+  app.connectMicroservice(rmqOptions);
+
+  // Start microservice listener
+  await app.startAllMicroservices();
+  logger.log('Microservices started');
+
+  // Nếu cần expose HTTP API thì listen port
+  await app.listen(3002);
+  logger.log('HTTP server listening on port 3002');
+
+  logger.log('🚀 Project Service is running and listening to RabbitMQ events');
 }
+
 bootstrap();

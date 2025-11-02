@@ -7,6 +7,7 @@ interface ContainerDroppableProps {
   children: ReactNode;
   className?: string;
   type?: "BOARD" | "COLUMN" | "CARD";
+  style?: React.CSSProperties;
 }
 
 export function ContainerDroppable({
@@ -14,11 +15,17 @@ export function ContainerDroppable({
   children,
   className,
   type = "CARD",
+  style,  // thêm vào đây
 }: ContainerDroppableProps) {
   return (
     <Droppable droppableId={id} type={type}>
       {(provided) => (
-        <div ref={provided.innerRef} {...provided.droppableProps} className={className}>
+        <div
+          ref={provided.innerRef}
+          {...provided.droppableProps}
+          className={className}
+          style={style}  // dùng style đúng chỗ
+        >
           {children}
           {provided.placeholder}
         </div>
