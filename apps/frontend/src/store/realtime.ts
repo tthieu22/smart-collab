@@ -169,6 +169,7 @@ export class ProjectSocketManager {
 
       // ---------------- Column ----------------
       case "realtime.column.created":
+        store.addColumn(msg.boardId, msg.column);
       case "realtime.column.updated":
         store.updateColumn(msg.column);
         break;
@@ -233,8 +234,8 @@ export class ProjectSocketManager {
   deleteCard(projectId:string, cardId:string, cb?: (msg:any)=>void) {
     return this.lockAwareAction("card.delete",{projectId,cardId}, cb);
   }
-  createColumn(projectId:string,name:string,cb?: (msg:any)=>void) {
-    return this.lockAwareAction("column.create",{projectId,name},cb);
+  createColumn(boardId:string, title:string, projectId: string, cb?: (msg:any)=>void) {
+    return this.lockAwareAction("column.create",{boardId, title, projectId}, cb);
   }
   updateColumn(projectId:string,columnId:string,updates:any,cb?: (msg:any)=>void){
     return this.lockAwareAction("column.update",{projectId,columnId,...updates},cb);

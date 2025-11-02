@@ -119,9 +119,13 @@ export const projectStore = create<ProjectState>((set, get) => ({
     project.views?.forEach((v) => (views[v.id] = v));
     
     Object.keys(boards).forEach((boardId) => {
+      const colIds = boardColumns[boardId];
       boards[boardId] = {
         ...boards[boardId],
-        columnIds: boardColumns[boardId] || [],
+        columnIds: colIds.sort(
+          (a, b) =>
+            (columns[a]?.position ?? 0) - (columns[b]?.position ?? 0)
+        ),
       };
     });
 
@@ -211,13 +215,44 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
   addColumn: (boardId, column) =>
     set((s) => {
+      console.group(`[🧱 addColumn] → Board: ${boardId}`);
+      console.log("📥 Input column:", column);
+
       const boardColumns = { ...s.boardColumns };
-      boardColumns[boardId] = boardColumns[boardId] || [];
-      boardColumns[boardId].push(column.id);
+      const columns = { ...s.columns, [column.id]: column };
+
+      const currentColumns = boardColumns[boardId] || [];
+      const position = column.position ?? currentColumns.length ?? 0;
+
+      console.log("📊 Current boardColumns:", currentColumns);
+      console.log("📍 Insert position:", position);
+
+      boardColumns[boardId] = [...currentColumns];
+      boardColumns[boardId].splice(position, 0, column.id);
+
+      console.log("🧩 After splice:", boardColumns[boardId]);
+
+      boardColumns[boardId].sort(
+        (a, b) => (columns[a]?.position ?? 0) - (columns[b]?.position ?? 0)
+      );
+
+      console.log("✅ After sort:", boardColumns[boardId]);
+
+      const updatedBoards = {
+        ...s.boards,
+        [boardId]: {
+          ...s.boards[boardId],
+          columnIds: boardColumns[boardId],
+        },
+      };
+
+      console.log("🪄 Updated boards:", updatedBoards[boardId]);
+      console.groupEnd();
 
       return {
-        columns: { ...s.columns, [column.id]: column },
+        columns,
         boardColumns,
+        boards: updatedBoards,
         columnCards: { ...s.columnCards, [column.id]: [] },
       };
     }),

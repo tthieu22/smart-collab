@@ -165,7 +165,7 @@ export default function ProjectDetailPage({ params }: Props) {
         activeComponents={activeComponents}
         onToggle={toggleComponent}
       />
-      <div className="relative z-10 p-4 space-y-4">
+      <div className="relative z-10 w-full">
         {/* Project content */}
         <DragDropProvider>
           <div className="flex flex-wrap gap-4 text-3xl w-full min-h-[90vh]">
@@ -193,7 +193,7 @@ export default function ProjectDetailPage({ params }: Props) {
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                 }}
-                className="flex-1 min-w-[300px]"
+                className="flex-1 min-w-[300px] overflow-x-auto"
               />
             )}
 

@@ -5,8 +5,7 @@ import {
   CreateColumnDto,
   UpdateColumnDto,
   DeleteColumnDto,
-  GetColumnDto,
-  ColumnResultMessage,
+  GetColumnDto
 } from './dto/column.dto';
 
 @Injectable()
@@ -17,10 +16,12 @@ export class ColumnService {
   ) {}
 
   createColumn(data: CreateColumnDto) {
+    console.log(data);
     return this.amqpConnection.publish('realtime-exchange', 'column.create', data);
   }
 
   updateColumn(data: UpdateColumnDto) {
+    
     return this.amqpConnection.publish('realtime-exchange', 'column.update', data);
   }
 

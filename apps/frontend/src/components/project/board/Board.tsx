@@ -13,28 +13,21 @@ interface BoardProps {
 }
 
 export default function Board({ board, className }: BoardProps) {
-  const columnsStore = projectStore((state) => state.columns);
-  const currentProject = projectStore((state) => state.currentProject);
-  const theme = useBoardStore((state) => state.theme);
-
-  console.groupCollapsed(`[Board] Render board ${board?.title ?? "Unknown"}`);
-  console.log("🎨 Theme:", theme);
-  console.log("🧩 Project:", currentProject);
-  console.log("📋 Board:", board);
-  console.log("📋 columnsStore:", columnsStore);
-  console.groupEnd();
+  const columnsStore = projectStore((s) => s.columns);
+  const currentProject = projectStore((s) => s.currentProject);
+  const theme = useBoardStore((s) => s.theme);
 
   if (!currentProject) return <div>Không có dự án</div>;
   if (!board) return <div>Không tìm thấy board</div>;
 
-  const columnIds = board.columnIds ?? [];
-  const columns: ColumnType[] = columnIds
+  const columns: ColumnType[] = (board.columnIds ?? [])
     .map((id) => columnsStore[id])
-    .filter((col): col is ColumnType => Boolean(col));
+    .filter((col): col is ColumnType => Boolean(col))
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
   return (
     <div
-      className={`flex gap-4 overflow-x-auto p-4 rounded-2xl transition-all duration-300 backdrop-blur-sm ${
+      className={`flex gap-4 overflow-x p-4 rounded-2xl transition-all duration-300 backdrop-blur-sm w-full ${
         className ?? ""
       } ${
         theme === "dark"
@@ -42,15 +35,15 @@ export default function Board({ board, className }: BoardProps) {
           : "bg-gradient-to-br from-[#f4f5f7] to-[#e9ebee] text-gray-900"
       }`}
       style={{
+        flexWrap: "nowrap",
         backgroundColor:
           theme === "dark"
             ? currentProject.color ?? "#1e1f22"
             : currentProject.color ?? "#f4f5f7",
-        backgroundImage: currentProject.fileUrl
-          ? `url(${currentProject.fileUrl})`
-          : currentProject.background
-          ? `url(${currentProject.background})`
-          : undefined,
+        backgroundImage:
+          currentProject.fileUrl || currentProject.background
+            ? `url(${currentProject.fileUrl ?? currentProject.background})`
+            : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
         minHeight: "300px",
@@ -58,6 +51,7 @@ export default function Board({ board, className }: BoardProps) {
           backgroundBlendMode: "normal",
           filter: "brightness(0.9)",
         }),
+        maxWidth: "100vw",
       }}
     >
       {columns.map((col) => (

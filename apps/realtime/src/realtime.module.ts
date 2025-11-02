@@ -9,6 +9,11 @@ import { ProjectRealtimeConsumer } from './project/project.consumer';
 import { MemberRealtimeConsumer } from './project/member.consumer';
 import Redis from 'ioredis';
 import { redisConfig } from './config/redis.config';
+import { BoardService } from './services/board.service';
+import { ColumnService } from './services/column.service';
+import { CardService } from './services/card.service';
+import { EmitService } from './services/emit.service';
+import { ColumnConsumer } from './project/column.consumer';
 
 @Module({
   imports: [
@@ -36,6 +41,11 @@ import { redisConfig } from './config/redis.config';
     RealtimeGateway,
     ProjectRealtimeConsumer,
     MemberRealtimeConsumer,
+    ColumnConsumer,
+    BoardService,
+    ColumnService,
+    CardService,
+    EmitService,
 
     // Redis client provider
     {
@@ -46,6 +56,12 @@ import { redisConfig } from './config/redis.config';
         const client = new Redis(redisOptions);
         client.on('connect', () => console.log('✅ Redis connected'));
         client.on('error', (err: any) => console.error('❌ Redis error', err));
+        const shutdown = async () => {
+          console.log('🧹 Closing Redis connection...');
+          await client.quit();
+        };
+        process.on('SIGINT', shutdown);
+        process.on('SIGTERM', shutdown);
         return client;
       },
     },

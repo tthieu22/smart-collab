@@ -21,13 +21,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   private lockService: LockService;
   private emitService!: EmitService;
 
-  private boardService!: BoardService;
-  private columnService!: ColumnService;
-  private cardService!: CardService;
-
   constructor(
     private readonly jwtService: JwtService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private readonly boardService: BoardService,
+    private readonly columnService: ColumnService,
+    private readonly cardService: CardService,
   ) {
     this.lockService = new LockService(redis);
   }

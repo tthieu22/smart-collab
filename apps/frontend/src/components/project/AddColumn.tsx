@@ -6,26 +6,45 @@ import { Button } from "@smart/components/ui/button";
 import { PlusOutlined } from "@ant-design/icons";
 import { projectStore } from "@smart/store/project";
 import { useBoardStore } from "@smart/store/setting";
+import { getProjectSocketManager } from "@smart/store/realtime";
 
 interface AddColumnProps {
   boardId: string;
 }
 
 export default function AddColumn({ boardId }: AddColumnProps) {
-  const addColumnStore = projectStore((state) => state.addColumn);
   const theme = useBoardStore((state) => state.theme);
+  const currentProject = projectStore((state) => state.currentProject);
+  const socketManager = getProjectSocketManager();
 
   const [showInput, setShowInput] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
-    if (!newColumnTitle.trim()) return;
+  const handleSave = async () => {
+    if (!newColumnTitle.trim() || !currentProject) return;
     setLoading(true);
-    // addColumnStore(boardId, newColumnTitle);
-    setNewColumnTitle("");
-    setShowInput(false);
-    setLoading(false);
+
+    try {
+      await socketManager.createColumn(
+        boardId,
+        newColumnTitle,
+        currentProject.id,
+        (res) => {
+          console.log("📨 column.create response", res);
+          if (res.status === "success" || res.column) {
+            setNewColumnTitle("");
+            setShowInput(false);
+          } else {
+            console.error("Failed to create column:", res);
+          }
+          setLoading(false);
+        }
+      );
+    } catch (err) {
+      console.error("Error creating column:", err);
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -73,7 +92,6 @@ export default function AddColumn({ boardId }: AddColumnProps) {
             onPressEnter={handleSave}
           />
           <div className="flex gap-2 mt-1">
-            
             <Button
               className={getButtonVariant("ghost")}
               size="small"
@@ -89,7 +107,6 @@ export default function AddColumn({ boardId }: AddColumnProps) {
             >
               Save
             </Button>
-            
           </div>
         </>
       )}

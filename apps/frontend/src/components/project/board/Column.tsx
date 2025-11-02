@@ -13,7 +13,7 @@ interface ColumnProps {
 export default function Column({ column }: ColumnProps) {
   const currentProject = projectStore((state) => state.currentProject);
   const cardsStore = projectStore((state) => state.cards);
-  const cards = column.cardIds.map((id) => cardsStore[id]).filter(Boolean);
+  const cards = (column.cardIds ?? []).map((id) => cardsStore[id]).filter(Boolean);
 
   return (
     <div

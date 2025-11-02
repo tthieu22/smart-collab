@@ -6,6 +6,8 @@ import { ProjectMemberConsumer } from './project.member.consumer';
 import { BoardModule } from './board/board.module';
 import { SharedRabbitMQModule } from './config/rabbitmq.module';
 import { ProjectService } from './project.service';
+import { ColumnConsumer } from './column/column.consumer';
+import { ColumnService } from './column/column.service';
 
 @Module({
   imports: [
@@ -14,6 +16,6 @@ import { ProjectService } from './project.service';
     ConfigModule.forRoot({ isGlobal: true }),
     SharedRabbitMQModule
   ],
-  providers: [ProjectConsumer,ProjectService, ProjectMemberConsumer],
+  providers: [ProjectConsumer,ProjectService, ProjectMemberConsumer, ColumnService, ColumnConsumer],
 })
 export class ProjectModule {}

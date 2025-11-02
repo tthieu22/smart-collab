@@ -3,7 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
-import { getGolevelupRabbitMQOptions } from '../config/rabbitmq.config';
+import { getGolevelupRabbitMQOptions, getRabbitMQOptions } from '../config/rabbitmq.config';
+import { ClientsModule } from '@nestjs/microservices';
+import { CardController } from './column/card.cotroller';
 
 @Module({
   imports: [
@@ -14,8 +16,17 @@ import { getGolevelupRabbitMQOptions } from '../config/rabbitmq.config';
       useFactory: (configService: ConfigService) =>
         getGolevelupRabbitMQOptions(configService),
     }),
+    ClientsModule.registerAsync([
+      {
+        name: 'PROJECT_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) =>
+          getRabbitMQOptions('project_queue', configService),
+      },
+    ]),
   ],
-  controllers: [ProjectController],
+  controllers: [ProjectController, CardController],
   providers: [ProjectService],
 })
 export class ProjectModule {}
