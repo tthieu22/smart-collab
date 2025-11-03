@@ -37,3 +37,4 @@ import { mailerConfig } from '../config/mailer.config';
   // exports: [AuthMessageHandler],
 })
 export class MessageHandlersModule {}
+

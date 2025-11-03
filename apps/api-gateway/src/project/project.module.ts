@@ -5,7 +5,7 @@ import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { getGolevelupRabbitMQOptions, getRabbitMQOptions } from '../config/rabbitmq.config';
 import { ClientsModule } from '@nestjs/microservices';
-import { CardController } from './card/card.cotroller';
+import { CardController } from './column/card.cotroller';
 
 @Module({
   imports: [
