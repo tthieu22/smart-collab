@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import { getProjectSocketManager } from '@smart/store/realtime';
@@ -36,6 +36,7 @@ export default function ProjectDetailPage({ params }: Props) {
 
   const theme = useBoardStore((state) => state.theme);
   const [loading, setLoading] = useState(true);
+  const activeCorrelationIdRef = useRef<string | null>(null);
 
   const [activeComponents, setActiveComponents] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -83,12 +84,22 @@ export default function ProjectDetailPage({ params }: Props) {
 
     const handleProjectMsg = (msg: any) => {
       if (!msg?.project) return;
-      const p = msg.project;
+      // Ignore any correlated messages (responses to fetch)
+      if (msg?.correlationId) return;
+      const p = msg.project as Project;
+      const hasSnapshot = Boolean(
+        p?.boards?.length || (p as any)?.columns?.length || p?.cards?.length
+      );
       if (currentProject?.id === p.id) {
-        updateProject(p);
-        setCurrentProject(p);
+        if (hasSnapshot) setCurrentProject(p);
+        else updateProject(p);
       } else {
-        addProject(p);
+        if (hasSnapshot) {
+          addProject(p);
+          setCurrentProject(p);
+        } else {
+          addProject(p);
+        }
       }
     };
 
@@ -113,41 +124,28 @@ export default function ProjectDetailPage({ params }: Props) {
     };
   }, [projectId]);
 
-  // ------------------ INIT PROJECT ------------------
+  // ------------------ INIT PROJECT (REST) ------------------
   useEffect(() => {
     let canceled = false;
 
     const initProject = async () => {
       setLoading(true);
-      const socketManager = getProjectSocketManager();
-
-      if (!socketManager.isConnected()) {
-        await new Promise<void>((resolve) => {
-          socketManager.onceConnected(resolve);
-          socketManager.initSocket();
-        });
-      }
-
-      const correlationId = crypto.randomUUID();
-      const projectPromise = new Promise<Project>((resolve, reject) => {
-        const unsubscribe = socketManager.subscribeCorrelation(
-          correlationId,
-          (msg: any) => {
-            if (msg.status === 'success' && msg.project) resolve(msg.project);
-            else reject(new Error(msg.message || 'Fetch project failed'));
-            unsubscribe();
-          }
-        );
-      });
-
       try {
-        await projectService.getProject({ projectId, correlationId });
-        const p = await projectPromise;
+        const correlationId = crypto.randomUUID();
+        const res: any = await projectService.getProject({
+          projectId,
+          correlationId,
+        });
+        console.log(res)
+        const p: Project | undefined =
+          res?.data || res?.dto?.project || res?.project || res?.dto;
 
         if (!canceled) {
-          addProject(p);
-          updateProject(p);
-          setCurrentProject(p);
+          if (p) {
+            addProject(p);
+            updateProject(p);
+            setCurrentProject(p);
+          }
         }
       } catch (error) {
         console.error('Fetch project failed:', error);

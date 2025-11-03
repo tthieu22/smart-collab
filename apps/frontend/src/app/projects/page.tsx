@@ -1,35 +1,42 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { projectStore } from "@smart/store/project";
-import { getProjectSocketManager } from "@smart/store/realtime";
-import { projectService } from "@smart/services/project.service";
-import type { Project } from "@smart/types/project";
-import { Loading } from "@smart/components/ui/loading";
-import { Sidebar } from "@smart/components/layouts";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { projectStore } from '@smart/store/project';
+import { projectService } from '@smart/services/project.service';
+import type { Project } from '@smart/types/project';
+import { Loading } from '@smart/components/ui/loading';
+import { Sidebar } from '@smart/components/layouts';
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    const socketManager = getProjectSocketManager();
-    socketManager.initSocket();
-    const correlationId = crypto.randomUUID();
-    const unsubCorrelation = socketManager.subscribeCorrelation(correlationId, (msg: any) => {
-      if (Array.isArray(msg.data)) {
-        msg.data.forEach((p: Project) => projectStore.getState().addProject(p));
+    let mounted = true;
+    const load = async () => {
+      try {
+        const correlationId = crypto.randomUUID();
+        const res: any = await projectService.getAllProjects({ correlationId });
+        const list: Project[] = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+        const st = projectStore.getState();
+        list.forEach((p) => st.addProject(p));
+        if (mounted) {
+          setProjects(list);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (mounted) setLoading(false);
       }
-      unsubCorrelation();
-    });
-
-    projectService.getAllProjects({ correlationId }).catch(console.error);
-    const unsubscribe = projectStore.subscribe((state) => {
-      setProjects([...state.allProjects]);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) return <Loading text="Đang tải dữ liệu" />;
@@ -55,7 +62,7 @@ export default function ProjectListPage() {
               ? { backgroundImage: `url(${project.background})` }
               : project.color
               ? { backgroundColor: project.color }
-              : { backgroundImage: "url(/backgrounds/muaxuan.png)" };
+              : { backgroundImage: 'url(/backgrounds/muaxuan.png)' };
 
             return (
               <Link
@@ -64,12 +71,16 @@ export default function ProjectListPage() {
                 className="flex flex-col rounded-xl shadow-md hover:shadow-2xl transition transform overflow-hidden bg-white dark:bg-gray-800"
               >
                 {/* Ảnh cover */}
-                <div className="h-40 w-full bg-cover bg-center relative" style={bgStyle}>
+                <div
+                  className="h-40 w-full bg-cover bg-center relative"
+                  style={bgStyle}
+                >
                   <div className="absolute inset-0 bg-black/20"></div>
 
                   {project.visibility && (
                     <span className="absolute top-2 left-2 flex items-center justify-center bg-blue-700 dark:bg-blue-900 text-white text-xs px-2 py-0.5 rounded-md shadow">
-                      {project.visibility.charAt(0).toUpperCase() + project.visibility.slice(1)}
+                      {project.visibility.charAt(0).toUpperCase() +
+                        project.visibility.slice(1)}
                     </span>
                   )}
                 </div>
@@ -80,7 +91,9 @@ export default function ProjectListPage() {
                     {project.name}
                   </h3>
                   <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1 capitalize">
-                    <p className="font-medium">Members: {project.members?.length || 0}</p>
+                    <p className="font-medium">
+                      Members: {project.members?.length || 0}
+                    </p>
                   </div>
                 </div>
               </Link>

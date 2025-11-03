@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { getProjectSocketManager } from '@smart/store/realtime';
 import {
   DragDropContext,
   DropResult,
@@ -23,7 +24,7 @@ const DragDropContextProvider: React.FC<Props> = ({
   onDragEnd,
   boardTypes,
 }) => {
-  const { moveColumn, moveCard } = projectStore();
+  const { moveColumn, moveCard, currentProject } = projectStore();
 
   const handleDragStart = (start: DragStart) => {
     console.log('Drag start:', start.type, start.draggableId);
@@ -55,6 +56,14 @@ const DragDropContextProvider: React.FC<Props> = ({
             draggableId, // columnId
             destination.index // destIndex
           );
+          if (currentProject?.id) {
+            const socket = getProjectSocketManager();
+            // Use column.update to reflect new board/position if column.move event not supported
+            socket.updateColumn(currentProject.id, draggableId, {
+              boardId: destination.droppableId,
+              position: destination.index,
+            });
+          }
         }
         break;
 
@@ -65,6 +74,15 @@ const DragDropContextProvider: React.FC<Props> = ({
           draggableId, // cardId
           destination.index // destIndex
         );
+        if (currentProject?.id) {
+          const socket = getProjectSocketManager();
+          socket.moveCard(
+            currentProject.id,
+            draggableId,
+            destination.droppableId,
+            destination.index
+          );
+        }
         break;
 
       case 'BOARD':

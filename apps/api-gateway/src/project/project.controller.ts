@@ -5,15 +5,22 @@ import {
   UseGuards,
   Req,
   Patch,
+  Inject,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Project, Member } from './dto/project.dto';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+
+    @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
+  ) {}
 
   /** CREATE PROJECT */
   @Post()
@@ -58,12 +65,18 @@ export class ProjectController {
   /** GET PROJECT */
   @Post('get')
   async getProject(@Body() body: Project) {
-    return this.projectService.getProject(body);
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.get' }, body),
+    );
+    return result;
   }
 
   /** GET ALL PROJECTS */
   @Post('get-all')
   async getAllProjects(@Body() body: { correlationId: string }) {
-    return this.projectService.getAllProjects(body);
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.get_all' }, body),
+    );
+    return result;
   }
 }

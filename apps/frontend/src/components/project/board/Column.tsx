@@ -27,15 +27,15 @@ export default function Column({ column }: ColumnProps) {
 
   const currentProject = projectStore((s) => s.currentProject);
   const cardsStore = projectStore((s) => s.cards);
+  const columnCardsStore = projectStore((s) => s.columnCards);
 
-  const cards: CardType[] = (column.cardIds ?? [])
-    .map((id) => cardsStore[id])
-    .filter(Boolean);
+  const cardIds = columnCardsStore[column.id] ?? column.cardIds ?? [];
+  const cards: CardType[] = cardIds.map((id) => cardsStore[id]).filter(Boolean);
 
   // Fetch card nếu chưa có
   useEffect(() => {
-    if (!cards.length) fetchCardsByColumn(column.id);
-  }, [column.id]);
+    if (!cardIds.length) fetchCardsByColumn(column.id);
+  }, [column.id, cardIds.length]);
 
   async function fetchCardsByColumn(columnId: string) {
     try {

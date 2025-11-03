@@ -11,16 +11,25 @@ import { ColumnService } from './column/column.service';
 import { CardConsumer } from './card/card.consumer';
 import { CardService } from './card/card.service';
 import { CardHandler } from './card/card.handle';
+import { ProjectHandler } from './project.handle';
 
 @Module({
   imports: [
     PrismaModule,
     BoardModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    SharedRabbitMQModule
+    SharedRabbitMQModule,
   ],
-  controllers: [CardHandler], 
-  
-  providers: [ProjectConsumer,ProjectService, ProjectMemberConsumer, ColumnService, ColumnConsumer, CardConsumer, CardService],
+  controllers: [CardHandler, ProjectHandler],
+
+  providers: [
+    ProjectConsumer,
+    ProjectService,
+    ProjectMemberConsumer,
+    ColumnService,
+    ColumnConsumer,
+    CardConsumer,
+    CardService,
+  ],
 })
 export class ProjectModule {}

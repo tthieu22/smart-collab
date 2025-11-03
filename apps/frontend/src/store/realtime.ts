@@ -139,8 +139,8 @@ export class ProjectSocketManager {
       case "realtime.project.updated":
         store.updateProject(msg.project);
         break;
-      case "realtime.project.fetched":
-        store.setCurrentProject(msg.project);
+      // case "realtime.project.fetched":
+      //   store.setCurrentProject(msg.project);
         break;
       case "realtime.project.deleted":
         store.removeProject(msg.projectId);

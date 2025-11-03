@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { create } from "zustand";
+import { create } from 'zustand';
 import {
   Project,
   ProjectMember,
@@ -9,7 +9,7 @@ import {
   CardView,
   CardLabel,
   Board,
-} from "@smart/types/project";
+} from '@smart/types/project';
 
 interface ProjectState {
   currentProject: Project | null;
@@ -82,11 +82,28 @@ export const projectStore = create<ProjectState>((set, get) => ({
   columnCards: {},
 
   setCurrentProject: (project) => {
+    // If the payload does not include nested collections, only update currentProject
+    const hasSnapshot = Boolean(
+      project?.boards?.length ||
+        project?.cards?.length ||
+        project?.columns?.length
+    );
+
+    if (!hasSnapshot) {
+      set((s) => ({
+        currentProject: { ...s.currentProject, ...project } as Project,
+      }));
+      return;
+    }
+
+    const prev = get();
     const boards: Record<string, Board> = {};
     const columns: Record<string, Column> = {};
-    const cards: Record<string, Card> = {};
+    const cards: Record<string, Card> = hasSnapshot ? {} : { ...prev.cards };
     const boardColumns: Record<string, string[]> = {};
-    const columnCards: Record<string, string[]> = {};
+    const columnCards: Record<string, string[]> = hasSnapshot
+      ? {}
+      : { ...prev.columnCards };
     const members: Record<string, ProjectMember> = {};
     const labels: Record<string, CardLabel> = {};
     const views: Record<string, CardView> = {};
@@ -101,18 +118,17 @@ export const projectStore = create<ProjectState>((set, get) => ({
         columns[c.id] = c;
         if (!c.boardId) return;
         boardColumns[c.boardId] = boardColumns[c.boardId] || [];
-        // Chỉ push nếu chưa tồn tại id column trong boardColumns
         if (!boardColumns[c.boardId].includes(c.id)) {
           boardColumns[c.boardId].push(c.id);
         }
-        columnCards[c.id] = [];
+        // Preserve existing cards in this column if we are not receiving cards
+        columnCards[c.id] = columnCards[c.id] || [];
       });
     });
 
     project.cards?.forEach((card) => {
       cards[card.id] = card;
       columnCards[card.columnId] = columnCards[card.columnId] || [];
-      // Chỉ push nếu chưa tồn tại id card trong columnCards
       if (!columnCards[card.columnId].includes(card.id)) {
         columnCards[card.columnId].push(card.id);
       }
@@ -171,7 +187,9 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
   updateProject: (project) =>
     set((s) => ({
-      allProjects: s.allProjects.map((p) => (p.id === project.id ? project : p)),
+      allProjects: s.allProjects.map((p) =>
+        p.id === project.id ? project : p
+      ),
       currentProject:
         s.currentProject?.id === project.id ? project : s.currentProject,
     })),
@@ -260,7 +278,9 @@ export const projectStore = create<ProjectState>((set, get) => ({
       delete columns[columnId];
       (columnCards[columnId] || []).forEach((cardId) => delete cards[cardId]);
       delete columnCards[columnId];
-      boardColumns[boardId] = boardColumns[boardId].filter((id) => id !== columnId);
+      boardColumns[boardId] = boardColumns[boardId].filter(
+        (id) => id !== columnId
+      );
 
       return { columns, cards, boardColumns, columnCards };
     }),
@@ -279,53 +299,61 @@ export const projectStore = create<ProjectState>((set, get) => ({
     }),
 
   addCard: (columnId, cardOrCards) =>
-  set((s) => {
-    console.log("🟩 [addCard] columnId:", columnId);
-    console.log("🟩 [addCard] input:", cardOrCards);
+    set((s) => {
+      console.log('🟩 [addCard] columnId:', columnId);
+      console.log('🟩 [addCard] input:', cardOrCards);
 
-    const columnCards = { ...s.columnCards };
-    const cards = { ...s.cards };
-    columnCards[columnId] = columnCards[columnId] || [];
+      const columnCards = { ...s.columnCards };
+      const cards = { ...s.cards };
+      columnCards[columnId] = columnCards[columnId] || [];
 
-    const cardsToAdd = Array.isArray(cardOrCards) ? cardOrCards : [cardOrCards];
-    console.log("🟩 [addCard] cardsToAdd:", cardsToAdd);
+      const cardsToAdd = Array.isArray(cardOrCards)
+        ? cardOrCards
+        : [cardOrCards];
+      console.log('🟩 [addCard] cardsToAdd:', cardsToAdd);
 
-    cardsToAdd.forEach((card) => {
-      const position = card.position ?? columnCards[columnId].length;
-      console.log(`🟩 [addCard] Processing card: ${card.id}, position: ${position}`);
+      cardsToAdd.forEach((card) => {
+        const position = card.position ?? columnCards[columnId].length;
+        console.log(
+          `🟩 [addCard] Processing card: ${card.id}, position: ${position}`
+        );
 
-      if (!columnCards[columnId].includes(card.id)) {
-        columnCards[columnId].splice(position, 0, card.id);
-        console.log(`🟩 [addCard] Added cardId to column:`, columnCards[columnId]);
-      } else {
-        console.log(`⚠️ [addCard] Card ${card.id} already exists in column`);
-      }
+        if (!columnCards[columnId].includes(card.id)) {
+          columnCards[columnId].splice(position, 0, card.id);
+          console.log(
+            `🟩 [addCard] Added cardId to column:`,
+            columnCards[columnId]
+          );
+        } else {
+          console.log(`⚠️ [addCard] Card ${card.id} already exists in column`);
+        }
 
-      cards[card.id] = { ...card, position };
-    });
+        cards[card.id] = { ...card, position };
+      });
 
-    columnCards[columnId].sort(
-      (a, b) => (cards[a]?.position ?? 0) - (cards[b]?.position ?? 0)
-    );
+      columnCards[columnId].sort(
+        (a, b) => (cards[a]?.position ?? 0) - (cards[b]?.position ?? 0)
+      );
 
-    columnCards[columnId].forEach((cid, idx) => {
-      if (cards[cid]) {
-        cards[cid] = { ...cards[cid], position: idx };
-      }
-    });
+      columnCards[columnId].forEach((cid, idx) => {
+        if (cards[cid]) {
+          cards[cid] = { ...cards[cid], position: idx };
+        }
+      });
 
-    console.log("✅ [addCard] Final columnCards:", columnCards[columnId]);
-    console.log("✅ [addCard] Final cards:", cards);
+      console.log('✅ [addCard] Final columnCards:', columnCards[columnId]);
+      console.log('✅ [addCard] Final cards:', cards);
 
-    return { cards, columnCards };
-  }),
-
+      return { cards, columnCards };
+    }),
 
   updateCard: (card) =>
     set((s) => {
       const cards = { ...s.cards };
       if (!cards[card.id]) {
-        console.warn(`[updateCard] Card id=${card.id} không tồn tại trong store`);
+        console.warn(
+          `[updateCard] Card id=${card.id} không tồn tại trong store`
+        );
         return s;
       }
 
@@ -340,14 +368,18 @@ export const projectStore = create<ProjectState>((set, get) => ({
       const columnCards = { ...s.columnCards };
 
       if (!cards[cardId]) {
-        console.warn(`[removeCard] Card id=${cardId} không tồn tại trong store`);
+        console.warn(
+          `[removeCard] Card id=${cardId} không tồn tại trong store`
+        );
         return s;
       }
 
       delete cards[cardId];
 
       if (columnCards[columnId]) {
-        columnCards[columnId] = columnCards[columnId].filter((id) => id !== cardId);
+        columnCards[columnId] = columnCards[columnId].filter(
+          (id) => id !== cardId
+        );
 
         columnCards[columnId].forEach((cid, idx) => {
           if (cards[cid]) {
@@ -422,8 +454,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
       return { members };
     }),
 
-  addView: (view) =>
-    set((s) => ({ views: { ...s.views, [view.id]: view } })),
+  addView: (view) => set((s) => ({ views: { ...s.views, [view.id]: view } })),
 
   updateView: (view) =>
     set((s) => ({ views: { ...s.views, [view.id]: view } })),

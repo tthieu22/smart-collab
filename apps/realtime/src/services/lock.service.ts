@@ -27,17 +27,24 @@ export class LockService {
     userId: string,
     ttl = 30,
     retry = 5,
-    retryDelay = 100
+    retryDelay = 100,
   ): Promise<LockResult> {
     const lockKey = this.getLockKey(projectId, targetId);
     for (let i = 0; i < retry; i++) {
-      const res = await this.redis.set(lockKey, userId, { NX: true, EX: ttl } as any);
+      // ioredis expects options as variadic args: 'EX', ttl, 'NX'
+      const res = await (this.redis as any).set(
+        lockKey,
+        userId,
+        'EX',
+        ttl,
+        'NX',
+      );
       if (res === 'OK') {
         this.logger.debug(`[LOCK] Acquired ${lockKey} by ${userId}`);
         this.autoRefreshLock(lockKey, userId, ttl);
         return { status: 'success' };
       }
-      await new Promise(r => setTimeout(r, retryDelay));
+      await new Promise((r) => setTimeout(r, retryDelay));
     }
     const lockedBy = await this.redis.get(lockKey);
     return { status: 'error', message: `Locked by another user (${lockedBy})` };
@@ -45,15 +52,24 @@ export class LockService {
 
   private autoRefreshLock(lockKey: string, userId: string, ttl: number) {
     const intervalKey = `${lockKey}:${userId}`;
-    if (this.lockIntervals.has(intervalKey)) clearInterval(this.lockIntervals.get(intervalKey)!);
+    if (this.lockIntervals.has(intervalKey))
+      clearInterval(this.lockIntervals.get(intervalKey)!);
 
     const interval = setInterval(async () => {
       try {
-        const refreshed = await this.redis.eval(this.luaRefreshLock, 1, lockKey, userId, ttl);
+        const refreshed = await this.redis.eval(
+          this.luaRefreshLock,
+          1,
+          lockKey,
+          userId,
+          ttl,
+        );
         if (refreshed === 0) {
           clearInterval(interval);
           this.lockIntervals.delete(intervalKey);
-          this.logger.debug(`[LOCK] Auto-refresh stopped for ${lockKey} by ${userId}`);
+          this.logger.debug(
+            `[LOCK] Auto-refresh stopped for ${lockKey} by ${userId}`,
+          );
         }
       } catch (err) {
         clearInterval(interval);
@@ -96,7 +112,13 @@ export class LockService {
   async releaseAllLocksForUser(userId: string) {
     let cursor = '0';
     do {
-      const [nextCursor, keys] = await this.redis.scan(cursor, 'MATCH', 'lock:*', 'COUNT', 100);
+      const [nextCursor, keys] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        'lock:*',
+        'COUNT',
+        100,
+      );
       cursor = nextCursor;
       for (const key of keys) {
         const owner = await this.redis.get(key);
@@ -113,9 +135,9 @@ export class LockService {
     targetId: string,
     userId: string,
     callback: () => void,
-    ttl = 30
+    ttl = 30,
   ): Promise<LockResult> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const tryAcquire = async () => {
         const lock = await this.acquireLock(projectId, targetId, userId, ttl);
         if (lock.status === 'success') {
