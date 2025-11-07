@@ -29,9 +29,6 @@ export default function ProjectDetailPage({ params }: Props) {
     updateProject,
     setCurrentProject,
     boards,
-    columns,
-    columnCards,
-    cards,
   } = projectStore();
 
   const theme = useBoardStore((state) => state.theme);
@@ -48,11 +45,8 @@ export default function ProjectDetailPage({ params }: Props) {
 
   const project = currentProject?.id === projectId ? currentProject : null;
 
-  // Lấy board theo type
   const inboxBoard = Object.values(boards).find((b) => b.type === 'inbox');
-  const calendarBoard = Object.values(boards).find(
-    (b) => b.type === 'calendar'
-  );
+  const calendarBoard = Object.values(boards).find((b) => b.type === 'calendar');
   const mainBoard = Object.values(boards).find((b) => b.type === 'board');
 
   const toggleComponent = (key: string) => {
@@ -69,53 +63,31 @@ export default function ProjectDetailPage({ params }: Props) {
     });
   };
 
-  // ------------------ SOCKET EVENTS ------------------
+  // ------------------ SOCKET & INIT ------------------
   useEffect(() => {
-    // Prevent window from being a vertical scroll parent while board columns scroll themselves
-    const prev = document.body.style.overflowY;
     document.body.style.overflowY = 'hidden';
     return () => {
-      document.body.style.overflowY = prev;
+      document.body.style.overflowY = '';
     };
   }, []);
 
   useEffect(() => {
     const socketManager = getProjectSocketManager();
-
     const handleProjectMsg = (msg: any) => {
-      if (!msg?.project) return;
-      // Ignore any correlated messages (responses to fetch)
-      if (msg?.correlationId) return;
+      if (!msg?.project || msg?.correlationId) return;
       const p = msg.project as Project;
-      const hasSnapshot = Boolean(
-        p?.boards?.length || (p as any)?.columns?.length || p?.cards?.length
-      );
+      const hasSnapshot = Boolean(p?.boards?.length || p?.cards?.length);
       if (currentProject?.id === p.id) {
-        if (hasSnapshot) setCurrentProject(p);
-        else updateProject(p);
+        hasSnapshot ? setCurrentProject(p) : updateProject(p);
       } else {
-        if (hasSnapshot) {
-          addProject(p);
-          setCurrentProject(p);
-        } else {
-          addProject(p);
-        }
+        addProject(p);
+        if (hasSnapshot) setCurrentProject(p);
       }
     };
 
-    socketManager
-      .joinProject(projectId)
-      .then(() => console.log('Joined project socket:', projectId))
-      .catch(console.error);
-
-    const unsubCreated = socketManager.subscribeCorrelation(
-      'realtime.project.created',
-      handleProjectMsg
-    );
-    const unsubUpdated = socketManager.subscribeCorrelation(
-      'realtime.project.updated',
-      handleProjectMsg
-    );
+    socketManager.joinProject(projectId).catch(console.error);
+    const unsubCreated = socketManager.subscribeCorrelation('realtime.project.created', handleProjectMsg);
+    const unsubUpdated = socketManager.subscribeCorrelation('realtime.project.updated', handleProjectMsg);
 
     return () => {
       unsubCreated();
@@ -124,28 +96,18 @@ export default function ProjectDetailPage({ params }: Props) {
     };
   }, [projectId]);
 
-  // ------------------ INIT PROJECT (REST) ------------------
   useEffect(() => {
     let canceled = false;
-
     const initProject = async () => {
       setLoading(true);
       try {
         const correlationId = crypto.randomUUID();
-        const res: any = await projectService.getProject({
-          projectId,
-          correlationId,
-        });
-        console.log(res)
-        const p: Project | undefined =
-          res?.data || res?.dto?.project || res?.project || res?.dto;
-
-        if (!canceled) {
-          if (p) {
-            addProject(p);
-            updateProject(p);
-            setCurrentProject(p);
-          }
+        const res: any = await projectService.getProject({ projectId, correlationId });
+        const p: Project | undefined = res?.data || res?.dto?.project || res?.project || res?.dto;
+        if (!canceled && p) {
+          addProject(p);
+          updateProject(p);
+          setCurrentProject(p);
         }
       } catch (error) {
         console.error('Fetch project failed:', error);
@@ -153,36 +115,37 @@ export default function ProjectDetailPage({ params }: Props) {
         if (!canceled) setLoading(false);
       }
     };
-
     initProject();
-
-    return () => {
-      canceled = true;
-    };
+    return () => { canceled = true; };
   }, [projectId]);
 
   // ------------------ UI ------------------
   if (loading) return <Loading text="Đang tải dữ liệu" />;
   if (!project) return <Loading text="Không tìm thấy dự án :(" />;
 
-  const backgroundStyle: React.CSSProperties = {
+  const bgStyle: React.CSSProperties = {
     width: '100%',
     height: '100%',
     position: 'fixed',
     top: 0,
     left: 0,
     zIndex: 0,
-    backgroundColor: theme === 'dark' ? '#1E1E2F' : '#F4F5F7',
+    background: theme === 'dark'
+      ? 'radial-gradient(circle at 50% 50%, #2a2a3e 0%, #1e1e2f 100%)'
+      : 'radial-gradient(circle at 50% 50%, #f8fafc 0%, #e2e8f0 100%)',
+    backdropFilter: 'blur(8px)',
   };
 
   return (
-    <div className="relative">
-      <div style={backgroundStyle} />
-      <ProjectActionBar
-        activeComponents={activeComponents}
-        onToggle={toggleComponent}
-      />
-      <div className="relative z-10 w-full overflow-hidden">
+    <div className="relative min-h-screen">
+      {/* GLASS BACKGROUND */}
+      <div style={bgStyle} className="opacity-90" />
+
+      {/* ACTION BAR */}
+      <ProjectActionBar activeComponents={activeComponents} onToggle={toggleComponent} />
+
+      {/* MAIN CONTENT */}
+      <div className="relative z-10 w-full h-screen overflow-hidden pt-16 pb-16">
         <DragDropContextProvider
           boardTypes={{
             ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),
@@ -190,28 +153,29 @@ export default function ProjectDetailPage({ params }: Props) {
             ...(calendarBoard ? { [calendarBoard.id]: 'calendar' } : {}),
           }}
         >
-          {/* ✅ mỗi board có khung riêng để scroll độc lập */}
-          <div className="flex gap-4 w-full h-full overflow-hidden">
+          <div className="flex gap-6 h-full px-6 pb-6">
+            {/* INBOX */}
             {activeComponents.includes('inbox') && inboxBoard && (
-              <div className="flex-1 min-w-[300px] max-h-[calc(100vh-100px)] overflow-y-auto rounded-2xl shadow-sm bg-white dark:bg-[#1f1f2e]">
+              <div className="flex-1 min-w-[360px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30">
                 <Inbox board={inboxBoard} />
               </div>
             )}
 
+            {/* CALENDAR */}
             {activeComponents.includes('calendar') && calendarBoard && (
-              <div className="flex-1 min-w-[300px] max-h-[calc(100vh-100px)] overflow-y-auto rounded-2xl shadow-sm bg-white dark:bg-[#1f1f2e]">
+              <div className="flex-1 min-w-[360px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30">
                 <Calendar board={calendarBoard} />
               </div>
             )}
 
+            {/* BOARD */}
             {activeComponents.includes('board') && mainBoard && (
-              <div className="flex-1 min-w-[400px] overflow-x-auto overflow-y-auto max-h-[calc(100vh-100px)] rounded-2xl shadow-sm bg-white dark:bg-[#1f1f2e]">
+              <div className="flex-1 min-w-[800px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30">
                 <Board board={mainBoard} />
               </div>
             )}
           </div>
         </DragDropContextProvider>
-
       </div>
     </div>
   );
