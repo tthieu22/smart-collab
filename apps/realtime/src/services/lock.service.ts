@@ -28,7 +28,7 @@ export class LockService {
     ttl = 30,
     retry = 5,
     retryDelay = 100,
-  ): Promise<LockResult> {
+  ): Promise<any> {
     const lockKey = this.getLockKey(projectId, targetId);
     for (let i = 0; i < retry; i++) {
       // ioredis expects options as variadic args: 'EX', ttl, 'NX'
@@ -47,7 +47,7 @@ export class LockService {
       await new Promise((r) => setTimeout(r, retryDelay));
     }
     const lockedBy = await this.redis.get(lockKey);
-    return { status: 'error', message: `Locked by another user (${lockedBy})` };
+    return { status: 'error', message: 'lock', lockedBy  };
   }
 
   private autoRefreshLock(lockKey: string, userId: string, ttl: number) {

@@ -166,7 +166,7 @@ export default function ProjectDetailPage({ params }: Props) {
   if (!project) return <Loading text="Không tìm thấy dự án :(" />;
 
   const backgroundStyle: React.CSSProperties = {
-    width: '100vw',
+    width: '100%',
     height: '100%',
     position: 'fixed',
     top: 0,
@@ -182,37 +182,36 @@ export default function ProjectDetailPage({ params }: Props) {
         activeComponents={activeComponents}
         onToggle={toggleComponent}
       />
-      <div className="relative z-10 w-full">
+      <div className="relative z-10 w-full overflow-hidden">
         <DragDropContextProvider
           boardTypes={{
             ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),
             ...(inboxBoard ? { [inboxBoard.id]: 'inbox' } : {}),
             ...(calendarBoard ? { [calendarBoard.id]: 'calendar' } : {}),
           }}
-          onDragEnd={(result) => {
-            console.log('Kéo thả xong tại ProjectDetailPage:', result);
-          }}
         >
-          <div className="relative flex gap-4 text-3xl w-full min-h-[90vh]">
+          {/* ✅ mỗi board có khung riêng để scroll độc lập */}
+          <div className="flex gap-4 w-full h-full overflow-hidden">
             {activeComponents.includes('inbox') && inboxBoard && (
-              <Inbox board={inboxBoard} className="flex-1 min-w-[250px]" />
+              <div className="flex-1 min-w-[300px] max-h-[calc(100vh-100px)] overflow-y-auto rounded-2xl shadow-sm bg-white dark:bg-[#1f1f2e]">
+                <Inbox board={inboxBoard} />
+              </div>
             )}
 
             {activeComponents.includes('calendar') && calendarBoard && (
-              <Calendar
-                board={calendarBoard}
-                className="flex-1 min-w-[300px]"
-              />
+              <div className="flex-1 min-w-[300px] max-h-[calc(100vh-100px)] overflow-y-auto rounded-2xl shadow-sm bg-white dark:bg-[#1f1f2e]">
+                <Calendar board={calendarBoard} />
+              </div>
             )}
 
             {activeComponents.includes('board') && mainBoard && (
-              <Board
-                board={mainBoard}
-                className="flex-1 min-w-[300px] overflow-x-auto"
-              />
+              <div className="flex-1 min-w-[400px] overflow-x-auto overflow-y-auto max-h-[calc(100vh-100px)] rounded-2xl shadow-sm bg-white dark:bg-[#1f1f2e]">
+                <Board board={mainBoard} />
+              </div>
             )}
           </div>
         </DragDropContextProvider>
+
       </div>
     </div>
   );

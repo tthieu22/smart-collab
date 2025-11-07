@@ -68,126 +68,217 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       return;
     }
 
-    client.on('joinProject', (pid, cb) => {
+    // Join/Leave helpers
+    client.on('joinProject', (pid: string, cb?: (ok: boolean) => void) => {
       client.join(pid);
       this.logger.log(`🟢 Client ${client.id} joined project ${pid}`);
       cb?.(true);
     });
 
-    client.on('leaveProject', (pid, cb) => {
+    client.on('leaveProject', (pid: string, cb?: (ok: boolean) => void) => {
       client.leave(pid);
       this.logger.log(`🔴 Client ${client.id} left project ${pid}`);
       cb?.(true);
     });
 
-    client.on('board.create', async (payload, cb) => {
+    // Generic response helper to requestor
+    const replyToRequester = (c: Socket, correlationId: string | undefined, payload: any) => {
+      const msg = { correlationId, ...payload };
+      // dedicated correlation event for responses
+      c.emit('realtime.action.response', msg);
+    };
+
+    // ---------------- BOARD ----------------
+    client.on('board.create', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
       try {
-        const { projectId, type, title } = payload;
         const userId = (client as any).user.sub;
-        await this.boardService.createBoard({ projectId, ownerId: userId, type, title });
-        cb?.({ status: 'success', message: 'Board create request sent' });
+        const result = await this.boardService.createBoard({ projectId: payload.projectId, ownerId: userId, type: payload.type, title: payload.title });
+
+        // emit to project room with correlationId
+        this.emitService.emitToProject(payload.projectId, 'realtime.board.created', { board: result, correlationId }, client.id);
+
+        // reply to requester
+        replyToRequester(client, correlationId, { status: 'success', data: result });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
 
-    client.on('board.update', async (payload, cb) => {
+    client.on('board.update', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
       try {
-        const { projectId, boardId, ...updates } = payload;
-        await this.boardService.updateBoard({ projectId, boardId, ...updates });
-        cb?.({ status: 'success', message: 'Board update request sent' });
+        const result = await this.boardService.updateBoard({ projectId: payload.projectId, boardId: payload.boardId, ...payload });
+        this.emitService.emitToProject(payload.projectId, 'realtime.board.updated', { board: result, correlationId }, client.id);
+        replyToRequester(client, correlationId, { status: 'success', data: result });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
 
-    client.on('board.delete', async (payload, cb) => {
+    client.on('board.delete', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
       try {
-        const { projectId, boardId } = payload;
-        await this.boardService.deleteBoard({ projectId, boardId });
-        cb?.({ status: 'success', message: 'Board delete request sent' });
+        await this.boardService.deleteBoard({ projectId: payload.projectId, boardId: payload.boardId });
+        this.emitService.emitToProject(payload.projectId, 'realtime.board.deleted', { boardId: payload.boardId, correlationId }, client.id);
+        replyToRequester(client, correlationId, { status: 'success' });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
 
     // ---------------- COLUMN ----------------
-    client.on('column.create', async (payload, cb) => {
+    client.on('column.create', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
       try {
         const userId = (client as any).user.sub;
-        await this.columnService.createColumn({ ...payload, ownerId: userId });
-        cb?.({ status: 'success', message: 'Column create request sent' });
+        const result = await this.columnService.createColumn({ ...payload, ownerId: userId });
+        this.emitService.emitToProject(payload.projectId, 'realtime.column.created', { boardId: payload.boardId, column: result, correlationId }, client.id);
+        replyToRequester(client, correlationId, { status: 'success', data: result });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
 
-    client.on('column.update', async (payload, cb) => {
+    client.on('column.update', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
       try {
-        await this.columnService.updateColumn(payload);
-        cb?.({ status: 'success', message: 'Column update request sent' });
+        const result = await this.columnService.updateColumn(payload);
+        this.emitService.emitToProject(payload.projectId, 'realtime.column.updated', { column: result, correlationId }, client.id);
+        replyToRequester(client, correlationId, { status: 'success', data: result });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
 
-    client.on('column.delete', async (payload, cb) => {
+    client.on('column.delete', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
       try {
         await this.columnService.deleteColumn(payload);
-        cb?.({ status: 'success', message: 'Column delete request sent' });
+        this.emitService.emitToProject(payload.projectId, 'realtime.column.deleted', { columnId: payload.columnId, correlationId }, client.id);
+        replyToRequester(client, correlationId, { status: 'success' });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
+
+    // client.on('column.move', async (payload: any, cb?: (res: any) => void) => {
+    //   const correlationId = payload?.correlationId as string | undefined;
+    //   cb?.({ status: 'received' });
+
+    //   const userId = (client as any).user.sub;
+    //   // Use lockService.emitWithLock to protect column move
+    //   this.lockService.emitWithLock(payload.projectId, payload.columnId, userId, async () => {
+    //     try {
+    //       const result = await this.columnService.moveColumn(payload);
+    //       this.emitService.emitToProject(payload.projectId, 'realtime.column.moved', { srcBoardId: payload.srcBoardId, destBoardId: payload.destBoardId, columnId: payload.columnId, destIndex: payload.destIndex, correlationId }, client.id);
+    //       replyToRequester(client, correlationId, { status: 'success', data: result });
+    //     } catch (err) {
+    //       replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
+    //     }
+    //   }).catch((err) => {
+    //     // if lock can't be acquired emit lock response
+    //     if (err === 'lock') replyToRequester(client, correlationId, { status: 'error', message: 'lock' });
+    //     else replyToRequester(client, correlationId, { status: 'error', message: String(err) });
+    //   });
+    // });
 
     // ---------------- CARD ----------------
-    client.on('card.create', async (payload, cb) => {
-      try {
-        await this.cardService.createCard(payload);
-        cb?.({ status: 'success', message: 'Card create request sent' });
-      } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
-      }
-    });
+    client.on('card.create', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
 
-    client.on('card.update', async (payload, cb) => {
-      try {
-        await this.cardService.updateCard(payload);
-        cb?.({ status: 'success', message: 'Card update request sent' });
-      } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
-      }
-    });
-
-    client.on('card.delete', async (payload, cb) => {
       try {
         const userId = (client as any).user.sub;
-        await this.deleteCard(payload.projectId, payload.cardId, userId, payload);
-        cb?.({ status: 'success', message: 'Card delete emitted' });
+        const result = await this.cardService.createCard({ ...payload, ownerId: userId });
+        this.emitService.emitToProject(payload.projectId, 'realtime.card.created', { card: result, correlationId }, client.id);
+        replyToRequester(client, correlationId, { status: 'success', data: result });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
 
-    client.on('card.move', async (payload, cb) => {
+    client.on('card.update', async (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
       try {
-        const userId = (client as any).user.sub;
-        await this.moveCard(payload.projectId, payload.cardId, userId, payload);
-        cb?.({ status: 'success', message: 'Card move emitted' });
+        const result = await this.cardService.updateCard(payload);
+        this.emitService.emitToProject(payload.projectId, 'realtime.card.updated', { card: result, correlationId }, client.id);
+        replyToRequester(client, correlationId, { status: 'success', data: result });
       } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
+        replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
       }
     });
 
-    client.on('card.copy', async (payload, cb) => {
-      try {
-        const userId = (client as any).user.sub;
-        await this.copyCard(payload.projectId, payload.cardId, userId, payload);
-        cb?.({ status: 'success', message: 'Card copy emitted' });
-      } catch (err) {
-        cb?.({ status: 'error', message: err instanceof Error ? err.message : err });
-      }
+    client.on('card.delete', (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
+      const userId = (client as any).user.sub;
+      this.lockService.emitWithLock(payload.projectId, payload.cardId, userId, async () => {
+        try {
+          await this.cardService.deleteCard(payload);
+          this.emitService.emitToProject(payload.projectId, 'realtime.card.deleted', { columnId: payload.columnId, cardId: payload.cardId, correlationId }, client.id);
+          replyToRequester(client, correlationId, { status: 'success' });
+        } catch (err) {
+          replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
+        }
+      }).catch((err) => {
+        if (err === 'lock') replyToRequester(client, correlationId, { status: 'error', message: 'lock' });
+        else replyToRequester(client, correlationId, { status: 'error', message: String(err) });
+      });
     });
+
+    client.on('card.move', (payload: any, cb?: (res: any) => void) => {
+      const correlationId = payload?.correlationId as string | undefined;
+      cb?.({ status: 'received' });
+
+      const userId = (client as any).user.sub;
+      this.lockService.emitWithLock(payload.projectId, payload.cardId, userId, async () => {
+        try {
+          await this.cardService.moveCard(payload);
+          this.emitService.emitToProject(payload.projectId, 'realtime.card.moved', { srcColumnId: payload.srcColumnId, cardId: payload.cardId, newColumnId: payload.newColumnId, newIndex: payload.newIndex, correlationId }, client.id);
+          replyToRequester(client, correlationId, { status: 'success' });
+        } catch (err) {
+          replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
+        }
+      }).catch((err) => {
+        if (err === 'lock') replyToRequester(client, correlationId, { status: 'error', message: 'lock' });
+        else replyToRequester(client, correlationId, { status: 'error', message: String(err) });
+      });
+    });
+
+    // client.on('card.copy', (payload: any, cb?: (res: any) => void) => {
+    //   const correlationId = payload?.correlationId as string | undefined;
+    //   cb?.({ status: 'received' });
+
+    //   const userId = (client as any).user.sub;
+    //   this.lockService.emitWithLock(payload.projectId, payload.cardId, userId, async () => {
+    //     try {
+    //       const result = await this.cardService.copyCard(payload);
+    //       this.emitService.emitToProject(payload.projectId, 'realtime.card.copied', { card: result, correlationId }, client.id);
+    //       replyToRequester(client, correlationId, { status: 'success', data: result });
+    //     } catch (err) {
+    //       replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
+    //     }
+    //   }).catch((err) => {
+    //     if (err === 'lock') replyToRequester(client, correlationId, { status: 'error', message: 'lock' });
+    //     else replyToRequester(client, correlationId, { status: 'error', message: String(err) });
+    //   });
+    // });
   }
 
   async handleDisconnect(client: Socket) {

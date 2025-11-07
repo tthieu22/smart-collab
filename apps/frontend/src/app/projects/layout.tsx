@@ -15,8 +15,8 @@ export default function ProjectLayout({
         <Header />
 
         {/* Body */}
-        <div className="flex flex-1 min-h-0">
-          <main className="flex-1 bg-gray-100 dark:bg-gray-900 p-0 min-h-0">
+        <div className="min-h-0 ">
+          <main className="bg-gray-100 dark:bg-gray-900 p-0 ">
             {children}
           </main>
         </div>

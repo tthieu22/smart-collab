@@ -1,11 +1,11 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { Board as BoardType, Column as ColumnType } from "@smart/types/project";
-import { projectStore } from "@smart/store/project";
-import { useBoardStore } from "@smart/store/setting";
-import Column from "../board/Column";
-import { Draggable, Droppable } from "@hello-pangea/dnd";
+'use client';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Board as BoardType, Column as ColumnType } from '@smart/types/project';
+import { projectStore } from '@smart/store/project';
+import { useBoardStore } from '@smart/store/setting';
+import Column from '../board/Column';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface CalendarProps {
   board: BoardType;
@@ -26,68 +26,48 @@ export default function Calendar({ board, className }: CalendarProps) {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
   return (
-    <Droppable droppableId={board.id} type="COLUMN" direction="horizontal">
-      {(provided) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.droppableProps}
-          className={`flex gap-4 overflow-x-auto overflow-y-hidden p-4 rounded-2xl transition-all duration-300 backdrop-blur-sm w-full ${className ?? ""} ${
-            theme === "dark"
-              ? "bg-gradient-to-br from-[#1e1f22] to-[#2b2d31] text-gray-100"
-              : "bg-gradient-to-br from-[#f4f5f7] to-[#e9ebee] text-gray-900"
-          }`}
-          style={{
-            flexWrap: "nowrap",
-            backgroundColor:
-              theme === "dark"
-                ? currentProject.color ?? "#1e1f22"
-                : currentProject.color ?? "#f4f5f7",
-            backgroundImage:
-              currentProject.fileUrl || currentProject.background
-                ? `url(${currentProject.fileUrl ?? currentProject.background})`
-                : undefined,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            minHeight: "300px",
-            ...(theme === "dark" && {
-              backgroundBlendMode: "normal",
-              filter: "brightness(0.9)",
-            }),
-            maxWidth: "100vw",
-          }}
-        >
-          {columns.map((col, index) => (
-            <Draggable
-              key={col.id}
-              draggableId={col.id}
-              index={index}
-              isDragDisabled={true} // Calendar không drag
-            >
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.draggableProps}
-                  {...provided.dragHandleProps}
-                  style={{
-                    ...provided.draggableProps.style,
-                    userSelect: "none",
-                  }}
-                >
-                  <motion.div
-                    layout
-                    whileHover={!snapshot.isDragging ? { scale: 1.02 } : undefined}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <Column column={col} />
-                  </motion.div>
-                </div>
-              )}
-            </Draggable>
-          ))}
-
-          {provided.placeholder}
-        </div>
-      )}
-    </Droppable>
+    <div
+      className={`flex gap-4 overflow-x-auto overflow-y-hidden p-4 rounded-2xl transition-all duration-300 backdrop-blur-sm w-full ${
+        className ?? ''
+      } ${
+        theme === 'dark'
+          ? 'bg-gradient-to-br from-[#1e1f22] to-[#2b2d31] text-gray-100'
+          : 'bg-gradient-to-br from-[#f4f5f7] to-[#e9ebee] text-gray-900'
+      }`}
+      style={{
+        backgroundColor:
+          theme === 'dark'
+            ? currentProject.color ?? '#1e1f22'
+            : currentProject.color ?? '#f4f5f7',
+        backgroundImage:
+          currentProject.fileUrl || currentProject.background
+            ? `url(${currentProject.fileUrl ?? currentProject.background})`
+            : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        minHeight: '300px',
+        ...(theme === 'dark' && {
+          backgroundBlendMode: 'normal',
+          filter: 'brightness(0.9)',
+        }),
+      }}
+    >
+      <SortableContext
+        id={board.id}
+        items={columns.map((c) => c.id)}
+        strategy={horizontalListSortingStrategy}
+      >
+        {columns.map((col) => (
+          <motion.div
+            key={col.id}
+            layout
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            {/* <Column column={col} /> */}
+          </motion.div>
+        ))}
+      </SortableContext>
+    </div>
   );
 }

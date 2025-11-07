@@ -19,8 +19,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: "Fira Code", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono: 'Fira Code', monospace;
 }
 .nextjs-toast {
   display: none !important;
@@ -145,14 +146,14 @@ svg {
 #__next {
   min-height: 100%;
 }
-.gap-10{
-  gap:10px;
+.gap-10 {
+  gap: 10px;
 }
-.gap-20{
-  gap:20px;
+.gap-20 {
+  gap: 20px;
 }
-.gap-30{
-  gap:30px;
+.gap-30 {
+  gap: 30px;
 }
 /* overlay toàn màn hình */
 .loading-overlay {
@@ -230,11 +231,20 @@ svg {
     transform: scale(1) translateY(0);
   }
 }
-/* Ẩn scroll dọc */
-.scrollbar-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none; 
+/* Scrollbar mỏng đẹp */
+.scrollbar-thin {
+  scrollbar-width: thin;
 }
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
 }
