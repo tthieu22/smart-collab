@@ -1,7 +1,13 @@
-// app/components/project/board/dnd/DragDropProvider.tsx
 'use client';
 
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   DndContext,
   DragStartEvent,
@@ -11,6 +17,7 @@ import {
   rectIntersection,
   PointerSensor,
   KeyboardSensor,
+  useDndMonitor,
   useSensor,
   useSensors,
   UniqueIdentifier,
@@ -29,14 +36,97 @@ interface DragContextType {
   activeId: UniqueIdentifier | null;
   overId: UniqueIdentifier | null;
   activeItem: any;
+  registerScrollContainer?: (
+    columnId: string,
+    node: HTMLElement | null
+  ) => void;
+  registerBoardScrollContainer?: (
+    boardId: string,
+    node: HTMLElement | null
+  ) => void;
+  overData?: any;
 }
 
 const DragContext = createContext<DragContextType>({
   activeId: null,
   overId: null,
   activeItem: null,
+  registerScrollContainer: () => undefined,
+  registerBoardScrollContainer: () => undefined,
+  overData: null,
 });
 export const useDragContext = () => useContext(DragContext);
+
+function DndMonitor({
+  columnScrollContainers,
+  boardScrollContainers,
+  activeItem,
+  overData,
+}: {
+  columnScrollContainers: React.MutableRefObject<Map<string, HTMLElement>>;
+  boardScrollContainers: React.MutableRefObject<Map<string, HTMLElement>>;
+  activeItem: any;
+  overData: any;
+}) {
+  useDndMonitor({
+    onDragMove(event) {
+      const { over, active } = event;
+      if (!over) return;
+
+      const overPayload: any = over.data?.current ?? overData;
+      const translated =
+        active.rect.current.translated ?? active.rect.current.initial;
+      if (!translated) return;
+
+      let columnId: string | null = null;
+
+      if (overPayload?.type === 'CARD') {
+        columnId = overPayload.columnId ?? null;
+      } else if (overPayload?.type === 'COLUMN') {
+        columnId = overPayload.columnId ?? String(over.id);
+      }
+
+      if (columnId) {
+        const container = columnScrollContainers.current.get(columnId);
+        if (container) {
+          const pointerY = translated.top + translated.height / 2;
+          const { top, bottom } = container.getBoundingClientRect();
+          const threshold = 80;
+          const scrollStep = 18;
+
+          if (pointerY < top + threshold) {
+            container.scrollTop -= scrollStep;
+          } else if (pointerY > bottom - threshold) {
+            container.scrollTop += scrollStep;
+          }
+        }
+      }
+
+      const boardId =
+        overPayload?.boardId ??
+        active.data?.current?.boardId ??
+        activeItem?.boardId;
+
+      if (!boardId) return;
+
+      const boardContainer = boardScrollContainers.current.get(boardId);
+      if (!boardContainer) return;
+
+      const pointerX = translated.left + translated.width / 2;
+      const { left, right } = boardContainer.getBoundingClientRect();
+      const horizontalThreshold = 120;
+      const horizontalStep = 28;
+
+      if (pointerX < left + horizontalThreshold) {
+        boardContainer.scrollLeft -= horizontalStep;
+      } else if (pointerX > right - horizontalThreshold) {
+        boardContainer.scrollLeft += horizontalStep;
+      }
+    },
+  });
+
+  return null;
+}
 
 export default function DragDropProvider({ children, boardTypes = {} }: Props) {
   const { currentProject } = projectStore();
@@ -45,6 +135,36 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [overId, setOverId] = useState<UniqueIdentifier | null>(null);
   const [activeItem, setActiveItem] = useState<any>(null);
+  const [overData, setOverData] = useState<any>(null);
+
+  const columnScrollContainers = useRef(new Map<string, HTMLElement>());
+  const boardScrollContainers = useRef(new Map<string, HTMLElement>());
+
+  const registerScrollContainer = useCallback(
+    (columnId: string, node: HTMLElement | null) => {
+      if (!columnId) return;
+      const containers = columnScrollContainers.current;
+      if (!node) {
+        containers.delete(columnId);
+      } else {
+        containers.set(columnId, node);
+      }
+    },
+    []
+  );
+
+  const registerBoardScrollContainer = useCallback(
+    (boardId: string, node: HTMLElement | null) => {
+      if (!boardId) return;
+      const containers = boardScrollContainers.current;
+      if (!node) {
+        containers.delete(boardId);
+      } else {
+        containers.set(boardId, node);
+      }
+    },
+    []
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -78,6 +198,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
   const handleDragOver = (event: DragOverEvent) => {
     const { over } = event;
     setOverId(over?.id ?? null);
+    setOverData(over?.data?.current ?? null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -94,6 +215,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
     setActiveId(null);
     setOverId(null);
     setActiveItem(null);
+    setOverData(null);
 
     if (activeItem.type === 'COLUMN') {
       const srcBoardId = activeItem.boardId;
@@ -104,13 +226,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
         boardTypes[srcBoardId] === 'board' &&
         boardTypes[destBoardId] === 'board'
       ) {
-        // socket.moveColumn(
-        //   projectId,
-        //   srcBoardId,
-        //   destBoardId,
-        //   String(active.id),
-        //   destIndex
-        // );
+        // socket.moveColumn(projectId, srcBoardId, destBoardId, String(active.id), destIndex);
       }
       return;
     }
@@ -143,39 +259,55 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
   const overlay = useMemo(() => {
     if (!activeId || !activeItem) return null;
 
-    return (
-      <div className="fixed inset-0 pointer-events-none z-[9999]">
-        <div className="absolute transform -translate-x-1/2 -translate-y-1/2">
-          {activeItem.type === 'CARD' && cards[activeId] && (
-            <div className="scale-105 shadow-2xl rounded-lg">
-              <Card
-                card={cards[activeId]}
-                columnId={activeItem.columnId}
-                boardId={activeItem.boardId}
-                boardType={activeItem.boardType}
-                index={activeItem.index}
-                isOverlay
-              />
-            </div>
-          )}
-          {activeItem.type === 'COLUMN' && columns[activeId] && (
-            <div className="scale-105 shadow-2xl rounded-xl rotate-3">
-              <Column
-                column={columns[activeId]}
-                boardId={activeItem.boardId}
-                boardType={activeItem.boardType}
-                index={activeItem.index}
-                isOverlay
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    if (activeItem.type === 'CARD' && cards[activeId]) {
+      return (
+        <Card
+          card={cards[activeId]}
+          columnId={activeItem.columnId}
+          boardId={activeItem.boardId}
+          boardType={activeItem.boardType}
+          index={activeItem.index}
+          isOverlay
+        />
+      );
+    }
+
+    if (activeItem.type === 'COLUMN' && columns[activeId]) {
+      return (
+        <Column
+          column={columns[activeId]}
+          boardId={activeItem.boardId}
+          boardType={activeItem.boardType}
+          index={activeItem.index}
+          isOverlay
+        />
+      );
+    }
+
+    return null;
   }, [activeId, activeItem, cards, columns]);
 
+  const contextValue = useMemo(
+    () => ({
+      activeId,
+      overId,
+      activeItem,
+      registerScrollContainer,
+      registerBoardScrollContainer,
+      overData,
+    }),
+    [
+      activeId,
+      activeItem,
+      overId,
+      overData,
+      registerScrollContainer,
+      registerBoardScrollContainer,
+    ]
+  );
+
   return (
-    <DragContext.Provider value={{ activeId, overId, activeItem }}>
+    <DragContext.Provider value={contextValue}>
       <DndContext
         sensors={sensors}
         collisionDetection={rectIntersection}
@@ -189,7 +321,16 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
           interval: 10,
         }}
       >
+        {/* ✅ Hook useDndMonitor giờ nằm đúng vị trí */}
+        <DndMonitor
+          columnScrollContainers={columnScrollContainers}
+          boardScrollContainers={boardScrollContainers}
+          activeItem={activeItem}
+          overData={overData}
+        />
+
         {children}
+
         <DragOverlay adjustScale={false} dropAnimation={null}>
           {overlay}
         </DragOverlay>
