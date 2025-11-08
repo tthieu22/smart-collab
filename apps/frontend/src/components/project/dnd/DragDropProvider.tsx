@@ -22,6 +22,7 @@ import {
   useSensors,
   UniqueIdentifier,
 } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { projectStore } from '@smart/store/project';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import Column from '@smart/components/project/board/Column';
@@ -203,7 +204,13 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || !currentProject?.id || !activeItem) return;
+    if (!over || !currentProject?.id || !activeItem) {
+      setActiveId(null);
+      setOverId(null);
+      setActiveItem(null);
+      setOverData(null);
+      return;
+    }
 
     const ctrlPressed =
       (event.activatorEvent as MouseEvent)?.ctrlKey ||
@@ -212,22 +219,60 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
     const overData = over.data.current || {};
     const projectId = currentProject.id;
 
-    setActiveId(null);
-    setOverId(null);
-    setActiveItem(null);
-    setOverData(null);
-
     if (activeItem.type === 'COLUMN') {
       const srcBoardId = activeItem.boardId;
       const destBoardId = overData.boardId ?? srcBoardId;
-      const destIndex = overData.index ?? 0;
+      const columnId = String(active.id);
 
+      // Chỉ cho phép di chuyển column trong cùng board type 'board'
       if (
         boardTypes[srcBoardId] === 'board' &&
-        boardTypes[destBoardId] === 'board'
+        boardTypes[destBoardId] === 'board' &&
+        srcBoardId === destBoardId
       ) {
-        // socket.moveColumn(projectId, srcBoardId, destBoardId, String(active.id), destIndex);
+        // Tính toán destIndex dựa trên vị trí của over element
+        const state = projectStore.getState();
+        const columnIds = state.boardColumns[destBoardId] || [];
+        const activeIndex = columnIds.indexOf(columnId);
+
+        // Nếu không tìm thấy activeIndex, không làm gì
+        if (activeIndex === -1) {
+          setActiveId(null);
+          setOverId(null);
+          setActiveItem(null);
+          setOverData(null);
+          return;
+        }
+
+        let destIndex = activeIndex; // Mặc định giữ nguyên vị trí
+
+        if (overData.type === 'COLUMN' && over.id !== active.id) {
+          // Đang kéo qua một column khác
+          const overIndex = columnIds.indexOf(String(over.id));
+
+          if (overIndex !== -1) {
+            // Với horizontalListSortingStrategy, @dnd-kit sẽ tự động xử lý insert trước/sau
+            // Sử dụng overIndex làm điểm đích, arrayMove sẽ tự động tính toán index chính xác
+            // Store sẽ sử dụng arrayMove với destIndex = overIndex
+            destIndex = overIndex;
+          }
+        }
+
+        // Chỉ di chuyển nếu index thay đổi
+        if (destIndex !== activeIndex) {
+          // Gọi moveColumn trong store để cập nhật state (store sẽ tự động cập nhật position)
+          projectStore
+            .getState()
+            .moveColumn(srcBoardId, destBoardId, columnId, destIndex);
+
+          // socket.moveColumn(projectId, srcBoardId, destBoardId, columnId, destIndex);
+        }
       }
+
+      setActiveId(null);
+      setOverId(null);
+      setActiveItem(null);
+      setOverData(null);
       return;
     }
 
@@ -252,6 +297,11 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
         // socket.moveCard(projectId, String(active.id), destColumnId, destIndex);
       }
     }
+
+    setActiveId(null);
+    setOverId(null);
+    setActiveItem(null);
+    setOverData(null);
   };
 
   const { cards, columns } = projectStore.getState();
@@ -318,7 +368,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
           enabled: true,
           threshold: { x: 0.15, y: 0.15 },
           acceleration: 20,
-          interval: 10,
+          // interval: 10,
         }}
       >
         {/* ✅ Hook useDndMonitor giờ nằm đúng vị trí */}

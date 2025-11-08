@@ -44,6 +44,8 @@ export default function Column({
     );
   }
 
+  const isDraggingColumn = activeItem?.type === 'COLUMN';
+
   const {
     attributes,
     listeners,
@@ -53,7 +55,7 @@ export default function Column({
     isDragging,
   } = useSortable({
     id: column.id,
-    data: { type: 'COLUMN', boardId, boardType, index },
+    data: { type: 'COLUMN', boardId, boardType, columnId: column.id, index },
     disabled: boardType !== 'board',
   });
 
@@ -72,8 +74,16 @@ export default function Column({
     };
   }, [column.id, isOverlay, registerScrollContainer]);
 
+  // Merge sortable và droppable refs - sortable ref cho drag handle, droppable ref cho drop zone
   const setRef = (node: HTMLElement | null) => {
+    if (!node) {
+      setSortableRef(null);
+      setDroppableRef(null);
+      return;
+    }
+    // Set sortable ref cho toàn bộ column element
     setSortableRef(node);
+    // Set droppable ref cho toàn bộ column element (cùng node)
     setDroppableRef(node);
   };
 
@@ -119,10 +129,8 @@ export default function Column({
     <li
       ref={setRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className="flex-shrink-0"
       data-testid="list-wrapper"
+      className="flex-shrink-0 will-change-transform"
     >
       {/* COLUMN – GLASS + NEON + DARK MODE */}
       <div
@@ -144,11 +152,16 @@ export default function Column({
       "
         data-testid="list"
       >
-        {/* Header – Neon Title */}
-        <div className="p-3 cursor-grab active:cursor-grabbing select-none">
+        {/* Header – Neon Title - Drag Handle */}
+        <div 
+          className="p-3 cursor-grab active:cursor-grabbing select-none" 
+          {...attributes}
+          {...listeners}
+          style={{ touchAction: 'none' }}
+        >
           <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent flex items-center justify-between">
             <span>{column.title}</span>
-            <span className="ml-2 text-xs bg-white/40 dark:bg-black/40 backdrop-blur px-2.5 py-1 rounded-full ring-1 ring-white/50">
+            <span>
               {cardIds.length}
             </span>
           </h3>
@@ -162,6 +175,7 @@ export default function Column({
           <SortableContext
             items={cardIds}
             strategy={verticalListSortingStrategy}
+            disabled={isDraggingColumn}
           >
             <ol className="space-y-2 min-h-[60px]">
               {cardIds.map((cardId, idx) => {

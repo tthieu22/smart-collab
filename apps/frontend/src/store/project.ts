@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { arrayMove } from '@dnd-kit/sortable';
 import {
   Project,
   ProjectMember,
@@ -288,14 +289,69 @@ export const projectStore = create<ProjectState>((set, get) => ({
   moveColumn: (srcBoardId, destBoardId, columnId, destIndex) =>
     set((s) => {
       const boardColumns = { ...s.boardColumns };
+      const columns = { ...s.columns };
+
+      // Di chuyển trong cùng board
+      if (srcBoardId === destBoardId) {
+        const columnIds = [...(boardColumns[srcBoardId] || [])];
+        const activeIndex = columnIds.indexOf(columnId);
+
+        if (activeIndex === -1) {
+          return s; // Column không tồn tại
+        }
+
+        if (activeIndex === destIndex) {
+          return s; // Không có gì để di chuyển
+        }
+
+        // Sử dụng arrayMove để di chuyển chính xác
+        const newColumnIds = arrayMove(columnIds, activeIndex, destIndex);
+        boardColumns[srcBoardId] = newColumnIds;
+
+        // Cập nhật position của tất cả columns
+        newColumnIds.forEach((colId, index) => {
+          const col = columns[colId];
+          if (col) {
+            columns[colId] = { ...col, position: index };
+          }
+        });
+
+        return { boardColumns, columns };
+      }
+
+      // Di chuyển giữa các board khác nhau
       const src = [...(boardColumns[srcBoardId] || [])];
       const dest = [...(boardColumns[destBoardId] || [])];
-      const idx = src.indexOf(columnId);
-      if (idx !== -1) src.splice(idx, 1);
-      dest.splice(destIndex, 0, columnId);
+      const srcIndex = src.indexOf(columnId);
+
+      if (srcIndex === -1) {
+        return s; // Column không tồn tại trong board nguồn
+      }
+
+      // Xóa khỏi board nguồn
+      src.splice(srcIndex, 1);
       boardColumns[srcBoardId] = src;
+
+      // Thêm vào board đích
+      dest.splice(destIndex, 0, columnId);
       boardColumns[destBoardId] = dest;
-      return { boardColumns };
+
+      // Cập nhật position và boardId của columns
+      src.forEach((colId, index) => {
+        const col = columns[colId];
+        if (col) {
+          columns[colId] = { ...col, position: index };
+        }
+      });
+
+      dest.forEach((colId, index) => {
+        const col = columns[colId];
+        if (col) {
+          columns[colId] = { ...col, position: index, boardId: destBoardId };
+        }
+      });
+
+      return { boardColumns, columns };
     }),
 
   addCard: (columnId, cardOrCards) =>
