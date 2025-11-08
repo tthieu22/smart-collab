@@ -4,7 +4,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card as CardType } from '@smart/types/project';
-import { useDragContext } from '../dnd/DragDropProvider';
+import { useDragContext } from '../dnd/DragContext';
 
 interface Props {
   card: CardType;

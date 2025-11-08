@@ -10,7 +10,7 @@ import AddColumn from '../AddColumn';
 import { projectStore } from '@smart/store/project';
 import { Board as BoardType } from '@smart/types/project';
 import { useMemo, useRef, useEffect, useCallback } from 'react';
-import { useDragContext } from '../dnd/DragDropProvider';
+import { useDragContext } from '../dnd/DragContext';
 
 interface Props {
   board: BoardType;

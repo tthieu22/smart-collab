@@ -12,7 +12,7 @@ import { Card } from './Card';
 import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import { Column as ColumnType } from '@smart/types/project';
-import { useDragContext } from '../dnd/DragDropProvider';
+import { useDragContext } from '../dnd/DragContext';
 import { useDroppable } from '@dnd-kit/core';
 import { AddCard } from '../AddCard';
 

@@ -1,9 +1,7 @@
 'use client';
 
 import React, {
-  createContext,
   useCallback,
-  useContext,
   useMemo,
   useRef,
   useState,
@@ -17,116 +15,20 @@ import {
   rectIntersection,
   PointerSensor,
   KeyboardSensor,
-  useDndMonitor,
   useSensor,
   useSensors,
   UniqueIdentifier,
 } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { projectStore } from '@smart/store/project';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import Column from '@smart/components/project/board/Column';
 import { Card } from '@smart/components/project/board/Card';
+import { DndMonitor } from './DndMonitor';
+import { DragContext } from './DragContext';
 
 interface Props {
   children: React.ReactNode;
   boardTypes?: Record<string, 'board' | 'inbox' | 'calendar'>;
-}
-
-interface DragContextType {
-  activeId: UniqueIdentifier | null;
-  overId: UniqueIdentifier | null;
-  activeItem: any;
-  registerScrollContainer?: (
-    columnId: string,
-    node: HTMLElement | null
-  ) => void;
-  registerBoardScrollContainer?: (
-    boardId: string,
-    node: HTMLElement | null
-  ) => void;
-  overData?: any;
-}
-
-const DragContext = createContext<DragContextType>({
-  activeId: null,
-  overId: null,
-  activeItem: null,
-  registerScrollContainer: () => undefined,
-  registerBoardScrollContainer: () => undefined,
-  overData: null,
-});
-export const useDragContext = () => useContext(DragContext);
-
-function DndMonitor({
-  columnScrollContainers,
-  boardScrollContainers,
-  activeItem,
-  overData,
-}: {
-  columnScrollContainers: React.MutableRefObject<Map<string, HTMLElement>>;
-  boardScrollContainers: React.MutableRefObject<Map<string, HTMLElement>>;
-  activeItem: any;
-  overData: any;
-}) {
-  useDndMonitor({
-    onDragMove(event) {
-      const { over, active } = event;
-      if (!over) return;
-
-      const overPayload: any = over.data?.current ?? overData;
-      const translated =
-        active.rect.current.translated ?? active.rect.current.initial;
-      if (!translated) return;
-
-      let columnId: string | null = null;
-
-      if (overPayload?.type === 'CARD') {
-        columnId = overPayload.columnId ?? null;
-      } else if (overPayload?.type === 'COLUMN') {
-        columnId = overPayload.columnId ?? String(over.id);
-      }
-
-      if (columnId) {
-        const container = columnScrollContainers.current.get(columnId);
-        if (container) {
-          const pointerY = translated.top + translated.height / 2;
-          const { top, bottom } = container.getBoundingClientRect();
-          const threshold = 80;
-          const scrollStep = 18;
-
-          if (pointerY < top + threshold) {
-            container.scrollTop -= scrollStep;
-          } else if (pointerY > bottom - threshold) {
-            container.scrollTop += scrollStep;
-          }
-        }
-      }
-
-      const boardId =
-        overPayload?.boardId ??
-        active.data?.current?.boardId ??
-        activeItem?.boardId;
-
-      if (!boardId) return;
-
-      const boardContainer = boardScrollContainers.current.get(boardId);
-      if (!boardContainer) return;
-
-      const pointerX = translated.left + translated.width / 2;
-      const { left, right } = boardContainer.getBoundingClientRect();
-      const horizontalThreshold = 120;
-      const horizontalStep = 28;
-
-      if (pointerX < left + horizontalThreshold) {
-        boardContainer.scrollLeft -= horizontalStep;
-      } else if (pointerX > right - horizontalThreshold) {
-        boardContainer.scrollLeft += horizontalStep;
-      }
-    },
-  });
-
-  return null;
 }
 
 export default function DragDropProvider({ children, boardTypes = {} }: Props) {
