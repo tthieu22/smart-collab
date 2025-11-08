@@ -3,6 +3,7 @@
 import { io, Socket } from "socket.io-client";
 import { projectStore } from "@smart/store/project";
 import { useAuthStore } from "@smart/store/auth";
+import { MoveCopyCardPayload } from "@smart/types/project";
 
 type CorrelationCallback = (msg: any) => void;
 
@@ -180,7 +181,6 @@ export class ProjectSocketManager {
   private handleStoreUpdate(event: string, msg: any) {
     const store = projectStore.getState();
     switch (event) {
-      // ---------------- Project ----------------
       case "realtime.project.created":
         store.addProject(msg.project);
         store.setCurrentProject(msg.project);
@@ -229,7 +229,6 @@ export class ProjectSocketManager {
 
       // ---------------- Card ----------------
       case "realtime.card.created":
-        if (process.env.NODE_ENV === "development") console.log("Realtime card created:", msg.card?.columnId, msg.card);
         store.addCard(msg.card.columnId, msg.card);
         break;
       case "realtime.card.updated":
@@ -242,7 +241,7 @@ export class ProjectSocketManager {
         store.moveCard(msg.srcColumnId, msg.cardId, msg.newColumnId, msg.newIndex);
         break;
       case "realtime.card.copied":
-        store.addCard(msg.card.columnId, msg.card.title);
+        store.addCard(msg.card.columnId, msg.card);
         break;
 
       default:
@@ -288,21 +287,20 @@ export class ProjectSocketManager {
     return correlationId;
   }
 
-  // -------------------------- CRUD examples --------------------------
+  // Card
   createCard(projectId: string, columnId: string, title: string, cb?: (msg: any) => void) {
-    if (process.env.NODE_ENV === "development") console.log("createCard", projectId, columnId, title);
     return this.lockAwareAction("card.create", { projectId, columnId, title }, cb);
   }
-  moveCard(projectId: string, cardId: string, newColumnId: string, newIndex: number, cb?: (msg: any) => void) {
-    return this.lockAwareAction("card.move", { projectId, cardId, newColumnId, newIndex }, cb);
+  moveCard(projectId: string, payload: MoveCopyCardPayload, cb?: (msg: any) => void) {
+    return this.lockAwareAction("card.move", { projectId, payload }, cb);
   }
-  copyCard(projectId: string, cardId: string, cb?: (msg: any) => void) {
-    return this.lockAwareAction("card.copy", { projectId, cardId }, cb);
+  copyCard(projectId: string, payload: MoveCopyCardPayload, cb?: (msg: any) => void) {
+    return this.lockAwareAction("card.copy", { projectId, payload }, cb);
   }
   deleteCard(projectId: string, cardId: string, cb?: (msg: any) => void) {
     return this.lockAwareAction("card.delete", { projectId, cardId }, cb);
   }
-
+  // Column
   createColumn(boardId: string, title: string, projectId: string, cb?: (msg: any) => void) {
     return this.lockAwareAction("column.create", { boardId, title, projectId }, cb);
   }
@@ -312,11 +310,10 @@ export class ProjectSocketManager {
   deleteColumn(projectId: string, columnId: string, cb?: (msg: any) => void) {
     return this.lockAwareAction("column.delete", { projectId, columnId }, cb);
   }
-
   moveColumn(projectId: string, srcBoardId: string, destBoardId: string, columnId: string, destIndex: number, cb?: (msg: any) => void) {
     return this.lockAwareAction("column.move", { projectId, srcBoardId, destBoardId, columnId, destIndex }, cb);
   }
-
+  // Board
   createBoard(projectId: string, name: string, cb?: (msg: any) => void) {
     return this.lockAwareAction("board.create", { projectId, name }, cb);
   }
@@ -405,11 +402,14 @@ export class ProjectSocketManager {
     const joined = Array.from(this.joinedProjects);
     // clear set so joinProject will actually enqueue join actions
     this.joinedProjects.clear();
-    joined.forEach((pid) => this.joinProject(pid));
+    joined.forEach((pid, i) => {
+      setTimeout(() => this.joinProject(pid), 200 * i);
+    });
   }
 
   disconnect() {
     if (!this.socket) return;
+    this.socket.removeAllListeners();
     this.socket.disconnect();
     this.socket = null;
     this.joinedProjects.clear();

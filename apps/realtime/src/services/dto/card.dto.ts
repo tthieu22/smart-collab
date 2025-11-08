@@ -27,10 +27,20 @@ export interface DeleteCardDto {
   cardId: string;
 }
 
-export interface MoveCardDto {
+export interface CardMovePayloadInner {
   cardId: string;
+  srcBoardId: string;
+  destBoardId: string;
+  srcColumnId: string;
   destColumnId: string;
   destIndex: number;
+  userId: string;
+}
+
+export interface CardMovePayload {
+  projectId: string;
+  payload: CardMovePayloadInner;
+  correlationId: string;
 }
 
 export interface GetCardDto {

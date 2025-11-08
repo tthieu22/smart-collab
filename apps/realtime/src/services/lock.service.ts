@@ -1,13 +1,14 @@
 import Redis from 'ioredis';
-import { Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { LockResult } from '../interfaces/lock-result.interface';
 
+@Injectable()
 export class LockService {
   private readonly logger = new Logger(LockService.name);
   private lockIntervals = new Map<string, NodeJS.Timeout>();
   private lockQueue = new Map<string, (() => void)[]>();
 
-  constructor(private readonly redis: Redis) {}
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
   private getLockKey(projectId: string, targetId: string) {
     return `lock:${projectId}:${targetId}`;
@@ -47,7 +48,7 @@ export class LockService {
       await new Promise((r) => setTimeout(r, retryDelay));
     }
     const lockedBy = await this.redis.get(lockKey);
-    return { status: 'error', message: 'lock', lockedBy  };
+    return { status: 'error', message: 'lock', lockedBy };
   }
 
   private autoRefreshLock(lockKey: string, userId: string, ttl: number) {

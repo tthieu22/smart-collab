@@ -9,6 +9,16 @@ export interface UserCache {
   updatedAt: string
 }
 
+export interface MoveCopyCardPayload {
+  cardId: string;
+  srcBoardId?: string;
+  destBoardId?: string;
+  srcColumnId?: string;
+  destColumnId?: string;
+  destIndex?: number;
+  userId?: string,
+}
+
 // ------------------ PROJECT MEMBER ------------------
 export interface ProjectMember {
   id: string

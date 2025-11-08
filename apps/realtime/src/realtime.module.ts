@@ -13,6 +13,7 @@ import { BoardService } from './services/board.service';
 import { ColumnService } from './services/column.service';
 import { CardService } from './services/card.service';
 import { EmitService } from './services/emit.service';
+import { LockService } from './services/lock.service';
 import { ColumnConsumer } from './project/column.consumer';
 import { CardConsumer } from './project/card.consumer';
 
@@ -48,6 +49,7 @@ import { CardConsumer } from './project/card.consumer';
     ColumnService,
     CardService,
     EmitService,
+    LockService,
 
     // Redis client provider
     {
