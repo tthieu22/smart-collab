@@ -52,6 +52,7 @@ export class CardConsumer {
   })
   async handleMoveCard(msg: any) {
     try {
+    console.log('[CardConsumer] Received message:', JSON.stringify(msg, null, 2));
       await this.cardService.moveCard(msg.cardId, msg.destColumnId, msg.destIndex);
     } catch (error) {
       console.error('[CardConsumer] moveCard failed:', error);

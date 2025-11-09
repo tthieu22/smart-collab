@@ -1,75 +1,79 @@
-// realtime.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { JwtModule } from '@nestjs/jwt';
-import { RealtimeGateway } from './realtime.gateway';
-import { getGolevelupRabbitMQOptions } from './config/rabbitmq.config';
-import { ProjectRealtimeConsumer } from './project/project.consumer';
-import { MemberRealtimeConsumer } from './project/member.consumer';
 import Redis from 'ioredis';
+
+import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import { getGolevelupRabbitMQOptions, getNestRabbitMQOptions } from './config/rabbitmq.config';
 import { redisConfig } from './config/redis.config';
-import { BoardService } from './services/board.service';
-import { ColumnService } from './services/column.service';
-import { CardService } from './services/card.service';
-import { EmitService } from './services/emit.service';
+
+import { RealtimeGateway } from './realtime.gateway';
+import { ClientsModule } from '@nestjs/microservices';
 import { LockService } from './services/lock.service';
-import { ColumnConsumer } from './project/column.consumer';
-import { CardConsumer } from './project/card.consumer';
+import { CardService } from './services/project/card.service';
+import { ColumnService } from './services/project/column.service';
+import { BoardService } from './services/project/board.service';
+import { MemberService } from './services/project/member.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // RabbitMQ setup
+    // RabbitMQ
     RabbitMQModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        getGolevelupRabbitMQOptions(configService),
+      useFactory: getGolevelupRabbitMQOptions,
     }),
 
-    // JWT setup
+    // JWT
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: '1d' },
       }),
     }),
+    ClientsModule.registerAsync([
+      {
+        name: 'PROJECT_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) =>
+          getNestRabbitMQOptions('project_queue', config),
+      },
+    ]),
   ],
   providers: [
     RealtimeGateway,
-    ProjectRealtimeConsumer,
-    MemberRealtimeConsumer,
-    ColumnConsumer,
-    CardConsumer,
-    BoardService,
-    ColumnService,
-    CardService,
-    EmitService,
     LockService,
-
-    // Redis client provider
+    BoardService,
+    CardService,
+    ColumnService,
+    MemberService,
     {
       provide: 'REDIS_CLIENT',
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const redisOptions = redisConfig(configService).options;
-        const client = new Redis(redisOptions);
-        client.on('connect', () => console.log('✅ Redis connected'));
-        client.on('error', (err: any) => console.error('❌ Redis error', err));
+      useFactory: (config: ConfigService) => {
+        const { options } = redisConfig(config);
+        const client = new Redis(options);
+
+        client.on('connect', () => console.log('Redis connected'));
+        client.on('error', (err) => console.error('Redis error', err));
+
         const shutdown = async () => {
-          console.log('🧹 Closing Redis connection...');
+          console.log('Closing Redis...');
           await client.quit();
+          process.exit(0);
         };
         process.on('SIGINT', shutdown);
         process.on('SIGTERM', shutdown);
+
         return client;
       },
     },
   ],
-  exports: ['REDIS_CLIENT'],
+  exports: ['REDIS_CLIENT', RealtimeGateway, LockService],
 })
 export class RealtimeModule {}

@@ -1,3 +1,4 @@
+// src/realtime/gateway/realtime.gateway.ts
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -14,547 +15,299 @@ import { JwtService } from '@nestjs/jwt';
 import Redis from 'ioredis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { LockService } from './services/lock.service';
-import { EmitService } from './services/emit.service';
-import { BoardService } from './services/board.service';
-import { ColumnService } from './services/column.service';
-import { CardService } from './services/card.service';
+import { BoardService } from './services/project/board.service';
+import { ColumnService } from './services/project/column.service';
+import { CardService } from './services/project/card.service';
+import { MemberService } from './services/project/member.service';
+
+type Handler = (data: any, userId: string, client: Socket) => Promise<any>;
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class RealtimeGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
   @WebSocketServer() server!: Server;
+  private readonly logger = new Logger('RealtimeGateway');
 
-  private readonly logger = new Logger(RealtimeGateway.name);
-  private userSockets = new Map<string, { userId: string }>();
-  private userIdToClients = new Map<string, Set<string>>();
+  private userSockets = new Map<string, string>();
+  private userClients = new Map<string, Set<string>>();
+  private projectUsers = new Map<string, Set<string>>();
 
-  private emitService!: EmitService;
+  private handlers = new Map<string, Handler>([
+    ['card.create', async (d, u, client) => {
+      const result = await this.card.createCard(d, u);
+      this.emitRealtime(d.projectId, 'card.created', result, client.id);
+      return result;
+    }],
+
+    ['card.update', async (d, u, client) => {
+      const result = await this.card.updateCard(d);
+      this.emitRealtime(d.projectId, 'card.updated', result, client.id);
+      return result;
+    }],
+
+    ['card.delete', async (d, u, client) => {
+      const result = await this.card.deleteCard(d, u);
+      this.emitRealtime(d.projectId, 'card.deleted', { columnId: d.columnId, cardId: d.cardId }, client.id);
+      return result;
+    }],
+
+    ['card.move', async (d, u, client) => {
+      const result = await this.card.moveCard(d, u);
+      this.emitRealtime(d.projectId, 'card.moved', result, client.id);
+      return result;
+    }],
+
+    ['card.copy', async (d, u, client) => {
+      const result = await this.card.copyCard(d, u);
+      this.emitRealtime(d.projectId, 'card.copied', result, client.id);
+      return result;
+    }],
+
+    ['column.create', async (d, u, client) => {
+      const result = await this.column.createColumn(d, u);
+      this.emitRealtime(d.projectId, 'column.created', result, client.id);
+      return result;
+    }],
+
+    ['column.update', async (d, u, client) => {
+      const result = await this.column.updateColumn(d);
+      this.emitRealtime(d.projectId, 'column.updated', result, client.id);
+      return result;
+    }],
+
+    ['column.delete', async (d, u, client) => {
+      const result = await this.column.deleteColumn(d, u);
+      this.emitRealtime(d.projectId, 'column.deleted', { boardId: d.boardId, columnId: d.columnId }, client.id);
+      return result;
+    }],
+
+    ['column.move', async (d, u, client) => {
+      const result = await this.column.moveColumn(d, u);
+      this.emitRealtime(d.projectId, 'column.moved', result, client.id);
+      return result;
+    }],
+
+    ['board.create', async (d, u, client) => {
+      const result = await this.board.createBoard(d, u);
+      this.emitRealtime(d.projectId, 'board.created', result, client.id);
+      return result;
+    }],
+
+    ['board.update', async (d, u, client) => {
+      const result = await this.board.updateBoard(d);
+      this.emitRealtime(d.projectId, 'board.updated', result, client.id);
+      return result;
+    }],
+
+    ['board.delete', async (d, u, client) => {
+      const result = await this.board.deleteBoard(d, u);
+      this.emitRealtime(d.projectId, 'board.deleted', { boardId: d.boardId }, client.id);
+      return result;
+    }],
+
+    ['board.get', async (d, u, client) => {
+      const result = await this.board.getBoards(d);
+      return result;
+    }],
+
+    ['member.add', async (d, u, client) => {
+      const result = await this.member.addMember(d, u);
+      this.emitRealtime(d.projectId, 'project.member_added', result, client.id);
+      return result;
+    }],
+
+    ['member.remove', async (d, u, client) => {
+      const result = await this.member.removeMember(d, u);
+      this.emitRealtime(d.projectId, 'project.member_removed', { userId: d.userId }, client.id);
+      return result;
+    }],
+
+    ['member.role', async (d, u, client) => {
+      const result = await this.member.updateMemberRole(d, u);
+      this.emitRealtime(d.projectId, 'project.member_role_updated', result, client.id);
+      return result;
+    }],
+  ]);
 
   constructor(
-    private readonly jwtService: JwtService,
+    private readonly jwt: JwtService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
-    private readonly boardService: BoardService,
-    private readonly columnService: ColumnService,
-    private readonly cardService: CardService,
-    private readonly lockService: LockService,
+    private readonly lock: LockService,
+    private readonly board: BoardService,
+    private readonly column: ColumnService,
+    private readonly card: CardService,
+    private readonly member: MemberService,
   ) {}
 
-  afterInit(server: Server) {
-    const pub = this.redis.duplicate();
-    const sub = this.redis.duplicate();
-    server.adapter(createAdapter(pub, sub));
-    this.emitService = new EmitService(server, this.userIdToClients);
-    this.logger.log('WebSocket server initialized with Redis adapter');
+  afterInit() {
+    this.server.adapter(createAdapter(this.redis.duplicate(), this.redis.duplicate()));
+    this.logger.log('WebSocket READY – Clean Result Only');
   }
 
   async handleConnection(client: Socket) {
-    const token = client.handshake.auth.token as string | undefined;
-    if (!token) {
-      this.logger.warn(`🔌 Missing token for client ${client.id}`);
-      client.disconnect();
-      return;
-    }
+    const token = client.handshake.auth?.token;
+    if (!token) return client.disconnect();
 
     try {
-      const payload = this.jwtService.verify(token) as {
-        sub: string;
-        projectIds?: string[];
-      };
-      const userId = payload.sub;
-      (client as any).user = payload;
+      const { sub: userId, projectIds = [] } = this.jwt.verify(token);
+      (client as any).userId = userId;
 
-      this.userSockets.set(client.id, { userId });
-      if (!this.userIdToClients.has(userId))
-        this.userIdToClients.set(userId, new Set());
-      this.userIdToClients.get(userId)!.add(client.id);
+      this.userSockets.set(client.id, userId);
+      if (!this.userClients.has(userId)) this.userClients.set(userId, new Set());
+      this.userClients.get(userId)!.add(client.id);
 
-      this.logger.log(`🔌 User connected: ${userId} (${client.id})`);
-
-      payload.projectIds?.forEach((pid) => {
+      (projectIds as string[]).forEach((pid) => {
         client.join(pid);
-        this.logger.log(
-          `🔒 Auto-joined project room ${pid} for client ${client.id}`,
-        );
+        this.addUserToProject(pid, userId);
       });
-    } catch (err) {
-      this.logger.warn(`❌ Invalid token, disconnecting client ${client.id}`);
+
+      this.logger.log(`User ${userId} connected (${client.id})`);
+    } catch {
       client.disconnect();
-      return;
+    }
+  }
+
+  async handleDisconnect(client: Socket) {
+    const userId = this.userSockets.get(client.id);
+    if (!userId) return;
+
+    this.userSockets.delete(client.id);
+    const set = this.userClients.get(userId);
+    set?.delete(client.id);
+    if (set?.size === 0) this.userClients.delete(userId);
+
+    await this.lock.releaseAllLocksForUser(userId);
+
+    for (const [projectId, users] of this.projectUsers.entries()) {
+      if (users.has(userId)) {
+        users.delete(userId);
+        if (users.size === 0) this.projectUsers.delete(projectId);
+        this.broadcastOnline(projectId);
+      }
     }
 
-    // Join/Leave helpers
-    client.on('joinProject', (pid: string, cb?: (ok: boolean) => void) => {
-      client.join(pid);
-      this.logger.log(`🟢 Client ${client.id} joined project ${pid}`);
-      cb?.(true);
-    });
-
-    client.on('leaveProject', (pid: string, cb?: (ok: boolean) => void) => {
-      client.leave(pid);
-      this.logger.log(`🔴 Client ${client.id} left project ${pid}`);
-      cb?.(true);
-    });
-
-    // ---------------- BOARD ----------------
-    // client.on('board.create', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   try {
-    //     const userId = (client as any).user.sub;
-    //     await this.boardService.handleCreateBoard(
-    //       {
-    //         ...payload,
-    //         projectId: payload.projectId,
-    //         ownerId: userId,
-    //         correlationId,
-    //       },
-    //       client.id,
-    //     );
-    //     replyToRequester(client, correlationId, { status: 'pending' });
-    //   } catch (err) {
-    //     replyToRequester(client, correlationId, {
-    //       status: 'error',
-    //       message: err instanceof Error ? err.message : String(err),
-    //     });
-    //   }
-    // });
-
-    // client.on('board.update', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   try {
-    //     await this.boardService.handleUpdateBoard(
-    //       {
-    //         ...payload,
-    //         projectId: payload.projectId,
-    //         boardId: payload.boardId,
-    //         correlationId,
-    //       },
-    //       client.id,
-    //     );
-    //     replyToRequester(client, correlationId, { status: 'pending' });
-    //   } catch (err) {
-    //     replyToRequester(client, correlationId, {
-    //       status: 'error',
-    //       message: err instanceof Error ? err.message : String(err),
-    //     });
-    //   }
-    // });
-
-    // client.on('board.delete', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   try {
-    //     await this.boardService.handleDeleteBoard(
-    //       {
-    //         ...payload,
-    //         projectId: payload.projectId,
-    //         boardId: payload.boardId,
-    //         correlationId,
-    //       },
-    //       client.id,
-    //     );
-    //     replyToRequester(client, correlationId, { status: 'pending' });
-    //   } catch (err) {
-    //     replyToRequester(client, correlationId, {
-    //       status: 'error',
-    //       message: err instanceof Error ? err.message : String(err),
-    //     });
-    //   }
-    // });
-
-    // ---------------- COLUMN ----------------
-    // client.on(
-    //   'column.create',
-    //   async (payload: any, cb?: (res: any) => void) => {
-    //     const correlationId = payload?.correlationId as string | undefined;
-    //     cb?.({ status: 'received' });
-
-    //     try {
-    //       const userId = (client as any).user.sub;
-    //       await this.columnService.handleCreateColumn(
-    //         { ...payload, ownerId: userId, correlationId },
-    //         client.id,
-    //       );
-    //       replyToRequester(client, correlationId, { status: 'pending' });
-    //     } catch (err) {
-    //       replyToRequester(client, correlationId, {
-    //         status: 'error',
-    //         message: err instanceof Error ? err.message : String(err),
-    //       });
-    //     }
-    //   },
-    // );
-
-    // client.on(
-    //   'column.update',
-    //   async (payload: any, cb?: (res: any) => void) => {
-    //     const correlationId = payload?.correlationId as string | undefined;
-    //     cb?.({ status: 'received' });
-
-    //     try {
-    //       await this.columnService.handleUpdateColumn(
-    //         { ...payload, correlationId },
-    //         client.id,
-    //       );
-    //       replyToRequester(client, correlationId, { status: 'pending' });
-    //     } catch (err) {
-    //       replyToRequester(client, correlationId, {
-    //         status: 'error',
-    //         message: err instanceof Error ? err.message : String(err),
-    //       });
-    //     }
-    //   },
-    // );
-
-    // client.on(
-    //   'column.delete',
-    //   async (payload: any, cb?: (res: any) => void) => {
-    //     const correlationId = payload?.correlationId as string | undefined;
-    //     cb?.({ status: 'received' });
-
-    //     try {
-    //       await this.columnService.handleDeleteColumn(
-    //         { ...payload, correlationId },
-    //         client.id,
-    //       );
-    //       replyToRequester(client, correlationId, { status: 'pending' });
-    //     } catch (err) {
-    //       replyToRequester(client, correlationId, {
-    //         status: 'error',
-    //         message: err instanceof Error ? err.message : String(err),
-    //       });
-    //     }
-    //   },
-    // );
-
-    // client.on('column.move', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   const userId = (client as any).user.sub;
-    //   // Use lockService.emitWithLock to protect column move
-    //   this.lockService.emitWithLock(payload.projectId, payload.columnId, userId, async () => {
-    //     try {
-    //       const result = await this.columnService.moveColumn(payload);
-    //       this.emitService.emitToProject(payload.projectId, 'realtime.column.moved', { srcBoardId: payload.srcBoardId, destBoardId: payload.destBoardId, columnId: payload.columnId, destIndex: payload.destIndex, correlationId }, client.id);
-    //       replyToRequester(client, correlationId, { status: 'success', data: result });
-    //     } catch (err) {
-    //       replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
-    //     }
-    //   }).catch((err) => {
-    //     // if lock can't be acquired emit lock response
-    //     if (err === 'lock') replyToRequester(client, correlationId, { status: 'error', message: 'lock' });
-    //     else replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    //   });
-    // });
-
-    // ---------------- CARD ----------------
-    // client.on('card.create', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   try {
-    //     const userId = (client as any).user.sub;
-    //     await this.cardService.handleCreateCard(
-    //       { ...payload, ownerId: userId, correlationId },
-    //       client.id,
-    //     );
-    //     replyToRequester(client, correlationId, { status: 'pending' });
-    //   } catch (err) {
-    //     replyToRequester(client, correlationId, {
-    //       status: 'error',
-    //       message: err instanceof Error ? err.message : String(err),
-    //     });
-    //   }
-    // });
-
-    // client.on('card.update', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   try {
-    //     await this.cardService.handleUpdateCard(
-    //       { ...payload, correlationId },
-    //       client.id,
-    //     );
-    //     replyToRequester(client, correlationId, { status: 'pending' });
-    //   } catch (err) {
-    //     replyToRequester(client, correlationId, {
-    //       status: 'error',
-    //       message: err instanceof Error ? err.message : String(err),
-    //     });
-    //   }
-    // });
-
-    // client.on('card.delete', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   try {
-    //     const userId = (client as any).user.sub;
-    //     const result = await this.cardService.handleDeleteCard(
-    //       { ...payload, correlationId },
-    //       userId,
-    //       client.id,
-    //     );
-    //     if (result.status === 'success') {
-    //       replyToRequester(client, correlationId, { status: 'pending' });
-    //     } else {
-    //       replyToRequester(client, correlationId, {
-    //         status: 'error',
-    //         message: result.message || 'lock',
-    //       });
-    //     }
-    //   } catch (err) {
-    //     replyToRequester(client, correlationId, {
-    //       status: 'error',
-    //       message: err instanceof Error ? err.message : String(err),
-    //     });
-    //   }
-    // });
-
-    // client.on('card.move', async (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   try {
-    //     const userId = (client as any).user.sub;
-    //     const result = await this.cardService.handleMoveCard(
-    //       {
-    //         ...payload,
-    //         correlationId,
-    //         projectId: payload.projectId,
-    //         srcColumnId: payload.srcColumnId,
-    //         newColumnId: payload.newColumnId,
-    //         newIndex: payload.newIndex,
-    //       },
-    //       userId,
-    //       client.id,
-    //     );
-    //     if (result.status === 'success') {
-    //       replyToRequester(client, correlationId, { status: 'pending' });
-    //     } else {
-    //       replyToRequester(client, correlationId, {
-    //         status: 'error',
-    //         message: result.message || 'lock',
-    //       });
-    //     }
-    //   } catch (err) {
-    //     replyToRequester(client, correlationId, {
-    //       status: 'error',
-    //       message: err instanceof Error ? err.message : String(err),
-    //     });
-    //   }
-    // });
-
-    // client.on('card.copy', (payload: any, cb?: (res: any) => void) => {
-    //   const correlationId = payload?.correlationId as string | undefined;
-    //   cb?.({ status: 'received' });
-
-    //   const userId = (client as any).user.sub;
-    //   this.lockService.emitWithLock(payload.projectId, payload.cardId, userId, async () => {
-    //     try {
-    //       const result = await this.cardService.copyCard(payload);
-    //       this.emitService.emitToProject(payload.projectId, 'realtime.card.copied', { card: result, correlationId }, client.id);
-    //       replyToRequester(client, correlationId, { status: 'success', data: result });
-    //     } catch (err) {
-    //       replyToRequester(client, correlationId, { status: 'error', message: err instanceof Error ? err.message : String(err) });
-    //     }
-    //   }).catch((err) => {
-    //     if (err === 'lock') replyToRequester(client, correlationId, { status: 'error', message: 'lock' });
-    //     else replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    //   });
-    // });
+    this.logger.log(`User ${userId} disconnected`);
   }
-  // Helper
-  private replyToRequester = (
-    c: Socket,
-    correlationId: string | undefined,
-    payload: any,
-  ) => {
-    const msg = { correlationId, ...payload };
-    c.emit('realtime.action.response', msg);
-  };
-  // Generic Emit Methods
-  emitToProject(
+
+  private addUserToProject(projectId: string, userId: string) {
+    if (!this.projectUsers.has(projectId)) {
+      this.projectUsers.set(projectId, new Set());
+    }
+    this.projectUsers.get(projectId)!.add(userId);
+    this.broadcastOnline(projectId);
+  }
+
+  private broadcastOnline(projectId: string) {
+    const users = this.projectUsers.get(projectId);
+    const online = users ? users.size : 0;
+    const userIds = users ? Array.from(users) : [];
+
+    this.emitToProject(projectId, 'realtime.project.online', {
+      projectId,
+      online,
+      users: userIds,
+    });
+  }
+
+  private reply(c: Socket, id: string | undefined, data: any) {
+    c.emit('realtime.action.response', { correlationId: id, ...data });
+  }
+
+  private emitToProject = (
     projectId: string,
     event: string,
     data: any,
     excludeClientId?: string,
+  ) => {
+    if (excludeClientId) {
+      this.server.to(projectId).except(excludeClientId).emit(event, data);
+    } else {
+      this.server.to(projectId).emit(event, data);
+    }
+  };
+
+  private emitToUser = (userId: string, event: string, data: any) => {
+    this.userClients.get(userId)?.forEach((clientId) => {
+      this.server.to(clientId).emit(event, data);
+    });
+  };
+
+  private emitRealtime(projectId: string, event: string, data: any, excludeClientId?: string) {
+    this.emitToProject(projectId, `realtime.${event}`, data, excludeClientId);
+  }
+
+  @SubscribeMessage('realtime.action')
+  async handleAny(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() { event, data }: { event: string; data: any },
   ) {
-    this.logger.debug(`📡 emitToProject: project=${projectId}, event=${event}`);
-    this.emitService.emitToProject(projectId, event, data, excludeClientId);
-  }
+    const { projectId, correlationId, payload } = data || {};
+    const userId = (client as any).userId;
 
-  emitToUser(userId: string, event: string, data: any) {
-    this.logger.debug(`📡 emitToUser: user=${userId}, event=${event}`);
-    this.emitService.emitToUser(userId, event, data);
-  }
-
-  @SubscribeMessage('card.create')
-    async onCardCreate(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-      const correlationId = payload?.correlationId;
-      const userId = (client as any).user?.sub;
-      this.replyToRequester(client, correlationId, { status: 'received' });
-
-      try {
-        await this.cardService.handleCreateCard({ ...payload, ownerId: userId, correlationId }, client.id);
-        this.replyToRequester(client, correlationId, { status: 'pending' });
-      } catch (err) {
-        this.logger.error(`❌ [card.create] ${err instanceof Error ? err.message : err}`);
-        this.replyToRequester(client, correlationId, {
-          status: 'error',
-          message: err instanceof Error ? err.message : String(err),
-        });
-      }
+    if (!event || !this.handlers.has(event)) {
+      return this.reply(client, correlationId, { status: 'error', message: 'Unknown event' });
     }
 
-
-  @SubscribeMessage('card.update')
-  async onCardUpdate(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    this.replyToRequester(client, correlationId, { status: 'received' });
+    this.reply(client, correlationId, { status: 'received' });
 
     try {
-      await this.cardService.handleUpdateCard({ ...payload, correlationId }, client.id);
-      this.replyToRequester(client, correlationId, { status: 'pending' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    }
-  }
-
-  @SubscribeMessage('card.delete')
-  async onCardDelete(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    const userId = (client as any).user?.sub;
-    this.replyToRequester(client, correlationId, { status: 'received' });
-
-    try {
-      const result = await this.cardService.handleDeleteCard({ ...payload, correlationId }, userId, client.id);
-      if (result.status === 'success') this.replyToRequester(client, correlationId, { status: 'pending' });
-      else this.replyToRequester(client, correlationId, { status: 'error', message: result.message || 'lock' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    }
-  }
-
-  @SubscribeMessage('card.move')
-  async onCardMove(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    const userId = (client as any).user?.sub;
-    this.replyToRequester(client, correlationId, { status: 'received' });
-    try {
-      const result = await this.cardService.handleMoveCard(
-        { ...payload, correlationId },
-        userId,
-        client.id,
-      );
-      if (result.status === 'success') this.replyToRequester(client, correlationId, { status: 'pending' });
-      else this.replyToRequester(client, correlationId, { status: 'error', message: result.message || 'lock' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
+      const handler = this.handlers.get(event)!;
+      const result = await handler({ projectId, ...payload }, userId, client);
+      this.reply(client, correlationId, result);
+    } catch (err: any) {
+      this.reply(client, correlationId, {
+        status: 'error',
+        message: err.message || 'Server error',
+      });
     }
   }
   
-  @SubscribeMessage('column.create')
-  async onColumnCreate(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    const userId = (client as any).user?.sub;
-    this.replyToRequester(client, correlationId, { status: 'received' });
+  @SubscribeMessage('joinProject')
+  async joinProject(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() projectId: string, // ← NHẬN STRING TRỰC TIẾP
+    ack?: (success: boolean) => void,
+  ) {
+    const userId = (client as any).userId;
 
-    try {
-      await this.columnService.handleCreateColumn(
-        { ...payload, ownerId: userId, correlationId },
-        client.id,
-      );
-      this.replyToRequester(client, correlationId, { status: 'pending' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
+    if (!projectId || !userId) {
+      return ack?.(false);
+    }
+
+    // (Tùy chọn) Kiểm tra quyền
+    // const isMember = await this.member.isMember(projectId, userId);
+    // if (!isMember) return ack?.(false);
+
+    client.join(projectId);
+    this.addUserToProject(projectId, userId);
+
+    ack?.(true);
+    this.logger.log(`User ${userId} joined project: ${projectId}`);
+  }
+
+  @SubscribeMessage('leaveProject')
+  leave(@ConnectedSocket() c: Socket, @MessageBody() { projectId }: any) {
+    c.leave(projectId);
+    const userId = (c as any).userId;
+    const users = this.projectUsers.get(projectId);
+    if (users?.has(userId)) {
+      users.delete(userId);
+      if (users.size === 0) this.projectUsers.delete(projectId);
+      this.broadcastOnline(projectId);
     }
   }
 
-  @SubscribeMessage('column.update')
-  async onColumnUpdate(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    this.replyToRequester(client, correlationId, { status: 'received' });
+  @SubscribeMessage('project.getOnline')
+  getOnline(@ConnectedSocket() c: Socket, @MessageBody() { projectId }: any) {
+    const users = this.projectUsers.get(projectId);
+    const online = users ? users.size : 0;
+    const userIds = users ? Array.from(users) : [];
 
-    try {
-      await this.columnService.handleUpdateColumn({ ...payload, correlationId }, client.id);
-      this.replyToRequester(client, correlationId, { status: 'pending' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    }
-  }
-
-  @SubscribeMessage('column.delete')
-  async onColumnDelete(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    this.replyToRequester(client, correlationId, { status: 'received' });
-    try {
-      await this.columnService.handleDeleteColumn({ ...payload, correlationId }, client.id);
-      this.replyToRequester(client, correlationId, { status: 'pending' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    }
-  }
-  @SubscribeMessage('board.create')
-  async onBoardCreate(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    const userId = (client as any).user?.sub;
-    this.replyToRequester(client, correlationId, { status: 'received' });
-
-    try {
-      await this.boardService.handleCreateBoard(
-        { ...payload, ownerId: userId, correlationId },
-        client.id,
-      );
-      this.replyToRequester(client, correlationId, { status: 'pending' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    }
-  }
-
-  @SubscribeMessage('board.update')
-  async onBoardUpdate(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    this.replyToRequester(client, correlationId, { status: 'received' });
-    try {
-      await this.boardService.handleUpdateBoard({ ...payload, correlationId }, client.id);
-      this.replyToRequester(client, correlationId, { status: 'pending' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    }
-  }
-
-  @SubscribeMessage('board.delete')
-  async onBoardDelete(@ConnectedSocket() client: Socket, @MessageBody() payload: any) {
-    const correlationId = payload?.correlationId;
-    this.replyToRequester(client, correlationId, { status: 'received' });
-    try {
-      await this.boardService.handleDeleteBoard({ ...payload, correlationId }, client.id);
-      this.replyToRequester(client, correlationId, { status: 'pending' });
-    } catch (err) {
-      this.replyToRequester(client, correlationId, { status: 'error', message: String(err) });
-    }
-  }
-  async handleDisconnect(client: Socket) {
-    const info = this.userSockets.get(client.id);
-    if (!info) return;
-
-    this.userSockets.delete(client.id);
-    const clients = this.userIdToClients.get(info.userId);
-    clients?.delete(client.id);
-    if (!clients || clients.size === 0)
-      this.userIdToClients.delete(info.userId);
-
-    await this.lockService.releaseAllLocksForUser(info.userId);
-    this.logger.log(
-      `❌ Client disconnected: ${client.id} (User: ${info.userId})`,
-    );
+    this.reply(c, undefined, {
+      projectId,
+      online,
+      users: userIds,
+    });
   }
 }

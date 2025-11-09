@@ -25,8 +25,9 @@ interface ProjectState {
 
   boardColumns: Record<string, string[]>;
   columnCards: Record<string, string[]>;
+  hasJoinedCurrentProject: boolean;
 
-  setCurrentProject: (project: Project) => void;
+  setCurrentProject: (project: Project | null) => void;
   clearProjectStore: () => void;
 
   addProject: (project: Project) => void;
@@ -68,10 +69,12 @@ interface ProjectState {
   addView: (view: CardView) => void;
   updateView: (view: CardView) => void;
   removeView: (viewId: string) => void;
+  setHasJoinedCurrentProject: (value: boolean) => void;
 }
 
 export const projectStore = create<ProjectState>((set, get) => ({
   currentProject: null,
+  hasJoinedCurrentProject: false,
   allProjects: [],
   boards: {},
   columns: {},
@@ -83,6 +86,11 @@ export const projectStore = create<ProjectState>((set, get) => ({
   columnCards: {},
 
   setCurrentProject: (project) => {
+    console.log("project", project)
+    if (project === null) {
+      set({ currentProject: null });
+      return;
+    }
     // If the payload does not include nested collections, only update currentProject
     const hasSnapshot = Boolean(
       project?.boards?.length ||
@@ -169,6 +177,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
     });
   },
 
+  setHasJoinedCurrentProject: (value) => set({ hasJoinedCurrentProject: value }),
   clearProjectStore: () =>
     set({
       currentProject: null,
