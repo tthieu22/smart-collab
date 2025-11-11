@@ -81,6 +81,8 @@ export interface CardView {
 // ------------------ CARD LABEL ------------------
 export interface CardLabel {
   id: string
+  name?: string, 
+  title?: string,
   cardId: string
   label: string
   color: string 
@@ -163,4 +165,44 @@ export interface DragDropState {
       boardOrder: string[]
     }
   }
+}
+
+export interface CardType {
+  id: string;
+  title: string;
+  description?: string;
+  columnId: string;
+  dueDate?: string; // ISO string
+  labels: { id: string; name: string; color: string }[];
+  members: { id: string; name: string; avatar: string }[];
+  checklists: { id: string; name: string; items: { id: string; text: string; checked: boolean }[] }[];
+  attachments: { id: string; name: string; url: string; size: number }[];
+  customFields: { id: string; name: string; type: 'text' | 'date' | 'number'; value: any }[];
+  activities: { id: string; user: string; text: string; timestamp: string; type: 'comment' | 'update' }[];
+}
+
+export interface MemberType { id: string; name: string; avatar: string; email: string; }
+export interface LabelType { id: string; name: string; color: string; }
+// types/project.ts
+export interface CardComment {
+  id: string;
+  userId: string;
+  userName: string;
+  avatar?: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  url: string;
+  size: string;
+  uploadedAt: string;
 }
