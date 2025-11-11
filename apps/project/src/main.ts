@@ -1,8 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ProjectModule } from './project.module';
 import { Logger } from '@nestjs/common';
-import { getNestRabbitMQOptions, rabbitmqConfig } from './config/rabbitmq.config';
-import { ConfigService } from '@nestjs/config';
+import { rabbitmqConfig } from './config/rabbitmq.config';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -12,8 +11,6 @@ async function bootstrap() {
   });
 
   logger.log('App module created');
-
-  const configService = app.get(ConfigService);
 
   // Lấy config kết nối RabbitMQ
   const rmqOptions = rabbitmqConfig('project_queue');

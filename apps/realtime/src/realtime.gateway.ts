@@ -253,7 +253,13 @@ export class RealtimeGateway
 
     try {
       const handler = this.handlers.get(event)!;
-      const result = await handler({ projectId, ...payload }, userId, client);
+
+      const result = await handler(
+        { projectId, correlationId, ...payload },
+        userId,
+        client,
+      );
+
       this.reply(client, correlationId, result);
     } catch (err: any) {
       this.reply(client, correlationId, {

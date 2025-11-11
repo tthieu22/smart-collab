@@ -276,20 +276,23 @@ export class ProjectSocketManager {
   private emitAction(event: string, payload: any, correlationCallback?: (msg: any) => void) {
     if (!this.socket) this.initSocket();
     const correlationId = crypto.randomUUID();
-    const msg = { ...payload, correlationId };
+    const msg = {
+      correlationId,
+      projectId: payload.projectId,
+      payload: { ...payload, projectId: undefined }
+    };
+
     if (correlationCallback) {
-      // subscribe without waiting here (caller may also wait via waitForResponse)
-      const unsub = this.subscribeCorrelation(correlationId, correlationCallback);
-      // auto-unsub after callback fires is handled by subscribeCorrelation's timeout or manual unsub
-      // we don't call unsub here because caller expects callback to be alive for response
+      this.subscribeCorrelation(correlationId, correlationCallback);
     }
-    this.socket?.emit(event, msg);
+
+    this.socket?.emit("realtime.action", { event, data: msg });
     return correlationId;
   }
 
   // Card
   createCard(projectId: string, columnId: string, title: string, cb?: (msg: any) => void) {
-    return this.lockAwareAction("card.create", { projectId, columnId, title }, cb);
+    return this.lockAwareAction("card.create", { projectId, payload: { columnId, title } }, cb);
   }
   moveCard(projectId: string, payload: MoveCopyCardPayload, cb?: (msg: any) => void) {
     return this.lockAwareAction("card.move", { projectId, payload }, cb);
@@ -298,31 +301,34 @@ export class ProjectSocketManager {
     return this.lockAwareAction("card.copy", { projectId, payload }, cb);
   }
   deleteCard(projectId: string, cardId: string, cb?: (msg: any) => void) {
-    return this.lockAwareAction("card.delete", { projectId, cardId }, cb);
+    return this.lockAwareAction("card.delete", { projectId, payload: { cardId } }, cb);
   }
+
   // Column
   createColumn(boardId: string, title: string, projectId: string, cb?: (msg: any) => void) {
-    return this.lockAwareAction("column.create", { boardId, title, projectId }, cb);
+    return this.lockAwareAction("column.create", { projectId, payload: { boardId, title } }, cb);
   }
   updateColumn(projectId: string, columnId: string, updates: any, cb?: (msg: any) => void) {
-    return this.lockAwareAction("column.update", { projectId, columnId, ...updates }, cb);
+    return this.lockAwareAction("column.update", { projectId, payload: { columnId, ...updates } }, cb);
   }
   deleteColumn(projectId: string, columnId: string, cb?: (msg: any) => void) {
-    return this.lockAwareAction("column.delete", { projectId, columnId }, cb);
+    return this.lockAwareAction("column.delete", { projectId, payload: { columnId } }, cb);
   }
   moveColumn(projectId: string, srcBoardId: string, destBoardId: string, columnId: string, destIndex: number, cb?: (msg: any) => void) {
-    return this.lockAwareAction("column.move", { projectId, srcBoardId, destBoardId, columnId, destIndex }, cb);
+    return this.lockAwareAction("column.move", { projectId, payload: { srcBoardId, destBoardId, columnId, destIndex } }, cb);
   }
+
   // Board
   createBoard(projectId: string, name: string, cb?: (msg: any) => void) {
-    return this.lockAwareAction("board.create", { projectId, name }, cb);
+    return this.lockAwareAction("board.create", { projectId, payload: { name } }, cb);
   }
   updateBoard(projectId: string, boardId: string, updates: any, cb?: (msg: any) => void) {
-    return this.lockAwareAction("board.update", { projectId, boardId, ...updates }, cb);
+    return this.lockAwareAction("board.update", { projectId, payload: { boardId, ...updates } }, cb);
   }
   deleteBoard(projectId: string, boardId: string, cb?: (msg: any) => void) {
-    return this.lockAwareAction("board.delete", { projectId, boardId }, cb);
+    return this.lockAwareAction("board.delete", { projectId, payload: { boardId } }, cb);
   }
+
 
   /** Queue join room từng project, retry */
   async joinProject(projectId: string) {
@@ -365,7 +371,7 @@ export class ProjectSocketManager {
         this.socket?.emit("joinProject", item.projectId, (ack: boolean) => {
           if (ack) {
             this.joinedProjects.add(item.projectId);
-            if (process.env.NODE_ENV === "development") console.log(`✅ Joined project ${item.projectId}`);
+            console.log(`✅ Joined project ${item.projectId}`);
             resolve();
           } else {
             item.attempt++;
@@ -383,7 +389,7 @@ export class ProjectSocketManager {
       if (this.socket.connected) {
         tryJoin();
       } else {
-        if (process.env.NODE_ENV === "development") console.log("⏳ Waiting for socket to connect before joining", item.projectId);
+        console.log("⏳ Waiting for socket to connect before joining", item.projectId);
         this.onceConnected(tryJoin);
       }
     });

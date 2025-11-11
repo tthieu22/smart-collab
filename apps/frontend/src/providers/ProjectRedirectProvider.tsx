@@ -13,15 +13,5 @@ export default function ProjectRedirectProvider({
   const pathname = usePathname();
   const currentProject = projectStore((s) => s.currentProject);
 
-  useEffect(() => {
-    if (
-        currentProject &&
-        (pathname.startsWith("/projects")) &&
-        pathname !== `/projects/${currentProject.id}`
-    ) {
-      router.push(`/projects/${currentProject.id}`);
-    }
-  }, [currentProject, pathname, router]);
-
   return <>{children}</>;
 }

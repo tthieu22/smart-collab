@@ -1,6 +1,5 @@
-// src/realtime/services/card.service.ts
-import { Injectable, Logger } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { LockService } from '../lock.service';
 import { LockResult } from '../../interfaces/lock-result.interface';
 
@@ -9,31 +8,26 @@ export class CardService {
   private readonly logger = new Logger(CardService.name);
 
   constructor(
-    private readonly amqp: AmqpConnection,
+    @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
     private readonly lockService: LockService,
   ) {}
 
   private async request(pattern: string, data: any): Promise<any> {
-    this.logger.log(`[Card RPC] → ${pattern}`, data);
+    this.logger.log(`[Card RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
     try {
-      const result = await this.amqp.request({
-        exchange: 'smart-collab',
-        routingKey: pattern,
-        payload: data,
-        timeout: 10000,
-      });
-      this.logger.log(`[Card RPC] ← ${pattern}`, result);
+      // 👇 Không cần import rxjs
+      const result = await this.projectClient.send({ cmd: pattern }, data).toPromise();
+      this.logger.log(`[Card RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
       return result;
     } catch (err: any) {
-      this.logger.error(`[Card RPC] Failed ${pattern}`, err.message);
+      this.logger.error(`[Card RPC] Failed ${pattern}: ${err.message}`);
       throw err;
     }
   }
 
-  // TẠO CARD → có kết quả
   async createCard(payload: any, userId: string) {
-    const dto = { ...payload, ownerId: userId };
-    const result = await this.request('card.create', dto);
+    const dto = { ...payload, createdById: userId };
+    const result = await this.request('project.card.create', dto);
     return {
       status: 'success',
       correlationId: payload.correlationId,
@@ -41,9 +35,8 @@ export class CardService {
     };
   }
 
-  // CẬP NHẬT → có kết quả
   async updateCard(payload: any) {
-    const result = await this.request('card.update', payload);
+    const result = await this.request('project.card.update', payload);
     return {
       status: 'success',
       correlationId: payload.correlationId,
@@ -51,7 +44,6 @@ export class CardService {
     };
   }
 
-  // XÓA → có kết quả + LOCK
   async deleteCard(payload: any, userId: string): Promise<LockResult> {
     const { projectId, cardId, correlationId } = payload;
     return this.lockService.emitWithLock(
@@ -59,41 +51,37 @@ export class CardService {
       cardId,
       userId,
       async () => {
-        const result = await this.request('card.delete', { projectId, cardId, correlationId });
+        const result = await this.request('project.card.delete', { projectId, cardId, correlationId });
         return { status: 'success', correlationId, data: result.data };
       },
     );
   }
 
-  // DI CHUYỂN → có kết quả + LOCK
   async moveCard(payload: any, userId: string): Promise<LockResult> {
     const { projectId, cardId, correlationId } = payload;
-    console.log(payload)
     return this.lockService.emitWithLock(
       projectId,
       cardId,
       userId,
       async () => {
-        const result = await this.request('card.move', payload);
+        const result = await this.request('project.card.move', payload);
         return { status: 'success', correlationId, data: result.data };
       },
     );
   }
 
-  // SAO CHÉP → CÓ KẾT QUẢ + LOCK (MỚI THÊM)
   async copyCard(payload: any, userId: string): Promise<LockResult> {
     const { projectId, cardId, correlationId } = payload;
-
     return this.lockService.emitWithLock(
       projectId,
       cardId,
       userId,
       async () => {
-        const result = await this.request('card.copy', payload);
+        const result = await this.request('project.card.copy', payload);
         return {
           status: 'success',
           correlationId,
-          data: result.data, 
+          data: result.data,
         };
       },
     );

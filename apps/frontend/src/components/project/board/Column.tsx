@@ -126,7 +126,7 @@ export default function Column({
     }
   }, [column.id, cardIds.length, isOverlay]);
   return (
-    <li
+    <div
       ref={setRef}
       style={style}
       data-testid="list-wrapper"
@@ -137,7 +137,7 @@ export default function Column({
         className="
         flex flex-col relative box-border
         basis-[272px] grow-0 shrink-0 self-start
-        justify-between w-[272px] max-h-full
+        justify-between w-[272px] max-h-[70vh]
         pb-1 rounded-xl
         bg-white/25 dark:bg-black/25
         backdrop-blur-md
@@ -159,7 +159,7 @@ export default function Column({
           {...listeners}
           style={{ touchAction: 'none' }}
         >
-          <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent flex items-center justify-between">
+          <h3 className="font-bold text-lg flex items-center justify-between">
             <span>{column.title}</span>
             <span>
               {cardIds.length}
@@ -226,11 +226,10 @@ export default function Column({
             border-2 border-blue-400
             ring-4 ring-blue-400/60
             flex flex-col p-3
-            animate-pulse
             [box-shadow:0_0_30px_rgba(59,130,246,0.6)] dark:[box-shadow:0_0_30px_rgba(147,197,253,0.5)]
           "
           >
-            <h3 className="font-extrabold text-xl bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+            <h3 className="font-extrabold text-xl">
               {column.title}
               <span className="block text-xs mt-1 opacity-90">
                 ({cardIds.length} cards)
@@ -240,6 +239,6 @@ export default function Column({
           </div>
         </div>
       )}
-    </li>
+    </div>
   );
 }

@@ -8,7 +8,7 @@ import { SharedRabbitMQModule } from './config/rabbitmq.module';
 import { ProjectService } from './project.service';
 import { ColumnConsumer } from './column/column.consumer';
 import { ColumnService } from './column/column.service';
-import { CardConsumer } from './card/card.consumer';
+// import { CardConsumer } from './card/card.consumer';
 import { CardService } from './card/card.service';
 import { CardHandler } from './card/card.handle';
 import { ProjectHandler } from './project.handle';
@@ -28,7 +28,7 @@ import { ProjectHandler } from './project.handle';
     ProjectMemberConsumer,
     ColumnService,
     ColumnConsumer,
-    CardConsumer,
+    // CardConsumer,
     CardService,
   ],
 })
