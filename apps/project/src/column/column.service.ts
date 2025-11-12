@@ -1,18 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 @Injectable()
 export class ColumnService {
+  private readonly logger = new Logger(ColumnService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly amqpConnection: AmqpConnection,
   ) {}
 
-  /** Tạo column mới */
-  async createColumn(params: { boardId: string; title?: string; type?: string; position?: number; projectId?: string; ownerId?: string }) {
+  /** 🟢 Tạo column mới */
+  async createColumn(params: {
+    boardId: string;
+    title?: string;
+    type?: string;
+    position?: number;
+    projectId?: string;
+    ownerId?: string;
+  }) {
     const { boardId, title, type, position, projectId, ownerId } = params;
-    console.log(`[COLUMN] Create request from ${ownerId} →`, params);
+    this.logger.log(`[COLUMN] Create request from ${ownerId} →`, params);
 
     const board = await this.prisma.board.findUnique({ where: { id: boardId } });
     if (!board) throw new Error(`Board not found: ${boardId}`);
@@ -28,7 +37,7 @@ export class ColumnService {
         projectId: projectId || board.projectId!,
         boardId,
         title: title ?? `${type ?? 'Default'} column`,
-        position: newPosition,
+        position: position ?? newPosition,
       },
     });
 
@@ -38,21 +47,14 @@ export class ColumnService {
     });
 
     const fullColumn = await this.getColumnById(column.id);
+    this.logger.log(`[COLUMN] Created column ${column.id}`);
 
-    // 👉 Chỉ publish 1 lần tại đây
-    await this.amqpConnection.publish('project-exchange', 'column.created', {
-      projectId: projectId || board.projectId,
-      boardId,
-      userId: ownerId,
-      column: fullColumn,
-    });
-
-    console.log(`[COLUMN] Published event 'column.created' for ${column.id}`);
     return fullColumn;
   }
 
-  /** Cập nhật column */
+  /** 🟡 Cập nhật column */
   async updateColumn(params: { columnId: string; title?: string; position?: number }) {
+    this.logger.log(`[COLUMN] Update request → ${JSON.stringify(params)}`);
     const column = await this.prisma.column.update({
       where: { id: params.columnId },
       data: {
@@ -60,48 +62,119 @@ export class ColumnService {
         position: params.position,
       },
     });
-
-    const fullColumn = await this.getColumnById(column.id);
-    await this.amqpConnection.publish('project-exchange', 'column.updated', { column: fullColumn });
-    return fullColumn;
+    return this.getColumnById(column.id);
   }
 
-  /** Xóa column + xóa card liên quan */
+  /** 🔴 Xóa column + card liên quan */
   async removeColumn(columnId: string) {
+    this.logger.warn(`[COLUMN] Delete request → ${columnId}`);
     const column = await this.prisma.column.findUnique({ where: { id: columnId } });
     if (!column) throw new Error('Column not found');
 
     await this.prisma.card.deleteMany({ where: { columnId } });
     await this.prisma.column.delete({ where: { id: columnId } });
 
-    await this.amqpConnection.publish('project-exchange', 'column.deleted', { columnId });
+    this.logger.log(`[COLUMN] Deleted ${columnId}`);
     return { columnId };
   }
 
+  /** 🟢 Di chuyển column sang vị trí khác hoặc board khác */
+  async moveColumn(params: {
+    columnId: string;
+    sourceBoardId: string;
+    targetBoardId: string;
+    newPosition: number;
+    projectId: string;
+    movedById?: string;
+  }) {
+    const { columnId, sourceBoardId, targetBoardId, newPosition, projectId, movedById } = params;
+
+    this.logger.log(`[COLUMN] Move request →`, params);
+
+    const column = await this.prisma.column.findUnique({ where: { id: columnId } });
+    if (!column) throw new Error(`Column not found: ${columnId}`);
+
+    const sourceBoard = await this.prisma.board.findUnique({ where: { id: sourceBoardId } });
+    const targetBoard = await this.prisma.board.findUnique({ where: { id: targetBoardId } });
+
+    if (!targetBoard) throw new Error(`Target board not found: ${targetBoardId}`);
+
+    // Xóa columnId khỏi danh sách sourceBoard.columnIds
+    if (sourceBoard) {
+      await this.prisma.board.update({
+        where: { id: sourceBoardId },
+        data: { columnIds: sourceBoard.columnIds.filter((id) => id !== columnId) },
+      });
+    }
+
+    // Thêm columnId vào danh sách targetBoard.columnIds ở vị trí mới
+    const updatedColumnIds = [...targetBoard.columnIds];
+    updatedColumnIds.splice(newPosition, 0, columnId);
+
+    await this.prisma.board.update({
+      where: { id: targetBoardId },
+      data: { columnIds: updatedColumnIds },
+    });
+
+    // Cập nhật thông tin column
+    const updatedColumn = await this.prisma.column.update({
+      where: { id: columnId },
+      data: {
+        boardId: targetBoardId,
+        position: newPosition,
+      },
+    });
+
+    const fullColumn = await this.getColumnById(updatedColumn.id);
+
+    this.logger.log(`[COLUMN] Moved ${columnId} → board ${targetBoardId} at ${newPosition}`);
+
+    // publish event realtime (tuỳ logic bạn có thể bật/tắt)
+    await this.amqpConnection.publish('project-exchange', 'column.moved', {
+      projectId,
+      columnId,
+      fromBoardId: sourceBoardId,
+      toBoardId: targetBoardId,
+      movedById,
+      newPosition,
+      column: fullColumn,
+    });
+
+    return fullColumn;
+  }
+
+  /** 📦 Lấy column theo ID */
   async getColumnById(columnId: string) {
-    const column = await this.prisma.column.findUnique({
+    return this.prisma.column.findUnique({
       where: { id: columnId },
       include: {
         cards: { include: { labels: true, views: true } },
         views: true,
       },
     });
-    return column;
   }
 
+  /** 📋 Lấy tất cả columns theo board */
   async getColumnsByBoard(boardId: string) {
     return this.prisma.column.findMany({
       where: { boardId },
       orderBy: { position: 'asc' },
-      include: { cards: { include: { labels: true, views: true } }, views: true },
+      include: {
+        cards: { include: { labels: true, views: true } },
+        views: true,
+      },
     });
   }
 
+  /** 📁 Lấy tất cả columns theo project */
   async getColumnsByProject(projectId: string) {
     return this.prisma.column.findMany({
       where: { projectId },
       orderBy: { position: 'asc' },
-      include: { cards: { include: { labels: true, views: true } }, views: true },
+      include: {
+        cards: { include: { labels: true, views: true } },
+        views: true,
+      },
     });
   }
 }

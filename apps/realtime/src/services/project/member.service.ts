@@ -1,6 +1,5 @@
-// src/realtime/services/member.service.ts
-import { Injectable, Logger } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { LockService } from '../lock.service';
 import { LockResult } from '../../interfaces/lock-result.interface';
 
@@ -9,38 +8,31 @@ export class MemberService {
   private readonly logger = new Logger(MemberService.name);
 
   constructor(
-    private readonly amqp: AmqpConnection,
+    @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
     private readonly lockService: LockService,
   ) {}
 
-  // GỬI VÀ NHẬN KẾT QUẢ (RPC)
   private async request(pattern: string, data: any): Promise<any> {
-    this.logger.log(`[Member RPC] → ${pattern}`, data);
+    this.logger.log(`[Member RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
     try {
-      const result = await this.amqp.request({
-        exchange: 'smart-collab',
-        routingKey: pattern,
-        payload: data,
-        timeout: 10000,
-      });
-      this.logger.log(`[Member RPC] ← ${pattern}`, result);
+      const result = await this.projectClient.send({ cmd: pattern }, data).toPromise();
+      this.logger.log(`[Member RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
       return result;
     } catch (err: any) {
-      this.logger.error(`[Member RPC] Failed ${pattern}`, err.message);
+      this.logger.error(`[Member RPC] Failed ${pattern}: ${err.message}`);
       throw err;
     }
   }
 
-  // THÊM THÀNH VIÊN → CÓ KẾT QUẢ + LOCK
+  // 🟢 THÊM THÀNH VIÊN (có Lock)
   async addMember(payload: any, userId: string): Promise<LockResult> {
     const { projectId, memberId, correlationId } = payload;
-
     return this.lockService.emitWithLock(
       projectId,
       `member:${memberId}`,
       userId,
       async () => {
-        const result = await this.request('member.add', payload);
+        const result = await this.request('project.member.add', payload);
         return {
           status: 'success',
           correlationId,
@@ -50,16 +42,15 @@ export class MemberService {
     );
   }
 
-  // XÓA THÀNH VIÊN → CÓ KẾT QUẢ + LOCK
+  // 🔴 XÓA THÀNH VIÊN (có Lock)
   async removeMember(payload: any, userId: string): Promise<LockResult> {
     const { projectId, memberId, correlationId } = payload;
-
     return this.lockService.emitWithLock(
       projectId,
       `member:${memberId}`,
       userId,
       async () => {
-        const result = await this.request('member.remove', payload);
+        const result = await this.request('project.member.remove', payload);
         return {
           status: 'success',
           correlationId,
@@ -69,16 +60,15 @@ export class MemberService {
     );
   }
 
-  // CẬP NHẬT VAI TRÒ → CÓ KẾT QUẢ + LOCK
+  // 🟡 CẬP NHẬT VAI TRÒ (có Lock)
   async updateMemberRole(payload: any, userId: string): Promise<LockResult> {
     const { projectId, memberId, correlationId } = payload;
-
     return this.lockService.emitWithLock(
       projectId,
       `member:${memberId}`,
       userId,
       async () => {
-        const result = await this.request('member.role.update', payload);
+        const result = await this.request('project.member.role.update', payload);
         return {
           status: 'success',
           correlationId,
@@ -88,18 +78,12 @@ export class MemberService {
     );
   }
 
-  async isMember(projectId: string, userId: string): Promise<LockResult> {
-    return this.lockService.emitWithLock(
-      projectId,
-      `member:${userId}`,
-      userId,
-      async () => {
-        const result = await this.request('member.check', { projectId, userId });
-        return {
-          status: 'success',
-          data: result?.isMember ?? false,
-        };
-      },
-    );
+  // 🟣 KIỂM TRA THÀNH VIÊN
+  async isMember(projectId: string, userId: string): Promise<{ status: string; data: boolean }> {
+    const result = await this.request('project.member.check', { projectId, userId });
+    return {
+      status: 'success',
+      data: result?.isMember ?? false,
+    };
   }
 }

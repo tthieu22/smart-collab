@@ -1,6 +1,5 @@
-// src/realtime/services/board.service.ts
-import { Injectable, Logger } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { LockService } from '../lock.service';
 import { LockResult } from '../../interfaces/lock-result.interface';
 
@@ -9,32 +8,26 @@ export class BoardService {
   private readonly logger = new Logger(BoardService.name);
 
   constructor(
-    private readonly amqp: AmqpConnection,
+    @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
     private readonly lockService: LockService,
   ) {}
 
-  // GỬI VÀ NHẬN KẾT QUẢ (RPC)
   private async request(pattern: string, data: any): Promise<any> {
-    this.logger.log(`[Board RPC] → ${pattern}`, data);
+    this.logger.log(`[Board RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
     try {
-      const result = await this.amqp.request({
-        exchange: 'smart-collab',
-        routingKey: pattern,
-        payload: data,
-        timeout: 15000,
-      });
-      this.logger.log(`[Board RPC] ← ${pattern}`, result);
+      const result = await this.projectClient.send({ cmd: pattern }, data).toPromise();
+      this.logger.log(`[Board RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
       return result;
     } catch (err: any) {
-      this.logger.error(`[Board RPC] Failed ${pattern}`, err.message);
+      this.logger.error(`[Board RPC] Failed ${pattern}: ${err.message}`);
       throw err;
     }
   }
 
-  // TẠO BOARD → CÓ KẾT QUẢ
+  // 🟢 TẠO BOARD
   async createBoard(payload: any, userId: string) {
-    const dto = { ...payload, ownerId: userId };
-    const result = await this.request('board.create', dto);
+    const dto = { ...payload, createdById: userId };
+    const result = await this.request('project.board.create', dto);
     return {
       status: 'success',
       correlationId: payload.correlationId,
@@ -42,9 +35,9 @@ export class BoardService {
     };
   }
 
-  // CẬP NHẬT BOARD → CÓ KẾT QUẢ
+  // 🟡 CẬP NHẬT BOARD
   async updateBoard(payload: any) {
-    const result = await this.request('board.update', payload);
+    const result = await this.request('project.board.update', payload);
     return {
       status: 'success',
       correlationId: payload.correlationId,
@@ -52,20 +45,15 @@ export class BoardService {
     };
   }
 
-  // XÓA BOARD → CÓ KẾT QUẢ + LOCK
+  // 🔴 XÓA BOARD (Có Lock)
   async deleteBoard(payload: any, userId: string): Promise<LockResult> {
     const { projectId, boardId, correlationId } = payload;
-
     return this.lockService.emitWithLock(
       projectId,
       boardId,
       userId,
       async () => {
-        const result = await this.request('board.delete', {
-          projectId,
-          boardId,
-          correlationId,
-        });
+        const result = await this.request('project.board.delete', { projectId, boardId, correlationId });
         return {
           status: 'success',
           correlationId,
@@ -75,13 +63,31 @@ export class BoardService {
     );
   }
 
-  // LẤY TẤT CẢ BOARD → CÓ KẾT QUẢ
+  // 🟣 LẤY DANH SÁCH BOARD
   async getBoards(payload: any) {
-    const result = await this.request('board.get', payload);
+    const result = await this.request('project.board.get', payload);
     return {
       status: 'success',
       correlationId: payload.correlationId,
       data: result.data,
     };
+  }
+
+  // 🟤 SAO CHÉP BOARD (nếu có tính năng)
+  async copyBoard(payload: any, userId: string): Promise<LockResult> {
+    const { projectId, boardId, correlationId } = payload;
+    return this.lockService.emitWithLock(
+      projectId,
+      boardId,
+      userId,
+      async () => {
+        const result = await this.request('project.board.copy', payload);
+        return {
+          status: 'success',
+          correlationId,
+          data: result.data,
+        };
+      },
+    );
   }
 }

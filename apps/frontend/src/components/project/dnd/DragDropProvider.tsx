@@ -185,7 +185,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
             .getState()
             .moveColumn(srcBoardId, destBoardId, columnId, destIndex);
 
-          // socket.moveColumn(projectId, srcBoardId, destBoardId, columnId, destIndex);
+          socket.moveColumn(projectId, srcBoardId, destBoardId, columnId, destIndex);
         }
       }
 
