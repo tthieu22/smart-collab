@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BoardService } from './board/board.service';
 import { ProjectMessage } from './dto/project.dto';
@@ -21,7 +21,6 @@ export class ProjectService {
   }
 
   async createProject(msg: ProjectMessage) {
-    // 1️⃣ Tạo project
     const project = await this.prisma.project.create({
       data: {
         name: msg.name!,
@@ -33,19 +32,16 @@ export class ProjectService {
       },
     });
 
-    // 2️⃣ Cập nhật folderPath
     const folderPath = `${this.slugify(msg.name!)}_${project.id}`;
     await this.prisma.project.update({
       where: { id: project.id },
       data: { folderPath },
     });
 
-    // 3️⃣ Tạo member owner
     await this.prisma.projectMember.create({
       data: { projectId: project.id, userId: msg.ownerId!, role: 'ADMIN' },
     });
 
-    // 4️⃣ Tạo board mặc định
     const defaultBoard = await this.boardService.createBoard({
       projectId: project.id,
       ownerId: msg.ownerId,
@@ -53,7 +49,6 @@ export class ProjectService {
       title: 'Main Board',
     });
 
-    // 5️⃣ Trả về full project
     const fullProject = await this.prisma.project.findUnique({
       where: { id: project.id },
       include: { members: true },
@@ -88,12 +83,47 @@ export class ProjectService {
     return this.prisma.project.delete({ where: { id: projectId } });
   }
 
-  async getProjectStructure(projectId: string) {
+  async getProjectStructure(projectId: string, userId?: string) {
     const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { members: true },
+    });
+
+    if (!project) throw new NotFoundException('Project not found');
+
+    if (project.visibility === 'PUBLIC') {
+      // Public project → ai cũng được xem
+      // Không cần kiểm tra userId
+    } else {
+      // Private project → phải có userId, và user phải là owner hoặc member
+      if (!userId) throw new ForbiddenException('Access denied: private project');
+
+      if (project.ownerId !== userId) {
+        const isMember = project.members.some(m => m.userId === userId);
+        if (!isMember) {
+          throw new ForbiddenException('Access denied: not a member');
+        }
+      }
+    }
+
+    // Lấy chi tiết cấu trúc project
+    const structure = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: {
         id: true,
         name: true,
+        description: true,
+        ownerId: true,
+        folderPath: true,
+        visibility: true,
+        color: true,
+        background: true,
+        publicId: true,
+        fileUrl: true,
+        fileType: true,
+        fileSize: true,
+        originalFilename: true,
+        uploadedById: true,
         boards: {
           orderBy: { position: 'asc' },
           select: {
@@ -107,35 +137,30 @@ export class ProjectService {
             },
           },
         },
-        description: true,
-        ownerId: true,
-        folderPath: true,
-        visibility: true,
-        color: true,
-        background: true,
-        publicId: true,
-        fileUrl: true,
-        fileType: true,
-        fileSize : true,
-        originalFilename: true,
-        uploadedById: true,
       },
     });
 
-    if (!project) return null;
-
-    // Thêm boardId cho mỗi column
-    project.boards.forEach((board) => {
-      board.columns.forEach((column) => {
-        (column as any).boardId = board.id;
-      });
+    structure?.boards.forEach(board => {
+      board.columns.forEach(col => (col as any).boardId = board.id);
     });
 
-    return project;
+    return structure;
   }
 
-  async getAllProjects() {
+  async getAllProjects(userId?: string) {
+    if (!userId) {
+      // Không có userId => không trả về gì (hoặc có thể trả về [])
+      return [];
+    }
+
+    // Lấy tất cả project mà user là owner hoặc member
     return this.prisma.project.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { members: { some: { userId } } },
+        ],
+      },
       include: { members: true },
       orderBy: { createdAt: 'desc' },
     });

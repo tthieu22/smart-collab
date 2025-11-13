@@ -1,5 +1,3 @@
-// project.interface.ts
-
 export interface Correlation {
   correlationId: string;
 }
@@ -7,6 +5,7 @@ export interface Correlation {
 // ---------------- Project ----------------
 export interface Project extends Correlation {
   projectId: string;       // dùng cho update, delete, get
+  userId?: string;         // thêm userId để kiểm tra quyền, lấy project theo user
   name?: string;
   visibility: string;
   description?: string;

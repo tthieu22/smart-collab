@@ -6,77 +6,82 @@ import {
   Req,
   Patch,
   Inject,
+  Logger,
 } from '@nestjs/common';
-import { ProjectService } from './project.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Project, Member } from './dto/project.dto';
+import { Public } from '../auth/decorators/roles.decorator'; // import decorator Public
+import { Project } from './dto/project.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 
 @Controller('projects')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard) // mặc định bảo vệ tất cả route
 export class ProjectController {
-  constructor(
-    private readonly projectService: ProjectService,
+  private readonly logger = new Logger(ProjectController.name);
 
+  constructor(
     @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
   ) {}
 
   /** CREATE PROJECT */
   @Post()
   async create(@Body() body: Project, @Req() req: any) {
+    this.logger.log(`Received create project request: ${JSON.stringify(body)}`);
     const user = req.user;
-    return this.projectService.createProject({
-      ...body,
-      ownerId: user.userId,
-    });
+    const dto = { ...body, ownerId: user.userId };
+    this.logger.log(`Sending create project DTO: ${JSON.stringify(dto)}`);
+
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.create' }, dto),
+    );
+
+    this.logger.log(`Create project response: ${JSON.stringify(result)}`);
+    return result;
   }
 
   /** UPDATE PROJECT */
   @Patch('update')
   async update(@Body() body: Project) {
-    return this.projectService.updateProject(body);
-  }
+    this.logger.log(`Received update project request: ${JSON.stringify(body)}`);
 
-  /** DELETE PROJECT */
-  @Post('delete')
-  async remove(@Body() body: Project) {
-    return this.projectService.deleteProject(body);
-  }
-
-  /** ADD MEMBER */
-  @Post('add-member')
-  async addMember(@Body() body: Member) {
-    return this.projectService.addMember(body);
-  }
-
-  /** REMOVE MEMBER */
-  @Post('remove-member')
-  async removeMember(@Body() body: Member) {
-    return this.projectService.removeMember(body);
-  }
-
-  /** UPDATE MEMBER ROLE */
-  @Post('update-member-role')
-  async updateMemberRole(@Body() body: Member) {
-    return this.projectService.updateMemberRole(body);
-  }
-
-  /** GET PROJECT */
-  @Post('get')
-  async getProject(@Body() body: Project) {
     const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.get' }, body),
+      this.projectClient.send({ cmd: 'project.update' }, body),
     );
+
+    this.logger.log(`Update project response: ${JSON.stringify(result)}`);
     return result;
   }
 
-  /** GET ALL PROJECTS */
-  @Post('get-all')
-  async getAllProjects(@Body() body: { correlationId: string }) {
+  /** GET PROJECT - public route */
+  @Public()
+  @Post('get')
+  async getProject(@Body() body: Project,  @Req() req: any) {
+    this.logger.log(`Received get project request: ${JSON.stringify(body)}`);
+
+    // User có thể không có, vì route public
+    const userId = req.user?.userId;
+    const dto = { ...body, userId };
     const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.get_all' }, body),
+      this.projectClient.send({ cmd: 'project.get' }, dto),
     );
+
+    this.logger.log(`Get project response: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /** GET ALL PROJECTS - public route */
+  @Public()
+  @Post('get-all')
+  async getAllProjects(@Body() body: { userId?: string }, @Req() req: any) {
+    const userId = req.user?.userId;
+    const dto = { ...body, userId };
+    this.logger.log(`Received get-all projects request: ${JSON.stringify(dto)}`);
+
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.get_all' }, dto),
+    );
+
+    this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
     return result;
   }
 }

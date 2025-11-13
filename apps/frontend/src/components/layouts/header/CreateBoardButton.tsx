@@ -37,7 +37,7 @@ export default function CreateBoardButton() {
       else if (colors.length > 0) setBackground(colors[0]);
     }
   }, [open, background, images, colors]);
-
+  
   const handleCreate = async () => {
     if (!title) {
       addNotification("Vui lòng nhập tiêu đề bảng", "error");
@@ -51,45 +51,43 @@ export default function CreateBoardButton() {
       else if (colors.length > 0) finalBackground = colors[0];
     }
 
-    const body: { name: string; visibility?: string; color?: string; background?: string } = { name: title, visibility };
+    const correlationId = crypto.randomUUID();
+    const body: any = {
+      name: title,
+      visibility,
+      correlationId,
+    };
+
     if (!fileObjs.length && finalBackground) {
       if (images.includes(finalBackground)) body.background = finalBackground;
       else if (colors.includes(finalBackground)) body.color = finalBackground;
     }
 
     try {
-      const createCorrId = crypto.randomUUID();
-      const waitForProject = (corrId: string) =>
-        new Promise<Project>((resolve, reject) => {
-          const unsubscribe = projectSocketManager.subscribeCorrelation(
-            corrId,
-            (msg: any) => {
-              if (msg.status === "success" && msg.project) {
-                resolve(msg.project);
-                unsubscribe();
-              } else if (msg.status === "error") {
-                reject(new Error(msg.error || "Project operation failed"));
-                unsubscribe();
-              }
-            }
-          );
-        });
+      // Gọi API tạo project
+      const createRes = await projectService.createProject(body);
 
-      await projectService.createProject({ ...body, correlationId: createCorrId });
+      if (!createRes.success || !createRes.data?.fullProject) {
+        throw new Error(createRes.message || "Tạo bảng thất bại");
+      }
 
-      let project = await waitForProject(createCorrId);
+      let project = createRes.data.fullProject;
 
+      // Lưu vào store và chuyển trang
       projectStore.getState().addProject(project);
       projectStore.getState().setCurrentProject(project);
 
       if (fileObjs.length > 0 || body.color) {
-        const updateCorrId = crypto.randomUUID();
-        const updateData: any = { projectId: project.id, correlationId: updateCorrId };
+        const updateCorrelationId = crypto.randomUUID();
+        const updateData: any = {
+          projectId: project.id,
+          correlationId: updateCorrelationId,
+        };
 
         if (fileObjs.length > 0) {
           const folder = project.folderPath || project.id;
           const uploadRes = await uploadService.uploadFiles(folder, fileObjs);
-          if (!uploadRes.success) throw new Error("File upload failed");
+          if (!uploadRes.success) throw new Error("File upload thất bại");
 
           updateData.files = (uploadRes.data || []).map((f: any) => ({
             publicId: f.public_id,
@@ -101,11 +99,17 @@ export default function CreateBoardButton() {
           }));
         }
 
-        if (body.color) updateData.color = body.color;
+        if (body.color) {
+          updateData.color = body.color;
+        }
 
-        await projectService.updateProject(updateData);
-        project = await waitForProject(updateCorrId);
+        // Gọi API update project
+        const updateRes = await projectService.updateProject(updateData);
+        if (!updateRes.success || !updateRes.data) {
+          throw new Error(updateRes.message || "Cập nhật bảng thất bại");
+        }
 
+        project = updateRes.data;
         projectStore.getState().updateProject(project);
         projectStore.getState().setCurrentProject(project);
       }
@@ -122,6 +126,7 @@ export default function CreateBoardButton() {
       setFileObjs([]);
     }
   };
+
 
   const boxStyle: React.CSSProperties = { width: 60, height: 40, borderRadius: 8, border: "1px solid #ddd", cursor: "pointer", backgroundSize: "cover", backgroundPosition: "center", transition: "0.2s", position: "relative" };
 

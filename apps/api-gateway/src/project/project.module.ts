@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { ProjectController } from './project.controller';
-import { ProjectService } from './project.service';
 import { getGolevelupRabbitMQOptions, getRabbitMQOptions } from '../config/rabbitmq.config';
 import { ClientsModule } from '@nestjs/microservices';
 import { CardController } from './column/card.cotroller';
@@ -27,6 +26,5 @@ import { CardController } from './column/card.cotroller';
     ]),
   ],
   controllers: [ProjectController, CardController],
-  providers: [ProjectService],
 })
 export class ProjectModule {}
