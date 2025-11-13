@@ -7,6 +7,7 @@ import {
   Patch,
   Inject,
   Logger,
+  Get,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/roles.decorator'; // import decorator Public
@@ -15,7 +16,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 
 @Controller('projects')
-@UseGuards(JwtAuthGuard) // mặc định bảo vệ tất cả route
+@UseGuards(JwtAuthGuard) 
 export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);
 
@@ -79,6 +80,22 @@ export class ProjectController {
 
     const result = await firstValueFrom(
       this.projectClient.send({ cmd: 'project.get_all' }, dto),
+    );
+
+    this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
+    return result;
+  }
+  
+  /** GET ALL PROJECTS - public route */
+  @Public()
+  @Get('card')
+  async getCardById(@Body() body: { cardId?: string }, @Req() req: any) {
+    const userId = req.user?.userId;
+    const dto = { ...body, userId };
+    this.logger.log(`Received get-all projects request: ${JSON.stringify(dto)}`);
+
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.get.card' }, dto),
     );
 
     this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);

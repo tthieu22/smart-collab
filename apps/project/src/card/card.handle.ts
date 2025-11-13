@@ -9,10 +9,10 @@ export class CardHandler {
   constructor(private readonly cardService: CardService) {}
 
   @MessagePattern({ cmd: 'project.get.card' })
-  async handleGetDetail(@Payload() id: string) {
-    this.logger.log(`Handling get.card request with id: ${id}`);
+  async handleGetDetail(@Payload() cardId: string) {
+    this.logger.log(`Handling get.card request with cardId: ${cardId}`);
     try {
-      const card = await this.cardService.getCardDetail(id);
+      const card = await this.cardService.getCardDetail(cardId);
       return { success: true, message: 'OK', data: card };
     } catch (error: any) {
       this.logger.error(`Error handling get.card: ${error.message}`, error.stack);
