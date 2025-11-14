@@ -81,7 +81,9 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
         body: {
           maxHeight: '88vh',
           padding: 0,
-          background: token.colorBgLayout,
+          overflowY: 'auto',
+          background: token.colorBgLayout,/* Ẩn scrollbar nhưng vẫn scroll được */
+          scrollbarWidth: 'none',   
         },
         mask: {
           backdropFilter: 'blur(10px)',

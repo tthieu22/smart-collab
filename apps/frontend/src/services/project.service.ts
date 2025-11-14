@@ -2,7 +2,7 @@ import { autoRequest } from './auto.request';
 import { API_ENDPOINTS } from '@smart/lib/constants';
 import { Project } from '@smart/types/project';
 
-type ProjectResponse = { status: string; message: string; dto?: any };
+type ProjectResponse = { status: string; message: string; dto?: any, card:any};
 type GetAllProjectsResponse = Project[];
 
 class ProjectService {

@@ -95,29 +95,105 @@ model Column {
 }
 
 // ------------------ CARD ------------------
+// ------------------ CARD ------------------
 model Card {
-  id          String    @id @default(uuid())
-  projectId   String
-  columnId    String?
-  title       String
-  description String?
-  status      String    @default("ACTIVE")
-  deadline    DateTime?
-  priority    Int?
-  position    Int       @default(0)
-  createdById String?
-  updatedById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String   @id @default(uuid())
+  projectId    String
+  columnId     String?
+  title        String
+  description  String?
+  status       String   @default("ACTIVE")
+  deadline     DateTime?
+  priority     Int?
+  position     Int      @default(0)
 
-  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  column  Column?     @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  labels  CardLabel[]
-  views   CardView[]
+  // Người tạo / sửa (denormalized - không FK)
+  createdById     String?
+  createdByName   String?
+  createdByAvatar String?
+  updatedById     String?
+  updatedByName   String?
+  updatedByAvatar String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // === COVER IMAGE (ảnh bìa) ===
+  coverPublicId     String?
+  coverUrl          String?
+  coverFileType     String?
+  coverFileSize     Int?
+  coverResourceType String?
+  coverFilename     String?
+
+  // === RELATIONS ===
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  column  Column?  @relation(fields: [columnId], references: [id], onDelete: SetNull)
+
+  labels      CardLabel[]
+  views       CardView[]
+  comments    CardComment[]
+  checklist   ChecklistItem[]
+  attachments Attachment[]
 
   @@index([projectId, status, updatedAt])
+  @@index([columnId, position])
 }
 
+// ------------------ CARD COMMENT ------------------
+model CardComment {
+  id        String   @id @default(uuid())
+  cardId    String
+  userId    String
+  userName  String
+  avatar    String?
+  content   String
+  createdAt DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+}
+
+// ------------------ CHECKLIST ITEM ------------------
+model ChecklistItem {
+  id       String @id @default(uuid())
+  cardId   String
+  title    String
+  done     Boolean @default(false)
+  position Int     @default(0)
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, position])
+}
+
+// ------------------ ATTACHMENT (File / Image) ------------------
+model Attachment {
+  id           String   @id @default(uuid())
+  cardId       String
+  name         String
+  url          String
+  size         String
+  uploadedAt   DateTime @default(now())
+
+  // Người upload (denormalized)
+  uploadedById     String?
+  uploadedByName   String?
+  uploadedByAvatar String?
+
+  // File info (giống Project)
+  publicId         String?
+  fileType         String?
+  fileSize         Int?
+  resourceType     String?
+  originalFilename String?
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([uploadedAt])
+}
 // ------------------ CARD LABEL ------------------
 model CardLabel {
   id     String @id @default(uuid())
