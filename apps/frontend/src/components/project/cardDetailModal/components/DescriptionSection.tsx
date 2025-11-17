@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Skeleton, Progress, Typography, Input, theme } from 'antd';
 import AIBorderWrapper from './AIBorderWrapper';
 import AIIcon from './AIIcon';
@@ -10,7 +10,7 @@ const { TextArea } = Input;
 
 interface Props {
   description: string;
-  setDescription: (v: string) => void;
+  setDescription: (value: string) => void;
   isGenerating: boolean;
   aiProgress: number;
   onAIGenerate: () => void;
@@ -25,14 +25,34 @@ const DescriptionSection: React.FC<Props> = ({
   onAIGenerate,
   onBlur,
 }) => {
-  // Lấy token từ theme để áp dụng màu động
   const { token } = theme.useToken();
+
+  // Local state giữ mô tả tạm thời khi nhập liệu
+  const [localDescription, setLocalDescription] = useState(description);
+
+  // Đồng bộ lại khi prop description thay đổi (ví dụ sau khi AI generate cập nhật)
+  useEffect(() => {
+    setLocalDescription(description);
+  }, [description]);
+
+  // Cập nhật local state khi người dùng nhập
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalDescription(e.target.value);
+  };
+
+  // Khi mất focus, cập nhật giá trị lên cha và gọi onBlur
+  const handleBlur = () => {
+    if (localDescription !== description) {
+      setDescription(localDescription);
+    }
+    onBlur();
+  };
 
   return (
     <AIBorderWrapper active={isGenerating}>
       <div
         style={{
-          background: token.colorBgContainer,
+          backgroundColor: token.colorBgContainer,
           padding: 16,
           borderRadius: token.borderRadiusLG,
           boxShadow: token.boxShadowSecondary,
@@ -60,6 +80,9 @@ const DescriptionSection: React.FC<Props> = ({
               color: token.colorTextLightSolid,
               border: 'none',
               fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
             AI Generate
@@ -68,35 +91,36 @@ const DescriptionSection: React.FC<Props> = ({
 
         {/* Body */}
         {isGenerating ? (
-          <div>
-            <Skeleton
-              active
-              paragraph={{ rows: 4 }}
-              style={{ background: token.colorBgContainer }}
-            />
+          <>
+            <Skeleton active paragraph={{ rows: 4 }} style={{ backgroundColor: token.colorBgContainer }} />
             <Progress
               percent={aiProgress}
               size="small"
               status="active"
               style={{ marginTop: 8 }}
+              strokeColor={{
+                '0%': '#ea4335',
+                '100%': '#fbbc05',
+              }}
             />
-          </div>
+          </>
         ) : (
           <TextArea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={onBlur}
+            value={localDescription}
+            onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Enter description..."
             rows={8}
             style={{
               resize: 'none',
-              fontFamily: 'Inter',
+              fontFamily: 'Inter, sans-serif',
               fontSize: 14,
               lineHeight: 1.5,
-              background: token.colorBgContainer,
+              backgroundColor: token.colorBgContainer,
               color: token.colorText,
               borderColor: token.colorBorder,
               borderRadius: token.borderRadius,
+              transition: 'border-color 0.3s ease',
             }}
           />
         )}

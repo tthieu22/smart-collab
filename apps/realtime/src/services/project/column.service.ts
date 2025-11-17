@@ -61,7 +61,9 @@ export class ColumnService {
   }
 
   async moveColumn(payload: any, userId: string): Promise<LockResult> {
-    const { projectId, columnId, correlationId } = payload;
+    const { projectId, correlationId, payload: innerPayload } = payload;
+    const columnId = innerPayload?.columnId;
+
     return this.lockService.emitWithLock(
       projectId,
       columnId,
@@ -76,6 +78,7 @@ export class ColumnService {
       },
     );
   }
+
 
   async copyColumn(payload: any, userId: string): Promise<LockResult> {
     const { projectId, columnId, correlationId } = payload;

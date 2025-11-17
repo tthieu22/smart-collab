@@ -297,6 +297,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
   moveColumn: (srcBoardId, destBoardId, columnId, destIndex) =>
     set((s) => {
+      console.log('sađasađasadsadsadsadá', srcBoardId, destBoardId, columnId, destIndex)
       const boardColumns = { ...s.boardColumns };
       const columns = { ...s.columns };
 

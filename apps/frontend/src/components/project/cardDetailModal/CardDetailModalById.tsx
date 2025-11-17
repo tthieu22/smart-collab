@@ -44,11 +44,41 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
     progress,
     attachments,
     generateWithAI,
-    updateCard,
+    updateBasic,
     safeLabels,
+    aiGenerating,
+    addLabel,
+    // Nếu có addMember trong hook, destructure thêm ở đây
   } = useCardDetail(cardId, isOpen, onClose);
 
   const { token } = theme.useToken();
+
+  // Hàm xử lý gọi addLabel từ hook
+  const handleAddLabel = async (label: { id: string; name: string; color: string }) => {
+    try {
+      await addLabel(label.name);
+    } catch (error) {
+      // Có thể xử lý lỗi ở đây
+    }
+  };
+
+  // Hàm xử lý thêm member, bạn cần bổ sung logic tương tự addLabel
+  const handleAddMember = async (memberId: string) => {
+    if (!card) return;
+    try {
+      // TODO: Gọi hàm addMember tương ứng hoặc API
+      // Ví dụ: await addMember(memberId);
+      // Nếu chưa có hàm addMember, bạn cần bổ sung ở hook useCardDetail
+
+      // Nếu chưa có backend thì có thể update local như ví dụ sau:
+      // updateCard({ ...card, members: [...(card.members || []), newMemberObject] });
+
+      // Hiện tại chưa có chức năng cụ thể nên để trống hoặc log
+      console.log('Add member:', memberId);
+    } catch (error) {
+      // Xử lý lỗi nếu cần
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -72,7 +102,7 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
       width={980}
       zIndex={1300}
       centered
-      destroyOnHidden  
+      destroyOnHidden
       maskClosable
       closeIcon={<CloseOutlined style={{ fontSize: 18, color: token.colorTextSecondary }} />}
       transitionName="ant-zoom"
@@ -82,8 +112,8 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
           maxHeight: '88vh',
           padding: 0,
           overflowY: 'auto',
-          background: token.colorBgLayout,/* Ẩn scrollbar nhưng vẫn scroll được */
-          scrollbarWidth: 'none',   
+          background: token.colorBgLayout,
+          scrollbarWidth: 'none',
         },
         mask: {
           backdropFilter: 'blur(10px)',
@@ -100,12 +130,21 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
           isGenerating={isGeneratingTitle}
           aiProgress={aiProgress}
           onAIGenerate={() => generateWithAI('title')}
-          onBlur={() => updateCard({ ...card, title })}
+          onBlur={() => {
+            // Có thể update lại description lên store hoặc gì đó
+            if (!aiGenerating) {
+              updateBasic({ title });
+            }
+          }}
         />
 
         <div style={{ display: 'flex', gap: 24, marginTop: 20 }}>
           <div style={{ flex: 2 }}>
-            <LabelsAndMembers labels={safeLabels} />
+            <LabelsAndMembers
+              labels={safeLabels}
+              onAddLabel={handleAddLabel}
+              onAddMember={handleAddMember}
+            />
             <Divider style={{ margin: '16px 0', borderColor: token.colorBorder }} />
 
             <DescriptionSection
@@ -114,7 +153,12 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
               isGenerating={isGeneratingDesc}
               aiProgress={aiProgress}
               onAIGenerate={() => generateWithAI('description')}
-              onBlur={() => updateCard({ ...card, description })}
+              onBlur={() => {
+                // Có thể update lại description lên store hoặc gì đó
+                if (!aiGenerating) {
+                  updateBasic({ description });
+                }
+              }}
             />
 
             <Divider style={{ margin: '20px 0', borderColor: token.colorBorder }} />

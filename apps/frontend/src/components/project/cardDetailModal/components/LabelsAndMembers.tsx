@@ -21,11 +21,31 @@ interface Props {
   onInviteMember?: (email: string) => void;
 }
 
+function rgbToHex(rgb: string): string {
+  const result = /^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/.exec(rgb);
+  if (!result) return '#000000'; // fallback nếu không đúng định dạng
+  const r = parseInt(result[1], 10);
+  const g = parseInt(result[2], 10);
+  const b = parseInt(result[3], 10);
+  return (
+    '#' +
+    [r, g, b]
+      .map(x => x.toString(16).padStart(2, '0'))
+      .join('')
+      .toUpperCase()
+  );
+}
+
 const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, onInviteMember }) => {
   const { token } = theme.useToken();
 
-  // Lấy colors từ zustand store
-  const colors = useBoardStore(state => state.colors);
+  // Lấy colors từ zustand store, convert rgb sang hex nếu cần
+  const colorsRaw = useBoardStore(state => state.colors);
+  const colors = useMemo(
+    () =>
+      colorsRaw.map(color => (color.startsWith('rgb') ? rgbToHex(color) : color)),
+    [colorsRaw]
+  );
 
   // Lấy members (object) từ projectStore, chuyển thành array
   const membersObj = projectStore(state => state.members);
@@ -33,8 +53,9 @@ const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, on
 
   // Modal Label states
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  // Khởi tạo selectedColor với màu đầu tiên đã chuẩn hex
+  const [selectedColor, setSelectedColor] = useState<string>(colors[0] ?? '#000000');
   const [newLabelName, setNewLabelName] = useState('');
-  const [selectedColor, setSelectedColor] = useState<string>(colors[0]);
 
   // Modal Member states
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
@@ -70,7 +91,7 @@ const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, on
   // Mở modal label
   const showLabelModal = () => {
     setNewLabelName('');
-    setSelectedColor(colors[0]);
+    setSelectedColor(colors[0] ?? '#000000');
     setIsLabelModalOpen(true);
   };
 
@@ -220,7 +241,7 @@ const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, on
           />
         ) : (
           <div>
-            <Text>No member found.</Text> <br></br>
+            <Text>No member found.</Text> <br />
             <Button
               type="primary"
               style={{ marginTop: 12 }}

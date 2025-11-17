@@ -13,17 +13,35 @@ export class CardService {
 
   async getCardDetail(cardId: string) {
     this.logger.log(`Getting detail for card id: ${cardId}`);
+
     const card = await this.prisma.card.findUnique({
       where: { id: cardId },
-      include: { labels: true, views: true },
+      include: {
+        labels: true,
+        views: true,
+        comments: {
+          orderBy: { createdAt: 'asc' },
+        },
+        checklist: {
+          orderBy: { position: 'asc' },
+        },
+        attachments: {
+          orderBy: { uploadedAt: 'desc' },
+        },
+        column: true,
+        project: true,
+      },
     });
+
     if (!card) {
       this.logger.warn(`Card not found with id: ${cardId}`);
       return null;
     }
+
     this.logger.log(`Card detail fetched successfully for id: ${cardId}`);
     return card;
   }
+
 
   async getCardsByColumn(columnId: string) {
     this.logger.log(`Fetching cards for column id: ${columnId}`);
@@ -55,6 +73,27 @@ export class CardService {
       throw new Error('Column not found');
     }
 
+    // 1. Tính position mới (chèn cuối)
+    const lastPosition = await this.prisma.card.findFirst({
+      where: { columnId: params.columnId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    const newPosition = (lastPosition?.position ?? -1) + 1;
+
+    // 2. Lấy thông tin người tạo (nếu có)
+    let createdByName: string | null = null;
+    let createdByAvatar: string | null = null;
+    // if (params.createdById) {
+    //   const user = await this.prisma.user.findUnique({
+    //     where: { id: params.createdById },
+    //     select: { name: true, avatar: true },
+    //   });
+    //   createdByName = user?.name ?? null;
+    //   createdByAvatar = user?.avatar ?? null;
+    // }
+
+    // 3. Tạo card mới đầy đủ thông tin
     const card = await this.prisma.card.create({
       data: {
         columnId: params.columnId,
@@ -64,20 +103,29 @@ export class CardService {
         status: params.status ?? 'ACTIVE',
         deadline: params.deadline ?? null,
         priority: params.priority ?? null,
+        position: newPosition,
         createdById: params.createdById ?? null,
+        createdByName,
+        createdByAvatar,
+        updatedById: params.createdById ?? null,
+        updatedByName: createdByName,
+        updatedByAvatar: createdByAvatar,
       },
-      include: { labels: true, views: true },
+      include: {
+        labels: true,
+        views: true,
+        comments: true,
+        checklist: true,
+        attachments: true,
+        column: true,
+        project: true,
+      },
     });
 
+    // 4. Chuẩn bị trả về (giữ nguyên correlationId nếu có)
     const cardToReturn = {
       correlationId: params.correlationId,
-      id: card.id,
-      columnId: card.columnId,
-      title: card.title,
-      description: card.description ?? '',
-      position: card.position,
-      labels: card.labels ?? [],
-      views: card.views ?? [],
+      ...card,
     };
 
     this.logger.log(`Card created with ID: ${card.id}, publishing event...`);
@@ -87,35 +135,149 @@ export class CardService {
     return cardToReturn;
   }
 
+  
   async updateCard(params: {
     cardId: string;
-    title?: string;
-    description?: string;
-    status?: string;
-    deadline?: Date;
-    priority?: number;
+    action: string;
+    data: any;
     updatedById?: string;
   }) {
-    this.logger.log(`Updating card id: ${params.cardId} with data: ${JSON.stringify(params)}`);
+    const { cardId, action, data, updatedById } = params;
 
-    const card = await this.prisma.card.update({
-      where: { id: params.cardId },
-      data: {
-        title: params.title,
-        description: params.description,
-        status: params.status,
-        deadline: params.deadline,
-        priority: params.priority,
-        updatedById: params.updatedById,
-      },
-      include: { labels: true, views: true, column: true },
-    });
+    this.logger.log(`Update card ${cardId} with action: ${action}`);
 
-    this.logger.log(`Card updated with ID: ${params.cardId}, publishing event...`);
-    await this.amqpConnection.publish('project-exchange', 'card.updated', { card });
-    this.logger.log(`Published card.updated event for card ID: ${params.cardId}`);
+    let updatedCard;
 
-    return card;
+    switch (action) {
+      case "update-basic":
+        updatedCard = await this.prisma.card.update({
+          where: { id: cardId },
+          data: {
+            title: data.title,
+            description: data.description,
+            status: data.status,
+            deadline: data.deadline,
+            priority: data.priority,
+            updatedById,
+          },
+          include: { labels: true, views: true, checklist: true, attachments: true },
+        });
+        break;
+
+      case "add-label":
+        await this.prisma.cardLabel.create({
+          data: {
+            cardId,
+            label: data.label,
+          },
+        });
+        updatedCard = await this.prisma.card.findUnique({
+          where: { id: cardId },
+          include: { labels: true },
+        });
+        break;
+
+      case "remove-label":
+        await this.prisma.cardLabel.delete({
+          where: { id: data.labelId },
+        });
+        updatedCard = await this.prisma.card.findUnique({
+          where: { id: cardId },
+          include: { labels: true },
+        });
+        break;
+
+      case "add-checklist-item":
+        await this.prisma.checklistItem.create({
+          data: {
+            cardId,
+            title: data.title,
+            position: data.position ?? 0,
+          },
+        });
+        updatedCard = await this.prisma.card.findUnique({
+          where: { id: cardId },
+          include: { checklist: true },
+        });
+        break;
+
+      case "update-checklist-item":
+        await this.prisma.checklistItem.update({
+          where: { id: data.itemId },
+          data: {
+            title: data.title,
+            done: data.done,
+          },
+        });
+        updatedCard = await this.prisma.card.findUnique({
+          where: { id: cardId },
+          include: { checklist: true },
+        });
+        break;
+
+      case "remove-checklist-item":
+        await this.prisma.checklistItem.delete({
+          where: { id: data.itemId },
+        });
+        updatedCard = await this.prisma.card.findUnique({
+          where: { id: cardId },
+          include: { checklist: true },
+        });
+        break;
+
+      case "add-attachment":
+        await this.prisma.attachment.create({
+          data: {
+            cardId,
+            name: data.name,
+            url: data.url,
+            size: data.size,
+            uploadedById: updatedById,
+          },
+        });
+        updatedCard = await this.prisma.card.findUnique({
+          where: { id: cardId },
+          include: { attachments: true },
+        });
+        break;
+
+      case "remove-attachment":
+        await this.prisma.attachment.delete({
+          where: { id: data.attachmentId },
+        });
+        updatedCard = await this.prisma.card.findUnique({
+          where: { id: cardId },
+          include: { attachments: true },
+        });
+        break;
+
+      case "update-cover":
+        updatedCard = await this.prisma.card.update({
+          where: { id: cardId },
+          data: {
+            coverUrl: data.coverUrl,
+            coverPublicId: data.coverPublicId,
+            coverFilename: data.coverFilename,
+            coverFileSize: data.coverFileSize,
+            updatedById,
+          },
+          include: { labels: true, views: true, checklist: true, attachments: true },
+        });
+        break;
+
+      default:
+        throw new Error(`Unknown update action: ${action}`);
+    }
+
+    await this.amqpConnection.publish(
+      "project-exchange",
+      "card.updated",
+      { card: updatedCard, action }
+    );
+
+    this.logger.log(`Published card.updated event for card ${cardId} with action ${action}`);
+
+    return updatedCard;
   }
 
   async removeCard(cardId: string) {
@@ -261,7 +423,13 @@ export class CardService {
 
       return updatedCard;
     });
-
+    const responseData = {
+      srcColumnId: isSameColumn ? destColumnId : currentColumnId,
+      newColumnId: result.columnId,
+      cardId: result.id,
+      newIndex: result.position,
+      ...result,
+    };
     // 4. Publish event
     await this.amqpConnection.publish('project-exchange', 'card.moved', {
       card: result,
@@ -274,7 +442,7 @@ export class CardService {
     });
 
     this.logger.log(`Published card.moved event for card ${cardId}`);
-    return result;
+    return responseData;
   }
 
   async copyCard(params: {

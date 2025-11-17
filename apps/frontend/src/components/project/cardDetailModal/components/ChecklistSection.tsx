@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Space, Input, Checkbox, Progress, Typography, theme } from 'antd';
 import { CheckSquareOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ChecklistItem } from '@smart/types/project';
@@ -25,6 +25,25 @@ const ChecklistSection: React.FC<Props> = ({
   progress,
 }) => {
   const { token } = theme.useToken();
+
+  // Dùng local state cho input, giảm số lần gọi setNewChecklistItem
+  const [localNewItem, setLocalNewItem] = useState(newChecklistItem);
+
+  useEffect(() => {
+    setLocalNewItem(newChecklistItem);
+  }, [newChecklistItem]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalNewItem(e.target.value);
+  };
+
+  const handleAdd = () => {
+    if (localNewItem.trim()) {
+      setNewChecklistItem(localNewItem.trim());
+      addChecklistItem();
+      setLocalNewItem('');
+    }
+  };
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -70,11 +89,12 @@ const ChecklistSection: React.FC<Props> = ({
             <span>{item.title}</span>
           </div>
         ))}
+
         <Input
           placeholder="Thêm công việc..."
-          value={newChecklistItem}
-          onChange={e => setNewChecklistItem(e.target.value)}
-          onPressEnter={addChecklistItem}
+          value={localNewItem}
+          onChange={handleChange}
+          onPressEnter={handleAdd}
           suffix={<PlusOutlined style={{ color: token.colorTextDisabled }} />}
           style={{
             borderRadius: token.borderRadiusLG,

@@ -77,7 +77,6 @@ export class ColumnService {
     this.logger.log(`[COLUMN] Deleted ${columnId}`);
     return { columnId };
   }
-
   /** 🟢 Di chuyển column sang vị trí khác hoặc board khác */
   async moveColumn(params: {
     columnId: string;
@@ -129,18 +128,23 @@ export class ColumnService {
 
     this.logger.log(`[COLUMN] Moved ${columnId} → board ${targetBoardId} at ${newPosition}`);
 
-    // publish event realtime (tuỳ logic bạn có thể bật/tắt)
+    const responseData = {
+      srcBoardId: sourceBoardId,
+      newBoardId: targetBoardId,
+      columnId: updatedColumn.id,
+      newPosition: updatedColumn.position,
+      ...fullColumn,
+    };
+
+    // publish event realtime với dữ liệu chuẩn hóa
     await this.amqpConnection.publish('project-exchange', 'column.moved', {
       projectId,
-      columnId,
-      fromBoardId: sourceBoardId,
-      toBoardId: targetBoardId,
+      ...responseData,
       movedById,
-      newPosition,
       column: fullColumn,
     });
 
-    return fullColumn;
+    return responseData;
   }
 
   /** 📦 Lấy column theo ID */

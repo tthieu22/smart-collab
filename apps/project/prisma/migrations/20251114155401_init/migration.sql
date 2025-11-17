@@ -72,11 +72,65 @@ CREATE TABLE "Card" (
     "priority" INTEGER,
     "position" INTEGER NOT NULL DEFAULT 0,
     "createdById" TEXT,
+    "createdByName" TEXT,
+    "createdByAvatar" TEXT,
     "updatedById" TEXT,
+    "updatedByName" TEXT,
+    "updatedByAvatar" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "coverPublicId" TEXT,
+    "coverUrl" TEXT,
+    "coverFileType" TEXT,
+    "coverFileSize" INTEGER,
+    "coverResourceType" TEXT,
+    "coverFilename" TEXT,
 
     CONSTRAINT "Card_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CardComment" (
+    "id" TEXT NOT NULL,
+    "cardId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "userName" TEXT NOT NULL,
+    "avatar" TEXT,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CardComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ChecklistItem" (
+    "id" TEXT NOT NULL,
+    "cardId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "done" BOOLEAN NOT NULL DEFAULT false,
+    "position" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "ChecklistItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Attachment" (
+    "id" TEXT NOT NULL,
+    "cardId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "size" TEXT NOT NULL,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "uploadedById" TEXT,
+    "uploadedByName" TEXT,
+    "uploadedByAvatar" TEXT,
+    "publicId" TEXT,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "resourceType" TEXT,
+    "originalFilename" TEXT,
+
+    CONSTRAINT "Attachment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -147,6 +201,21 @@ CREATE INDEX "Column_projectId_boardId_position_idx" ON "Column"("projectId", "b
 CREATE INDEX "Card_projectId_status_updatedAt_idx" ON "Card"("projectId", "status", "updatedAt");
 
 -- CreateIndex
+CREATE INDEX "Card_columnId_position_idx" ON "Card"("columnId", "position");
+
+-- CreateIndex
+CREATE INDEX "CardComment_cardId_createdAt_idx" ON "CardComment"("cardId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "ChecklistItem_cardId_position_idx" ON "ChecklistItem"("cardId", "position");
+
+-- CreateIndex
+CREATE INDEX "Attachment_cardId_idx" ON "Attachment"("cardId");
+
+-- CreateIndex
+CREATE INDEX "Attachment_uploadedAt_idx" ON "Attachment"("uploadedAt");
+
+-- CreateIndex
 CREATE INDEX "CardLabel_cardId_label_idx" ON "CardLabel"("cardId", "label");
 
 -- CreateIndex
@@ -180,7 +249,16 @@ ALTER TABLE "Column" ADD CONSTRAINT "Column_boardId_fkey" FOREIGN KEY ("boardId"
 ALTER TABLE "Card" ADD CONSTRAINT "Card_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Card" ADD CONSTRAINT "Card_columnId_fkey" FOREIGN KEY ("columnId") REFERENCES "Column"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Card" ADD CONSTRAINT "Card_columnId_fkey" FOREIGN KEY ("columnId") REFERENCES "Column"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CardComment" ADD CONSTRAINT "CardComment_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "Card"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChecklistItem" ADD CONSTRAINT "ChecklistItem_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "Card"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Attachment" ADD CONSTRAINT "Attachment_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "Card"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CardLabel" ADD CONSTRAINT "CardLabel_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "Card"("id") ON DELETE CASCADE ON UPDATE CASCADE;

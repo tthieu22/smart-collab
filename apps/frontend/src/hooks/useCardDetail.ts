@@ -10,7 +10,6 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
   const { cards, updateCard } = projectStore();
   const card = cards[cardId];
 
-  // === STATE ===
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -23,40 +22,181 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
 
   const [newComment, setNewComment] = useState('');
   const [newChecklistItem, setNewChecklistItem] = useState('');
-
-  // === SYNC CARD DATA (real-time) ===
+  const [originalTitle, setOriginalTitle] = useState('');
+  console.log(card)
+  // Sync dữ liệu khi card hoặc modal mở
   useEffect(() => {
     if (!card || !isOpen) return;
-
     setTitle(card.title || '');
+    setOriginalTitle(card.title || ''); 
     setDescription(card.description || '');
     setLoading(false);
   }, [card, isOpen]);
 
-  // === FETCH CARD (nếu chưa có trong store hoặc khi mở) ===
-    useEffect(() => {
-    if (!isOpen || !cardId) return;
+  useEffect(() => {
+  if (!isOpen || !cardId) return;
 
-    const fetchCard = async () => {
-        setLoading(true);
-        try {
-        const fetched: any = await projectService.getCard(cardId);
+  const fetchCard = async () => {
+      setLoading(true);
+      try {
+      const fetched: any = await projectService.getCard(cardId);
 
-        // Cập nhật toàn bộ dữ liệu card đầy đủ, ghi đè card rút gọn trong store
-        updateCard(fetched);
+      // Cập nhật toàn bộ dữ liệu card đầy đủ, ghi đè card rút gọn trong store
+      updateCard(fetched);
 
-        console.log('Fetched card (full):', fetched);
-        } catch (error) {
-        console.error(error);
-        message.error('Không thể tải card');
-        } finally {
-        setLoading(false);
-        }
+      console.log('Fetched card (full):', fetched);
+      } catch (error) {
+      console.error(error);
+      message.error('Không thể tải card');
+      } finally {
+      setLoading(false);
+      }
+  };
+
+  fetchCard();
+  }, [cardId, isOpen, updateCard]);
+
+  // Hàm gọi backend update card, trả về card updated
+  const updateCardOnServer = async (payload: {
+    cardId: string;
+    action: string;
+    data: any;
+    updatedById?: string;
+  }) => {
+    setLoading(true);
+    try {
+      console.log(payload, 'payload');
+      // const updated: Card = await projectService.updateCard(payload);
+      // updateCard(updated);
+      // return updated;
+    } catch (error) {
+      message.error('Cập nhật thất bại');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Các hàm update từng phần gọi backend
+
+  // 1. Update basic fields
+  const updateBasic = async (fields: {
+    title?: string;
+    description?: string;
+    status?: string;
+    deadline?: string | null;
+    priority?: number | null;
+  }) => {
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'update-basic',
+      data: {
+        title: fields.title ?? card.title,
+        description: fields.description ?? card.description,
+        status: fields.status ?? card.status,
+        deadline: fields.deadline ?? card.deadline,
+        priority: fields.priority ?? card.priority,
+      },
+      updatedById: 'current_user',
+    });
+  };
+
+  // 2. Add label
+  const addLabel = async (label: string) => { 
+      console.log('Adding label:', label);
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'add-label',
+      data: { label },
+    });
+  };
+
+  // 3. Remove label
+  const removeLabel = async (labelId: string) => {
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'remove-label',
+      data: { labelId },
+    });
+  };
+
+  // 4. Add checklist item
+  const addChecklistItem = async (title: string, position?: number) => {
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'add-checklist-item',
+      data: { title, position: position ?? 0 },
+    });
+  };
+
+  // 5. Update checklist item
+  const updateChecklistItem = async (itemId: string, title: string, done: boolean) => {
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'update-checklist-item',
+      data: { itemId, title, done },
+    });
+  };
+
+  // 6. Remove checklist item
+  const removeChecklistItem = async (itemId: string) => {
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'remove-checklist-item',
+      data: { itemId },
+    });
+  };
+
+  // 7. Add attachment (giả lập upload)
+  const addAttachment = async (file: File) => {
+    if (!card) return;
+
+    // Ở đây bạn nên upload file lên server trước để lấy URL thật
+    const attachmentData = {
+      name: file.name,
+      url: URL.createObjectURL(file),
+      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
     };
 
-    fetchCard();
-    }, [cardId, isOpen, updateCard]);
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'add-attachment',
+      data: attachmentData,
+      updatedById: 'current_user',
+    });
+  };
 
+  // 8. Remove attachment
+  const removeAttachment = async (attachmentId: string) => {
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'remove-attachment',
+      data: { attachmentId },
+    });
+  };
+
+  // 9. Update cover
+  const updateCover = async (coverData: {
+    coverUrl: string;
+    coverPublicId?: string;
+    coverFilename?: string;
+    coverFileSize?: number;
+  }) => {
+    if (!card) return;
+    return updateCardOnServer({
+      cardId: card.id,
+      action: 'update-cover',
+      data: coverData,
+      updatedById: 'current_user',
+    });
+  };
 
   // === TYPEWRITER EFFECT ===
   const startTypewriter = (text: string, onComplete?: () => void) => {
@@ -84,16 +224,15 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     }, 25);
   };
 
-  // === AI GENERATE ===
+  // AI generate content, sau đó update backend
   const generateWithAI = async (type: 'title' | 'description') => {
     if (!card) return;
 
     setAIGenerating(type);
     setAIProgress(0);
     await new Promise(r => setTimeout(r, 600));
-
     const aiContent = type === 'title'
-      ? `AI: Tối ưu "${title}" → "${title.trim()} (v${Date.now().toString().slice(-3)})"`
+      ? `AI: Tối ưu "${originalTitle}" → "${originalTitle.trim()} (v${Date.now().toString().slice(-3)})"`
       : `<p><strong>AI đã tạo mô tả:</strong></p>
          <ul>
            <li>Mục tiêu: ${title}</li>
@@ -108,10 +247,14 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
         : { ...card, description: aiContent };
 
       updateCard(payload);
+      if (type === 'title') {
+        setTitle(aiContent);
+      }
+
     });
   };
 
-  // === COMMENT ===
+  // === COMMENT (chưa có backend, chỉ giả lập local) ===
   const addComment = () => {
     if (!newComment.trim() || !card) return;
 
@@ -133,80 +276,42 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     setNewComment('');
   };
 
-  // === CHECKLIST ===
+  // Toggle checklist item done trạng thái gọi backend
   const toggleChecklist = (id: string) => {
     if (!card) return;
+    const item = card.checklist?.find(i => i.id === id);
+    if (!item) return;
 
-    const updated = (card.checklist || []).map(item =>
-      item.id === id ? { ...item, done: !item.done } : item
-    );
-
-    updateCard({
-      ...card,
-      checklist: updated,
-    });
+    updateChecklistItem(id, item.title, !item.done).catch(() => message.error('Cập nhật checklist thất bại'));
   };
 
-  const addChecklistItem = () => {
+  // Thêm checklist item gọi backend
+  const handleAddChecklistItem = () => {
     if (!newChecklistItem.trim() || !card) return;
-
-    const item: ChecklistItem = {
-      id: `cl_${Date.now()}`,
-      cardId: card.id,
-      title: newChecklistItem.trim(),
-      done: false,
-      position: (card.checklist?.length || 0),
-    };
-
-    updateCard({
-      ...card,
-      checklist: [...(card.checklist || []), item],
-    });
-
-    setNewChecklistItem('');
+    addChecklistItem(newChecklistItem.trim(), card.checklist?.length)
+      .then(() => setNewChecklistItem(''))
+      .catch(() => message.error('Thêm checklist thất bại'));
   };
 
+  // Tính progress checklist
   const progress = card?.checklist && card.checklist.length > 0
     ? Math.round((card.checklist.filter(i => i.done).length / card.checklist.length) * 100)
     : 0;
 
-  // === ATTACHMENT (giả lập upload) ===
-  const addAttachment = (file: File) => {
-    if (!card) return;
-
-    const attachment: Attachment = {
-      id: `a_${Date.now()}`,
-      cardId: card.id,
-      name: file.name,
-      url: URL.createObjectURL(file),
-      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-      uploadedAt: new Date().toISOString(),
-      uploadedById: 'current_user',
-      uploadedByName: 'Bạn',
-      uploadedByAvatar: null,
-    };
-
-    updateCard({
-      ...card,
-      attachments: [...(card.attachments || []), attachment],
-    });
-  };
-
-  // === CLEANUP ===
+  // Cleanup
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
-  // === SAFE LABELS ===
+  // Safe labels map
   const safeLabels = (card?.labels || []).map((l: CardLabel) => ({
     id: l.id,
     name: l.name || l.label || 'Label',
     color: l.color || '#94A3B8',
   }));
 
-  // === RETURN ===
   return {
     card,
     loading,
@@ -233,15 +338,22 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     toggleChecklist,
     newChecklistItem,
     setNewChecklistItem,
-    addChecklistItem,
+    addChecklistItem: handleAddChecklistItem,
     progress,
 
     attachments: card?.attachments || [],
     addAttachment,
+    removeAttachment,
 
     safeLabels,
 
-    updateCard,
+    updateBasic,
+    addLabel,
+    removeLabel,
+    updateChecklistItem,
+    removeChecklistItem,
+    updateCover,
+
     onClose,
   };
 };

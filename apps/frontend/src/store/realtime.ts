@@ -180,73 +180,95 @@ export class ProjectSocketManager {
 
   private handleStoreUpdate(event: string, msg: any) {
     const store = projectStore.getState();
-    switch (event) {
-      case "realtime.project.created":
-        store.addProject(msg.project);
-        store.setCurrentProject(msg.project);
-        break;
-      case "realtime.project.updated":
-        store.updateProject(msg.project);
-        break;
-      case "realtime.project.deleted":
-        store.removeProject(msg.projectId);
-        break;
-      case "realtime.project.listed":
-        if (Array.isArray(msg.projects)) msg.projects.forEach(store.addProject);
-        break;
-      case "realtime.project.member_added":
-        store.addMember(msg.member);
-        break;
-      case "realtime.project.member_removed":
-        store.removeMember(msg.userId);
-        break;
-      case "realtime.project.member_role_updated":
-        store.updateMember(msg.member);
-        break;
+    if (event === "realtime.action.response") {
+      switch (msg.action) {
+        case "card.create":
+          if (msg.status === "success") {
+            store.addCard(msg.data.columnId, msg.data);
+          }
+          break;
+        case "card.update":
+          if (msg.status === "success") {
+            store.updateCard(msg.data);
+          }
+          break;
+        case "card.delete":
+          if (msg.status === "success") {
+            store.removeCard(msg.data.columnId, msg.data.cardId);
+          }
+          break;
+        case "card.move":
+          if (msg.status === "success") {
+            store.moveCard(msg.data.srcColumnId, msg.data.newColumnId, msg.data.cardId, msg.data.newIndex
+            );
+          }
+          break;
+        case "card.copy":
+          if (msg.status === "success") {
+            store.addCard(msg.data.columnId, msg.data);
+          }
+          break;
 
-      // ---------------- Board ----------------
-      case "realtime.board.created":
-      case "realtime.board.updated":
-        store.updateBoard(msg.board);
-        break;
-      case "realtime.board.deleted":
-        store.removeBoard(msg.boardId);
-        break;
+        case "column.create":
+          if (msg.status === "success") {
+            store.addColumn(msg.data.boardId, msg.data);
+          }
+          break;
+        case "column.update":
+          if (msg.status === "success") {
+            store.updateColumn(msg.data);
+          }
+          break;
+        case "column.delete":
+          if (msg.status === "success") {
+            store.removeColumn(msg.data.boardId, msg.data.columnId);
+          }
+          break;
+        case "column.move":
+          console.log(msg)
+          if (msg.status === "success") {
+            console.log("[Realtime] column.move event received:", {
+              srcBoardId: msg.data.srcBoardId,
+              newBoardId: msg.data.newBoardId,
+              columnId: msg.data.columnId,
+              newPosition: msg.data.newPosition,
+            });
+            store.moveColumn(msg.data.srcBoardId, msg.data.newBoardId, msg.data.columnId, msg.data.newPosition);
+          }
+          break;
 
-      // ---------------- Column ----------------
-      case "realtime.column.created":
-        store.addColumn(msg.boardId, msg.column);
-        break;
-      case "realtime.column.updated":
-        store.updateColumn(msg.column);
-        break;
-      case "realtime.column.deleted":
-        store.removeColumn(msg.boardId, msg.columnId);
-        break;
-      case "realtime.column.moved":
-        store.moveColumn(msg.srcBoardId, msg.destBoardId, msg.columnId, msg.destIndex);
-        break;
+        case "board.create":
+        case "board.update":
+          if (msg.status === "success") {
+            store.updateBoard(msg.data);
+          }
+          break;
+        case "board.delete":
+          if (msg.status === "success") {
+            store.removeBoard(msg.data.boardId);
+          }
+          break;
 
-      // ---------------- Card ----------------
-      case "realtime.card.created":
-        store.addCard(msg.card.columnId, msg.card);
-        break;
-      case "realtime.card.updated":
-        store.updateCard(msg.card);
-        break;
-      case "realtime.card.deleted":
-        store.removeCard(msg.columnId, msg.cardId);
-        break;
-      case "realtime.card.moved":
-        store.moveCard(msg.srcColumnId, msg.cardId, msg.newColumnId, msg.newIndex);
-        break;
-      case "realtime.card.copied":
-        store.addCard(msg.card.columnId, msg.card);
-        break;
+        case "member.add":
+          if (msg.status === "success") {
+            store.addMember(msg.data);
+          }
+          break;
+        case "member.remove":
+          if (msg.status === "success") {
+            store.removeMember(msg.data.userId);
+          }
+          break;
+        case "member.role":
+          if (msg.status === "success") {
+            store.updateMember(msg.data);
+          }
+          break;
 
-      default:
-        console.warn(`Unhandled realtime event: ${event}`, msg);
-        break;
+        default:
+          console.warn(`Unhandled action in realtime.action.response: ${msg.action}`, msg);
+          break;
+      }
     }
   }
 

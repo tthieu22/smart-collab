@@ -5,7 +5,7 @@ import { LockResult } from '../interfaces/lock-result.interface';
 @Injectable()
 export class LockService {
   private readonly logger = new Logger(LockService.name);
-  private lockIntervals = new Map<string, NodeJS.Timeout>();
+  private lockIntervals = new Map<string, ReturnType<typeof setInterval>>();
   private lockQueue = new Map<string, (() => void)[]>();
 
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
@@ -130,12 +130,11 @@ export class LockService {
       }
     } while (cursor !== '0');
   }
-
   async emitWithLock(
     projectId: string,
     targetId: string,
     userId: string,
-    callback: () => void,
+    callback: () => Promise<any>, // callback trả Promise
     ttl = 30,
   ): Promise<LockResult> {
     return new Promise((resolve) => {
@@ -143,8 +142,8 @@ export class LockService {
         const lock = await this.acquireLock(projectId, targetId, userId, ttl);
         if (lock.status === 'success') {
           try {
-            callback();
-            resolve({ status: 'success' });
+            const result = await callback();
+            resolve(result);
           } finally {
             await this.releaseLock(projectId, targetId, userId);
           }
@@ -157,4 +156,5 @@ export class LockService {
       tryAcquire();
     });
   }
+
 }

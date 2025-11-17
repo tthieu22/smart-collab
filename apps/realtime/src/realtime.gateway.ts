@@ -260,11 +260,12 @@ export class RealtimeGateway
         client,
       );
 
-      this.reply(client, correlationId, result);
+      this.reply(client, correlationId, { action: event, ...result });
     } catch (err: any) {
       this.reply(client, correlationId, {
         status: 'error',
         message: err.message || 'Server error',
+        action: event,
       });
     }
   }
@@ -272,7 +273,7 @@ export class RealtimeGateway
   @SubscribeMessage('joinProject')
   async joinProject(
     @ConnectedSocket() client: Socket,
-    @MessageBody() projectId: string, // ← NHẬN STRING TRỰC TIẾP
+    @MessageBody() projectId: string,
     ack?: (success: boolean) => void,
   ) {
     const userId = (client as any).userId;

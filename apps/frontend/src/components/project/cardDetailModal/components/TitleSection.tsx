@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input, Button, Skeleton, Progress, Typography, theme } from 'antd';
 import AIBorderWrapper from './AIBorderWrapper';
 import AIIcon from './AIIcon';
@@ -30,6 +30,20 @@ const TitleSection: React.FC<Props> = ({
 }) => {
   const { token } = theme.useToken();
 
+  // Local state giữ giá trị edit
+  const [localTitle, setLocalTitle] = useState(title);
+
+  // Đồng bộ khi prop title thay đổi (ví dụ khi load xong hoặc update từ backend)
+  useEffect(() => {
+    setLocalTitle(title);
+  }, [title]);
+
+  const handleBlur = () => {
+    setTitle(localTitle.trim());
+    onBlur();
+    setEditingTitle(false);
+  };
+
   return (
     <AIBorderWrapper active={isGenerating}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -41,17 +55,14 @@ const TitleSection: React.FC<Props> = ({
               size="small"
               showInfo={false}
               style={{ marginTop: 8 }}
-              strokeColor={token.colorPrimary} // màu chính theo theme
+              strokeColor={token.colorPrimary}
             />
           </div>
         ) : editingTitle ? (
           <Input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            onBlur={() => {
-              onBlur();
-              setEditingTitle(false);
-            }}
+            value={localTitle}
+            onChange={e => setLocalTitle(e.target.value)}
+            onBlur={handleBlur}
             onPressEnter={e => e.currentTarget.blur()}
             autoFocus
             style={{
@@ -59,8 +70,8 @@ const TitleSection: React.FC<Props> = ({
               fontWeight: 'bold',
               border: 'none',
               padding: 0,
-              color: token.colorText, // màu chữ theo theme
-              backgroundColor: token.colorBgContainer, // nền input theo theme
+              color: token.colorText,
+              backgroundColor: token.colorBgContainer,
               borderRadius: token.borderRadius,
             }}
           />
@@ -72,7 +83,7 @@ const TitleSection: React.FC<Props> = ({
                 margin: 0,
                 flex: 1,
                 cursor: 'pointer',
-                color: token.colorText, // màu chữ theo theme
+                color: token.colorText,
               }}
               onClick={() => setEditingTitle(true)}
             >

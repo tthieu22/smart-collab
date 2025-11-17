@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { theme } from 'antd';
 
@@ -9,53 +7,60 @@ const AIBorderWrapper: React.FC<{ children: React.ReactNode; active?: boolean }>
 }) => {
   const { token } = theme.useToken();
 
-  // gradient màu dựa trên theme, bạn có thể chỉnh theo ý thích
-  const activeGradient = `linear-gradient(
-    90deg, 
-    ${token.colorPrimary}, 
-    ${token.colorSuccess}, 
-    ${token.colorWarning}, 
-    ${token.colorError}, 
-    ${token.colorPrimary}
-  )`;
-  const inactiveGradient = `linear-gradient(
-    90deg, 
-    ${token.colorBorderSecondary}, 
-    ${token.colorBorder}, 
-    ${token.colorBorderSecondary}
-  )`;
-
   return (
-    <div
-      style={{
-        position: 'relative',
-        borderRadius: 12,
-        padding: active ? 3 : 2,
-        background: active ? activeGradient : inactiveGradient,
-        backgroundSize: '200% 200%',
-        animation: active ? 'gradient 2.5s ease infinite' : 'none',
-        transition: 'all 0.3s ease',
-        boxShadow: active ? `0 0 20px ${token.colorPrimary}66` : 'none', // 66 = 40% opacity
-      }}
-    >
-      <div
-        style={{
-          background: token.colorBgContainer, // màu nền container theo theme
-          borderRadius: 10,
-          padding: 16,
-          height: '100%',
-        }}
-      >
-        {children}
+    <>
+      <div className={active ? 'active' : 'inactive'}>
+        <div className="content">{children}</div>
       </div>
       <style jsx>{`
+        div {
+          position: relative;
+          border-radius: 12px;
+          padding: 2px;
+          transition: all 0.3s ease;
+        }
+        .active {
+          padding: 3px;
+          background-image: linear-gradient(
+            90deg,
+            ${token.colorPrimary},
+            ${token.colorSuccess},
+            ${token.colorWarning},
+            ${token.colorError},
+            ${token.colorPrimary}
+          );
+          background-repeat: no-repeat;
+          background-position: 0% 50%;
+          background-size: 200% 200%;
+          animation: gradient 2.5s ease infinite;
+          box-shadow: 0 0 20px ${token.colorPrimary}66;
+        }
+        .inactive {
+          background-image: linear-gradient(
+            90deg,
+            ${token.colorBorderSecondary},
+            ${token.colorBorder},
+            ${token.colorBorderSecondary}
+          );
+          background-repeat: no-repeat;
+          background-position: 0% 50%;
+          background-size: 200% 200%;
+          animation: none;
+          box-shadow: none;
+        }
+        .content {
+          background: ${token.colorBgContainer};
+          border-radius: 10px;
+          padding: 16px;
+          height: 100%;
+        }
         @keyframes gradient {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
       `}</style>
-    </div>
+    </>
   );
 };
 

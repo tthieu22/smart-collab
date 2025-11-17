@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { Button } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
@@ -11,16 +12,39 @@ interface Props {
 }
 
 const CommentInput: React.FC<Props> = ({ newComment, setNewComment, addComment }) => {
+  const [localComment, setLocalComment] = useState(newComment);
+
+  useEffect(() => {
+    setLocalComment(newComment);
+  }, [newComment]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalComment(e.target.value);
+  };
+
+  const handleSend = () => {
+    if (localComment.trim()) {
+      setNewComment(localComment.trim());
+      addComment();
+      setLocalComment('');
+    }
+  };
+
   return (
     <div style={{ marginBottom: 16 }}>
       <TextArea
         placeholder="Viết bình luận..."
-        value={newComment}
-        onChange={e => setNewComment(e.target.value)}
+        value={localComment}
+        onChange={handleChange}
         rows={3}
         style={{ marginBottom: 8 }}
       />
-      <Button type="primary" onClick={addComment} disabled={!newComment.trim()} icon={<SendOutlined />}>
+      <Button
+        type="primary"
+        onClick={handleSend}
+        disabled={!localComment.trim()}
+        icon={<SendOutlined />}
+      >
         Gửi
       </Button>
     </div>
