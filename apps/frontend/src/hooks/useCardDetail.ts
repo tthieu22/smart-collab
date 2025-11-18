@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import { message } from 'antd';
+import { getProjectSocketManager } from '@smart/store/realtime';
 import type { Card, CardComment, ChecklistItem, Attachment, CardLabel } from '@smart/types/project';
 
 export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => void) => {
   const { cards, updateCard } = projectStore();
+  const socket = getProjectSocketManager();
   const card = cards[cardId];
 
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,8 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     setLoading(true);
     try {
       console.log(payload, 'payload');
-      // const updated: Card = await projectService.updateCard(payload);
+      // const updated: any = await socket.updateCard(payload);
+      console.log('sđá');
       // updateCard(updated);
       // return updated;
     } catch (error) {

@@ -122,21 +122,21 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
 
     const overData = over.data.current || {};
     const projectId = currentProject.id;
-    console.log('[Kéo thả kết thúc] Bắt đầu xử lý sự kiện kéo thả.');
-    console.log('  - ID thẻ kéo (active.id):', active.id);
-    console.log('  - ID thẻ/đối tượng thả (over.id):', over.id);
-    console.log('  - Phím Ctrl/Command đang giữ:', ctrlPressed);
-    console.log('  - Thông tin đối tượng kéo (activeItem):', activeItem);
-    console.log('  - Dữ liệu đối tượng thả (overData):', overData);
-    console.log('  - ID dự án hiện tại:', projectId);
+    // console.log('[Kéo thả kết thúc] Bắt đầu xử lý sự kiện kéo thả.');
+    // console.log('  - ID thẻ kéo (active.id):', active.id);
+    // console.log('  - ID thẻ/đối tượng thả (over.id):', over.id);
+    // console.log('  - Phím Ctrl/Command đang giữ:', ctrlPressed);
+    // console.log('  - Thông tin đối tượng kéo (activeItem):', activeItem);
+    // console.log('  - Dữ liệu đối tượng thả (overData):', overData);
+    // console.log('  - ID dự án hiện tại:', projectId);
     if (activeItem.type === 'COLUMN') {
       const srcBoardId = activeItem.boardId;
       const destBoardId = overData.boardId ?? srcBoardId;
       const columnId = String(active.id);
 
-      console.log('  [CỘT] ID bảng nguồn:', srcBoardId);
-      console.log('  [CỘT] ID bảng đích:', destBoardId);
-      console.log('  [CỘT] ID cột đang kéo:', columnId);
+      // console.log('  [CỘT] ID bảng nguồn:', srcBoardId);
+      // console.log('  [CỘT] ID bảng đích:', destBoardId);
+      // console.log('  [CỘT] ID cột đang kéo:', columnId);
       // Chỉ cho phép di chuyển column trong cùng board type 'board'
       if (
         boardTypes[srcBoardId] === 'board' &&
@@ -148,8 +148,8 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
         const columnIds = state.boardColumns[destBoardId] || [];
         const activeIndex = columnIds.indexOf(columnId);
 
-        console.log('  [CỘT] Danh sách các cột trong bảng đích:', columnIds);
-        console.log('  [CỘT] Vị trí cột kéo hiện tại (activeIndex):', activeIndex);
+        // console.log('  [CỘT] Danh sách các cột trong bảng đích:', columnIds);
+        // console.log('  [CỘT] Vị trí cột kéo hiện tại (activeIndex):', activeIndex);
 
         // Nếu không tìm thấy activeIndex, không làm gì
         if (activeIndex === -1) {
@@ -176,9 +176,9 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
 
         // Chỉ di chuyển nếu index thay đổi
         if (destIndex !== activeIndex) {
-           console.log(
-            `  [CỘT] Di chuyển cột từ vị trí ${activeIndex} sang vị trí ${destIndex} trong bảng ${destBoardId}`
-          );
+          //  console.log(
+          //   `  [CỘT] Di chuyển cột từ vị trí ${activeIndex} sang vị trí ${destIndex} trong bảng ${destBoardId}`
+          // );
 
           // Gọi moveColumn trong store để cập nhật state (store sẽ tự động cập nhật position)
           projectStore
@@ -210,15 +210,15 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
       const srcType = boardTypes[srcBoardId];
       const destType = boardTypes[destBoardId];
       const isCopy = ctrlPressed || srcType !== destType;
-      console.log('🪪 ID thẻ đang kéo:', active.id);
-      console.log('📦 Nguồn → Bảng:', srcBoardId, ' | Cột:', srcColumnId);
-      console.log('🎯 Đích → Bảng:', destBoardId, ' | Cột:', destColumnId);
-      console.log('📋 Dữ liệu phần tử đang nằm trên (overData):', overData);
-      console.log('🗂️ Danh sách ID thẻ trong cột đích:', destItems);
-      console.log('📍 Vị trí thả được tính toán:', destIndex);
-      console.log('🧭 Loại bảng → Nguồn:', srcType, ' | Đích:', destType);
-      console.log('⌨️ Phím Ctrl đang giữ:', ctrlPressed);
-      console.log('⚙️ Hành động sẽ thực hiện:', isCopy ? 'SAO CHÉP (COPY)' : 'DI CHUYỂN (MOVE)');
+      // console.log('🪪 ID thẻ đang kéo:', active.id);
+      // console.log('📦 Nguồn → Bảng:', srcBoardId, ' | Cột:', srcColumnId);
+      // console.log('🎯 Đích → Bảng:', destBoardId, ' | Cột:', destColumnId);
+      // console.log('📋 Dữ liệu phần tử đang nằm trên (overData):', overData);
+      // console.log('🗂️ Danh sách ID thẻ trong cột đích:', destItems);
+      // console.log('📍 Vị trí thả được tính toán:', destIndex);
+      // console.log('🧭 Loại bảng → Nguồn:', srcType, ' | Đích:', destType);
+      // console.log('⌨️ Phím Ctrl đang giữ:', ctrlPressed);
+      // console.log('⚙️ Hành động sẽ thực hiện:', isCopy ? 'SAO CHÉP (COPY)' : 'DI CHUYỂN (MOVE)');
       
       const payload = {
         cardId: String(active.id),
@@ -230,14 +230,14 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
         userId: currentUserId,
       };
       if (isCopy) {
-        console.log(
-          `📄 [Kéo thả] Đang SAO CHÉP thẻ ${active.id} → Cột ${destColumnId} (vị trí ${destIndex})`
-        );
+        // console.log(
+        //   `📄 [Kéo thả] Đang SAO CHÉP thẻ ${active.id} → Cột ${destColumnId} (vị trí ${destIndex})`
+        // );
         socket.copyCard(projectId, payload);
       } else {
-        console.log(
-          `🚚 [Kéo thả] Đang DI CHUYỂN thẻ ${active.id} → Cột ${destColumnId} (vị trí ${destIndex})`
-        );
+        // console.log(
+        //   `🚚 [Kéo thả] Đang DI CHUYỂN thẻ ${active.id} → Cột ${destColumnId} (vị trí ${destIndex})`
+        // );
         socket.moveCard(projectId, payload);
       }
     }

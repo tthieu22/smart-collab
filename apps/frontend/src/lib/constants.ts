@@ -47,7 +47,8 @@ export const API_ENDPOINTS = {
       GET :'/projects/column',
       
       CARD: {
-        GET: '/projects/card'
+        GET: '/projects/card',
+        PUT: '/projects/card',
       }
     }
   },
