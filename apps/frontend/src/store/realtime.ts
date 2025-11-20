@@ -227,12 +227,6 @@ export class ProjectSocketManager {
         case "column.move":
           console.log(msg)
           if (msg.status === "success") {
-            console.log("[Realtime] column.move event received:", {
-              srcBoardId: msg.data.srcBoardId,
-              newBoardId: msg.data.newBoardId,
-              columnId: msg.data.columnId,
-              newPosition: msg.data.newPosition,
-            });
             store.moveColumn(msg.data.srcBoardId, msg.data.newBoardId, msg.data.columnId, msg.data.newPosition);
           }
           break;
@@ -321,6 +315,9 @@ export class ProjectSocketManager {
   }
   copyCard(projectId: string, payload: MoveCopyCardPayload, cb?: (msg: any) => void) {
     return this.lockAwareAction("card.copy", { projectId, payload }, cb);
+  }
+  updateCard(projectId: string, cardId: string, action: string, data: any, updatedById?: string, cb?: (msg: any) => void) {
+    return this.lockAwareAction("card.update", { projectId, payload: { cardId, action, data, updatedById } }, cb);
   }
   deleteCard(projectId: string, cardId: string, cb?: (msg: any) => void) {
     return this.lockAwareAction("card.delete", { projectId, payload: { cardId } }, cb);

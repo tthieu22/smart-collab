@@ -130,10 +130,9 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
           isGenerating={isGeneratingTitle}
           aiProgress={aiProgress}
           onAIGenerate={() => generateWithAI('title')}
-          onBlur={() => {
-            // Có thể update lại description lên store hoặc gì đó
+          onBlur={(updatedTitle) => {
             if (!aiGenerating) {
-              updateBasic({ title });
+              updateBasic({ title: updatedTitle });
             }
           }}
         />
@@ -153,10 +152,9 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
               isGenerating={isGeneratingDesc}
               aiProgress={aiProgress}
               onAIGenerate={() => generateWithAI('description')}
-              onBlur={() => {
-                // Có thể update lại description lên store hoặc gì đó
+              onBlur={(updatedDescription) => {
                 if (!aiGenerating) {
-                  updateBasic({ description });
+                  updateBasic({ description: updatedDescription });
                 }
               }}
             />

@@ -1,7 +1,7 @@
 // src/components/project/board/Card.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card as CardType } from '@smart/types/project';
@@ -71,7 +71,7 @@ export function Card({
   };
 
   // LOG: Modal state change
-  React.useEffect(() => {
+  useEffect(() => {
     if (isModalOpen) {
       console.log('[Card] MODAL MỞ THÀNH CÔNG:', card.id);
     }

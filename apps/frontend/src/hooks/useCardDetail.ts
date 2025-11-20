@@ -1,264 +1,204 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import { message } from 'antd';
 import { getProjectSocketManager } from '@smart/store/realtime';
-import type { Card, CardComment, ChecklistItem, Attachment, CardLabel } from '@smart/types/project';
+import type { Card, CardComment, ChecklistItem, CardLabel } from '@smart/types/project';
+import { useUserStore } from '@smart/store/user';
 
 export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => void) => {
   const { cards, updateCard } = projectStore();
-  const socket = getProjectSocketManager();
   const card = cards[cardId];
+  const socket = getProjectSocketManager();
+  const { currentUser } = useUserStore();
 
-  const [loading, setLoading] = useState(true);
+  // Local state for editable fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [editingTitle, setEditingTitle] = useState(false);
+  const [originalTitle, setOriginalTitle] = useState('');
 
-  const [aiGenerating, setAIGenerating] = useState<'title' | 'description' | null>(null);
-  const [aiProgress, setAIProgress] = useState(0);
-  const [displayedText, setDisplayedText] = useState('');
+  // Loading state for fetch/update
+  const [loading, setLoading] = useState(false);
+
+  // AI generation state (type + progress + displayed text)
+  const [aiState, setAIState] = useState({
+    type: null as 'title' | 'description' | null,
+    progress: 0,
+    displayedText: '',
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Thêm state editingTitle
+  const [editingTitle, setEditingTitle] = useState(false);
+
+  // Từ aiState.type để derive isGeneratingTitle, isGeneratingDesc
+  const isGeneratingTitle = aiState.type === 'title';
+  const isGeneratingDesc = aiState.type === 'description';
+
+  // New comment + checklist item inputs
   const [newComment, setNewComment] = useState('');
   const [newChecklistItem, setNewChecklistItem] = useState('');
-  const [originalTitle, setOriginalTitle] = useState('');
-  console.log(card)
-  // Sync dữ liệu khi card hoặc modal mở
+
+  // Sync local editable states with card when card or isOpen changes
   useEffect(() => {
     if (!card || !isOpen) return;
-    setTitle(card.title || '');
-    setOriginalTitle(card.title || ''); 
-    setDescription(card.description || '');
+
+    if (title !== card.title) setTitle(card.title || '');
+    if (description !== card.description) setDescription(card.description || '');
+    if (originalTitle !== card.title) setOriginalTitle(card.title || '');
     setLoading(false);
-  }, [card, isOpen]);
+  }, [card?.title, card?.description, isOpen]);
 
+  // Fetch card detail when modal opens or cardId changes
   useEffect(() => {
-  if (!isOpen || !cardId) return;
+    if (!isOpen || !cardId) return;
 
-  const fetchCard = async () => {
+    const fetchCard = async () => {
       setLoading(true);
       try {
-      const fetched: any = await projectService.getCard(cardId);
-
-      // Cập nhật toàn bộ dữ liệu card đầy đủ, ghi đè card rút gọn trong store
-      updateCard(fetched);
-
-      console.log('Fetched card (full):', fetched);
-      } catch (error) {
-      console.error(error);
-      message.error('Không thể tải card');
+        const fetched: any = await projectService.getCard(cardId);
+        console.log('Calling updateCard with:', fetched);
+        updateCard(fetched.data);
+      } catch {
+        message.error('Không thể tải card');
       } finally {
-      setLoading(false);
+        setLoading(false);
       }
-  };
-
-  fetchCard();
-  }, [cardId, isOpen, updateCard]);
-
-  // Hàm gọi backend update card, trả về card updated
-  const updateCardOnServer = async (payload: {
-    cardId: string;
-    action: string;
-    data: any;
-    updatedById?: string;
-  }) => {
-    setLoading(true);
-    try {
-      console.log(payload, 'payload');
-      // const updated: any = await socket.updateCard(payload);
-      console.log('sđá');
-      // updateCard(updated);
-      // return updated;
-    } catch (error) {
-      message.error('Cập nhật thất bại');
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Các hàm update từng phần gọi backend
-
-  // 1. Update basic fields
-  const updateBasic = async (fields: {
-    title?: string;
-    description?: string;
-    status?: string;
-    deadline?: string | null;
-    priority?: number | null;
-  }) => {
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'update-basic',
-      data: {
-        title: fields.title ?? card.title,
-        description: fields.description ?? card.description,
-        status: fields.status ?? card.status,
-        deadline: fields.deadline ?? card.deadline,
-        priority: fields.priority ?? card.priority,
-      },
-      updatedById: 'current_user',
-    });
-  };
-
-  // 2. Add label
-  const addLabel = async (label: string) => { 
-      console.log('Adding label:', label);
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'add-label',
-      data: { label },
-    });
-  };
-
-  // 3. Remove label
-  const removeLabel = async (labelId: string) => {
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'remove-label',
-      data: { labelId },
-    });
-  };
-
-  // 4. Add checklist item
-  const addChecklistItem = async (title: string, position?: number) => {
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'add-checklist-item',
-      data: { title, position: position ?? 0 },
-    });
-  };
-
-  // 5. Update checklist item
-  const updateChecklistItem = async (itemId: string, title: string, done: boolean) => {
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'update-checklist-item',
-      data: { itemId, title, done },
-    });
-  };
-
-  // 6. Remove checklist item
-  const removeChecklistItem = async (itemId: string) => {
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'remove-checklist-item',
-      data: { itemId },
-    });
-  };
-
-  // 7. Add attachment (giả lập upload)
-  const addAttachment = async (file: File) => {
-    if (!card) return;
-
-    // Ở đây bạn nên upload file lên server trước để lấy URL thật
-    const attachmentData = {
-      name: file.name,
-      url: URL.createObjectURL(file),
-      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
     };
 
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'add-attachment',
-      data: attachmentData,
-      updatedById: 'current_user',
-    });
-  };
+    fetchCard();
+  }, [cardId, isOpen]);
 
-  // 8. Remove attachment
-  const removeAttachment = async (attachmentId: string) => {
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'remove-attachment',
-      data: { attachmentId },
-    });
-  };
+  // Cleanup AI typewriter interval on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
-  // 9. Update cover
-  const updateCover = async (coverData: {
-    coverUrl: string;
-    coverPublicId?: string;
-    coverFilename?: string;
-    coverFileSize?: number;
-  }) => {
-    if (!card) return;
-    return updateCardOnServer({
-      cardId: card.id,
-      action: 'update-cover',
-      data: coverData,
-      updatedById: 'current_user',
-    });
-  };
+  // Function to update card on server and handle loading
+  const updateCardOnServer = useCallback(
+    async (payload: {
+      cardId: string;
+      action: string;
+      data: any;
+      updatedById?: string;
+    }) => {
+      if (!card) return;
+      setLoading(true);
+      try {
+        const res = await socket.updateCard(
+          card.projectId,
+          cardId,
+          payload.action,
+          payload.data,
+          payload.updatedById
+        );
+        return res;
+      } catch {
+        message.error('Cập nhật thất bại');
+        throw new Error('Update failed');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [ cardId, socket]
+  );
 
-  // === TYPEWRITER EFFECT ===
-  const startTypewriter = (text: string, onComplete?: () => void) => {
-    let i = 0;
-    setDisplayedText('');
-    setAIProgress(0);
-    if (intervalRef.current) clearInterval(intervalRef.current);
+  // Update basic card fields and sync local state immediately
+  const updateBasic = useCallback(
+    async (fields: {
+      title?: string;
+      description?: string;
+      status?: string;
+      deadline?: string | null;
+      priority?: number | null;
+    }) => {
+      if (!card) return;
 
-    intervalRef.current = setInterval(() => {
-      if (i < text.length) {
-        setDisplayedText(prev => prev + text.charAt(i));
-        i++;
-        setAIProgress(Math.round((i / text.length) * 100));
-      } else {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+      const payload = {
+        title: fields.title ?? title,
+        description: fields.description ?? description,
+        status: fields.status,
+        deadline: fields.deadline,
+        priority: fields.priority,
+      };
+
+      await updateCardOnServer({
+        cardId: card.id,
+        action: 'update-basic',
+        data: payload,
+        updatedById: currentUser?.id,
+      });
+
+      if (fields.title !== undefined) setTitle(fields.title);
+      if (fields.description !== undefined) setDescription(fields.description);
+    },
+    [card, title, description, currentUser?.id, updateCardOnServer]
+  );
+
+  // Typewriter effect for AI generated text
+  const startTypewriter = useCallback(
+    (text: string, onComplete?: () => void) => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      let i = 0;
+      setAIState({ type: aiState.type, progress: 0, displayedText: '' });
+
+      intervalRef.current = setInterval(() => {
+        if (i < text.length) {
+          setAIState((prev) => ({
+            ...prev,
+            displayedText: prev.displayedText + text.charAt(i),
+            progress: Math.round(((i + 1) / text.length) * 100),
+          }));
+          i++;
+        } else {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          onComplete?.();
+          setTimeout(() => setAIState({ type: null, progress: 0, displayedText: '' }), 300);
         }
-        onComplete?.();
-        setTimeout(() => {
-          setAIGenerating(null);
-          setAIProgress(0);
-        }, 300);
-      }
-    }, 25);
-  };
+      }, 25);
+    },
+    [aiState.type]
+  );
 
-  // AI generate content, sau đó update backend
-  const generateWithAI = async (type: 'title' | 'description') => {
-    if (!card) return;
+  // Generate AI content and sync to local state
+  const generateWithAI = useCallback(
+    async (type: 'title' | 'description') => {
+      if (!card) return;
 
-    setAIGenerating(type);
-    setAIProgress(0);
-    await new Promise(r => setTimeout(r, 600));
-    const aiContent = type === 'title'
-      ? `AI: Tối ưu "${originalTitle}" → "${originalTitle.trim()} (v${Date.now().toString().slice(-3)})"`
-      : `<p><strong>AI đã tạo mô tả:</strong></p>
-         <ul>
-           <li>Mục tiêu: ${title}</li>
-           <li>Ưu tiên: ${card.priority ?? 'Trung bình'}</li>
-           <li>Deadline: ${card.deadline ? new Date(card.deadline).toLocaleDateString('vi') : 'Chưa có'}</li>
-         </ul>
-         <p>Hiệu ứng Google AI đang chạy...</p>`;
+      setAIState({ type, progress: 0, displayedText: '' });
+      await new Promise((r) => setTimeout(r, 600));
 
-    startTypewriter(aiContent, () => {
-      const payload = type === 'title'
-        ? { ...card, title: aiContent }
-        : { ...card, description: aiContent };
+      const aiContent =
+        type === 'title'
+          ? `AI: Tối ưu "${originalTitle}" → "${originalTitle.trim()} (v${Date.now()
+              .toString()
+              .slice(-3)})"`
+          : `<p><strong>AI đã tạo mô tả:</strong></p>
+             <ul>
+               <li>Mục tiêu: ${title}</li>
+               <li>Ưu tiên: ${card.priority ?? 'Trung bình'}</li>
+               <li>Deadline: ${
+                 card.deadline ? new Date(card.deadline).toLocaleDateString('vi') : 'Chưa có'
+               }</li>
+             </ul>
+             <p>Hiệu ứng Google AI đang chạy...</p>`;
 
-      updateCard(payload);
-      if (type === 'title') {
-        setTitle(aiContent);
-      }
+      startTypewriter(aiContent, () => {
+        if (type === 'title') setTitle(aiContent);
+      });
+    },
+    [card, originalTitle, title, startTypewriter]
+  );
 
-    });
-  };
-
-  // === COMMENT (chưa có backend, chỉ giả lập local) ===
-  const addComment = () => {
+  // Comment add (local update)
+  const addComment = useCallback(() => {
     if (!newComment.trim() || !card) return;
 
     const comment: CardComment = {
@@ -277,43 +217,134 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     });
 
     setNewComment('');
-  };
+  }, [newComment, card, updateCard]);
 
-  // Toggle checklist item done trạng thái gọi backend
-  const toggleChecklist = (id: string) => {
-    if (!card) return;
-    const item = card.checklist?.find(i => i.id === id);
-    if (!item) return;
+  // Checklist helpers calling updateCardOnServer
+  const addChecklistItem = useCallback(
+    (title: string, position?: number) => {
+      if (!card) return Promise.resolve();
+      return updateCardOnServer({
+        cardId: card.id,
+        action: 'add-checklist-item',
+        data: { title, position: position ?? 0 },
+      });
+    },
+    [card, updateCardOnServer]
+  );
 
-    updateChecklistItem(id, item.title, !item.done).catch(() => message.error('Cập nhật checklist thất bại'));
-  };
+  const updateChecklistItem = useCallback(
+    (itemId: string, title: string, done: boolean) => {
+      if (!card) return Promise.resolve();
+      return updateCardOnServer({
+        cardId: card.id,
+        action: 'update-checklist-item',
+        data: { itemId, title, done },
+      });
+    },
+    [card, updateCardOnServer]
+  );
 
-  // Thêm checklist item gọi backend
-  const handleAddChecklistItem = () => {
+  const removeChecklistItem = useCallback(
+    (itemId: string) => {
+      if (!card) return Promise.resolve();
+      return updateCardOnServer({
+        cardId: card.id,
+        action: 'remove-checklist-item',
+        data: { itemId },
+      });
+    },
+    [card, updateCardOnServer]
+  );
+
+  const toggleChecklist = useCallback(
+    (id: string) => {
+      if (!card) return;
+      const item = card.checklist?.find((i) => i.id === id);
+      if (!item) return;
+      updateChecklistItem(id, item.title, !item.done).catch(() =>
+        message.error('Cập nhật checklist thất bại')
+      );
+    },
+    [card, updateChecklistItem]
+  );
+
+  const handleAddChecklistItem = useCallback(() => {
     if (!newChecklistItem.trim() || !card) return;
     addChecklistItem(newChecklistItem.trim(), card.checklist?.length)
       .then(() => setNewChecklistItem(''))
       .catch(() => message.error('Thêm checklist thất bại'));
-  };
+  }, [newChecklistItem, card, addChecklistItem]);
 
-  // Tính progress checklist
-  const progress = card?.checklist && card.checklist.length > 0
-    ? Math.round((card.checklist.filter(i => i.done).length / card.checklist.length) * 100)
-    : 0;
+  // Attachment helpers
+  const addAttachment = useCallback(
+    (file: File) => {
+      if (!card) return Promise.resolve();
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+      const attachmentData = {
+        name: file.name,
+        url: URL.createObjectURL(file),
+        size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      };
 
-  // Safe labels map
-  const safeLabels = (card?.labels || []).map((l: CardLabel) => ({
-    id: l.id,
-    name: l.name || l.label || 'Label',
-    color: l.color || '#94A3B8',
-  }));
+      return updateCardOnServer({
+        cardId: card.id,
+        action: 'add-attachment',
+        data: attachmentData,
+        updatedById: currentUser?.id ?? 'current_user',
+      });
+    },
+    [card, updateCardOnServer, currentUser?.id]
+  );
+
+  const removeAttachment = useCallback(
+    (attachmentId: string) => {
+      if (!card) return Promise.resolve();
+      return updateCardOnServer({
+        cardId: card.id,
+        action: 'remove-attachment',
+        data: { attachmentId },
+      });
+    },
+    [card, updateCardOnServer]
+  );
+
+  // Update cover image
+  const updateCover = useCallback(
+    (coverData: {
+      coverUrl: string;
+      coverPublicId?: string;
+      coverFilename?: string;
+      coverFileSize?: number;
+    }) => {
+      if (!card) return Promise.resolve();
+      return updateCardOnServer({
+        cardId: card.id,
+        action: 'update-cover',
+        data: coverData,
+        updatedById: currentUser?.id ?? 'current_user',
+      });
+    },
+    [card, updateCardOnServer, currentUser?.id]
+  );
+
+  // Checklist progress calculation
+  const progress = useMemo(() => {
+    if (!card?.checklist?.length) return 0;
+    return Math.round(
+      (card.checklist.filter((i) => i.done).length / card.checklist.length) * 100
+    );
+  }, [card?.checklist]);
+
+  // Safe labels for UI
+  const safeLabels = useMemo(
+    () =>
+      (card?.labels || []).map((l: CardLabel) => ({
+        id: l.id,
+        name: l.name || l.label || 'Label',
+        color: l.color || '#94A3B8',
+      })),
+    [card?.labels]
+  );
 
   return {
     card,
@@ -322,15 +353,16 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     setTitle,
     description,
     setDescription,
+    originalTitle,
     editingTitle,
     setEditingTitle,
+    aiGenerating: aiState.type,
+    aiProgress: aiState.progress,
+    displayedText: aiState.displayedText,
+    isGeneratingTitle,
+    isGeneratingDesc,
 
-    aiGenerating,
-    aiProgress,
-    displayedText,
     generateWithAI,
-    isGeneratingTitle: aiGenerating === 'title',
-    isGeneratingDesc: aiGenerating === 'description',
 
     comments: card?.comments || [],
     newComment,
@@ -351,12 +383,15 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     safeLabels,
 
     updateBasic,
-    addLabel,
-    removeLabel,
+    addLabel: (label: string) =>
+      card ? updateCardOnServer({ cardId: card.id, action: 'add-label', data: { label } }) : Promise.resolve(),
+    removeLabel: (labelId: string) =>
+      card ? updateCardOnServer({ cardId: card.id, action: 'remove-label', data: { labelId } }) : Promise.resolve(),
     updateChecklistItem,
     removeChecklistItem,
     updateCover,
 
     onClose,
   };
+
 };

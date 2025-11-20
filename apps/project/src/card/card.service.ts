@@ -9,37 +9,30 @@ export class CardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly amqpConnection: AmqpConnection,
-  ) {}
+  ) { }
+  
+  private readonly CARD_INCLUDE_FULL = {
+    labels: true,
+    views: true,
+    comments: {
+      orderBy: [{ createdAt: "asc" as const }],
+    },
+    checklist: {
+      orderBy: [{ position: "asc" as const }],
+    },
+    attachments: {
+      orderBy: [{ uploadedAt: "desc" as const }],
+    },
+    column: true,
+    project: true,
+  };
 
   async getCardDetail(cardId: string) {
-    this.logger.log(`Getting detail for card id: ${cardId}`);
-
     const card = await this.prisma.card.findUnique({
       where: { id: cardId },
-      include: {
-        labels: true,
-        views: true,
-        comments: {
-          orderBy: { createdAt: 'asc' },
-        },
-        checklist: {
-          orderBy: { position: 'asc' },
-        },
-        attachments: {
-          orderBy: { uploadedAt: 'desc' },
-        },
-        column: true,
-        project: true,
-      },
+      include: this.CARD_INCLUDE_FULL,
     });
-
-    if (!card) {
-      this.logger.warn(`Card not found with id: ${cardId}`);
-      return null;
-    }
-
-    this.logger.log(`Card detail fetched successfully for id: ${cardId}`);
-    return card;
+    return card ?? null;
   }
 
 
@@ -144,8 +137,6 @@ export class CardService {
   }) {
     const { cardId, action, data, updatedById } = params;
 
-    this.logger.log(`Update card ${cardId} with action: ${action}`);
-
     let updatedCard;
 
     switch (action) {
@@ -160,20 +151,17 @@ export class CardService {
             priority: data.priority,
             updatedById,
           },
-          include: { labels: true, views: true, checklist: true, attachments: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
       case "add-label":
         await this.prisma.cardLabel.create({
-          data: {
-            cardId,
-            label: data.label,
-          },
+          data: { cardId, label: data.label },
         });
         updatedCard = await this.prisma.card.findUnique({
           where: { id: cardId },
-          include: { labels: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -183,7 +171,7 @@ export class CardService {
         });
         updatedCard = await this.prisma.card.findUnique({
           where: { id: cardId },
-          include: { labels: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -197,7 +185,7 @@ export class CardService {
         });
         updatedCard = await this.prisma.card.findUnique({
           where: { id: cardId },
-          include: { checklist: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -211,7 +199,7 @@ export class CardService {
         });
         updatedCard = await this.prisma.card.findUnique({
           where: { id: cardId },
-          include: { checklist: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -221,7 +209,7 @@ export class CardService {
         });
         updatedCard = await this.prisma.card.findUnique({
           where: { id: cardId },
-          include: { checklist: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -237,7 +225,7 @@ export class CardService {
         });
         updatedCard = await this.prisma.card.findUnique({
           where: { id: cardId },
-          include: { attachments: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -247,7 +235,7 @@ export class CardService {
         });
         updatedCard = await this.prisma.card.findUnique({
           where: { id: cardId },
-          include: { attachments: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -261,7 +249,7 @@ export class CardService {
             coverFileSize: data.coverFileSize,
             updatedById,
           },
-          include: { labels: true, views: true, checklist: true, attachments: true },
+          include: this.CARD_INCLUDE_FULL,
         });
         break;
 
@@ -269,16 +257,14 @@ export class CardService {
         throw new Error(`Unknown update action: ${action}`);
     }
 
-    await this.amqpConnection.publish(
-      "project-exchange",
-      "card.updated",
-      { card: updatedCard, action }
-    );
-
-    this.logger.log(`Published card.updated event for card ${cardId} with action ${action}`);
+    await this.amqpConnection.publish("project-exchange", "card.updated", {
+      card: updatedCard,
+      action,
+    });
 
     return updatedCard;
   }
+
 
   async removeCard(cardId: string) {
     this.logger.log(`Removing card with ID: ${cardId}`);

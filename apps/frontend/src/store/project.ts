@@ -376,23 +376,100 @@ export const projectStore = create<ProjectState>((set, get) => ({
       return { cards, columnCards };
     }),
 
-    updateCard: (updatedFields) =>
+  updateCard: (updatedCard: any) =>
     set((s) => {
       const cards = { ...s.cards };
-      const oldCard = cards[updatedFields.id];
+      const columnCards = { ...s.columnCards };
 
+      const oldCard = cards[updatedCard.id];
       if (!oldCard) {
-        console.warn(`[updateCard] Card id=${updatedFields.id} không tồn tại trong store`);
+        console.warn(`[updateCard] Card id=${updatedCard.id} không tồn tại trong store`);
         return s;
       }
 
-      cards[updatedFields.id] = {
+      // Ép kiểu để chắc chắn columnId là string hợp lệ
+      const oldColumnId = oldCard.columnId ?? '';
+      const newColumnId = updatedCard.columnId ?? oldColumnId;
+      const oldPosition = oldCard.position ?? 0;
+      const newPosition = updatedCard.position ?? oldPosition;
+
+      console.log(`[updateCard] Updating card id=${updatedCard.id}`);
+      console.log(`Old columnId: ${oldColumnId}, New columnId: ${newColumnId}`);
+      console.log(`Old position: ${oldPosition}, New position: ${newPosition}`);
+
+      cards[updatedCard.id] = {
         ...oldCard,
-        ...updatedFields,
+        ...updatedCard,
+        columnId: newColumnId,
+        position: newPosition,
       };
 
-      return { cards };
+      if (oldColumnId !== newColumnId) {
+        console.log(`[updateCard] Card moved from column ${oldColumnId} to ${newColumnId}`);
+
+        if (oldColumnId && columnCards[oldColumnId]) {
+          columnCards[oldColumnId] = columnCards[oldColumnId].filter(id => id !== updatedCard.id);
+          console.log(`[updateCard] Removed card id=${updatedCard.id} from old columnCards[${oldColumnId}]`);
+
+          columnCards[oldColumnId].forEach((cid: string, idx: number) => {
+            if (cards[cid]) {
+              cards[cid] = { ...cards[cid], position: idx };
+              console.log(`[updateCard] Updated position of card id=${cid} in old column to ${idx}`);
+            }
+          });
+        }
+
+        if (newColumnId) {
+          if (!columnCards[newColumnId]) {
+            columnCards[newColumnId] = [];
+            console.log(`[updateCard] Initialized columnCards[${newColumnId}]`);
+          }
+
+          if (!columnCards[newColumnId].includes(updatedCard.id)) {
+            if (newPosition >= 0 && newPosition <= columnCards[newColumnId].length) {
+              columnCards[newColumnId].splice(newPosition, 0, updatedCard.id);
+              console.log(`[updateCard] Inserted card id=${updatedCard.id} at position ${newPosition} in new columnCards[${newColumnId}]`);
+            } else {
+              columnCards[newColumnId].push(updatedCard.id);
+              console.log(`[updateCard] Appended card id=${updatedCard.id} at end of new columnCards[${newColumnId}]`);
+            }
+          }
+
+          columnCards[newColumnId].forEach((cid: string, idx: number) => {
+            if (cards[cid]) {
+              cards[cid] = { ...cards[cid], position: idx, columnId: newColumnId };
+              console.log(`[updateCard] Updated position of card id=${cid} in new column to ${idx}`);
+            }
+          });
+        }
+      } else if (oldPosition !== newPosition) {
+        console.log(`[updateCard] Card position changed within column ${newColumnId}`);
+
+        if (newColumnId && columnCards[newColumnId]) {
+          const cardIds = [...columnCards[newColumnId]];
+          const oldIndex = cardIds.indexOf(updatedCard.id);
+
+          if (oldIndex !== -1) {
+            cardIds.splice(oldIndex, 1);
+            cardIds.splice(newPosition, 0, updatedCard.id);
+            columnCards[newColumnId] = cardIds;
+            console.log(`[updateCard] Moved card id=${updatedCard.id} to position ${newPosition} in columnCards[${newColumnId}]`);
+
+            cardIds.forEach((cid: string, idx: number) => {
+              if (cards[cid]) {
+                cards[cid] = { ...cards[cid], position: idx };
+                console.log(`[updateCard] Updated position of card id=${cid} in column to ${idx}`);
+              }
+            });
+          }
+        }
+      } else {
+        console.log(`[updateCard] Card updated without changing columnId or position`);
+      }
+
+      return { cards, columnCards };
     }),
+
 
 
   removeCard: (columnId, cardId) =>

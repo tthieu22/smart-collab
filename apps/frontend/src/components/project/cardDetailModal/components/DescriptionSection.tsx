@@ -18,7 +18,7 @@ interface Props {
   isGenerating: boolean;
   aiProgress: number;
   onAIGenerate: (mode?: 'generate' | 'continue' | 'improve' | 'shorten') => void;
-  onBlur: () => void;
+  onBlur: (updatedDescription: string)  => void;
 }
 
 interface LinkPreviewData {
@@ -91,9 +91,8 @@ const DescriptionSection: React.FC<Props> = ({
   const handleBlur = () => {
     if (localDescription !== description) {
       setDescription(localDescription);
-      localStorage.removeItem('draft-description');
     }
-    onBlur();
+    onBlur(localDescription); // truyền giá trị mới lên parent
   };
 
   const insertMarkdown = (before: string, after: string = before) => {

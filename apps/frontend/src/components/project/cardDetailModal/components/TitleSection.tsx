@@ -15,7 +15,7 @@ interface Props {
   isGenerating: boolean;
   aiProgress: number;
   onAIGenerate: () => void;
-  onBlur: () => void;
+  onBlur: (updatedTitle: string) => void;
 }
 
 const TitleSection: React.FC<Props> = ({
@@ -40,7 +40,7 @@ const TitleSection: React.FC<Props> = ({
 
   const handleBlur = () => {
     setTitle(localTitle.trim());
-    onBlur();
+    onBlur(localTitle);
     setEditingTitle(false);
   };
 
