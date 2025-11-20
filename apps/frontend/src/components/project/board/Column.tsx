@@ -133,25 +133,7 @@ export default function Column({
       className="flex-shrink-0 will-change-transform"
     >
       {/* COLUMN – GLASS + NEON + DARK MODE */}
-      <div
-        className="
-        flex flex-col relative box-border
-        basis-[272px] grow-0 shrink-0 self-start
-        justify-between w-[272px] max-h-[70vh]
-        pb-1 rounded-xl
-        bg-white/25 dark:bg-black/25
-        backdrop-blur-md
-        border border-white/30 dark:border-white/10
-        shadow-2xl
-        ring-1 ring-white/30 dark:ring-white/20
-        hover:ring-blue-400/60 dark:hover:ring-blue-300/50
-        hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] dark:hover:shadow-[0_0_20px_rgba(147,197,253,0.3)]
-        transition-all duration-300 ease-out
-        scroll-m-2
-        group
-      "
-        data-testid="list"
-      >
+      <div className="column-glass-neon"data-testid="list">
         {/* Header – Neon Title - Drag Handle */}
         <div 
           className="p-3 cursor-grab active:cursor-grabbing select-none" 
@@ -216,19 +198,7 @@ export default function Column({
               style?.transform?.replace(/,\s*0px\)/, ', 0px)') ?? undefined,
           }}
         >
-          <div
-            className="
-            w-[272px] h-full
-            bg-white/60 dark:bg-black/50
-            backdrop-blur-xl
-            rounded-xl
-            shadow-2xl
-            border-2 border-blue-400
-            ring-4 ring-blue-400/60
-            flex flex-col p-3
-            [box-shadow:0_0_30px_rgba(59,130,246,0.6)] dark:[box-shadow:0_0_30px_rgba(147,197,253,0.5)]
-          "
-          >
+          <div className="frosted-glass-neon">
             <h3 className="font-extrabold text-xl">
               {column.title}
               <span className="block text-xs mt-1 opacity-90">

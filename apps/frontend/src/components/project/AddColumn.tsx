@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@smart/components/ui/input";
 import { Button } from "@smart/components/ui/button";
-import { PlusOutlined } from "@ant-design/icons";
+import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
 import { projectStore } from "@smart/store/project";
 import { useBoardStore } from "@smart/store/setting";
 import { getProjectSocketManager } from "@smart/store/realtime";
@@ -21,6 +21,24 @@ export default function AddColumn({ boardId }: AddColumnProps) {
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const getButtonVariant = (type: "primary" | "ghost") => {
+    if (theme === "dark") {
+      switch (type) {
+        case "primary":
+          return "bg-blue-600 hover:bg-blue-500 text-white";
+        case "ghost":
+          return "bg-gray-800 hover:bg-gray-700 text-white";
+      }
+    } else {
+      switch (type) {
+        case "primary":
+          return "bg-blue-600 hover:bg-blue-700 text-white";
+        case "ghost":
+          return "bg-gray-200 hover:bg-gray-300 text-black";
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!newColumnTitle.trim() || !currentProject) return;
     setLoading(true);
@@ -28,10 +46,9 @@ export default function AddColumn({ boardId }: AddColumnProps) {
     try {
       await socketManager.createColumn(
         boardId,
-        newColumnTitle,
+        newColumnTitle.trim(),
         currentProject.id,
         (res) => {
-          console.log("📨 column.create response", res);
           if (res.status === "success" || res.column) {
             setNewColumnTitle("");
             setShowInput(false);
@@ -52,19 +69,13 @@ export default function AddColumn({ boardId }: AddColumnProps) {
     setShowInput(false);
   };
 
-  const getButtonVariant = (type: "primary" | "success" | "ghost") => {
-    if (theme === "dark") {
-      switch (type) {
-        case "primary": return "bg-blue-600 hover:bg-blue-500 text-white";
-        case "success": return "bg-green-600 hover:bg-green-500 text-white";
-        case "ghost": return "bg-gray-800 hover:bg-gray-700 text-white";
-      }
-    } else {
-      switch (type) {
-        case "primary": return "bg-blue-600 hover:bg-blue-700 text-white";
-        case "success": return "bg-green-600 hover:bg-green-700 text-white";
-        case "ghost": return "bg-gray-200 hover:bg-gray-300 text-black";
-      }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      handleCancel();
     }
   };
 
@@ -72,16 +83,17 @@ export default function AddColumn({ boardId }: AddColumnProps) {
     <div className="min-w-[250px] flex flex-col gap-1 p-2">
       {!showInput && (
         <Button
-          className={getButtonVariant("primary")}
+          className={`${getButtonVariant("primary")} flex items-center gap-1`}
           size="small"
           onClick={() => setShowInput(true)}
+          loading={loading}
         >
           <PlusOutlined /> Add another list
         </Button>
       )}
 
       {showInput && (
-        <>
+        <div className="relative">
           <Input
             autoFocus
             placeholder="Enter column title..."
@@ -89,26 +101,30 @@ export default function AddColumn({ boardId }: AddColumnProps) {
             onChange={(e) => setNewColumnTitle(e.target.value)}
             size="small"
             variant="filled"
-            onPressEnter={handleSave}
+            onKeyDown={handleKeyDown}
+            style={{ paddingRight: 32 }}
+            disabled={loading}
           />
-          <div className="flex gap-2 mt-1">
-            <Button
-              className={getButtonVariant("ghost")}
-              size="small"
+          {newColumnTitle && !loading && (
+            <button
               onClick={handleCancel}
+              aria-label="Cancel"
+              type="button"
+              className="
+                absolute right-2 top-1/2 -translate-y-1/2
+                p-1 rounded-full
+                text-gray-400 hover:text-gray-600
+                dark:text-gray-500 dark:hover:text-gray-300
+                transition-colors duration-200
+                focus:outline-none focus:ring-2 focus:ring-blue-500
+                cursor-pointer
+              "
+              style={{ background: "transparent", border: "none" }}
             >
-              Cancel
-            </Button>
-            <Button
-              size="small"
-              className={getButtonVariant("primary")}
-              onClick={handleSave}
-              loading={loading}
-            >
-              Save
-            </Button>
-          </div>
-        </>
+              <CloseOutlined style={{ fontSize: 16 }} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

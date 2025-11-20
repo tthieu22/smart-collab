@@ -5,10 +5,19 @@ import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import { message } from 'antd';
 import { getProjectSocketManager } from '@smart/store/realtime';
-import type { Card, CardComment, ChecklistItem, CardLabel } from '@smart/types/project';
+import type {
+  Card,
+  CardComment,
+  ChecklistItem,
+  CardLabel,
+} from '@smart/types/project';
 import { useUserStore } from '@smart/store/user';
 
-export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => void) => {
+export const useCardDetail = (
+  cardId: string,
+  isOpen: boolean,
+  onClose: () => void
+) => {
   const { cards, updateCard } = projectStore();
   const card = cards[cardId];
   const socket = getProjectSocketManager();
@@ -21,6 +30,7 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
 
   // Loading state for fetch/update
   const [loading, setLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // AI generation state (type + progress + displayed text)
   const [aiState, setAIState] = useState({
@@ -46,7 +56,8 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     if (!card || !isOpen) return;
 
     if (title !== card.title) setTitle(card.title || '');
-    if (description !== card.description) setDescription(card.description || '');
+    if (description !== card.description)
+      setDescription(card.description || '');
     if (originalTitle !== card.title) setOriginalTitle(card.title || '');
     setLoading(false);
   }, [card?.title, card?.description, isOpen]);
@@ -87,7 +98,7 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
       updatedById?: string;
     }) => {
       if (!card) return;
-      setLoading(true);
+      setIsUpdating(true);
       try {
         const res = await socket.updateCard(
           card.projectId,
@@ -101,10 +112,10 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
         message.error('Cập nhật thất bại');
         throw new Error('Update failed');
       } finally {
-        setLoading(false);
+        setIsUpdating(false);
       }
     },
-    [ cardId, socket]
+    [card, cardId, socket]
   );
 
   // Update basic card fields and sync local state immediately
@@ -144,7 +155,7 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
     (text: string, onComplete?: () => void) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       let i = 0;
-      setAIState({ type: aiState.type, progress: 0, displayedText: '' });
+      setAIState((prev) => ({ ...prev, progress: 0, displayedText: '' }));
 
       intervalRef.current = setInterval(() => {
         if (i < text.length) {
@@ -160,11 +171,20 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
             intervalRef.current = null;
           }
           onComplete?.();
-          setTimeout(() => setAIState({ type: null, progress: 0, displayedText: '' }), 300);
+          setTimeout(
+            () =>
+              setAIState((prev) => ({
+                ...prev,
+                type: null,
+                progress: 0,
+                displayedText: '',
+              })),
+            300
+          );
         }
       }, 25);
     },
-    [aiState.type]
+    []
   );
 
   // Generate AI content and sync to local state
@@ -185,7 +205,9 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
                <li>Mục tiêu: ${title}</li>
                <li>Ưu tiên: ${card.priority ?? 'Trung bình'}</li>
                <li>Deadline: ${
-                 card.deadline ? new Date(card.deadline).toLocaleDateString('vi') : 'Chưa có'
+                 card.deadline
+                   ? new Date(card.deadline).toLocaleDateString('vi')
+                   : 'Chưa có'
                }</li>
              </ul>
              <p>Hiệu ứng Google AI đang chạy...</p>`;
@@ -331,7 +353,8 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
   const progress = useMemo(() => {
     if (!card?.checklist?.length) return 0;
     return Math.round(
-      (card.checklist.filter((i) => i.done).length / card.checklist.length) * 100
+      (card.checklist.filter((i) => i.done).length / card.checklist.length) *
+        100
     );
   }, [card?.checklist]);
 
@@ -349,6 +372,7 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
   return {
     card,
     loading,
+    isUpdating,
     title,
     setTitle,
     description,
@@ -384,14 +408,25 @@ export const useCardDetail = (cardId: string, isOpen: boolean, onClose: () => vo
 
     updateBasic,
     addLabel: (label: string) =>
-      card ? updateCardOnServer({ cardId: card.id, action: 'add-label', data: { label } }) : Promise.resolve(),
+      card
+        ? updateCardOnServer({
+            cardId: card.id,
+            action: 'add-label',
+            data: { label },
+          })
+        : Promise.resolve(),
     removeLabel: (labelId: string) =>
-      card ? updateCardOnServer({ cardId: card.id, action: 'remove-label', data: { labelId } }) : Promise.resolve(),
+      card
+        ? updateCardOnServer({
+            cardId: card.id,
+            action: 'remove-label',
+            data: { labelId },
+          })
+        : Promise.resolve(),
     updateChecklistItem,
     removeChecklistItem,
     updateCover,
 
     onClose,
   };
-
 };

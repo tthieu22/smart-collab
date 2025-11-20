@@ -502,36 +502,53 @@ export const projectStore = create<ProjectState>((set, get) => ({
       const columnCards = { ...s.columnCards };
       const cards = { ...s.cards };
 
-      if (!cards[cardId]) {
-        console.warn(`[moveCard] Card id=${cardId} không tồn tại trong store`);
-        return s;
-      }
+      if (!cards[cardId]) return s;
 
       const src = [...(columnCards[srcColumnId] || [])];
-      const dest = [...(columnCards[destColumnId] || [])];
+      const dest = srcColumnId === destColumnId ? src : [...(columnCards[destColumnId] || [])];
 
       const idx = src.indexOf(cardId);
-      if (idx !== -1) src.splice(idx, 1);
+      if (idx === -1) return s;
 
-      dest.splice(destIndex, 0, cardId);
+      if (srcColumnId === destColumnId) {
+        if (idx !== destIndex) {
+          src.splice(idx, 1);
+          src.splice(destIndex, 0, cardId);
+          columnCards[srcColumnId] = src;
 
-      columnCards[srcColumnId] = src;
-      columnCards[destColumnId] = dest;
+          src.forEach((cid, i) => {
+            if (cards[cid]) {
+              cards[cid] = { ...cards[cid], position: i };
+            }
+          });
 
-      cards[cardId] = {
-        ...cards[cardId],
-        columnId: destColumnId,
-        position: destIndex,
-      };
+          return { columnCards, cards };
+        }
+        return s;
+      } else {
+        src.splice(idx, 1);
 
-      columnCards[srcColumnId].forEach((cid, idx) => {
-        if (cards[cid]) cards[cid] = { ...cards[cid], position: idx };
-      });
-      columnCards[destColumnId].forEach((cid, idx) => {
-        if (cards[cid]) cards[cid] = { ...cards[cid], position: idx };
-      });
+        if (destIndex >= 0 && destIndex <= dest.length) {
+          dest.splice(destIndex, 0, cardId);
+        } else {
+          dest.push(cardId);
+        }
 
-      return { columnCards, cards };
+        columnCards[srcColumnId] = src;
+        columnCards[destColumnId] = dest;
+
+        src.forEach((cid, i) => {
+          if (cards[cid]) cards[cid] = { ...cards[cid], position: i };
+        });
+
+        dest.forEach((cid, i) => {
+          if (cards[cid]) cards[cid] = { ...cards[cid], position: i, columnId: destColumnId };
+        });
+
+        cards[cardId] = { ...cards[cardId], columnId: destColumnId, position: destIndex };
+
+        return { columnCards, cards };
+      }
     }),
 
   addLabel: (label) =>
