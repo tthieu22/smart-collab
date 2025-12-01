@@ -33,10 +33,11 @@ export class BoardService {
       where: type === 'board' ? { projectId, type } : { ownerId, type },
     });
     if (existing) throw new Error(`${type} board already exists`);
+    const boardProjectId = (type === 'inbox' || type === 'calendar') ? undefined : projectId;
 
     const board = await this.prisma.board.create({
       data: {
-        projectId: projectId || null,
+        projectId: boardProjectId,
         ownerId: ownerId || null,
         type,
         title: title || this.getDefaultTitle(type),
@@ -44,15 +45,17 @@ export class BoardService {
         columnIds: [],
       },
     });
-
-    // 🧱 Column mặc định
+    const columnData: any = {
+      boardId: board.id,
+      title: `${type} column`,
+      position: 0,
+    };
+    if (boardProjectId) {
+      columnData.projectId = boardProjectId;
+    }
+    // Column mặc định
     const column = await this.prisma.column.create({
-      data: {
-        projectId: projectId || '',
-        boardId: board.id,
-        title: `${type} column`,
-        position: 0,
-      },
+      data: columnData,
     });
 
     await this.prisma.board.update({
@@ -65,7 +68,7 @@ export class BoardService {
     return fullBoard;
   }
 
-  /** 🧭 Lấy full board (columns + cards + labels + views) */
+  /** Lấy full board (columns + cards + labels + views) */
   async getBoardById(boardId: string) {
     const board = await this.prisma.board.findUnique({ where: { id: boardId } });
     if (!board) return null;
@@ -91,7 +94,7 @@ export class BoardService {
       ? await this.prisma.projectMember.findMany({ where: { projectId: board.projectId } })
       : [];
 
-    // 🧩 Chuẩn hóa cấu trúc cho drag-drop
+    // Chuẩn hóa cấu trúc cho drag-drop
     const fullColumns = columns.map((col) => ({
       ...col,
       cards: cards
@@ -106,7 +109,7 @@ export class BoardService {
     return { ...board, columns: fullColumns, members };
   }
 
-  /** 📋 Lấy danh sách boards theo project/owner */
+  /** Lấy danh sách boards theo project/owner */
   async getBoards(params: {
     projectId?: string;
     ownerId?: string;

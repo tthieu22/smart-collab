@@ -11,6 +11,7 @@ import { projectStore } from '@smart/store/project';
 import { Board as BoardType } from '@smart/types/project';
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useDragContext } from '../dnd/DragContext';
+import { useBoardStore } from '@smart/store/setting';
 
 interface Props {
   board: BoardType;
@@ -18,7 +19,9 @@ interface Props {
 
 export default function Board({ board }: Props) {
   const { activeItem, registerBoardScrollContainer } = useDragContext();
-  const { boardColumns, columns } = projectStore();
+  const { boardColumns, columns, currentProject } = projectStore();
+  const theme = useBoardStore((s) => s.theme);
+
   const columnIds = boardColumns[board.id] || [];
 
   const sortedColumns = useMemo(
@@ -30,7 +33,6 @@ export default function Board({ board }: Props) {
     [columnIds, columns]
   );
 
-  // Đảm bảo columnIds trong SortableContext match với sortedColumns
   const sortedColumnIds = useMemo(
     () => sortedColumns.map((col) => col.id),
     [sortedColumns]
@@ -60,7 +62,27 @@ export default function Board({ board }: Props) {
   const canAddColumn = board.type === 'board';
 
   return (
-    <div className="relative flex-1 overflow-hidden bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-900/90 dark:to-black/80">
+    <div
+      className={`relative flex-1 overflow-hidden rounded-2xl transition-all duration-300 backdrop-blur-sm ${
+        theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+      }`}
+      style={{
+        backgroundColor:
+          theme === 'dark'
+            ? currentProject?.color ?? '#1e1f22'
+            : currentProject?.color ?? '#f4f5f7',
+        backgroundImage:
+          currentProject?.fileUrl || currentProject?.background
+            ? `url(${currentProject.fileUrl ?? currentProject.background})`
+            : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        ...(theme === 'dark' && {
+          backgroundBlendMode: 'normal',
+          filter: 'brightness(0.9)',
+        }),
+      }}
+    >
       <div
         ref={setBoardRef}
         id="board"

@@ -43,6 +43,9 @@ export default function ProjectDetailPage({ params }: Props) {
     return ['inbox', 'board'];
   });
 
+  const isSingle = activeComponents.length === 1;
+  const compCount = activeComponents.length;
+
   const project = currentProject?.id === projectId ? currentProject : null;
 
   const inboxBoard = Object.values(boards).find((b) => b.type === 'inbox');
@@ -56,14 +59,15 @@ export default function ProjectDetailPage({ params }: Props) {
           ? prev.filter((c) => c !== key)
           : prev
         : [...prev, key];
+
       if (typeof window !== 'undefined') {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       }
+
       return updated;
     });
   };
 
-  // ------------------ SOCKET & INIT ------------------
   useEffect(() => {
     document.body.style.overflowY = 'hidden';
     return () => {
@@ -77,6 +81,7 @@ export default function ProjectDetailPage({ params }: Props) {
       if (!msg?.project || msg?.correlationId) return;
       const p = msg.project as Project;
       const hasSnapshot = Boolean(p?.boards?.length || p?.cards?.length);
+
       if (currentProject?.id === p.id) {
         hasSnapshot ? setCurrentProject(p) : updateProject(p);
       } else {
@@ -86,8 +91,14 @@ export default function ProjectDetailPage({ params }: Props) {
     };
 
     socketManager.joinProject(projectId).catch(console.error);
-    const unsubCreated = socketManager.subscribeCorrelation('realtime.project.created', handleProjectMsg);
-    const unsubUpdated = socketManager.subscribeCorrelation('realtime.project.updated', handleProjectMsg);
+    const unsubCreated = socketManager.subscribeCorrelation(
+      'realtime.project.created',
+      handleProjectMsg,
+    );
+    const unsubUpdated = socketManager.subscribeCorrelation(
+      'realtime.project.updated',
+      handleProjectMsg,
+    );
 
     return () => {
       unsubCreated();
@@ -98,12 +109,15 @@ export default function ProjectDetailPage({ params }: Props) {
 
   useEffect(() => {
     let canceled = false;
+
     const initProject = async () => {
       setLoading(true);
       try {
         const correlationId = crypto.randomUUID();
         const res: any = await projectService.getProject({ projectId, correlationId });
-        const p: Project | undefined = res?.data || res?.dto?.project || res?.project || res?.dto;
+        const p: Project | undefined =
+          res?.data || res?.dto?.project || res?.project || res?.dto;
+
         if (!canceled && p) {
           addProject(p);
           updateProject(p);
@@ -115,11 +129,13 @@ export default function ProjectDetailPage({ params }: Props) {
         if (!canceled) setLoading(false);
       }
     };
+
     initProject();
-    return () => { canceled = true; };
+    return () => {
+      canceled = true;
+    };
   }, [projectId]);
 
-  // ------------------ UI ------------------
   if (loading) return <Loading text="Đang tải dữ liệu" />;
   if (!project) return <Loading text="Không tìm thấy dự án :(" />;
 
@@ -130,21 +146,52 @@ export default function ProjectDetailPage({ params }: Props) {
     top: 0,
     left: 0,
     zIndex: 0,
-    background: theme === 'dark'
-      ? 'radial-gradient(circle at 50% 50%, #2a2a3e 0%, #1e1e2f 100%)'
-      : 'radial-gradient(circle at 50% 50%, #f8fafc 0%, #e2e8f0 100%)',
+    background:
+      theme === 'dark'
+        ? 'radial-gradient(circle at 50% 50%, #2a2a3e 0%, #1e1e2f 100%)'
+        : 'radial-gradient(circle at 50% 50%, #f8fafc 0%, #e2e8f0 100%)',
     backdropFilter: 'blur(8px)',
   };
 
+  const fullClass =
+    'flex-1 min-w-full max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
+
+  const hasBoard = activeComponents.includes('board');
+  const hasInbox = activeComponents.includes('inbox');
+  const hasCalendar = activeComponents.includes('calendar');
+
+  const inboxClass = isSingle
+    ? fullClass
+    : compCount === 2 && hasCalendar && !hasBoard
+    ? 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : compCount === 2 && hasBoard
+    ? 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : compCount > 2
+    ? 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
+
+  const calendarClass = isSingle
+    ? fullClass
+    : compCount === 2 && hasInbox && !hasBoard
+    ? 'flex-[1.2] min-w-[350px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : compCount === 2 && hasBoard
+    ? 'flex-[0.7] min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : compCount > 2
+    ? 'flex-[0.5] min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : 'flex-1 min-w-[300px] max-w-[320px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md';
+
+  const boardClass = isSingle
+    ? fullClass
+    : compCount === 2
+    ? 'flex-[1.7] min-w-[700px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : 'flex-[1.2] min-w-[800px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
+
   return (
     <div className="relative min-h-screen">
-      {/* GLASS BACKGROUND */}
       <div style={bgStyle} className="opacity-90" />
 
-      {/* ACTION BAR */}
       <ProjectActionBar activeComponents={activeComponents} onToggle={toggleComponent} />
 
-      {/* MAIN CONTENT */}
       <div className="relative z-10 w-full h-screen overflow-hidden pt-16 pb-16">
         <DragDropContextProvider
           boardTypes={{
@@ -154,23 +201,20 @@ export default function ProjectDetailPage({ params }: Props) {
           }}
         >
           <div className="flex gap-6 h-full px-6 pb-6">
-            {/* INBOX */}
             {activeComponents.includes('inbox') && inboxBoard && (
-              <div className="flex-1 min-w-[360px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30">
+              <div className={inboxClass}>
                 <Inbox board={inboxBoard} />
               </div>
             )}
 
-            {/* CALENDAR */}
             {activeComponents.includes('calendar') && calendarBoard && (
-              <div className="flex-1 min-w-[360px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30">
+              <div className={calendarClass}>
                 <Calendar board={calendarBoard} />
               </div>
             )}
 
-            {/* BOARD */}
             {activeComponents.includes('board') && mainBoard && (
-              <div className="flex-1 min-w-[800px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30">
+              <div className={boardClass}>
                 <Board board={mainBoard} />
               </div>
             )}

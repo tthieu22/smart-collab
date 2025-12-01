@@ -32,6 +32,8 @@ export class ProjectService {
       },
     });
 
+    await this.ensureDefaultBoards(msg.ownerId!);
+    
     const folderPath = `${this.slugify(msg.name!)}_${project.id}`;
     await this.prisma.project.update({
       where: { id: project.id },
@@ -91,22 +93,15 @@ export class ProjectService {
 
     if (!project) throw new NotFoundException('Project not found');
 
-    if (project.visibility === 'PUBLIC') {
-      // Public project → ai cũng được xem
-      // Không cần kiểm tra userId
-    } else {
-      // Private project → phải có userId, và user phải là owner hoặc member
-      if (!userId) throw new ForbiddenException('Access denied: private project');
+    if (project.visibility !== 'PUBLIC') {
+      if (!userId) throw new ForbiddenException('Access denied');
 
       if (project.ownerId !== userId) {
         const isMember = project.members.some(m => m.userId === userId);
-        if (!isMember) {
-          throw new ForbiddenException('Access denied: not a member');
-        }
+        if (!isMember) throw new ForbiddenException('Access denied');
       }
     }
 
-    // Lấy chi tiết cấu trúc project
     const structure = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: {
@@ -140,7 +135,26 @@ export class ProjectService {
       },
     });
 
-    structure?.boards.forEach(board => {
+    const specialBoards = await this.prisma.board.findMany({
+      where: {
+        ownerId: project.ownerId,
+        type: { in: ['inbox', 'calendar'] },
+      },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        position: true,
+        columns: {
+          orderBy: { position: 'asc' },
+          select: { id: true, title: true, position: true },
+        },
+      },
+    });
+
+    structure!.boards.push(...specialBoards);
+
+    structure!.boards.forEach(board => {
       board.columns.forEach(col => (col as any).boardId = board.id);
     });
 
@@ -149,11 +163,9 @@ export class ProjectService {
 
   async getAllProjects(userId?: string) {
     if (!userId) {
-      // Không có userId => không trả về gì (hoặc có thể trả về [])
       return [];
     }
 
-    // Lấy tất cả project mà user là owner hoặc member
     return this.prisma.project.findMany({
       where: {
         OR: [
@@ -165,4 +177,31 @@ export class ProjectService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  private async ensureDefaultBoards(ownerId: string) {
+    const DEFAULT_TYPES: Array<'inbox' | 'calendar'> = ['inbox', 'calendar'];
+
+    // Tìm xem user đã có loại board nào
+    const existingBoards = await this.prisma.board.findMany({
+      where: {
+        ownerId,
+        projectId: null,
+        type: { in: DEFAULT_TYPES },
+      },
+      select: { type: true },
+    });
+
+    const existing = new Set(existingBoards.map((b) => b.type));
+
+    for (const type of DEFAULT_TYPES) {
+      if (!existing.has(type)) {
+        await this.boardService.createBoard({
+          ownerId,
+          type,
+          title: type.charAt(0).toUpperCase() + type.slice(1),
+        });
+      }
+    }
+  }
+
 }

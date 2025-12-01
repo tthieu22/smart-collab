@@ -86,7 +86,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
     if (!over) return items.length;
     if (over.data?.current?.type === 'CARD') {
       const idx = items.indexOf(String(over.id));
-      return idx === -1 ? items.length : idx + 1;
+      return idx === -1 ? items.length : idx;
     }
     if (items.includes(String(over.id))) {
       return items.indexOf(String(over.id));
@@ -108,6 +108,12 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+
+    // Nếu over là calendar thì KHÔNG cập nhật lại overData (để giữ start/end đúng)
+    if (over?.data?.current?.type !== 'CALENDAR') {
+      setOverData(over?.data?.current ?? null);
+    }
+
     if (!over || !currentProject?.id || !activeItem) {
       setActiveId(null);
       setOverId(null);
@@ -116,42 +122,29 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
       return;
     }
 
+    // Lấy overData từ state, vì nó có thể chứa start/end nếu là calendar
+    const currentOverData = overData;
+
     const ctrlPressed =
       (event.activatorEvent as MouseEvent)?.ctrlKey ||
       (event.activatorEvent as MouseEvent)?.metaKey;
 
-    const overData = over.data.current || {};
     const projectId = currentProject.id;
-    // console.log('[Kéo thả kết thúc] Bắt đầu xử lý sự kiện kéo thả.');
-    // console.log('  - ID thẻ kéo (active.id):', active.id);
-    // console.log('  - ID thẻ/đối tượng thả (over.id):', over.id);
-    // console.log('  - Phím Ctrl/Command đang giữ:', ctrlPressed);
-    // console.log('  - Thông tin đối tượng kéo (activeItem):', activeItem);
-    // console.log('  - Dữ liệu đối tượng thả (overData):', overData);
-    // console.log('  - ID dự án hiện tại:', projectId);
+
     if (activeItem.type === 'COLUMN') {
       const srcBoardId = activeItem.boardId;
-      const destBoardId = overData.boardId ?? srcBoardId;
+      const destBoardId = currentOverData?.boardId ?? srcBoardId;
       const columnId = String(active.id);
 
-      // console.log('  [CỘT] ID bảng nguồn:', srcBoardId);
-      // console.log('  [CỘT] ID bảng đích:', destBoardId);
-      // console.log('  [CỘT] ID cột đang kéo:', columnId);
-      // Chỉ cho phép di chuyển column trong cùng board type 'board'
       if (
         boardTypes[srcBoardId] === 'board' &&
         boardTypes[destBoardId] === 'board' &&
         srcBoardId === destBoardId
       ) {
-        // Tính toán destIndex dựa trên vị trí của over element
         const state = projectStore.getState();
         const columnIds = state.boardColumns[destBoardId] || [];
         const activeIndex = columnIds.indexOf(columnId);
 
-        // console.log('  [CỘT] Danh sách các cột trong bảng đích:', columnIds);
-        // console.log('  [CỘT] Vị trí cột kéo hiện tại (activeIndex):', activeIndex);
-
-        // Nếu không tìm thấy activeIndex, không làm gì
         if (activeIndex === -1) {
           setActiveId(null);
           setOverId(null);
@@ -160,27 +153,16 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
           return;
         }
 
-        let destIndex = activeIndex; // Mặc định giữ nguyên vị trí
+        let destIndex = activeIndex;
 
-        if (overData.type === 'COLUMN' && over.id !== active.id) {
-          // Đang kéo qua một column khác
+        if (currentOverData?.type === 'COLUMN' && over.id !== active.id) {
           const overIndex = columnIds.indexOf(String(over.id));
-
           if (overIndex !== -1) {
-            // Với horizontalListSortingStrategy, @dnd-kit sẽ tự động xử lý insert trước/sau
-            // Sử dụng overIndex làm điểm đích, arrayMove sẽ tự động tính toán index chính xác
-            // Store sẽ sử dụng arrayMove với destIndex = overIndex
             destIndex = overIndex;
           }
         }
 
-        // Chỉ di chuyển nếu index thay đổi
         if (destIndex !== activeIndex) {
-          //  console.log(
-          //   `  [CỘT] Di chuyển cột từ vị trí ${activeIndex} sang vị trí ${destIndex} trong bảng ${destBoardId}`
-          // );
-
-          // Gọi moveColumn trong store để cập nhật state (store sẽ tự động cập nhật position)
           projectStore
             .getState()
             .moveColumn(srcBoardId, destBoardId, columnId, destIndex);
@@ -196,49 +178,108 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
       return;
     }
 
+    function isCalendar(type: string | undefined): type is 'calendar' {
+      return type === 'calendar';
+    }
+
     if (activeItem.type === 'CARD') {
       const srcBoardId = activeItem.boardId;
-      const destBoardId = overData.boardId ?? srcBoardId;
+      const destBoardId = currentOverData?.boardId ?? srcBoardId;
       const srcColumnId = activeItem.columnId;
-      const destColumnId =
-        overData.columnId ||
-        (overData.type === 'COLUMN' ? String(over.id) : srcColumnId);
 
-      const destItems = getColumnCardIds(destColumnId);
-      const destIndex = findDropIndex(over, destItems);
+      if (currentOverData?.type === 'CALENDAR') {
+        const payload = {
+          cardId: String(active.id),
+          srcBoardId,
+          destBoardId: currentOverData.boardId,
+          start: currentOverData.start,
+          end: currentOverData.end,
+          userId: currentUserId,
+        };
+        console.log(payload);
+      }
 
-      const srcType = boardTypes[srcBoardId];
-      const destType = boardTypes[destBoardId];
-      const isCopy = ctrlPressed || srcType !== destType;
-      // console.log('🪪 ID thẻ đang kéo:', active.id);
-      // console.log('📦 Nguồn → Bảng:', srcBoardId, ' | Cột:', srcColumnId);
-      // console.log('🎯 Đích → Bảng:', destBoardId, ' | Cột:', destColumnId);
-      // console.log('📋 Dữ liệu phần tử đang nằm trên (overData):', overData);
-      // console.log('🗂️ Danh sách ID thẻ trong cột đích:', destItems);
-      // console.log('📍 Vị trí thả được tính toán:', destIndex);
-      // console.log('🧭 Loại bảng → Nguồn:', srcType, ' | Đích:', destType);
-      // console.log('⌨️ Phím Ctrl đang giữ:', ctrlPressed);
-      // console.log('⚙️ Hành động sẽ thực hiện:', isCopy ? 'SAO CHÉP (COPY)' : 'DI CHUYỂN (MOVE)');
-      
-      const payload = {
-        cardId: String(active.id),
-        srcBoardId,
-        destBoardId,
-        srcColumnId,
-        destColumnId,
-        destIndex,
-        userId: currentUserId,
-      };
-      if (isCopy) {
-        // console.log(
-        //   `📄 [Kéo thả] Đang SAO CHÉP thẻ ${active.id} → Cột ${destColumnId} (vị trí ${destIndex})`
-        // );
-        socket.copyCard(projectId, payload);
+      const srcBoardType = boardTypes[srcBoardId] as
+        | 'board'
+        | 'inbox'
+        | 'calendar'
+        | undefined;
+      const destBoardType = boardTypes[destBoardId] as
+        | 'board'
+        | 'inbox'
+        | 'calendar'
+        | undefined;
+
+      if (isCalendar(destBoardType)) {
+        const start = currentOverData?.start;
+        const end = currentOverData?.end;
+
+        const payload = {
+          cardId: String(active.id),
+          srcBoardId,
+          destBoardId,
+          destColumnId: null,
+          destIndex: null,
+          start,
+          end,
+          userId: currentUserId,
+        };
+        console.log(payload);
+
+        const isCopy = ctrlPressed || srcBoardId !== destBoardId;
+        if (isCopy) {
+          // socket.copyCard(projectId, payload);
+        } else {
+          // socket.moveCard(projectId, payload);
+        }
+      } else if (isCalendar(srcBoardType) && !isCalendar(destBoardType)) {
+        const destColumnId =
+          currentOverData?.columnId ??
+          (currentOverData?.type === 'COLUMN' ? String(over.id) : null);
+
+        const destItems = destColumnId ? getColumnCardIds(destColumnId) : [];
+        const destIndex = findDropIndex(over, destItems);
+
+        const payload = {
+          cardId: String(active.id),
+          srcBoardId,
+          destBoardId,
+          destColumnId,
+          destIndex,
+          userId: currentUserId,
+        };
+
+        const isCopy = ctrlPressed || srcBoardId !== destBoardId;
+        if (isCopy) {
+          socket.copyCard(projectId, payload);
+        } else {
+          socket.moveCard(projectId, payload);
+        }
       } else {
-        // console.log(
-        //   `🚚 [Kéo thả] Đang DI CHUYỂN thẻ ${active.id} → Cột ${destColumnId} (vị trí ${destIndex})`
-        // );
-        socket.moveCard(projectId, payload);
+        const destColumnId =
+          currentOverData?.columnId ??
+          (currentOverData?.type === 'COLUMN' ? String(over.id) : srcColumnId);
+
+        const destItems = getColumnCardIds(destColumnId);
+        const destIndex = findDropIndex(over, destItems);
+
+        const isCopy = ctrlPressed || srcBoardId !== destBoardId;
+
+        const payload = {
+          cardId: String(active.id),
+          srcBoardId,
+          destBoardId,
+          srcColumnId,
+          destColumnId,
+          destIndex,
+          userId: currentUserId,
+        };
+
+        if (isCopy) {
+          socket.copyCard(projectId, payload);
+        } else {
+          socket.moveCard(projectId, payload);
+        }
       }
     }
 
@@ -247,6 +288,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
     setActiveItem(null);
     setOverData(null);
   };
+
 
   const { cards, columns } = projectStore.getState();
 
@@ -289,6 +331,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
       registerScrollContainer,
       registerBoardScrollContainer,
       overData,
+      setOverData,
     }),
     [
       activeId,
@@ -297,6 +340,7 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
       overData,
       registerScrollContainer,
       registerBoardScrollContainer,
+      setOverData,
     ]
   );
 

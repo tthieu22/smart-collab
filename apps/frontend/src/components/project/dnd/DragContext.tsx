@@ -10,6 +10,7 @@ export interface DragContextType {
   registerScrollContainer?: (columnId: string, node: HTMLElement | null) => void;
   registerBoardScrollContainer?: (boardId: string, node: HTMLElement | null) => void;
   overData?: any;
+  setOverData?: (data: any) => void;
 }
 
 export const DragContext = createContext<DragContextType>({
@@ -18,7 +19,8 @@ export const DragContext = createContext<DragContextType>({
   activeItem: null,
   registerScrollContainer: () => undefined,
   registerBoardScrollContainer: () => undefined,
-  overData: null,
+  overData: null,// Cần khởi tạo mặc định cho setOverData
+  setOverData: () => undefined,
 });
 
 export const useDragContext = () => useContext(DragContext);

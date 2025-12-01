@@ -1,7 +1,7 @@
 // Column.tsx
 'use client';
 
-import React, { Fragment, useEffect, useRef } from 'react';
+import React, { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -15,6 +15,8 @@ import { Column as ColumnType } from '@smart/types/project';
 import { useDragContext } from '../dnd/DragContext';
 import { useDroppable } from '@dnd-kit/core';
 import { AddCard } from '../AddCard';
+import { ColumnMenu } from './ColumnMenu'; 
+import { SettingOutlined } from '@ant-design/icons';
 
 interface Props {
   column: ColumnType;
@@ -38,7 +40,7 @@ export default function Column({
   const projectId = currentProject?.id;
   if (!projectId) {
     return (
-      <div className="w-72 bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center text-sm">
+      <div className=" bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center text-sm">
         Không tìm thấy Project ID
       </div>
     );
@@ -63,6 +65,7 @@ export default function Column({
     id: column.id,
     data: { type: 'COLUMN', columnId: column.id, boardId, boardType },
   });
+  const [collapsed, setCollapsed] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -125,71 +128,157 @@ export default function Column({
       });
     }
   }, [column.id, cardIds.length, isOverlay]);
+
+  
+  // Ví dụ hàm toggle collapsed
+  const toggleCollapse = () => {
+    setCollapsed((prev) => !prev);
+  };
+
+
+  const handleFilter = () => {
+    console.log('Filter cards in column', column.id);
+    // Hiển thị UI lọc, hoặc gọi hàm lọc
+  };
+
+  const handleRename = () => {
+    console.log('Rename column', column.id);
+    // Hiển thị modal đổi tên cột, hoặc xử lý logic
+  };
+
+  const handleDelete = () => {
+    console.log('Delete column', column.id);
+    // Xác nhận rồi gọi API xóa cột, cập nhật store
+  };
+
+  // Bạn có thể thêm các extraItems tùy chỉnh nếu cần
+  const extraItems = [
+    {
+      key: 'custom-option',
+      label: 'Tùy chọn khác',
+      icon: <SettingOutlined  />,  // import icon tương ứng
+      onClick: () => console.log('Custom option click'),
+      group: 'Tùy chọn khác',
+    },
+  ];
+  
+  const [titleWidth, setTitleWidth] = useState<number | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const measEl = measureRef.current;
+    if (!measEl) return;
+    measEl.textContent = column.title || '';
+    setTitleWidth(Math.ceil(measEl.getBoundingClientRect().width));
+  }, [column.title]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const measEl = measureRef.current;
+      if (!measEl) return;
+      measEl.textContent = column.title || '';
+      setTitleWidth(Math.ceil(measEl.getBoundingClientRect().width));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [column.title]);
+  
+  const collapsedHeight = titleWidth ? titleWidth + 40 : 180;
+
   return (
     <div
       ref={setRef}
       style={style}
       data-testid="list-wrapper"
-      className="flex-shrink-0 will-change-transform"
+      className={`flex-shrink-0 will-change-transform ${collapsed ? 'w-12' : ' '}`}
     >
-      {/* COLUMN – GLASS + NEON + DARK MODE */}
-      <div className="column-glass-neon"data-testid="list">
-        {/* Header – Neon Title - Drag Handle */}
-        <div 
-          className="p-3 cursor-grab active:cursor-grabbing select-none" 
+      <div className={`column-glass-neon ${collapsed ? 'max-w-12' : ' '}`}data-testid="list">
+        {/* Header */}
+        {!collapsed && (<div
+          className="p-3 cursor-grab active:cursor-grabbing select-none"
           {...attributes}
           {...listeners}
           style={{ touchAction: 'none' }}
         >
-          <h3 className="font-bold text-lg flex items-center justify-between">
-            <span>{column.title}</span>
-            <span>
-              {cardIds.length}
-            </span>
+          <h3 className="text-lg flex items-center justify-between">
+            <span className='font-bold'>{column.title}</span>
+            <span className=''>{cardIds.length}</span>
+            <ColumnMenu
+              collapsed={collapsed}
+              onToggleCollapse={toggleCollapse}
+              onFilter={handleFilter}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              extraItems={extraItems}
+            />
           </h3>
+          
         </div>
+        )}
 
-        {/* Scrollable Cards */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/30 dark:scrollbar-thumb-white/20"
-        >
-          <SortableContext
-            items={cardIds}
-            strategy={verticalListSortingStrategy}
-            disabled={isDraggingColumn}
+        {collapsed && (
+          <div
+            className="inset-0 flex items-center justify-center cursor-pointer"
+            onClick={() => setCollapsed(false)}
+            role="button"
+            tabIndex={0}
+            aria-label={`Expand column ${column.title}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') setCollapsed(false);
+            }}
           >
-            <ol className="space-y-2 min-h-[60px]">
-              {cardIds.map((cardId, idx) => {
-                const card = cards[cardId];
-                if (!card) return null;
-                const insertBefore = shouldShowBeforeCard(cardId);
-                return (
-                  <Fragment key={cardId}>
-                    {insertBefore && <DropIndicator />}
-                    <Card
-                      card={card}
-                      columnId={column.id}
-                      boardId={boardId}
-                      boardType={boardType}
-                      index={idx}
-                    />
-                  </Fragment>
-                );
-              })}
+            <div
+              className="flex flex-col items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-200 rotate-90 whitespace-nowrap"
+              style={{ height: collapsedHeight }}
+            >
+              <span>{column.title}</span>
+            </div>
+          </div>
+        )}
 
-              {showPlaceholder && <DropIndicator />}
-            </ol>
-          </SortableContext>
-        </div>
+        {/* Nội dung card + footer chỉ hiện khi không collapsed */}
+        {!collapsed && (
+          <>
+            <div
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto px-3 pb-3 scrollbar-thin scrollbar-thumb-white/30 dark:scrollbar-thumb-white/20"
+            >
+              <SortableContext
+                items={cardIds}
+                strategy={verticalListSortingStrategy}
+                disabled={isDraggingColumn}
+              >
+                <ol className="space-y-2 min-h-[60px]">
+                  {cardIds.map((cardId, idx) => {
+                    const card = cards[cardId];
+                    if (!card) return null;
+                    const insertBefore = shouldShowBeforeCard(cardId);
+                    return (
+                      <Fragment key={cardId}>
+                        {insertBefore && <DropIndicator />}
+                        <Card
+                          card={card}
+                          columnId={column.id}
+                          boardId={boardId}
+                          boardType={boardType}
+                          index={idx}
+                        />
+                      </Fragment>
+                    );
+                  })}
+                  {showPlaceholder && <DropIndicator />}
+                </ol>
+              </SortableContext>
+            </div>
 
-        {/* Footer */}
-        <div className="p-3 pt-0">
-          <AddCard projectId={projectId} columnId={column.id} />
-        </div>
+            <div className="p-3 pt-0">
+              <AddCard projectId={projectId} columnId={column.id} />
+            </div>
+          </>
+        )}
       </div>
 
-      {/* OVERLAY KHI KÉO – NEON PULSE */}
+      {/* Overlay khi kéo */}
       {isOverlay && (
         <div
           className="absolute inset-0 pointer-events-none z-50"

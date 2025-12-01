@@ -26,7 +26,7 @@ export function DndMonitor({
         active.rect.current.translated ?? active.rect.current.initial;
       if (!translated) return;
 
-      // Scroll theo chiều dọc trong cột
+      // === 1. Scroll dọc trong cột Kanban (CARD hoặc COLUMN) ===
       let columnId: string | null = null;
 
       if (overPayload?.type === 'CARD') {
@@ -51,11 +51,41 @@ export function DndMonitor({
         }
       }
 
-      // Scroll ngang cho board
+      // === 2. Scroll dọc + ngang cho Calendar ===
+      if (overPayload?.type === 'CALENDAR') {
+        const boardId = overPayload.boardId;
+        const container = boardScrollContainers.current.get(boardId);
+
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          const edgeSize = 60; // vùng gần mép để bắt đầu scroll
+          const speed = 20;
+
+          const pointerX = translated.left + translated.width / 2;
+          const pointerY = translated.top + translated.height / 2;
+
+          // Scroll dọc (thời gian)
+          if (pointerY < rect.top + edgeSize) {
+            container.scrollTop -= speed;
+          } else if (pointerY > rect.bottom - edgeSize) {
+            container.scrollTop += speed;
+          }
+
+          // Scroll ngang (ngày/tháng)
+          if (pointerX < rect.left + edgeSize) {
+            container.scrollLeft -= speed;
+          } else if (pointerX > rect.right - edgeSize) {
+            container.scrollLeft += speed;
+          }
+        }
+
+        // Nếu đang kéo trên calendar thì không scroll ngang board Kanban nữa
+        return;
+      }
+
+      // === 3. Scroll ngang cho board Kanban ===
       const boardId =
-        overPayload?.boardId ??
-        active.data?.current?.boardId ??
-        activeItem?.boardId;
+        overPayload?.boardId ?? active.data?.current?.boardId ?? activeItem?.boardId;
 
       if (!boardId) return;
 

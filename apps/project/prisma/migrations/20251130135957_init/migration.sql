@@ -49,7 +49,7 @@ CREATE TABLE "Board" (
 -- CreateTable
 CREATE TABLE "Column" (
     "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
+    "projectId" TEXT,
     "boardId" TEXT,
     "title" TEXT NOT NULL,
     "position" INTEGER NOT NULL DEFAULT 0,
@@ -63,7 +63,7 @@ CREATE TABLE "Column" (
 -- CreateTable
 CREATE TABLE "Card" (
     "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
+    "projectId" TEXT,
     "columnId" TEXT,
     "title" TEXT NOT NULL,
     "description" TEXT,

@@ -1,10 +1,13 @@
 'use client';
-import React from 'react';
+
+import React, { useMemo, useRef, useEffect, useCallback } from 'react';
 import { Board as BoardType, Column as ColumnType } from '@smart/types/project';
 import { projectStore } from '@smart/store/project';
 import { useBoardStore } from '@smart/store/setting';
 import Column from '../board/Column';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
+import { useDragContext } from '../dnd/DragContext';
 
 interface InboxProps {
   board: BoardType;
@@ -12,57 +15,81 @@ interface InboxProps {
 }
 
 export default function Inbox({ board, className }: InboxProps) {
-  const columnsStore = projectStore((s) => s.columns);
-  const currentProject = projectStore((s) => s.currentProject);
+  const { registerBoardScrollContainer } = useDragContext();
+  const { boardColumns, columns } = projectStore();
   const theme = useBoardStore((s) => s.theme);
 
-  if (!currentProject) return <div>Không có dự án</div>;
-  if (!board) return <div>Không tìm thấy Inbox</div>;
+  if (!board) return <div className="p-4 text-center text-red-600">Không tìm thấy Inbox</div>;
 
-  const columns: ColumnType[] = (board.columnIds ?? [])
-    .map((id) => columnsStore[id])
-    .filter((col): col is ColumnType => Boolean(col))
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const columnIds = boardColumns[board.id] || [];
+
+  const sortedColumns: ColumnType[] = useMemo(() => {
+    return columnIds
+      .map((id) => columns[id])
+      .filter((col): col is ColumnType => Boolean(col))
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  }, [columnIds, columns]);
+
+  const sortedColumnIds = useMemo(() => sortedColumns.map((c) => c.id), [sortedColumns]);
+
+  const { setNodeRef } = useDroppable({
+    id: `inbox-${board.id}`,
+    data: { type: 'INBOX', boardId: board.id },
+  });
+
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    registerBoardScrollContainer?.(board.id, scrollContainerRef.current);
+    return () => registerBoardScrollContainer?.(board.id, null);
+  }, [board.id, registerBoardScrollContainer]);
+
+  const setInboxRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollContainerRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef]
+  );
 
   return (
     <div
-      data-board-scroll
-      className={`flex gap-4 overflow-x-auto p-4 rounded-2xl transition-all duration-300 backdrop-blur-sm w-full ${
+      className={`relative flex-1 overflow-hidden min-h-full ${
         className ?? ''
-      } ${
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-[#1e1f22] to-[#2b2d31] text-gray-100'
-          : 'bg-gradient-to-br from-[#f4f5f7] to-[#e9ebee] text-gray-900'
       }`}
       style={{
-        backgroundColor:
-          theme === 'dark'
-            ? currentProject.color ?? '#1e1f22'
-            : currentProject.color ?? '#f4f5f7',
-        backgroundImage:
-          currentProject.fileUrl || currentProject.background
-            ? `url(${currentProject.fileUrl ?? currentProject.background})`
-            : undefined,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        minHeight: '300px',
-        ...(theme === 'dark' && {
-          backgroundBlendMode: 'normal',
-          filter: 'brightness(0.9)',
-        }),
+        backgroundColor: theme === 'dark' ? '#000' : '#f9fafb',
       }}
     >
-      <SortableContext
-        id={board.id}
-        items={columns.map((c) => c.id)}
-        strategy={horizontalListSortingStrategy}
+      <div
+        ref={setInboxRef}
+        className="
+          flex gap-6
+          flex-nowrap
+          overflow-hidden
+          rounded-lg
+          h-full
+          select-none
+          justify-center items-center
+        "
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          transform: 'translateZ(0)',
+          scrollBehavior: 'smooth',
+        }}
       >
-        {columns.map((col) => (
-          <div key={col.id}>
-            {/* <Column column={col} /> */}
-          </div>
-        ))}
-      </SortableContext>
+        <SortableContext items={sortedColumnIds} strategy={horizontalListSortingStrategy}>
+          {sortedColumns.map((col, index) => (
+            <Column
+              key={col.id}
+              column={col}
+              boardId={board.id}
+              boardType={board.type}
+              index={index}
+            />
+          ))}
+        </SortableContext>
+      </div>
     </div>
   );
 }

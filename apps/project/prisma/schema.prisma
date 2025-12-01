@@ -78,16 +78,16 @@ model Board {
 // ------------------ COLUMN ------------------
 model Column {
   id        String   @id @default(uuid())
-  projectId String
-  boardId   String? // Liên kết tới board
+  projectId String?
+  boardId   String?
   title     String
   position  Int      @default(0)
   metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  board   Board?     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  project Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  board   Board?      @relation(fields: [boardId], references: [id], onDelete: Cascade)
   cards   Card[]
   views   CardView[]
 
@@ -98,7 +98,7 @@ model Column {
 // ------------------ CARD ------------------
 model Card {
   id           String   @id @default(uuid())
-  projectId    String
+  projectId    String?
   columnId     String?
   title        String
   description  String?
@@ -127,7 +127,7 @@ model Card {
   coverFilename     String?
 
   // === RELATIONS ===
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   column  Column?  @relation(fields: [columnId], references: [id], onDelete: SetNull)
 
   labels      CardLabel[]
