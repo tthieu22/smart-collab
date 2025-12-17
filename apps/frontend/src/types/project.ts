@@ -1,3 +1,5 @@
+import { UniqueIdentifier } from "@dnd-kit/core"
+
 // ------------------ USER CACHE ------------------
 export interface UserCache {
   id: string
@@ -17,6 +19,15 @@ export interface MoveCopyCardPayload {
   destColumnId?: string;
   destIndex?: number;
   userId?: string,
+}
+export interface DragContextType {
+  activeId: UniqueIdentifier | null;
+  overId: UniqueIdentifier | null;
+  activeItem: any;
+  registerScrollContainer?: (columnId: string, node: HTMLElement | null) => void;
+  registerBoardScrollContainer?: (boardId: string, node: HTMLElement | null) => void;
+  overData?: any;
+  setOverData?: (data: any) => void;
 }
 
 // ------------------ PROJECT MEMBER ------------------

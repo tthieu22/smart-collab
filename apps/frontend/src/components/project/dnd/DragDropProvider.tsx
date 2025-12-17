@@ -12,7 +12,7 @@ import {
   DragOverEvent,
   DragEndEvent,
   DragOverlay,
-  rectIntersection,
+  closestCenter,
   PointerSensor,
   KeyboardSensor,
   useSensor,
@@ -348,15 +348,15 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
     <DragContext.Provider value={contextValue}>
       <DndContext
         sensors={sensors}
-        collisionDetection={rectIntersection}
+        collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         autoScroll={{
-          enabled: true,
-          threshold: { x: 0.15, y: 0.15 },
-          acceleration: 20,
-          // interval: 10,
+          enabled: false,
+          // threshold: { x: 0.15, y: 0.15 },
+          // acceleration: 20,
+          // interval: 20,
         }}
       >
         {/* ✅ Hook useDndMonitor giờ nằm đúng vị trí */}

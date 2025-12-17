@@ -231,32 +231,28 @@ svg {
     transform: scale(1) translateY(0);
   }
 }
-/* Scrollbar thật mỏng và không có mũi tên */
+
+/* =========================================
+   GLOBAL THIN SCROLLBAR (Utility)
+   ========================================= */
 .scrollbar-thin {
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 2px;  /* Rất mỏng */
+  width: 2px;
   height: 2px;
 }
 
-/* Ẩn 2 mũi tên scrollbar */
 .scrollbar-thin::-webkit-scrollbar-button {
   display: none !important;
-  width: 0;
-  height: 0;
-  background: transparent;
 }
 
-/* Track (nền scrollbar) */
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 2px;
 }
 
-/* Thumb (thanh kéo) */
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: rgba(100, 116, 139, 0.4);
   border-radius: 2px;
@@ -264,11 +260,14 @@ svg {
   background-clip: content-box;
 }
 
-/* Bỏ hover effect hoặc giảm nhẹ */
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.5);
 }
 
+
+/* =========================================
+   COLUMN GLASS NEON
+   ========================================= */
 .column-glass-neon {
   display: flex;
   flex-direction: column;
@@ -281,46 +280,25 @@ svg {
   flex-basis: 272px;
   width: 272px;
   max-height: 70vh;
-  overflow-y: auto;
-  padding-bottom: 0.25rem; /* tương đương pb-1 */
 
-  border-radius: 0.75rem; /* rounded-xl */
+  overflow-y: auto;
+  padding-bottom: 0.25rem;
+
+  border-radius: 0.75rem;
 
   background-color: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
-  ring: 1px solid rgba(255, 255, 255, 0.3);
-
-  scroll-margin: 0.5rem; /* scroll-m-2 */
-
+  scroll-margin: 0.5rem;
   transition: all 0.3s ease-out;
 
+  /* Scrollbar */
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
 }
 
-/* Dark mode */
-.dark .column-glass-neon {
-  background-color: rgba(0, 0, 0, 0.25);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* giữ shadow */
-  ring-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Hover effect */
-.column-glass-neon:hover {
-  ring-color: rgba(59, 130, 246, 0.6); /* ring-blue-400/60 */
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-}
-
-.dark .column-glass-neon:hover {
-  ring-color: rgba(147, 197, 253, 0.5); /* dark:hover:ring-blue-300/50 */
-  box-shadow: 0 0 20px rgba(147, 197, 253, 0.3);
-}
-
-/* Scrollbar for webkit */
 .column-glass-neon::-webkit-scrollbar {
   width: 3px;
 }
@@ -333,29 +311,50 @@ svg {
   background: rgba(100, 116, 139, 0.4);
   border-radius: 3px;
 }
+
+/* Dark mode */
+.dark .column-glass-neon {
+  background-color: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Hover effect */
+.column-glass-neon:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+.dark .column-glass-neon:hover {
+  box-shadow: 0 0 20px rgba(147, 197, 253, 0.3);
+}
+
+
+/* =========================================
+   FROSTED GLASS NEON
+   ========================================= */
 .frosted-glass-neon {
   width: 272px;
   height: 100%;
 
   background-color: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
-  border-radius: 1rem; /* rounded-xl */
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 30px rgba(59, 130, 246, 0.6);
-  border: 2px solid #3b82f6; /* blue-400 */
-  outline: 4px solid rgba(59, 130, 246, 0.6); /* ring-4 ring-blue-400/60 */
+  border-radius: 1rem;
+  padding: 0.75rem;
+
+  border: 2px solid #3b82f6;
+  outline: 4px solid rgba(59, 130, 246, 0.6);
 
   display: flex;
   flex-direction: column;
-  padding: 0.75rem; /* p-3 */
+
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 30px rgba(59, 130, 246, 0.6);
 }
 
-/* Dark mode */
 .dark .frosted-glass-neon {
   background-color: rgba(0, 0, 0, 0.5);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 30px rgba(147, 197, 253, 0.5);
-}
-.fc-scroller {
-  overflow-y: visible !important;
-  max-height: none !important;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 30px rgba(147, 197, 253, 0.5);
 }
 

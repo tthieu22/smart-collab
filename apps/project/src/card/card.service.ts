@@ -332,9 +332,9 @@ export class CardService {
       select: { id: true, projectId: true },
     });
 
-    if (!destColumn || destColumn.projectId !== projectId) {
-      throw new Error('Destination column not found or not in project');
-    }
+    // if (!destColumn || destColumn.projectId !== projectId) {
+    //   throw new Error('Destination column not found or not in project');
+    // }
 
     // 3. Bắt đầu transaction: cập nhật position + card
     const result = await this.prisma.$transaction(async (tx) => {

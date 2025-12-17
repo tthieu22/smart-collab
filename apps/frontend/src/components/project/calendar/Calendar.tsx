@@ -294,10 +294,10 @@ export default function Calendar({
           initialView="timeGridDay" // Chỉ hiển thị mỗi ngày
           headerToolbar={{
             left: 'title',
-            center: '',
-            right: 'today,timeGridDay,timeGridWeek,prev,next', // vẫn cho phép chuyển sang tuần nếu muốn
+            center: 'prev,today,next',
+            right: '', // vẫn cho phép chuyển sang tuần nếu muốn
           }}
-          buttonText={{ today: 'Hôm nay', week: 'Tuần', day: 'Ngày' }}
+          buttonText={{ today: 'Today'}}
 
           height="100%"           // full chiều cao container cha
           contentHeight="auto"

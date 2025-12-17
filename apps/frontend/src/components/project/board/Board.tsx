@@ -118,36 +118,6 @@ export default function Board({ board }: Props) {
             />
           ))}
 
-          {isOver && isDraggingCard && (
-            <div
-              className="
-                w-72 h-full min-h-[900px] flex-shrink-0
-                rounded-xl border-3 border-dashed border-blue-400/80
-                bg-gradient-to-br from-blue-500/10 to-purple-500/10
-                dark:from-blue-400/10 dark:to-purple-400/10
-                backdrop-blur-md ring-2 ring-blue-400/50
-                flex flex-col items-center justify-center
-                text-blue-600 dark:text-blue-300 font-semibold text-lg
-                animate-pulse shadow-2xl
-              "
-            >
-              <svg
-                className="w-12 h-12 mb-3 opacity-70"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Thả để tạo cột mới
-            </div>
-          )}
-
           {canAddColumn && <AddColumn boardId={board.id} />}
 
           <div

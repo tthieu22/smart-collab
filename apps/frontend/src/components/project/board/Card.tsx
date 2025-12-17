@@ -1,7 +1,6 @@
-// src/components/project/board/Card.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card as CardType } from '@smart/types/project';
@@ -17,7 +16,7 @@ interface Props {
   isOverlay?: boolean;
 }
 
-export function Card({
+export const Card = React.memo(function Card({
   card,
   columnId,
   boardId,
@@ -26,7 +25,6 @@ export function Card({
   isOverlay,
 }: Props) {
   const { activeId } = useDragContext();
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     attributes,
@@ -37,66 +35,42 @@ export function Card({
     isDragging,
   } = useSortable({
     id: card.id,
-    data: { type: 'CARD', boardId, boardType, columnId, index },
+    data: { type: 'CARD', card, columnId, boardId, boardType, index },
+    disabled: isOverlay,
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  // LOG: Click handler
-  const handleClick = (e: React.MouseEvent) => {
-    console.log('[Card] Click event', {
-      cardId: card.id,
-      activeId,
-      isOverlay,
-      isDragging,
-      timestamp: new Date().toISOString(),
-    });
+  const style = useMemo(
+    () => ({
+      transform: CSS.Transform.toString(transform),
+      transition: transition || undefined,
+      // Quan trọng: khi là overlay → không bị ảnh hưởng bởi layout gốc
+      ...(isOverlay && { transform: `${CSS.Transform.toString(transform)} rotate(5deg)` }),
+    }),
+    [transform, transition, isOverlay]
+  );
 
-    if (activeId) {
-      console.log('[Card] BLOCKED: Có card đang kéo (activeId)', activeId);
-      return;
-    }
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (activeId || isOverlay) return;
+      e.stopPropagation();
+      setIsModalOpen(true);
+    },
+    [activeId, isOverlay]
+  );
 
-    if (isOverlay) {
-      console.log('[Card] BLOCKED: Đây là overlay (isOverlay = true)');
-      return;
-    }
-
-    e.stopPropagation();
-    console.log('[Card] OPEN MODAL:', card.id);
-    setIsModalOpen(true);
-  };
-
-  // LOG: Modal state change
-  useEffect(() => {
-    if (isModalOpen) {
-      console.log('[Card] MODAL MỞ THÀNH CÔNG:', card.id);
-    }
-  }, [isModalOpen, card.id]);
-
-  // LOG: Khi card được kéo
-  React.useEffect(() => {
-    if (isDragging) {
-      console.log('[Card] CARD ĐANG KÉO:', card.id);
-    }
-  }, [isDragging, card.id]);
+  // Khi đang kéo (không phải overlay) → ẩn hoàn toàn và co chiều cao về 0
+  const isBeingDragged = isDragging && !isOverlay;
 
   return (
     <>
-      {/* MODAL */}
       <CardDetailModal
         cardId={card.id}
         isOpen={isModalOpen}
-        onClose={() => {
-          console.log('[Card] Modal đóng');
-          setIsModalOpen(false);
-        }}
+        onClose={() => setIsModalOpen(false)}
       />
 
-      {/* CARD */}
       <div
         ref={setNodeRef}
         style={style}
@@ -104,26 +78,36 @@ export function Card({
         {...listeners}
         onClick={handleClick}
         className={`
-          bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 
-          p-3 shadow-sm transition-all select-none
-          ${isOverlay ? 'shadow-2xl border-blue-400 ring-2 ring-blue-400/50' : ''}
-          ${isDragging ? 'rotate-3 opacity-70' : ''}
-          ${
-            !activeId && !isOverlay
-              ? 'hover:shadow-md hover:ring-2 hover:ring-blue-400/30 cursor-pointer'
-              : 'cursor-grab active:cursor-grabbing'
+          ${isBeingDragged 
+            ? 'h-0 p-0 m-0 overflow-hidden opacity-0 scale-95' 
+            : 'my-1 p-3 h-auto'
+          }
+          transition-all duration-200 select-none
+          bg-white dark:bg-gray-800 rounded-lg border
+          ${isOverlay 
+            ? 'border-blue-500 shadow-2xl ring-4 ring-blue-400/30 scale-105 cursor-grabbing' 
+            : 'border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg cursor-pointer'
+          }
+          ${!activeId && !isOverlay 
+            ? 'hover:border-blue-400/50 hover:ring-2 hover:ring-blue-400/20' 
+            : 'cursor-grab active:cursor-grabbing'
           }
         `}
       >
-        <div className="font-medium text-gray-900 dark:text-gray-100">
-          {card.title}
+        {/* Nội dung chỉ hiện khi không bị ẩn */}
+        <div className={isBeingDragged ? 'opacity-0' : 'opacity-100'}>
+          <h4 className="font-medium text-gray-900 dark:text-gray-100">
+            {card.title}
+          </h4>
+          {card.description && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-3 leading-relaxed">
+              {card.description}
+            </p>
+          )}
         </div>
-        {card.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-            {card.description}
-          </p>
-        )}
       </div>
     </>
   );
-}
+});
+
+Card.displayName = 'Card';

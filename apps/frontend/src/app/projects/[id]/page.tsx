@@ -163,28 +163,28 @@ export default function ProjectDetailPage({ params }: Props) {
   const inboxClass = isSingle
     ? fullClass
     : compCount === 2 && hasCalendar && !hasBoard
-    ? 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    ? 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
     : compCount === 2 && hasBoard
-    ? 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    ? 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
     : compCount > 2
-    ? 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : 'flex-[0.3] min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
+    ? 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
 
   const calendarClass = isSingle
     ? fullClass
     : compCount === 2 && hasInbox && !hasBoard
-    ? 'flex-[1.2] min-w-[350px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    ? 'flex-1 min-w-[350px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
     : compCount === 2 && hasBoard
-    ? 'flex-[0.7] min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    ? 'flex-1 min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
     : compCount > 2
-    ? 'flex-[0.5] min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    ? 'flex-1 min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
     : 'flex-1 min-w-[300px] max-w-[320px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md';
 
   const boardClass = isSingle
     ? fullClass
     : compCount === 2
-    ? 'flex-[1.7] min-w-[700px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : 'flex-[1.2] min-w-[800px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
+    ? 'flex-1 min-w-[700px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
+    : 'flex-1 min-w-[800px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
 
   return (
     <div className="relative min-h-screen">
@@ -200,7 +200,7 @@ export default function ProjectDetailPage({ params }: Props) {
             ...(calendarBoard ? { [calendarBoard.id]: 'calendar' } : {}),
           }}
         >
-          <div className="flex gap-6 h-full px-6 pb-6">
+          <div className="flex gap-3 h-full px-6 pb-6">
             {activeComponents.includes('inbox') && inboxBoard && (
               <div className={inboxClass}>
                 <Inbox board={inboxBoard} />
