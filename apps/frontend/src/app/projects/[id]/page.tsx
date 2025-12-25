@@ -31,7 +31,6 @@ export default function ProjectDetailPage({ params }: Props) {
     boards,
   } = projectStore();
 
-  const theme = useBoardStore((state) => state.theme);
   const [loading, setLoading] = useState(true);
   const activeCorrelationIdRef = useRef<string | null>(null);
 
@@ -60,23 +59,21 @@ export default function ProjectDetailPage({ params }: Props) {
           : prev
         : [...prev, key];
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-      }
-
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
   };
 
   useEffect(() => {
-    document.body.style.overflowY = 'hidden';
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflowY = '';
+      document.body.style.overflow = '';
     };
   }, []);
 
   useEffect(() => {
     const socketManager = getProjectSocketManager();
+
     const handleProjectMsg = (msg: any) => {
       if (!msg?.project || msg?.correlationId) return;
       const p = msg.project as Project;
@@ -91,6 +88,7 @@ export default function ProjectDetailPage({ params }: Props) {
     };
 
     socketManager.joinProject(projectId).catch(console.error);
+
     const unsubCreated = socketManager.subscribeCorrelation(
       'realtime.project.created',
       handleProjectMsg,
@@ -137,62 +135,36 @@ export default function ProjectDetailPage({ params }: Props) {
   }, [projectId]);
 
   if (loading) return <Loading text="Đang tải dữ liệu" />;
-  if (!project) return <Loading text="Không tìm thấy dự án :(" />;
+  if (!project) return <Loading text="Không tìm thấy dự án" />;
 
-  const bgStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    zIndex: 0,
-    background:
-      theme === 'dark'
-        ? 'radial-gradient(circle at 50% 50%, #2a2a3e 0%, #1e1e2f 100%)'
-        : 'radial-gradient(circle at 50% 50%, #f8fafc 0%, #e2e8f0 100%)',
-    backdropFilter: 'blur(8px)',
-  };
+  /** ===== Style dùng chung ===== */
+  const basePanel =
+    'flex flex-col overflow-hidden border rounded-lg bg-white dark:bg-neutral-900';
 
-  const fullClass =
-    'flex-1 min-w-full max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
+  const inboxClass =
+    isSingle
+      ? `${basePanel} flex-1`
+      : `${basePanel} min-w-[300px] max-w-[300px]`;
 
-  const hasBoard = activeComponents.includes('board');
-  const hasInbox = activeComponents.includes('inbox');
-  const hasCalendar = activeComponents.includes('calendar');
+  const calendarClass =
+    isSingle
+      ? `${basePanel} flex-1`
+      : `${basePanel} min-w-[300px] max-w-[500px]`;
 
-  const inboxClass = isSingle
-    ? fullClass
-    : compCount === 2 && hasCalendar && !hasBoard
-    ? 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : compCount === 2 && hasBoard
-    ? 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : compCount > 2
-    ? 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : 'flex-1 min-w-[150px] max-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
-
-  const calendarClass = isSingle
-    ? fullClass
-    : compCount === 2 && hasInbox && !hasBoard
-    ? 'flex-1 min-w-[350px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : compCount === 2 && hasBoard
-    ? 'flex-1 min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : compCount > 2
-    ? 'flex-1 min-w-[300px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : 'flex-1 min-w-[300px] max-w-[320px] max-h-full overflow-y-auto rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md';
-
-  const boardClass = isSingle
-    ? fullClass
-    : compCount === 2
-    ? 'flex-1 min-w-[700px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30'
-    : 'flex-1 min-w-[800px] overflow-hidden rounded-2xl bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-2xl ring-1 ring-white/30';
+  const boardClass =
+    isSingle
+      ? `${basePanel} flex-1`
+      : `${basePanel} flex-1 min-w-[700px]`;
 
   return (
-    <div className="relative min-h-screen">
-      <div style={bgStyle} className="opacity-90" />
+    <div className="bg-gray-50 dark:bg-neutral-950 h-screen overflow-hidden">
+      <ProjectActionBar
+        activeComponents={activeComponents}
+        onToggle={toggleComponent}
+      />
 
-      <ProjectActionBar activeComponents={activeComponents} onToggle={toggleComponent} />
-
-      <div className="relative z-10 w-full h-screen overflow-hidden pt-16 pb-16">
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="fixed inset-x-0 bottom-14 top-16">
         <DragDropContextProvider
           boardTypes={{
             ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),
@@ -200,7 +172,7 @@ export default function ProjectDetailPage({ params }: Props) {
             ...(calendarBoard ? { [calendarBoard.id]: 'calendar' } : {}),
           }}
         >
-          <div className="flex gap-3 h-full px-6 pb-6">
+          <div className="flex h-full min-h-0 gap-3 px-4 pb-4">
             {activeComponents.includes('inbox') && inboxBoard && (
               <div className={inboxClass}>
                 <Inbox board={inboxBoard} />
@@ -223,4 +195,5 @@ export default function ProjectDetailPage({ params }: Props) {
       </div>
     </div>
   );
+
 }

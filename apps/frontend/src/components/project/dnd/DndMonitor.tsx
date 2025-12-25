@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useDndMonitor } from '@dnd-kit/core';
 
 interface Props {
@@ -16,79 +16,101 @@ export function DndMonitor({
   activeItem,
   overData,
 }: Props) {
+  const lastScrollTime = useRef(0);
+
   useDndMonitor({
-    onDragMove(event) {
-      const { over, active } = event;
-      if (!over) return;
+    onDragMove({ activatorEvent, over, active }) {
+      if (!activatorEvent || !(activatorEvent instanceof MouseEvent)) return;
 
-      const overPayload: any = over.data?.current ?? overData;
-      const translated = active.rect.current.translated ?? active.rect.current.initial;
-      if (!translated) return;
+      const now = performance.now();
+      if (now - lastScrollTime.current < 16) return; // ~60fps
+      lastScrollTime.current = now;
 
-      const pointerX = translated.left + translated.width / 2;
-      const pointerY = translated.top + translated.height / 2;
+      const pointerX = activatorEvent.clientX;
+      const pointerY = activatorEvent.clientY;
 
-      // 1. Scroll dọc trong cột Kanban
+      const payload = over?.data?.current ?? overData;
+
+      /* ========================= */
+      /* 1. Scroll dọc trong column */
+      /* ========================= */
+
       let columnId: string | null = null;
-      if (overPayload?.type === 'CARD') {
-        columnId = overPayload.columnId ?? null;
-      } else if (overPayload?.type === 'COLUMN') {
-        columnId = overPayload.columnId ?? String(over.id);
+
+      if (payload?.type === 'CARD') {
+        columnId = payload.columnId;
+      } else if (payload?.type === 'COLUMN') {
+        columnId = payload.columnId ?? String(over?.id);
       }
+
       if (columnId) {
         const container = columnScrollContainers.current.get(columnId);
         if (container) {
           const rect = container.getBoundingClientRect();
-          const threshold = 80;
-          const scrollStep = 100;
+          const edge = 60;
+          const maxSpeed = 18;
 
-          if (pointerY < rect.top + threshold) {
-            container.scrollTop = Math.max(0, container.scrollTop - scrollStep);
-          } else if (pointerY > rect.bottom - threshold) {
-            container.scrollTop += scrollStep;
+          if (pointerY < rect.top + edge) {
+            const intensity = (rect.top + edge - pointerY) / edge;
+            container.scrollTop -= maxSpeed * intensity;
+          } else if (pointerY > rect.bottom - edge) {
+            const intensity = (pointerY - (rect.bottom - edge)) / edge;
+            container.scrollTop += maxSpeed * intensity;
           }
         }
       }
 
-      // 2. Scroll dọc + ngang cho Calendar
-      if (overPayload?.type === 'CALENDAR') {
-        const boardId = overPayload.boardId;
-        const container = boardScrollContainers.current.get(boardId);
-        if (container) {
-          const rect = container.getBoundingClientRect();
-          const edgeSize = 60;
-          const speed = 100;
+      /* ========================= */
+      /* 2. Scroll calendar (2 chiều) */
+      /* ========================= */
 
-          if (pointerY < rect.top + edgeSize) {
-            container.scrollTop = Math.max(0, container.scrollTop - speed);
-          } else if (pointerY > rect.bottom - edgeSize) {
-            container.scrollTop += speed;
-          }
+      if (payload?.type === 'CALENDAR') {
+        const container = boardScrollContainers.current.get(payload.boardId);
+        if (!container) return;
 
-          if (pointerX < rect.left + edgeSize) {
-            container.scrollLeft = Math.max(0, container.scrollLeft - speed);
-          } else if (pointerX > rect.right - edgeSize) {
-            container.scrollLeft += speed;
-          }
+        const rect = container.getBoundingClientRect();
+        const edge = 60;
+        const maxSpeed = 20;
+
+        if (pointerY < rect.top + edge) {
+          container.scrollTop -= maxSpeed;
+        } else if (pointerY > rect.bottom - edge) {
+          container.scrollTop += maxSpeed;
         }
-        return; // Không scroll ngang board Kanban khi đang trên calendar
+
+        if (pointerX < rect.left + edge) {
+          container.scrollLeft -= maxSpeed;
+        } else if (pointerX > rect.right - edge) {
+          container.scrollLeft += maxSpeed;
+        }
+
+        return;
       }
 
-      // 3. Scroll ngang cho board Kanban
-      const boardId = overPayload?.boardId ?? active.data?.current?.boardId ?? activeItem?.boardId;
+      /* ========================= */
+      /* 3. Scroll ngang board Kanban */
+      /* ========================= */
+
+      const boardId =
+        payload?.boardId ??
+        active.data?.current?.boardId ??
+        activeItem?.boardId;
+
       if (!boardId) return;
 
       const boardContainer = boardScrollContainers.current.get(boardId);
       if (!boardContainer) return;
 
       const rect = boardContainer.getBoundingClientRect();
-      const horizontalThreshold = 120;
-      const horizontalStep = 100;
+      const edge = 80;
+      const maxSpeed = 16;
 
-      if (pointerX < rect.left + horizontalThreshold) {
-        boardContainer.scrollLeft = Math.max(0, boardContainer.scrollLeft - horizontalStep);
-      } else if (pointerX > rect.right - horizontalThreshold) {
-        boardContainer.scrollLeft += horizontalStep;
+      if (pointerX < rect.left + edge) {
+        const intensity = (rect.left + edge - pointerX) / edge;
+        boardContainer.scrollLeft -= maxSpeed * intensity;
+      } else if (pointerX > rect.right - edge) {
+        const intensity = (pointerX - (rect.right - edge)) / edge;
+        boardContainer.scrollLeft += maxSpeed * intensity;
       }
     },
   });

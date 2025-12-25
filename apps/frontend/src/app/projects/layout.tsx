@@ -15,7 +15,7 @@ export default function ProjectLayout({
         <Header />
 
         {/* Body */}
-        <div className="min-h-0 ">
+        <div className="min-h-screen relative">
           <main className="bg-gray-100 dark:bg-gray-900 p-0 ">
             {children}
           </main>
