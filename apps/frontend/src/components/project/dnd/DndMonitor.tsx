@@ -1,117 +1,128 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { useDndMonitor } from '@dnd-kit/core';
+import React, { useRef, useEffect } from 'react';
+import {
+  useDndMonitor,
+  DragMoveEvent,
+  DragEndEvent,
+  DragCancelEvent,
+} from '@dnd-kit/core';
+import { ScrollController } from './ScrollController';
+
+interface DragItemData {
+  type: 'CARD' | 'COLUMN' | 'BOARD' | 'CALENDAR';
+  boardId?: string;
+  columnId?: string;
+  boardType?: string;
+  index?: number;
+  start?: string;
+  end?: string;
+}
 
 interface Props {
   columnScrollContainers: React.MutableRefObject<Map<string, HTMLElement>>;
   boardScrollContainers: React.MutableRefObject<Map<string, HTMLElement>>;
-  activeItem: any;
-  overData: any;
+  activeItem: DragItemData | null;
+  overData: DragItemData | null;
 }
 
+/**
+ * DndMonitor - Handles auto-scroll during drag operations
+ *
+ * Scroll Priority Rules:
+ * 1. CARD DRAG: Column vertical scroll has FIRST priority, board horizontal scroll is FALLBACK
+ * 2. COLUMN DRAG: ONLY board horizontal scroll, NEVER column vertical scroll
+ * 3. Scroll starts ONLY when pointer is near edge
+ * 4. Scroll speed increases smoothly based on proximity
+ * 5. Scroll stops immediately when pointer leaves edge or drag ends
+ */
 export function DndMonitor({
   columnScrollContainers,
   boardScrollContainers,
   activeItem,
   overData,
 }: Props) {
-  const lastScrollTime = useRef(0);
+  const scrollControllerRef = useRef<ScrollController | null>(null);
+
+  // Initialize scroll controller once
+  useEffect(() => {
+    scrollControllerRef.current = new ScrollController();
+    return () => {
+      scrollControllerRef.current?.destroy();
+    };
+  }, []);
 
   useDndMonitor({
-    onDragMove({ activatorEvent, over, active }) {
-      if (!activatorEvent || !(activatorEvent instanceof MouseEvent)) return;
+    onDragMove(event: DragMoveEvent) {
+      const { over, active } = event;
+      const controller = scrollControllerRef.current;
 
-      const now = performance.now();
-      if (now - lastScrollTime.current < 16) return; // ~60fps
-      lastScrollTime.current = now;
-
-      const pointerX = activatorEvent.clientX;
-      const pointerY = activatorEvent.clientY;
-
-      const payload = over?.data?.current ?? overData;
-
-      /* ========================= */
-      /* 1. Scroll dọc trong column */
-      /* ========================= */
-
-      let columnId: string | null = null;
-
-      if (payload?.type === 'CARD') {
-        columnId = payload.columnId;
-      } else if (payload?.type === 'COLUMN') {
-        columnId = payload.columnId ?? String(over?.id);
-      }
-
-      if (columnId) {
-        const container = columnScrollContainers.current.get(columnId);
-        if (container) {
-          const rect = container.getBoundingClientRect();
-          const edge = 60;
-          const maxSpeed = 18;
-
-          if (pointerY < rect.top + edge) {
-            const intensity = (rect.top + edge - pointerY) / edge;
-            container.scrollTop -= maxSpeed * intensity;
-          } else if (pointerY > rect.bottom - edge) {
-            const intensity = (pointerY - (rect.bottom - edge)) / edge;
-            container.scrollTop += maxSpeed * intensity;
-          }
-        }
-      }
-
-      /* ========================= */
-      /* 2. Scroll calendar (2 chiều) */
-      /* ========================= */
-
-      if (payload?.type === 'CALENDAR') {
-        const container = boardScrollContainers.current.get(payload.boardId);
-        if (!container) return;
-
-        const rect = container.getBoundingClientRect();
-        const edge = 60;
-        const maxSpeed = 20;
-
-        if (pointerY < rect.top + edge) {
-          container.scrollTop -= maxSpeed;
-        } else if (pointerY > rect.bottom - edge) {
-          container.scrollTop += maxSpeed;
-        }
-
-        if (pointerX < rect.left + edge) {
-          container.scrollLeft -= maxSpeed;
-        } else if (pointerX > rect.right - edge) {
-          container.scrollLeft += maxSpeed;
-        }
-
+      if (!controller || !over || !activeItem) {
+        controller?.stop();
         return;
       }
 
-      /* ========================= */
-      /* 3. Scroll ngang board Kanban */
-      /* ========================= */
+      // Get pointer position from active element's translated rect
+      const translated =
+        active.rect.current.translated ?? active.rect.current.initial;
+      if (!translated) {
+        controller.stop();
+        return;
+      }
 
+      // Calculate pointer center position
+      const pointerX = translated.left + translated.width / 2;
+      const pointerY = translated.top + translated.height / 2;
+
+      // Determine if we're dragging a column
+      const isDraggingColumn = activeItem.type === 'COLUMN';
+
+      // Resolve column container (only for card drags)
+      let columnContainer: HTMLElement | null = null;
+      if (!isDraggingColumn) {
+        const overPayload = (over.data?.current ??
+          overData) as DragItemData | null;
+        let columnId: string | null = null;
+
+        if (overPayload?.type === 'CARD') {
+          columnId = overPayload.columnId ?? null;
+        } else if (overPayload?.type === 'COLUMN') {
+          columnId = overPayload.columnId ?? String(over.id);
+        }
+
+        if (columnId) {
+          columnContainer =
+            columnScrollContainers.current.get(columnId) ?? null;
+        }
+      }
+
+      // Resolve board container
+      const overPayload = (over.data?.current ??
+        overData) as DragItemData | null;
       const boardId =
-        payload?.boardId ??
-        active.data?.current?.boardId ??
+        overPayload?.boardId ??
+        (active.data?.current as DragItemData | null)?.boardId ??
         activeItem?.boardId;
 
-      if (!boardId) return;
+      const boardContainer = boardId
+        ? boardScrollContainers.current.get(boardId) ?? null
+        : null;
 
-      const boardContainer = boardScrollContainers.current.get(boardId);
-      if (!boardContainer) return;
+      // Update scroll target (controller handles priority and edge detection)
+      controller.updateScrollTarget(
+        { x: pointerX, y: pointerY },
+        columnContainer,
+        boardContainer,
+        isDraggingColumn
+      );
+    },
 
-      const rect = boardContainer.getBoundingClientRect();
-      const edge = 80;
-      const maxSpeed = 16;
+    onDragEnd(_event: DragEndEvent) {
+      scrollControllerRef.current?.stop();
+    },
 
-      if (pointerX < rect.left + edge) {
-        const intensity = (rect.left + edge - pointerX) / edge;
-        boardContainer.scrollLeft -= maxSpeed * intensity;
-      } else if (pointerX > rect.right - edge) {
-        const intensity = (pointerX - (rect.right - edge)) / edge;
-        boardContainer.scrollLeft += maxSpeed * intensity;
-      }
+    onDragCancel(_event: DragCancelEvent) {
+      scrollControllerRef.current?.stop();
     },
   });
 
