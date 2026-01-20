@@ -269,21 +269,6 @@ svg {
    COLUMN GLASS NEON
    ========================================= */
 .column-glass-neon {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-
-  flex-grow: 0;
-  flex-shrink: 0;
-  align-self: flex-start;
-
-  flex-basis: 272px;
-  width: 272px;
-  max-height: 70vh;
-
-  overflow-y: auto;
-  padding-bottom: 0.25rem;
-
   border-radius: 0.75rem;
 
   background-color: rgba(255, 255, 255, 0.25);
@@ -292,11 +277,7 @@ svg {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
   scroll-margin: 0.5rem;
-  transition: all 0.3s ease-out;
-
-  /* Scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+  transition: all 0.2;
 }
 
 .column-glass-neon::-webkit-scrollbar {
@@ -358,3 +339,32 @@ svg {
     0 0 30px rgba(147, 197, 253, 0.5);
 }
 
+
+/* Calendar */
+
+.btn-cal {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: white;
+}
+.dark .btn-cal {
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
+}
+.fc .fc-timegrid-slot-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+}
+.fc .fc-event {
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+.fc .fc-event.dragging-preview {
+  border: 2px dashed #3b82f6;
+  opacity: 0.6;
+  font-style: italic;
+}

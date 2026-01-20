@@ -63,7 +63,7 @@ export default function Board({ board }: Props) {
 
   return (
     <div
-      className={`relative flex-1 overflow-hidden rounded-2xl transition-all duration-300 backdrop-blur-sm ${
+      className={`relative overflow-hidden rounded-2xl transition-all duration-300 h-full backdrop-blur-sm ${
         theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
       }`}
       style={{
@@ -87,22 +87,10 @@ export default function Board({ board }: Props) {
         ref={setBoardRef}
         id="board"
         className="
-          flex gap-4 px-4 py-3
-          overflow-x-auto overflow-y-hidden
-          scrollbar-thin
-          scrollbar-thumb-white/30 dark:scrollbar-thumb-white/20
-          scrollbar-track-transparent
-          scroll-smooth
-          snap-x
-          [scrollbar-gutter:stable]
-          h-screen
-          min-h-[500px]
+          flex flex-grow-0 gap-4
+          overflow-x-auto overflow-y-auto
+          h-full
         "
-        style={{
-          WebkitOverflowScrolling: 'touch',
-          transform: 'translateZ(0)',
-          scrollBehavior: 'auto',
-        }}
       >
         <SortableContext
           items={sortedColumnIds}

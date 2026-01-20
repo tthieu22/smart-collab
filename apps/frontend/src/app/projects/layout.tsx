@@ -10,12 +10,11 @@ export default function ProjectLayout({
 }) {
   return (
     <ProjectRedirectProvider>
-      <div className="flex flex-col h-screen">
         {/* Header */}
         <Header />
 
         {/* Body */}
-        <div className="min-h-screen relative">
+        <div className="relative">
           <main className="bg-gray-100 dark:bg-gray-900 p-0 ">
             {children}
           </main>
@@ -23,7 +22,6 @@ export default function ProjectLayout({
 
         {/* Footer */}
         <Footer />
-      </div>
     </ProjectRedirectProvider>
   );
 }

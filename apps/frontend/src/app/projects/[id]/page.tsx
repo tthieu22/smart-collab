@@ -149,12 +149,12 @@ export default function ProjectDetailPage({ params }: Props) {
   const calendarClass =
     isSingle
       ? `${basePanel} flex-1`
-      : `${basePanel} min-w-[300px] max-w-[500px]`;
+      : `${basePanel} min-w-[400px] max-w-[500px]`;
 
   const boardClass =
     isSingle
       ? `${basePanel} flex-1`
-      : `${basePanel} flex-1 min-w-[700px]`;
+      : `${basePanel} min-w-[700px]`;
 
   return (
     <div className="bg-gray-50 dark:bg-neutral-950 h-screen overflow-hidden">

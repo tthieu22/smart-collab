@@ -223,118 +223,97 @@ export default function Column({
     <div
       ref={setRef}
       style={style}
-      data-testid="list-wrapper"
-      className={`flex-shrink-0 will-change-transform ${collapsed ? 'w-12' : ''}`}
+      className={`
+        flex flex-col h-full min-h-0 flex-shrink-0
+        ${collapsed ? 'w-12' : 'max-w-[300px]'}
+        will-change-transform column-glass-neon p-2
+      `}
     >
-      <div
-        className={`column-glass-neon ${collapsed ? 'max-w-12' : ''}`}
-        data-testid="list"
-      >
-        {/* Header */}
-        {!collapsed && (
-          <div
-            className="p-3 cursor-grab active:cursor-grabbing select-none"
-            {...attributes}
-            {...listeners}
-            style={{ touchAction: 'none' }}
-          >
-            <h3 className="text-lg flex items-center justify-between">
-              <span className="font-bold">{column.title}</span>
-              <span className="">{cardIds.length}</span>
-              <ColumnMenu
-                collapsed={collapsed}
-                onToggleCollapse={toggleCollapse}
-                onFilter={handleFilter}
-                onRename={handleRename}
-                onDelete={handleDelete}
-                extraItems={extraItems}
-              />
-            </h3>
-          </div>
-        )}
-
-        {collapsed && (
-          <div
-            className="inset-0 flex items-center justify-center cursor-pointer"
-            onClick={() => setCollapsed(false)}
-            role="button"
-            tabIndex={0}
-            aria-label={`Expand column ${column.title}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') setCollapsed(false);
-            }}
-          >
-            <div
-              className="flex flex-col items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-200 rotate-90 whitespace-nowrap"
-              style={{ height: collapsedHeight }}
-            >
-              <span>{column.title}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Nội dung card + footer chỉ hiện khi không collapsed */}
-        {!collapsed && (
-          <>
-            <div
-              ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto px-2 pb-2 scrollbar-thin scrollbar-thumb-white/30 dark:scrollbar-thumb-white/20"
-            >
-              <SortableContext
-                items={cardIds}
-                strategy={verticalListSortingStrategy}
-                disabled={isDraggingColumn}
-              >
-                <ol className="space-y-2 min-h-[60px]">
-                  {cardIds.map((cardId, idx) => {
-                    const card = cards[cardId];
-                    if (!card) return null;
-                    const insertBefore = shouldShowBeforeCard(cardId);
-                    return (
-                      <Fragment key={cardId}>
-                        {insertBefore && DropIndicator}
-                        <Card
-                          card={card}
-                          columnId={column.id}
-                          boardId={boardId}
-                          boardType={boardType}
-                          index={idx}
-                        />
-                      </Fragment>
-                    );
-                  })}
-                  {showPlaceholder && DropIndicator}
-                </ol>
-              </SortableContext>
-            </div>
-
-            <div className="p-3 pt-0">
-              <AddCard projectId={projectId} columnId={column.id} />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Overlay khi kéo */}
-      {isOverlay && (
+      {/* ================= HEADER ================= */}
+      {!collapsed && (
         <div
-          className="absolute inset-0 pointer-events-none z-50"
-          style={{
-            transform:
-              style?.transform?.replace(/,\s*0px\)/, ', 0px)') ?? undefined,
-          }}
+          className="shrink-0 active:cursor-grabbing select-none"
+          {...attributes}
+          {...listeners}
+          style={{ touchAction: 'none' }}
         >
-          <div className="frosted-glass-neon">
-            <h3 className="font-extrabold text-xl">
-              {column.title}
-              <span className="block text-xs mt-1 opacity-90">
-                ({cardIds.length} cards)
-              </span>
-            </h3>
-            <div className="flex-1 mt-4 bg-gradient-to-b from-blue-300/30 via-transparent to-purple-300/20 rounded-lg" />
+          <div className="flex items-center justify-between">
+            <h4 className="truncate">{column.title}</h4>
+            <ColumnMenu
+              collapsed={collapsed}
+              onToggleCollapse={toggleCollapse}
+              onFilter={handleFilter}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              extraItems={extraItems}
+            />
           </div>
+        </div>
+      )}
+
+      {/* ================= COLLAPSED VIEW ================= */}
+      {collapsed && (
+        <div
+          className="flex-1 flex items-center justify-center cursor-pointer"
+          onClick={() => setCollapsed(false)}
+          role="button"
+          tabIndex={0}
+        >
+          <div
+            className="rotate-90 whitespace-nowrap text-xs font-medium text-gray-700 dark:text-gray-200"
+            style={{ height: collapsedHeight }}
+          >
+            {column.title}
+          </div>
+        </div>
+      )}
+
+      {/* ================= BODY (SCROLL) ================= */}
+      {!collapsed && (
+        <div className="min-h-0">
+          <div
+            ref={scrollContainerRef}
+            className="h-full overflow-y-auto overflow-x-hidden"
+          >
+            <SortableContext
+              items={cardIds}
+              strategy={verticalListSortingStrategy}
+              disabled={isDraggingColumn}
+            >
+              <div className="min-h-[60px]">
+                {cardIds.map((cardId, idx) => {
+                  const card = cards[cardId];
+                  if (!card) return null;
+
+                  const insertBefore = shouldShowBeforeCard(cardId);
+
+                  return (
+                    <Fragment key={cardId}>
+                      {insertBefore && DropIndicator}
+                      <Card
+                        card={card}
+                        columnId={column.id}
+                        boardId={boardId}
+                        boardType={boardType}
+                        index={idx}
+                      />
+                    </Fragment>
+                  );
+                })}
+                {showPlaceholder && DropIndicator}
+              </div>
+            </SortableContext>
+          </div>
+        </div>
+      )}
+
+      {/* ================= FOOTER ================= */}
+      {!collapsed && (
+        <div className="shrink-0">
+          <AddCard projectId={projectId} columnId={column.id} />
         </div>
       )}
     </div>
   );
+
 }

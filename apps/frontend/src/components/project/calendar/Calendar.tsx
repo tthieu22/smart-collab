@@ -38,29 +38,78 @@ export default function Calendar({
   onCardDropped,
   onEventDraggedOut,
 }: CalendarProps) {
-  const { registerBoardScrollContainer, setOverData, activeItem, overData, overId } = useDragContext();
-  const theme = useBoardStore(s => s.theme);
+  const {
+    registerScrollContainer,
+    registerBoardScrollContainer,
+    setOverData,
+    activeItem,
+    overData,
+    overId,
+  } = useDragContext();
+  const theme = useBoardStore((s) => s.theme);
 
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const calendarRef = useRef<FullCalendar | null>(null);
+
+  /** 🔴 QUAN TRỌNG: ref này CHỈ trỏ vào phần scroll của lịch */
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const draggingCalendarEventRef = useRef<{ id: string; start?: Date; end?: Date } | null>(null);
+
+  const draggingCalendarEventRef = useRef<{
+    id: string;
+    start?: Date;
+    end?: Date;
+  } | null>(null);
 
   const { boardColumns, columns } = projectStore();
   const columnIds = boardColumns[board.id] || [];
-  const calendarColumn: ColumnType | undefined = columnIds.length > 0 ? columns[columnIds[0]] : undefined;
+  const calendarColumn: ColumnType | undefined =
+    columnIds.length > 0 ? columns[columnIds[0]] : undefined;
 
   if (!calendarColumn) {
-    return <div className="p-4 text-center text-red-600">Không tìm thấy cột cho calendar</div>;
+    return (
+      <div className="p-4 text-center text-red-600">
+        Không tìm thấy cột cho calendar
+      </div>
+    );
   }
 
-  const [dragPointer, setDragPointer] = useState<{ clientX: number; clientY: number } | null>(null);
+  const [dragPointer, setDragPointer] = useState<{
+    clientX: number;
+    clientY: number;
+  } | null>(null);
 
+  /**
+   * =====================================================
+   * Đăng ký scroll container cho DragContext
+   * Calendar cần đăng ký cả column (vertical scroll) và board (horizontal scroll)
+   * =====================================================
+   */
   useEffect(() => {
+    // Đăng ký column container cho vertical scroll (ưu tiên)
+    if (calendarColumn?.id) {
+      registerScrollContainer?.(calendarColumn.id, scrollContainerRef.current);
+    }
+    // Đăng ký board container cho horizontal scroll (fallback)
     registerBoardScrollContainer?.(board.id, scrollContainerRef.current);
-    return () => registerBoardScrollContainer?.(board.id, null);
-  }, [board.id, registerBoardScrollContainer]);
 
+    return () => {
+      if (calendarColumn?.id) {
+        registerScrollContainer?.(calendarColumn.id, null);
+      }
+      registerBoardScrollContainer?.(board.id, null);
+    };
+  }, [
+    board.id,
+    calendarColumn?.id,
+    registerScrollContainer,
+    registerBoardScrollContainer,
+  ]);
+
+  /**
+   * =====================================================
+   * dnd-kit DROPPABLE – chỉ gắn vào phần scroll grid
+   * =====================================================
+   */
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: `calendar-${board.id}-${calendarColumn.id}`,
     data: {
@@ -70,24 +119,24 @@ export default function Calendar({
     },
   });
 
-  const setCalendarRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      scrollContainerRef.current = node;
-      setDroppableRef(node);
-    },
-    [setDroppableRef]
-  );
-
+  /**
+   * =====================================================
+   * Theo dõi pointer toàn cục (phục vụ auto-scroll + drop)
+   * =====================================================
+   */
   useEffect(() => {
     if (!activeItem) {
       setDragPointer(null);
       (window as any).__dragPointerPosition = null;
       return;
     }
-    function onPointerMove(ev: PointerEvent) {
-      setDragPointer({ clientX: ev.clientX, clientY: ev.clientY });
-      (window as any).__dragPointerPosition = { clientX: ev.clientX, clientY: ev.clientY };
-    }
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const pos = { clientX: ev.clientX, clientY: ev.clientY };
+      setDragPointer(pos);
+      (window as any).__dragPointerPosition = pos;
+    };
+
     window.addEventListener('pointermove', onPointerMove);
     return () => {
       window.removeEventListener('pointermove', onPointerMove);
@@ -96,100 +145,164 @@ export default function Calendar({
     };
   }, [activeItem]);
 
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container || !dragPointer) return;
-
-    const SCROLL_MARGIN = 40;
-    const SCROLL_SPEED = 10;
-
-    const rect = container.getBoundingClientRect();
-    let scrollDelta = 0;
-
-    if (dragPointer.clientY < rect.top + SCROLL_MARGIN) {
-      scrollDelta = -SCROLL_SPEED;
-    } else if (dragPointer.clientY > rect.bottom - SCROLL_MARGIN) {
-      scrollDelta = SCROLL_SPEED;
-    }
-
-    if (scrollDelta === 0) return;
-
-    let animationFrameId: number;
-
-    const step = () => {
-      container.scrollTop += scrollDelta;
-      animationFrameId = requestAnimationFrame(step);
-    };
-
-    step();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [dragPointer]);
-
+  /**
+   * =====================================================
+   * TÍNH GIỜ DROP – SỬ DỤNG VỊ TRÍ CHÍNH XÁC TỪ POINTER
+   * Sử dụng FullCalendar's coordinate system để tính chính xác
+   * =====================================================
+   */
   const getDateFromPoint = useCallback((x: number, y: number): Date | null => {
     const container = scrollContainerRef.current;
-    if (!container) return null;
-
-    const rect = container.getBoundingClientRect();
     const api = calendarRef.current?.getApi();
-    if (!api) return null;
+    if (!container || !api) return null;
 
-    const relativeX = x - rect.left + container.scrollLeft;
-    const relativeY = y - rect.top + container.scrollTop;
+    // Lấy bounding rect của container (không bao gồm header)
+    const rect = container.getBoundingClientRect();
 
-    const viewStart = api.view.currentStart;
-    const viewEnd = api.view.currentEnd;
-    const dayCount = Math.round((viewEnd.getTime() - viewStart.getTime()) / 86400000);
-    const dayWidth = rect.width / dayCount;
+    // Kiểm tra pointer có trong container không
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      return null;
+    }
 
-    let dayIndex = Math.floor(relativeX / dayWidth);
-    dayIndex = Math.max(0, Math.min(dayIndex, dayCount - 1));
+    try {
+      // Sử dụng FullCalendar's coordinateToDate nếu có
+      // Fallback về manual calculation nếu không có
+      const calendarEl = container.querySelector(
+        '.fc-timeGrid-view'
+      ) as HTMLElement;
+      if (calendarEl) {
+        const calendarRect = calendarEl.getBoundingClientRect();
+        const relativeX = x - calendarRect.left;
+        const relativeY = y - calendarRect.top + container.scrollTop;
 
-    const minutesPerPixel = (24 * 60) / container.scrollHeight;
-    let minutes = relativeY * minutesPerPixel;
-    minutes = Math.max(0, Math.min(minutes, 24 * 60));
+        // Tìm timeGrid body
+        const timeGridBody = calendarEl.querySelector(
+          '.fc-timegrid-body'
+        ) as HTMLElement;
+        if (timeGridBody) {
+          const bodyRect = timeGridBody.getBoundingClientRect();
+          const bodyRelativeY = y - bodyRect.top + container.scrollTop;
 
-    const date = new Date(viewStart);
-    date.setDate(date.getDate() + dayIndex);
-    date.setHours(Math.floor(minutes / 60), Math.floor(minutes % 60));
+          // Tính toán dựa trên slot structure
+          // slotMinTime: 05:00, slotMaxTime: 23:00, slotDuration: 00:30:00
+          const slotMinHours = 5;
+          const slotMaxHours = 23;
+          const slotDurationMinutes = 30;
+          const totalSlots =
+            ((slotMaxHours - slotMinHours) * 60) / slotDurationMinutes; // 36 slots
 
-    return date;
+          // Lấy chiều cao thực tế của timeGrid body
+          const bodyScrollHeight = timeGridBody.scrollHeight;
+          const pixelsPerSlot = bodyScrollHeight / totalSlots;
+          const slotIndex = Math.floor(bodyRelativeY / pixelsPerSlot);
+          const clampedSlotIndex = Math.max(
+            0,
+            Math.min(totalSlots - 1, slotIndex)
+          );
+
+          // Tính thời gian từ slot index
+          const totalMinutes = clampedSlotIndex * slotDurationMinutes;
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+
+          // Tạo date từ view start date
+          const viewStart = new Date(api.view.currentStart);
+          const date = new Date(viewStart);
+          date.setHours(slotMinHours + hours, minutes, 0, 0);
+
+          return date;
+        }
+      }
+
+      // Fallback: manual calculation
+      const relativeY = y - rect.top + container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const slotMinHours = 5;
+      const slotMaxHours = 23;
+      const slotDurationMinutes = 30;
+      const totalMinutes = (slotMaxHours - slotMinHours) * 60; // 1080 phút
+      const minutesPerPixel = totalMinutes / scrollHeight;
+      const minutes = Math.max(
+        0,
+        Math.min(totalMinutes, relativeY * minutesPerPixel)
+      );
+
+      const date = new Date(api.view.currentStart);
+      date.setHours(slotMinHours, 0, 0, 0);
+      date.setMinutes(date.getMinutes() + Math.floor(minutes));
+
+      // Làm tròn đến 30 phút gần nhất
+      const roundedMinutes =
+        Math.round(date.getMinutes() / slotDurationMinutes) *
+        slotDurationMinutes;
+      date.setMinutes(roundedMinutes, 0, 0);
+
+      return date;
+    } catch (error) {
+      console.error('Error calculating date from point:', error);
+      return null;
+    }
   }, []);
 
+  /**
+   * =====================================================
+   * DRAG CARD → CALENDAR PREVIEW
+   * Cập nhật vị trí drop chính xác khi kéo card vào calendar
+   * =====================================================
+   */
   useEffect(() => {
-    if (!activeItem || activeItem.type !== 'CARD') return;
-    if (!overId || overId !== `calendar-${board.id}-${calendarColumn.id}`) return;
-    if (!dragPointer) return;
+    if (
+      !activeItem ||
+      activeItem.type !== 'CARD' ||
+      overId !== `calendar-${board.id}-${calendarColumn.id}` ||
+      !dragPointer
+    )
+      return;
 
+    // Tính toán vị trí drop chính xác từ pointer
     const start = getDateFromPoint(dragPointer.clientX, dragPointer.clientY);
-    if (!start) return;
+    if (!start) {
+      // Nếu pointer ngoài container, clear preview
+      setOverData?.(null);
+      return;
+    }
 
+    // Tạo event 1 giờ (mặc định)
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
-    const payload = {
+    setOverData?.({
       type: 'CALENDAR',
       boardId: board.id,
       columnId: calendarColumn.id,
       start: start.toISOString(),
       end: end.toISOString(),
-    };
-    setOverData?.(payload);
-  }, [activeItem, overId, board.id, calendarColumn.id, getDateFromPoint, setOverData, dragPointer]);
+    });
+  }, [
+    activeItem,
+    overId,
+    dragPointer,
+    getDateFromPoint,
+    setOverData,
+    board.id,
+    calendarColumn.id,
+  ]);
 
+  /**
+   * =====================================================
+   * FULLCALENDAR HANDLERS – GIỮ NGUYÊN
+   * =====================================================
+   */
   const handleNativeDrop = useCallback(
     (info: any) => {
       const cardId = info.draggedEl?.dataset.cardId;
       const title = info.draggedEl?.textContent ?? 'Untitled event';
-
       if (!cardId || !info.date) return;
 
       const start = info.date;
       const end = new Date(start.getTime() + 3600000);
 
-      setCalendarEvents(evs => [
-        ...evs.filter(e => e.id !== cardId),
+      setCalendarEvents((evs) => [
+        ...evs.filter((e) => e.id !== cardId),
         { id: cardId, title, start, end },
       ]);
       onCardDropped?.({ cardId, start, end });
@@ -199,13 +312,19 @@ export default function Calendar({
 
   const handleEventChange = useCallback((info: any) => {
     const { id, start, end, title } = info.event;
-    setCalendarEvents(evs => evs.map(e => (e.id === id ? { id, start, end, title } : e)));
+    setCalendarEvents((evs) =>
+      evs.map((e) => (e.id === id ? { id, start, end, title } : e))
+    );
   }, []);
 
   const handleEventDragStart = useCallback(
     (info: any) => {
       const evt = info.event;
-      draggingCalendarEventRef.current = { id: evt.id, start: evt.start, end: evt.end };
+      draggingCalendarEventRef.current = {
+        id: evt.id,
+        start: evt.start,
+        end: evt.end,
+      };
       setOverData?.({ type: 'DRAGGING_CALENDAR_EVENT', cardId: evt.id });
     },
     [setOverData]
@@ -217,13 +336,12 @@ export default function Calendar({
       draggingCalendarEventRef.current = null;
       setOverData?.(null);
 
-      const pointer =
-        (window as any).__dragPointerPosition ?? { clientX: info.jsEvent?.clientX, clientY: info.jsEvent?.clientY };
-      if (!pointer) return;
-
+      const pointer = (window as any).__dragPointerPosition;
       const rect = scrollContainerRef.current?.getBoundingClientRect();
+
       const inside =
         rect &&
+        pointer &&
         pointer.clientX >= rect.left &&
         pointer.clientX <= rect.right &&
         pointer.clientY >= rect.top &&
@@ -242,196 +360,101 @@ export default function Calendar({
   );
 
   const draggingEventPreview = React.useMemo(() => {
-    if (
-      !activeItem ||
-      activeItem.type !== 'CARD' ||
-      !overData ||
-      overData.type !== 'CALENDAR' ||
-      overId !== `calendar-${board.id}-${calendarColumn.id}`
-    ) {
-      return null;
-    }
-
+    if (!overData || overData.type !== 'CALENDAR') return null;
     return {
       id: 'dragging-preview',
       title: 'Kéo thả tại đây',
       start: new Date(overData.start),
       end: new Date(overData.end),
-      backgroundColor: 'rgba(0, 123, 255, 0.3)',
-      borderColor: '#007bff',
-      display: 'auto',
       editable: false,
+      display: 'auto',
     };
-  }, [activeItem, overData, overId, board.id, calendarColumn.id]);
+  }, [overData]);
 
   const displayedEvents = React.useMemo(() => {
     if (!draggingEventPreview) return calendarEvents;
-    return [...calendarEvents.filter(e => e.id !== draggingEventPreview.id), draggingEventPreview];
+    return [
+      ...calendarEvents.filter((e) => e.id !== 'dragging-preview'),
+      draggingEventPreview,
+    ];
   }, [calendarEvents, draggingEventPreview]);
+
+  /**
+   * =====================================================
+   * RENDER
+   * =====================================================
+   */
   return (
     <div
-      ref={setCalendarRef}
       className={`
-        relative flex-1 rounded-xl overflow-hidden shadow-lg border
-        ${theme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}
-        ${isOver ? 'ring-4 ring-blue-400 ring-opacity-30 bg-blue-50 dark:bg-blue-950/30' : ''}
+        relative flex-1 rounded-xl border shadow-lg
+        ${
+          theme === 'dark'
+            ? 'bg-gray-900 border-gray-700'
+            : 'bg-white border-gray-200'
+        }
+        ${isOver ? 'ring-4 ring-blue-400/30' : ''}
         ${className ?? ''}
       `}
       style={{ minHeight: 750 }}
     >
-      {/* Container scroll chính, dùng cho dnd-kit + scroll khi kéo */}
+      {/* ================= HEADER (FIXED – NO SCROLL) ================= */}
+      <div className="h-14 px-4 flex items-center justify-between border-b dark:border-gray-700">
+        <div className="font-semibold text-sm">
+          {calendarRef.current?.getApi().view.title}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => calendarRef.current?.getApi().prev()}
+            className="btn-cal"
+          >
+            Prev
+          </button>
+          <button
+            onClick={() => calendarRef.current?.getApi().today()}
+            className="btn-cal"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => calendarRef.current?.getApi().next()}
+            className="btn-cal"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      {/* ================= SCROLL BODY ================= */}
       <div
         ref={(node) => {
           scrollContainerRef.current = node;
           setDroppableRef(node);
         }}
-        className="h-full w-full overflow-auto"
-        style={{ scrollbarGutter: 'stable' }}
+        className="h-[calc(100%-3.5rem)] overflow-auto"
       >
         <FullCalendar
           ref={calendarRef}
           plugins={[timeGridPlugin, interactionPlugin]}
-          initialView="timeGridDay" // Chỉ hiển thị mỗi ngày
-          headerToolbar={{
-            left: 'title',
-            center: 'prev,today,next',
-            right: '', // vẫn cho phép chuyển sang tuần nếu muốn
-          }}
-          buttonText={{ today: 'Today'}}
-
-          height="100%"           // full chiều cao container cha
-          contentHeight="auto"
-          expandRows={true}
-
+          initialView="timeGridDay"
+          headerToolbar={false}
+          height="100%"
+          expandRows
           editable
           droppable
-          dragScroll={true}       // FullCalendar tự scroll khi kéo event trong calendar
-
           events={displayedEvents}
           drop={handleNativeDrop}
           eventDrop={handleEventChange}
           eventChange={handleEventChange}
           eventDragStart={handleEventDragStart}
           eventDragStop={handleEventDragStop}
-
-          // Style class names cho đẹp và phù hợp theme
-          slotLaneClassNames="bg-transparent"
-          slotLabelClassNames={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
-          dayHeaderClassNames={`bg-gray-50 dark:bg-gray-800/70 font-semibold text-sm uppercase tracking-wider ${
-            theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-          }`}
-          dayCellClassNames={`border-r border-b ${
-            theme === 'dark' ? 'border-gray-700 hover:bg-gray-800/50' : 'border-gray-200 hover:bg-gray-50'
-          }`}
-          nowIndicatorClassNames="bg-red-500"
-
-          eventClassNames={(arg) => {
-            const isPreview = arg.event.id === 'dragging-preview';
-            return [
-              'rounded-lg shadow-md transition-all duration-200 cursor-pointer font-medium text-sm',
-              isPreview
-                ? 'opacity-70 border-2 border-dashed border-blue-400 bg-blue-100 dark:bg-blue-900/50'
-                : 'hover:shadow-lg hover:scale-[1.02]',
-              theme === 'dark' ? 'text-white' : 'text-white',
-            ].join(' ');
-          }}
-
-          eventContent={(eventInfo) => {
-            const isPreview = eventInfo.event.id === 'dragging-preview';
-            return (
-              <div className={`px-2 py-1 h-full flex flex-col justify-center rounded-lg ${isPreview ? 'italic' : ''}`}>
-                <div className="truncate font-semibold">{eventInfo.event.title}</div>
-                <div className="text-xs opacity-90">{eventInfo.timeText}</div>
-              </div>
-            );
-          }}
-
           allDaySlot={false}
-          nowIndicator={true}
+          nowIndicator
           slotMinTime="05:00:00"
           slotMaxTime="23:00:00"
           slotDuration="00:30:00"
-          scrollTime="08:00:00"
-          slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
         />
       </div>
-
-      {/* Style nút header toolbar của FullCalendar */}
-      <style jsx global>{`
-        /* Nút chung */
-        .fc .fc-button {
-          padding: 4px 8px;            /* padding nhỏ hơn */
-          font-weight: 500;            /* font-weight nhẹ hơn */
-          font-size: 0.75rem;          /* text-xs (12px) */
-          border-radius: 0.375rem;     /* rounded-md */
-          border: 1px solid transparent;
-          cursor: pointer;
-          transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-        }
-
-        /* Title nhỏ hơn */
-        .fc .fc-toolbar-title {
-          font-size: 1rem;             /* 16px, nhỏ hơn mặc định */
-          font-weight: 500;
-          line-height: 1.2;
-        }
-
-        /* Light theme nút */
-        .fc .fc-button {
-          background-color: white;
-          color: #374151; /* gray-700 */
-        }
-        .fc .fc-button:hover {
-          background-color: #e5e7eb; /* gray-200 */
-          color: #1f2937; /* gray-900 */
-        }
-        .fc .fc-button:focus {
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-        }
-        .fc .fc-button:active {
-          background-color: #d1d5db; /* gray-300 */
-        }
-        .fc .fc-button.fc-button-active {
-          background-color: #3b82f6; /* blue-500 */
-          border-color: #2563eb; /* blue-600 */
-          color: white;
-        }
-        .fc .fc-button.fc-button-active:hover {
-          background-color: #2563eb; /* blue-600 */
-          border-color: #1d4ed8; /* blue-700 */
-        }
-
-        /* Dark theme nút */
-        .dark .fc .fc-button {
-          background-color: #1f2937; /* gray-800 */
-          color: #d1d5db; /* gray-300 */
-          border-color: #374151; /* gray-700 */
-        }
-        .dark .fc .fc-button:hover {
-          background-color: #374151; /* gray-700 */
-          color: white;
-        }
-        .dark .fc .fc-button:focus {
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-        }
-        .dark .fc .fc-button:active {
-          background-color: #4b5563; /* gray-600 */
-        }
-        .dark .fc .fc-button.fc-button-active {
-          background-color: #3b82f6; /* blue-500 */
-          border-color: #2563eb; /* blue-600 */
-          color: white;
-        }
-        .dark .fc .fc-button.fc-button-active:hover {
-          background-color: #2563eb;
-          border-color: #1d4ed8;
-        }
-      `}</style>
-
     </div>
   );
-
-
 }

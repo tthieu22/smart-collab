@@ -78,6 +78,7 @@ export function DndMonitor({
       const isDraggingColumn = activeItem.type === 'COLUMN';
 
       // Resolve column container (only for card drags)
+      // Calendar also uses column container for vertical scrolling
       let columnContainer: HTMLElement | null = null;
       if (!isDraggingColumn) {
         const overPayload = (over.data?.current ??
@@ -88,6 +89,9 @@ export function DndMonitor({
           columnId = overPayload.columnId ?? null;
         } else if (overPayload?.type === 'COLUMN') {
           columnId = overPayload.columnId ?? String(over.id);
+        } else if (overPayload?.type === 'CALENDAR') {
+          // Calendar uses column container for vertical scrolling
+          columnId = overPayload.columnId ?? null;
         }
 
         if (columnId) {
