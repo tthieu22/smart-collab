@@ -1,0 +1,51 @@
+Prompt
+ ↓
+AI: Analyze Domain
+ ↓
+AI: Generate Project
+ ↓
+AI: Generate Boards
+ ↓
+AI: Generate Columns (per board)
+ ↓
+AI: Generate Cards (per column)
+ ↓
+AI: Generate Card Details
+    ├─ checklist
+    ├─ labels
+    ├─ priority
+    ├─ deadline
+ ↓
+AI: Generate Card Views
+cấu trúc service ai-service/
+├── src/
+│   ├── main.ts
+│   ├── app.module.ts
+│
+│   ├── ai/
+│   │   ├── ai.module.ts
+│   │   ├── ai.controller.ts     # @MessagePattern RPC
+│   │   ├── ai.service.ts        # orchestrator
+│   │
+│   │   ├── domain.service.ts    # analyze-domain
+│   │   ├── prompt.factory.ts    # build prompt
+│   │
+│   │   ├── generators/
+│   │   │   ├── project.gen.ts
+│   │   │   ├── board.gen.ts
+│   │   │   ├── column.gen.ts
+│   │   │   ├── card.gen.ts
+│   │   │   └── card-detail.gen.ts  # checklist, label, deadline, priority
+│   │   │   └── card-view.gen.ts
+│   │
+│   │   └── events.publisher.ts  # emit RabbitMQ
+│   │
+│   ├── llm/
+│   │   └── llm.service.ts       # OpenAI / Claude
+│   │
+│   └── common/
+│       └── logger.ts
+│
+├── package.json
+└── tsconfig.json
+ 

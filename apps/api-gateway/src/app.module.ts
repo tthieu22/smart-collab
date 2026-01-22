@@ -44,6 +44,15 @@ import { UploadModule } from './upload/upload.module';
           getRabbitMQOptions('project_queue', configService),
       },
     ]),
+    ClientsModule.registerAsync([
+      {
+        name: 'AI_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) =>
+          getRabbitMQOptions('ai_queue', configService),
+      },
+    ]),
     // Import các module controller của Gateway
     AuthModule,
     ProjectModule,
