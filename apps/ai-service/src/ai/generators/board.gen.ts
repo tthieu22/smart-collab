@@ -13,7 +13,11 @@ export interface BoardGenInput {
 @Injectable()
 export class BoardGenerator {
   generate(input: BoardGenInput) {
-    return input.boards.map((b, index) => ({
+    const boards = Array.isArray(input.boards)
+      ? input.boards
+      : [input.boards];
+
+    return boards.map((b, index) => ({
       projectId: input.projectId,
       ownerId: input.ownerId,
       title: b.title,

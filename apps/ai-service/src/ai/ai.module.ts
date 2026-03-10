@@ -18,6 +18,7 @@ import { ClientsModule } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { getNestRabbitMQOptions } from 'src/config/rabbitmq.config';
 import { LlmService } from 'src/llm/llm.service';
+import { ModelRegistryService } from 'src/llm/model-registry.service';
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { LlmService } from 'src/llm/llm.service';
     ColumnGenerator,
     CardGenerator,
     CardViewGenerator,
-    CardDetailGenerator
+    CardDetailGenerator,
+    ModelRegistryService
   ],
 })
 export class AiModule {}

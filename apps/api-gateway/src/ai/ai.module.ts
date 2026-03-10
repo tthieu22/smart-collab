@@ -26,4 +26,4 @@ import { ClientsModule } from '@nestjs/microservices';
   ],
   controllers: [AiController],
 })
-export class ProjectModule {}
+export class AiModule {}

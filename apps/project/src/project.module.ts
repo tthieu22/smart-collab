@@ -13,6 +13,7 @@ import { CardService } from './card/card.service';
 import { CardHandler } from './card/card.handle';
 import { ProjectHandler } from './project.handle';
 import { ColumnHandler } from './column/column.handler';
+import { BoardConsumer } from './board/board.consumer';
 
 @Module({
   imports: [

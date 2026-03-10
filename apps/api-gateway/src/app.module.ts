@@ -8,6 +8,7 @@ import { getRabbitMQOptions } from './config/rabbitmq.config';
 import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
 import { UploadModule } from './upload/upload.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -56,7 +57,7 @@ import { UploadModule } from './upload/upload.module';
     // Import các module controller của Gateway
     AuthModule,
     ProjectModule,
-
+    AiModule,
     // Upload moudle
     UploadModule,
   ],

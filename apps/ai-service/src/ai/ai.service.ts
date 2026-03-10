@@ -90,8 +90,8 @@ export class AiService {
     );
 
     const projectDto = this.projectGen.generate({
-      name: domain.project.name,
-      description: domain.project.description,
+      name: domain.domain,
+      description: domain.description,
       ownerId: payload.ownerId,
       visibility: 'PRIVATE',
     });
@@ -101,11 +101,11 @@ export class AiService {
       projectDto,
     );
     const project = projectRes.data;
-
+    console.log(projectRes)
     const boardDtos = this.boardGen.generate({
-      projectId: project.id,
+      projectId: project.fullProject.id,
       ownerId: payload.ownerId,
-      boards: domain.boards,
+      boards: project.defaultBoard,
     });
 
     const boards: AiBoard[] = [];
@@ -199,8 +199,8 @@ export class AiService {
       }
     }
 
-    // 9️⃣ Final event
+    // Final event
     this.events.projectBuilt(project.id);
-    this.logger.log('✅ AI PROJECT BUILD COMPLETED');
+    this.logger.log('AI PROJECT BUILD COMPLETED');
   }
 }

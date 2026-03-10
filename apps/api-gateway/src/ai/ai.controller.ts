@@ -31,17 +31,17 @@ export class AiController {
 
     this.logger.log(`🚀 AI BUILD PROJECT by user ${user.id}`);
 
-    const result = await firstValueFrom(
+     const result = await firstValueFrom(
       this.aiClient
         .send(
           { cmd: 'ai.build-project' },
           {
             prompt,
-            ownerId: user.id,
+            ownerId: user.userId,
             locale: 'vi',
           },
         )
-        .pipe(timeout(20_000), retry({ count: 2, delay: 800 })),
+        .pipe(timeout(200000)),
     );
 
     /**

@@ -1,104 +1,180 @@
 import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
-
-export type LlmProvider = 'openai' | 'claude';
+import { ConfigService } from '@nestjs/config';
+import Groq from 'groq-sdk';
+import axios from 'axios';
 
 export interface LlmResponse {
-  content: string;       // text output đã clean
-  raw?: any;             // raw response (optional – debug)
+  content: string;
+  provider: string;
 }
 
 @Injectable()
 export class LlmService {
   private readonly logger = new Logger(LlmService.name);
-  private readonly provider: LlmProvider;
 
-  // ===== OpenAI client =====
-  private openai?: OpenAI;
+  private groq!: Groq;
+  private openrouterKey?: string;
 
-  constructor() {
-    this.provider = (process.env.LLM_PROVIDER as LlmProvider) || 'openai';
+  constructor(private readonly config: ConfigService) {
+    this.init();
+  }
 
-    if (this.provider === 'openai') {
-      this.openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+  private init() {
+    const groqKey = this.config.get<string>('GROQ_API_KEY');
+    const openrouterKey = this.config.get<string>('OPENROUTER_API_KEY');
+
+    if (groqKey) {
+      this.groq = new Groq({
+        apiKey: groqKey,
+        timeout: 60000,
       });
+
+      this.logger.log('✅ Groq initialized');
     }
 
-    this.logger.log(`LLM provider: ${this.provider}`);
+    if (openrouterKey) {
+      this.openrouterKey = openrouterKey;
+      this.logger.log('✅ OpenRouter initialized');
+    }
   }
 
-  // ===============================
-  // PUBLIC API
-  // ===============================
   async complete(prompt: string): Promise<LlmResponse> {
-    if (!prompt || typeof prompt !== 'string') {
-      throw new Error('Prompt must be a non-empty string');
-    }
+    try {
+      return await this.withRetry(() => this.completeGroq(prompt));
+    } catch (err) {
+      this.logger.warn('⚠️ Groq failed → fallback OpenRouter');
 
-    switch (this.provider) {
-      case 'openai':
-        return this.completeWithOpenAI(prompt);
+      try {
+        return await this.completeOpenRouter(prompt);
+      } catch (err) {
+        this.logger.warn('⚠️ OpenRouter failed → fallback Ollama');
 
-      case 'claude':
-        return this.completeWithClaude(prompt);
-
-      default:
-        throw new Error(`Unsupported LLM provider: ${this.provider}`);
+        return await this.completeOllama(prompt);
+      }
     }
   }
 
-  // ===============================
-  // OPENAI IMPLEMENTATION
-  // ===============================
-  private async completeWithOpenAI(prompt: string): Promise<LlmResponse> {
-    if (!this.openai) {
-      throw new Error('OpenAI client not initialized');
+  private async completeGroq(prompt: string): Promise<LlmResponse> {
+    const res = await this.groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.3,
+      messages: [
+        {
+          role: 'system',
+          content: `
+Return ONLY valid JSON.
+No explanation.
+No markdown.
+`,
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    const content = res.choices?.[0]?.message?.content?.trim();
+
+    if (!content) throw new Error('Empty Groq response');
+
+    return {
+      content: this.cleanJson(content),
+      provider: 'groq',
+    };
+  }
+
+  private async completeOpenRouter(prompt: string): Promise<LlmResponse> {
+    if (!this.openrouterKey) {
+      throw new Error('OpenRouter not configured');
     }
 
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        temperature: 0.3,
+    const res = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: 'meta-llama/llama-3.1-8b-instruct',
         messages: [
-          {
-            role: 'system',
-            content:
-              'You are an AI that outputs ONLY valid JSON. No markdown. No explanation.',
-          },
           {
             role: 'user',
             content: prompt,
           },
         ],
-      });
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.openrouterKey}`,
+        },
+      },
+    );
 
-      const content = response.choices?.[0]?.message?.content?.trim();
+    const content = res.data.choices?.[0]?.message?.content;
 
-      if (!content) {
-        throw new Error('Empty response from OpenAI');
+    if (!content) throw new Error('Empty OpenRouter response');
+
+    return {
+      content: this.cleanJson(content),
+      provider: 'openrouter',
+    };
+  }
+
+  private async completeOllama(prompt: string): Promise<LlmResponse> {
+    const res = await axios.post(
+      'http://localhost:11434/api/generate',
+      {
+        model: 'llama3',
+        prompt,
+        stream: false,
+      },
+    );
+
+    if (!res.data.response) {
+      throw new Error('Empty Ollama response');
+    }
+
+    return {
+      content: this.cleanJson(res.data.response),
+      provider: 'ollama',
+    };
+  }
+
+  private async withRetry(
+    fn: () => Promise<LlmResponse>,
+    retries = 3,
+  ): Promise<LlmResponse> {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const code = err?.code || err?.cause?.code;
+
+      if (retries > 0 && code === 'ECONNRESET') {
+        const wait = (4 - retries) * 2000;
+
+        this.logger.warn(`🔁 Retry in ${wait}ms`);
+
+        await new Promise((r) => setTimeout(r, wait));
+
+        return this.withRetry(fn, retries - 1);
       }
 
-      return {
-        content,
-        raw: response,
-      };
-    } catch (error: any) {
-      this.logger.error('OpenAI completion failed', error?.stack || error);
-      throw error;
+      throw err;
     }
   }
 
-  // ===============================
-  // CLAUDE IMPLEMENTATION (STUB)
-  // ===============================
-  private async completeWithClaude(prompt: string): Promise<LlmResponse> {
-    /**
-     * Placeholder để sau thay bằng SDK Claude
-     * (anthropic / bedrock / etc)
-     */
-    this.logger.warn('Claude provider not implemented yet');
+  private cleanJson(text: string) {
+    if (!text) return text;
 
-    throw new Error('Claude provider not implemented');
+    let cleaned = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+
+    const first = cleaned.indexOf('{');
+    const last = cleaned.lastIndexOf('}');
+
+    if (first !== -1 && last !== -1) {
+      cleaned = cleaned.substring(first, last + 1);
+    }
+
+    return cleaned;
   }
 }
