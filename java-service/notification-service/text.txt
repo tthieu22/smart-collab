@@ -1,0 +1,28 @@
+notification-service
+│
+├── pom.xml
+│
+├── src/main/java/com/smartcollab/notification
+│
+│   ├── NotificationServiceApplication.java
+│
+│   ├── controller
+│   │   └── NotificationController.java
+│
+│   ├── service
+│   │   └── NotificationService.java
+│
+│   ├── consumer
+│   │   └── NotificationConsumer.java
+│
+│   ├── repository
+│   │   └── NotificationRepository.java
+│
+│   ├── entity
+│   │   └── Notification.java
+│
+│   └── config
+│       └── RabbitMQConfig.java
+│
+└── src/main/resources
+    └── application.properties

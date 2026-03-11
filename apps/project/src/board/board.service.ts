@@ -20,7 +20,7 @@ export class BoardService {
     }
   }
 
-  /** 🧩 Tạo board + 1 column mặc định */
+  /** 🧩 Tạo board mặc định */
   async createBoard(params: {
     projectId?: string;
     ownerId?: string;
@@ -32,8 +32,13 @@ export class BoardService {
     const existing = await this.prisma.board.findFirst({
       where: type === 'board' ? { projectId, type } : { ownerId, type },
     });
-    if (existing) throw new Error(`${type} board already exists`);
-    const boardProjectId = (type === 'inbox' || type === 'calendar') ? undefined : projectId;
+
+    if (existing) {
+      throw new Error(`${type} board already exists`);
+    }
+
+    const boardProjectId =
+      type === 'inbox' || type === 'calendar' ? undefined : projectId;
 
     const board = await this.prisma.board.create({
       data: {
@@ -42,29 +47,18 @@ export class BoardService {
         type,
         title: title || this.getDefaultTitle(type),
         position: 0,
-        columnIds: [],
+        columnIds: [], // vẫn để rỗng
       },
-    });
-    const columnData: any = {
-      boardId: board.id,
-      title: `${type} column`,
-      position: 0,
-    };
-    if (boardProjectId) {
-      columnData.projectId = boardProjectId;
-    }
-    // Column mặc định
-    const column = await this.prisma.column.create({
-      data: columnData,
-    });
-
-    await this.prisma.board.update({
-      where: { id: board.id },
-      data: { columnIds: [column.id] },
     });
 
     const fullBoard = await this.getBoardById(board.id);
-    await this.amqpConnection.publish('project-exchange', 'board.created', { board: fullBoard });
+
+    await this.amqpConnection.publish(
+      'project-exchange',
+      'board.created',
+      { board: fullBoard },
+    );
+
     return fullBoard;
   }
 

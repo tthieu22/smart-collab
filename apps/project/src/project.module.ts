@@ -14,6 +14,7 @@ import { CardHandler } from './card/card.handle';
 import { ProjectHandler } from './project.handle';
 import { ColumnHandler } from './column/column.handler';
 import { BoardConsumer } from './board/board.consumer';
+import { BoardHandler } from './board/board.handler';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { BoardConsumer } from './board/board.consumer';
     ConfigModule.forRoot({ isGlobal: true }),
     SharedRabbitMQModule,
   ],
-  controllers: [CardHandler, ProjectHandler, ColumnHandler],
+  controllers: [CardHandler, ProjectHandler, ColumnHandler, BoardHandler],
 
   providers: [
     ProjectConsumer,
