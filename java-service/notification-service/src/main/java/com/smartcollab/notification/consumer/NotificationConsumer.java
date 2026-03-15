@@ -1,15 +1,26 @@
 package com.smartcollab.notification.consumer;
 
+import com.smartcollab.notification.dto.NotificationMessage;
+import com.smartcollab.notification.service.NotificationService;
+
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class NotificationConsumer {
 
-    @RabbitListener(queues = "notification.queue")
-    public void handleNotification(String message) {
+    private final NotificationService notificationService;
 
-        System.out.println("Received event: " + message);
-
+    public NotificationConsumer(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
+
+    @RabbitListener(queues = "notification.queue")
+    public void receive(NotificationMessage message) {
+
+        System.out.println("📩 Received message: " + message.getTitle());
+
+        notificationService.process(message);
+    }
+    
 }

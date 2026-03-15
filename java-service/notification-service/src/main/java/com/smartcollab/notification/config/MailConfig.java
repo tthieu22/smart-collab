@@ -15,11 +15,16 @@ public class MailConfig {
 
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
-        mailSender.setHost(System.getenv("SMTP_HOST"));
-        mailSender.setPort(Integer.parseInt(System.getenv("SMTP_PORT")));
+        String host = System.getenv("SMTP_HOST");
+        String port = System.getenv("SMTP_PORT");
+        String user = System.getenv("SMTP_USER");
+        String pass = System.getenv("SMTP_PASS");
 
-        mailSender.setUsername(System.getenv("SMTP_USER"));
-        mailSender.setPassword(System.getenv("SMTP_PASS"));
+        mailSender.setHost(host != null ? host : "smtp.gmail.com");
+        mailSender.setPort(port != null ? Integer.parseInt(port) : 587);
+
+        mailSender.setUsername(user);
+        mailSender.setPassword(pass);
 
         Properties props = mailSender.getJavaMailProperties();
 
