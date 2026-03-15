@@ -1,110 +1,75 @@
-# SmartCollab
+# 🚀 SmartCollab
 
-SmartCollab là nền tảng quản lý dự án và làm việc nhóm thời gian thực, được xây dựng theo kiến trúc microservices hiện đại với NestJS monorepo và Next.js 14. Hỗ trợ Kanban, thông báo realtime, presence, và trợ lý AI thông minh.
+SmartCollab là nền tảng **AI hỗ trợ tạo và quản lý dự án tự động**.
+Người dùng chỉ cần nhập **ý tưởng dự án**, hệ thống sẽ sử dụng AI để phân tích và **tự động tạo Project, Board và Task structure**.
 
-## Table of Contents
-- Features
-- Architecture
-- Tech Stack
-- Quick Start
-- Docker Setup
-- Project Structure
-- Event System
-- Contributing
-- Roadmap
-- License
+Repository:
+https://github.com/tthieu22/smart-collab
 
-## Features
-Realtime Kanban & Timeline  
-WebSocket collaboration với presence (ai đang online)  
-Trợ lý AI gợi ý deadline, tóm tắt tiến độ, hỏi đáp bằng OpenAI  
-Thông báo thông minh (in-app + email queue)  
-Phân quyền chi tiết (org - team - member)  
-Event-driven microservices qua RabbitMQ  
-Redis cache & pub/sub  
-Frontend Next.js 14 + shadcn/ui  
-Chạy full local bằng Docker Compose
+## ✨ Features
 
-## Architecture
-Next.js Frontend ←→ API Gateway (NestJS)  
-          ↓ (REST + WebSocket)  
-          RabbitMQ (events.exchange - topic)  
-          ↓  
-Auth - Project - Task - Notification - Realtime - AI  
-(Postgres + Redis + VectorDB)
+- AI phân tích ý tưởng dự án từ prompt
+- Tự động tạo cấu trúc project
+- Quản lý board và task
+- JWT authentication
+- Kiến trúc microservices
 
-## Tech Stack
-Monorepo: pnpm workspaces + TypeScript  
-Backend: NestJS 10  
-Frontend: Next.js 14 App Router + Tailwind + shadcn/ui  
-Database: PostgreSQL + Prisma  
-Message Broker: RabbitMQ  
-Cache/PubSub: Redis  
-Realtime: Socket.IO + Redis Adapter  
-AI: OpenAI API + Embeddings  
-Infra: Docker Compose
+## 🏗 Architecture
 
-## Quick Start (Development)
+Hệ thống được xây dựng theo kiến trúc **Microservices**
 
-Yêu cầu: Node.js 20+, pnpm 8+, Docker
+Services:
 
-git clone https://github.com/your-username/smart-collab.git
-cd smart-collab
-pnpm install
+- API Gateway
+- Auth Service
+- Project Service
+- Board Service
+- Task Service
+- Notification Service
 
-# Khởi động Postgres, Redis, RabbitMQ
-docker compose up -d
+## ⚙️ Tech Stack
 
-# Chạy tất cả services
-pnpm run dev
+Backend
 
-# Hoặc chạy riêng
-pnpm --filter api-gateway run start:dev
-pnpm --filter frontend run dev   # http://localhost:3000
+- NestJS
+- Node.js
+- TypeScript
 
-## Docker Setup
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+Database
 
-## Project Structure
-smart-collab/
-├── apps/
-│   ├── api-gateway/
-│   ├── auth/
-│   ├── project/
-│   ├── task/
-│   ├── notification/
-│   ├── realtime/
-│   ├── ai/
-│   └── frontend/
-├── libs/
-│   ├── prisma-postgres/
-│   ├── rabbitmq/
-│   ├── redis/
-│   └── shared/
-├── docker-compose.yml
-└── pnpm-workspace.yaml
+- PostgreSQL
+- Prisma ORM
 
-## Event System (RabbitMQ)
-Exchange: events.exchange (topic)
+Communication
 
-user.*          → auth → notification, realtime
-project.*       → project → notification, realtime
-task.*          → task → notification, realtime, ai
-notification.*  → notification → realtime
-ai.*            → ai → realtime, frontend
+- gRPC
+- REST API
 
-## Contributing
-Rất hoan nghênh mọi đóng góp! Xem file CONTRIBUTING.md để biết cách setup, style guide và gửi PR.
+AI
 
-## Roadmap
-Multi-tenant organizations  
-File attachments (MinIO/S3)  
-AI nâng cao với RAG  
-Mobile app  
-One-click self-hosted installer
+- LLM Integration
 
-## License
-MIT License. Xem file LICENSE để biết chi tiết.
+## 🚀 Run Project
 
-Happy collaborating!
+Clone project
+
+```bash
+git clone https://github.com/tthieu22/smart-collab.git
+```
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Run development
+
+```bash
+npm run start:dev
+```
+
+## 👨‍💻 Author
+
+Hiếu – Backend Developer
+GitHub: https://github.com/tthieu22
