@@ -1,7 +1,15 @@
 [build]
 builder = "NIXPACKS"
-command = "pnpm install && pnpm --filter api-gateway --filter auth --filter project --filter ai-service --filter realtime run build"
+buildCommand = """
+pnpm install
+cd apps/api-gateway && pnpm install && pnpm run build && cd ../..
+cd apps/auth && pnpm install && pnpm run build && cd ../..
+cd apps/project && pnpm install && pnpm run build && cd ../..
+cd apps/ai-service && pnpm install && pnpm run build && cd ../..
+cd apps/realtime && pnpm install && pnpm run build && cd ../..
+"""
 
 [deploy]
-startCommand = "pnpm -r --parallel --filter api-gateway --filter auth --filter project --filter ai-service --filter realtime run start"
+startCommand = "pnpm --filter api-gateway start & pnpm --filter auth start & pnpm --filter project start & pnpm --filter ai-service start & pnpm --filter realtime start"
+
 restartPolicyType = "ON_FAILURE"
