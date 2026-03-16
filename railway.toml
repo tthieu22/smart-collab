@@ -1,9 +1,6 @@
 [build]
 builder = "NIXPACKS"
-command = "pnpm --filter api-gateway --filter auth --filter project --filter ai-service --filter realtime run build"
-
-[install]
-command = "pnpm install"
+command = "pnpm install && pnpm --filter api-gateway --filter auth --filter project --filter ai-service --filter realtime run build"
 
 [deploy]
 startCommand = "pnpm -r --parallel --filter api-gateway --filter auth --filter project --filter ai-service --filter realtime run start"
