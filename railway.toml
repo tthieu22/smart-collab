@@ -1,11 +1,9 @@
 [build]
 builder = "NIXPACKS"
+command = "pnpm --filter auth-service build && pnpm --filter project-service build && pnpm --filter notification-service build"
 
 [install]
 command = "pnpm install"
-
-[build]
-command = "pnpm --filter auth-service build && pnpm --filter project-service build && pnpm --filter notification-service build"
 
 [deploy]
 startCommand = "pnpm --filter auth-service start && pnpm --filter project-service start && pnpm --filter notification-service start"
