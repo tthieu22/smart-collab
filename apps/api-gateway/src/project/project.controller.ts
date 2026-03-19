@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/roles.decorator'; // import decorator Public
 import { Project } from './dto/project.dto';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard) 
@@ -99,6 +99,41 @@ export class ProjectController {
     );
 
     this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+
+  /**
+   * POST /projects/ai-build
+   * Body: { prompt: string }
+   */
+  @Post('ai-build')
+  async buildProject(@Body('prompt') prompt: string, @Req() req: any) {
+    const user = req.user;
+
+    this.logger.log(`🚀 AI BUILD PROJECT by user ${user.id}`);
+
+      const result = await firstValueFrom(
+      this.projectClient
+        .send(
+          { cmd: 'ai.build-project' },
+          {
+            prompt,
+            ownerId: user.userId,
+            locale: 'vi',
+          },
+        )
+        .pipe(timeout(200000)),
+    );
+
+    /**
+     * Expected response:
+     * {
+     *   status: 'BOARD_READY',
+     *   project,
+     *   board
+     * }
+     */
     return result;
   }
 }

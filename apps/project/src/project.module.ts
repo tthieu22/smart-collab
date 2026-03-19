@@ -15,6 +15,9 @@ import { ProjectHandler } from './project.handle';
 import { ColumnHandler } from './column/column.handler';
 import { BoardConsumer } from './board/board.consumer';
 import { BoardHandler } from './board/board.handler';
+import { ModelRegistryService } from './llm/model-registry.service';
+import { LlmService } from './llm/llm.service';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -22,6 +25,7 @@ import { BoardHandler } from './board/board.handler';
     BoardModule,
     ConfigModule.forRoot({ isGlobal: true }),
     SharedRabbitMQModule,
+    AiModule,
   ],
   controllers: [CardHandler, ProjectHandler, ColumnHandler, BoardHandler],
 
@@ -32,6 +36,8 @@ import { BoardHandler } from './board/board.handler';
     ColumnConsumer,
     // CardConsumer,
     CardService,
+    LlmService,
+    ModelRegistryService
   ],
 })
 export class ProjectModule {}
