@@ -7,7 +7,7 @@ import { UserMenu } from './userMenu/UserMenu';
 export default function Header() {
   
   return (
-    <header className="flex items-center justify-between bg-white dark:bg-black px-2 shadow dark:border-gray-800 dark:border-b relative z-50">
+    <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white/90 px-2 backdrop-blur dark:border-neutral-800 dark:bg-black/80 relative z-50">
       <div className="flex items-center gap-6 p-1">
         <Logo />
         <Navbar />

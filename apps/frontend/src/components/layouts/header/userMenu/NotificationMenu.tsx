@@ -88,7 +88,7 @@ export function NotificationMenu() {
       popupRender={() => content}
     >
       <div
-        className={`i-box ${open ? "active" : ""}`}
+        className={`i-box ${open ? "active" : ""} hover:bg-gray-50 dark:hover:bg-neutral-800`}
         style={{
           display: "flex",
           alignItems: "center",

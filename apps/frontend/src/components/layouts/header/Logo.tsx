@@ -1,43 +1,16 @@
 "use client";
 
 import React from "react";
-import "./logo.css";
-import { useTheme } from "next-themes";
-
-const EMOJIS = ["❤️", "😍", "🥰", "😘", "👌", "🤣", "💡", "✨", "🔥", "🌟"];
-const COLUMNS = [
-  EMOJIS.slice(0, 5),
-  EMOJIS.slice(5, 10),
-  EMOJIS.slice(3, 8),
-];
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
 export function Logo() {
-  const { theme } = useTheme();
-
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-      <mark
-        className={`logo-mark ${theme}`}
-        style={{ height: 35 }}
-      >
-        <div className="logo-board">
-          {COLUMNS.map((col, colIndex) => (
-            <div key={colIndex} className="logo-column">
-              {col.map((emoji, i) => (
-                <span
-                  key={i}
-                  className={`logo-emoji row-${i % 2}`}
-                >
-                  {emoji}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </mark>
-      {/* <span lang="en" translate="no" style={{ fontWeight: 700, fontSize: 16, userSelect: "none" }}>
-        Collab
-      </span> */}
-    </div>
+    <Link href="/" className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-neutral-800">
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 text-white">
+        <Sparkles size={16} />
+      </span>
+      <span className="hidden text-sm font-semibold tracking-wide sm:inline">Smart Collab</span>
+    </Link>
   );
 }

@@ -107,33 +107,33 @@ export class ProjectController {
    * POST /projects/ai-build
    * Body: { prompt: string }
    */
-  @Post('ai-build')
-  async buildProject(@Body('prompt') prompt: string, @Req() req: any) {
-    const user = req.user;
+  // @Post('ai-build')
+  // async buildProject(@Body('prompt') prompt: string, @Req() req: any) {
+  //   const user = req.user;
 
-    this.logger.log(`🚀 AI BUILD PROJECT by user ${user.id}`);
+  //   this.logger.log(`🚀 AI BUILD PROJECT by user ${user.id}`);
 
-      const result = await firstValueFrom(
-      this.projectClient
-        .send(
-          { cmd: 'ai.build-project' },
-          {
-            prompt,
-            ownerId: user.userId,
-            locale: 'vi',
-          },
-        )
-        .pipe(timeout(200000)),
-    );
+  //     const result = await firstValueFrom(
+  //     this.projectClient
+  //       .send(
+  //         { cmd: 'ai.build-project' },
+  //         {
+  //           prompt,
+  //           ownerId: user.userId,
+  //           locale: 'vi',
+  //         },
+  //       )
+  //       .pipe(timeout(200000)),
+  //   );
 
-    /**
-     * Expected response:
-     * {
-     *   status: 'BOARD_READY',
-     *   project,
-     *   board
-     * }
-     */
-    return result;
-  }
+  //   /**
+  //    * Expected response:
+  //    * {
+  //    *   status: 'BOARD_READY',
+  //    *   project,
+  //    *   board
+  //    * }
+  //    */
+  //   return result;
+  // }
 }

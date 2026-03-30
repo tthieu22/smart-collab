@@ -12,6 +12,7 @@ import Calendar from '@smart/components/project/calendar/Calendar';
 import Board from '@smart/components/project/board/Board';
 import DragDropContextProvider from '@smart/components/project/dnd/DragDropProvider';
 
+import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { useBoardStore } from '@smart/store/setting';
 import { Project } from '@smart/types/project';
 
@@ -48,7 +49,9 @@ export default function ProjectDetailPage({ params }: Props) {
   const project = currentProject?.id === projectId ? currentProject : null;
 
   const inboxBoard = Object.values(boards).find((b) => b.type === 'inbox');
-  const calendarBoard = Object.values(boards).find((b) => b.type === 'calendar');
+  const calendarBoard = Object.values(boards).find(
+    (b) => b.type === 'calendar'
+  );
   const mainBoard = Object.values(boards).find((b) => b.type === 'board');
 
   const toggleComponent = (key: string) => {
@@ -64,12 +67,7 @@ export default function ProjectDetailPage({ params }: Props) {
     });
   };
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
+  // Note: không chặn scroll toàn trang để header/footer luôn hiển thị.
 
   useEffect(() => {
     const socketManager = getProjectSocketManager();
@@ -91,11 +89,11 @@ export default function ProjectDetailPage({ params }: Props) {
 
     const unsubCreated = socketManager.subscribeCorrelation(
       'realtime.project.created',
-      handleProjectMsg,
+      handleProjectMsg
     );
     const unsubUpdated = socketManager.subscribeCorrelation(
       'realtime.project.updated',
-      handleProjectMsg,
+      handleProjectMsg
     );
 
     return () => {
@@ -112,7 +110,10 @@ export default function ProjectDetailPage({ params }: Props) {
       setLoading(true);
       try {
         const correlationId = crypto.randomUUID();
-        const res: any = await projectService.getProject({ projectId, correlationId });
+        const res: any = await projectService.getProject({
+          projectId,
+          correlationId,
+        });
         const p: Project | undefined =
           res?.data || res?.dto?.project || res?.project || res?.dto;
 
@@ -141,59 +142,57 @@ export default function ProjectDetailPage({ params }: Props) {
   const basePanel =
     'flex flex-col overflow-hidden border rounded-lg bg-white dark:bg-neutral-900';
 
-  const inboxClass =
-    isSingle
-      ? `${basePanel} flex-1`
-      : `${basePanel} min-w-[300px] max-w-[300px]`;
+  const inboxClass = isSingle
+    ? `${basePanel} flex-1`
+    : `${basePanel} min-w-[300px] max-w-[300px]`;
 
-  const calendarClass =
-    isSingle
-      ? `${basePanel} flex-1`
-      : `${basePanel} min-w-[400px] max-w-[500px]`;
+  const calendarClass = isSingle
+    ? `${basePanel} flex-1`
+    : `${basePanel} min-w-[400px] max-w-[500px]`;
 
-  const boardClass =
-    isSingle
-      ? `${basePanel} flex-1`
-      : `${basePanel} min-w-[700px]`;
+  const boardClass = isSingle
+    ? `${basePanel} flex-1`
+    : `${basePanel} min-w-[700px]`;
 
   return (
-    <div className="bg-gray-50 dark:bg-neutral-950 h-screen overflow-hidden">
-      <ProjectActionBar
-        activeComponents={activeComponents}
-        onToggle={toggleComponent}
-      />
+    <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter>
+      <div className="bg-gray-50 dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)]">
+        <ProjectActionBar
+          activeComponents={activeComponents}
+          onToggle={toggleComponent}
+        />
 
-      {/* ===== MAIN CONTENT ===== */}
-      <div className="fixed inset-x-0 bottom-14 top-16">
-        <DragDropContextProvider
-          boardTypes={{
-            ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),
-            ...(inboxBoard ? { [inboxBoard.id]: 'inbox' } : {}),
-            ...(calendarBoard ? { [calendarBoard.id]: 'calendar' } : {}),
-          }}
-        >
-          <div className="flex h-full min-h-0 gap-3 px-4 pb-4">
-            {activeComponents.includes('inbox') && inboxBoard && (
-              <div className={inboxClass}>
-                <Inbox board={inboxBoard} />
-              </div>
-            )}
+        {/* ===== MAIN CONTENT ===== */}
+        <div className="fixed inset-x-0 bottom-14 top-16">
+          <DragDropContextProvider
+            boardTypes={{
+              ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),
+              ...(inboxBoard ? { [inboxBoard.id]: 'inbox' } : {}),
+              ...(calendarBoard ? { [calendarBoard.id]: 'calendar' } : {}),
+            }}
+          >
+            <div className="flex h-full min-h-0 gap-3 px-4 pb-4">
+              {activeComponents.includes('inbox') && inboxBoard && (
+                <div className={inboxClass}>
+                  <Inbox board={inboxBoard} />
+                </div>
+              )}
 
-            {activeComponents.includes('calendar') && calendarBoard && (
-              <div className={calendarClass}>
-                <Calendar board={calendarBoard} />
-              </div>
-            )}
+              {activeComponents.includes('calendar') && calendarBoard && (
+                <div className={calendarClass}>
+                  <Calendar board={calendarBoard} />
+                </div>
+              )}
 
-            {activeComponents.includes('board') && mainBoard && (
-              <div className={boardClass}>
-                <Board board={mainBoard} />
-              </div>
-            )}
-          </div>
-        </DragDropContextProvider>
+              {activeComponents.includes('board') && mainBoard && (
+                <div className={boardClass}>
+                  <Board board={mainBoard} />
+                </div>
+              )}
+            </div>
+          </DragDropContextProvider>
+        </div>
       </div>
-    </div>
+    </SiteLayout>
   );
-
 }

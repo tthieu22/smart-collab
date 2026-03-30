@@ -26,8 +26,9 @@ export function AvatarMenu() {
 
   const handleProfileClick = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
-    navigateLater("/user");
-  }, [navigateLater]);
+    const profilePath = currentUser?.id ? `/profile/${currentUser.id}` : "/profile";
+    navigateLater(profilePath);
+  }, [currentUser?.id, navigateLater]);
 
   const handleUserSettings = useCallback(() => {
     navigateLater("/user/settings");
@@ -82,7 +83,7 @@ export function AvatarMenu() {
           style={{ display: "flex", alignItems: "center", gap: 8 }}
         >
           <UserOutlined />
-          <span>Hồ sơ</span>
+          <span>Thông tin cá nhân</span>
         </div>
       ),
     },
@@ -128,7 +129,7 @@ export function AvatarMenu() {
       getPopupContainer={() => document.body}
     >
       <div
-        className={`i-box ${open ? "active" : ""}`}
+        className={`i-box ${open ? "active" : ""} hover:bg-gray-50 dark:hover:bg-neutral-800`}
         style={{
           display: "flex",
           alignItems: "center",

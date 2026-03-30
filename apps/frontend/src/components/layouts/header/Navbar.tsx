@@ -4,24 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   HomeOutlined,
-  InfoCircleOutlined,
-  PhoneOutlined,
+  ProjectOutlined,
 } from "@ant-design/icons";
 
 export function Navbar() {
   const pathname = usePathname();
 
   const items = [
-    { key: "/", icon: <HomeOutlined  style={{ fontSize: 20 }} /> }
+    { key: "/", icon: <HomeOutlined style={{ fontSize: 20 }} />, label: "Home" },
+    {
+      key: "/projects",
+      icon: <ProjectOutlined style={{ fontSize: 20 }} />,
+      label: "Projects",
+    },
   ];
 
   return (
-    <div style={{ display: "flex", alignItems: "left", gap: 20 }}>
+    <div className="flex items-center gap-2">
       {items.map((item) => {
-        const isActive = pathname === item.key;
+        const isActive = pathname === item.key || pathname.startsWith(`${item.key}/`);
 
         return (
-          <Link href={item.key} key={item.key}>
+          <Link href={item.key} key={item.key} title={item.label}>
             <div
               className={`i-box ${isActive ? "active" : ""}`}
               style={{
@@ -33,7 +37,6 @@ export function Navbar() {
                 borderRadius: 8,
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                fontSize: 20, // icon to hơn
               }}
             >
               {item.icon}

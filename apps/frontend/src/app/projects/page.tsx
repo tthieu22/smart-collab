@@ -6,11 +6,15 @@ import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import type { Project } from '@smart/types/project';
 import { Loading } from '@smart/components/ui/loading';
-import { Sidebar } from '@smart/components/layouts';
+import SiteLayout from '@smart/components/layouts/SiteLayout';
+import LeftWidgets from '@smart/components/home/widgets/LeftWidgets';
+import RightWidgets from '@smart/components/home/widgets/RightWidgets';
+import { useHomeFeedBootstrap } from '@smart/hooks/useHomeFeed';
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  useHomeFeedBootstrap();
 
   useEffect(() => {
     let mounted = true;
@@ -27,7 +31,10 @@ export default function ProjectListPage() {
             setProjects(list);
           }
         } else {
-          console.error('Load projects failed:', res.message || 'Unknown error');
+          console.error(
+            'Load projects failed:',
+            res.message || 'Unknown error'
+          );
         }
       } catch (e) {
         console.error(e);
@@ -46,47 +53,41 @@ export default function ProjectListPage() {
   if (loading) return <Loading text="Đang tải dữ liệu" />;
 
   return (
-    <div className="flex overflow-hidden min-h-screen">
-      <div className="w-64 bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 flex-shrink-0">
-        <Sidebar />
-      </div>
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-950 min-h-screen">
-        <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">
-          Your Workspaces
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <SiteLayout leftSidebar={<LeftWidgets />} hideRightSidebar hideFooter>
+      <div className="mx-auto w-full max-w-[980px] space-y-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => {
             const bgStyle: React.CSSProperties = project.fileUrl
               ? { backgroundImage: `url(${project.fileUrl})` }
               : project.background
-              ? { backgroundImage: `url(${project.background})` }
-              : project.color
-              ? { backgroundColor: project.color }
-              : { backgroundImage: 'url(/backgrounds/muaxuan.png)' };
+                ? { backgroundImage: `url(${project.background})` }
+                : project.color
+                  ? { backgroundColor: project.color }
+                  : { backgroundImage: 'url(/backgrounds/muaxuan.png)' };
 
             return (
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="flex flex-col rounded-xl shadow-md hover:shadow-2xl transition transform overflow-hidden bg-white dark:bg-gray-800"
+                className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-950"
               >
                 <div
-                  className="h-40 w-full bg-cover bg-center relative"
+                  className="relative h-40 w-full bg-cover bg-center"
                   style={bgStyle}
                 >
-                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute inset-0 bg-black/20" />
                   {project.visibility && (
-                    <span className="absolute top-2 left-2 flex items-center justify-center bg-blue-700 dark:bg-blue-900 text-white text-xs px-2 py-0.5 rounded-md shadow">
+                    <span className="absolute left-2 top-2 rounded-md bg-blue-700 px-2 py-0.5 text-xs text-white shadow dark:bg-blue-900">
                       {project.visibility.charAt(0).toUpperCase() +
                         project.visibility.slice(1)}
                     </span>
                   )}
                 </div>
-                <div className="p-4 flex-1 flex flex-col justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2 truncate capitalize">
+                <div className="flex flex-1 flex-col justify-between p-4">
+                  <h3 className="mb-2 truncate text-lg font-semibold capitalize text-gray-900 dark:text-gray-100">
                     {project.name}
                   </h3>
-                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1 capitalize">
+                  <div className="space-y-1 text-sm capitalize text-gray-700 dark:text-gray-300">
                     <p className="font-medium">
                       Members: {project.members?.length || 0}
                     </p>
@@ -97,6 +98,6 @@ export default function ProjectListPage() {
           })}
         </div>
       </div>
-    </div>
+    </SiteLayout>
   );
 }

@@ -53,6 +53,15 @@ export const AntdRegistry = ({ children }: { children: React.ReactNode }) => {
       <ConfigProvider
         theme={{
           algorithm: mode === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+          token: {
+            borderRadius: 12,
+            colorPrimary: '#1677ff',
+          },
+          components: {
+            Modal: {
+              borderRadiusLG: 16,
+            },
+          },
         }}
       >
         {children}

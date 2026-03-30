@@ -1,0 +1,152 @@
+{
+  "currentUserId": "u_me",
+  "users": [
+    {
+      "id": "u_me",
+      "name": "Hieu Tran",
+      "username": "hieut",
+      "avatarUrl": "https://i.pravatar.cc/150?img=12",
+      "verified": false
+    },
+    {
+      "id": "u_anna",
+      "name": "Anna Nguyen",
+      "username": "anna.ng",
+      "avatarUrl": "https://i.pravatar.cc/150?img=47",
+      "verified": true
+    },
+    {
+      "id": "u_quan",
+      "name": "Quan Le",
+      "username": "quanle",
+      "avatarUrl": "https://i.pravatar.cc/150?img=32",
+      "verified": false
+    },
+    {
+      "id": "u_minh",
+      "name": "Minh Pham",
+      "username": "minhpham",
+      "avatarUrl": "https://i.pravatar.cc/150?img=7",
+      "verified": false
+    },
+    {
+      "id": "u_linh",
+      "name": "Linh Vo",
+      "username": "linh.vo",
+      "avatarUrl": "https://i.pravatar.cc/150?img=23",
+      "verified": true
+    }
+  ],
+  "posts": [
+    {
+      "id": "p_001",
+      "authorId": "u_anna",
+      "createdAt": "2026-03-30T08:12:00.000Z",
+      "content": "Hôm nay mình vừa hoàn thành 1 sprint nhỏ cho dự án. Ai có tips tối ưu realtime + socket không?",
+      "media": [
+        {
+          "id": "m_001",
+          "type": "image",
+          "url": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80",
+          "alt": "Team work",
+          "width": 1400,
+          "height": 933
+        }
+      ],
+      "reactionSummary": { "like": 21, "love": 6, "haha": 1, "wow": 2, "sad": 0, "angry": 0 },
+      "commentCount": 4,
+      "shareCount": 2,
+      "myReaction": "like",
+      "bookmarkedByMe": false
+    },
+    {
+      "id": "p_002",
+      "authorId": "u_quan",
+      "createdAt": "2026-03-30T10:01:00.000Z",
+      "content": "Update nhỏ: kéo thả column/card đã mượt hơn. Cảm ơn mọi người góp ý!",
+      "media": [],
+      "reactionSummary": { "like": 12, "love": 2, "haha": 0, "wow": 1, "sad": 0, "angry": 0 },
+      "commentCount": 2,
+      "shareCount": 1,
+      "myReaction": null,
+      "bookmarkedByMe": true
+    },
+    {
+      "id": "p_003",
+      "authorId": "u_linh",
+      "createdAt": "2026-03-30T12:34:00.000Z",
+      "content": "Mình đang làm UI giống Facebook: feed + composer + comment. Có ai muốn pair cùng không?",
+      "media": [
+        {
+          "id": "m_003",
+          "type": "image",
+          "url": "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1400&q=80",
+          "alt": "Design board",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "id": "m_004",
+          "type": "image",
+          "url": "https://images.unsplash.com/photo-1559028012-481c04fa702d?auto=format&fit=crop&w=1400&q=80",
+          "alt": "Laptop",
+          "width": 1400,
+          "height": 933
+        }
+      ],
+      "reactionSummary": { "like": 48, "love": 15, "haha": 2, "wow": 5, "sad": 0, "angry": 0 },
+      "commentCount": 6,
+      "shareCount": 7,
+      "myReaction": "love",
+      "bookmarkedByMe": false
+    }
+  ],
+  "comments": [
+    {
+      "id": "c_001",
+      "postId": "p_001",
+      "authorId": "u_quan",
+      "content": "Socket thì nên tách correlationId để tránh loop. Với lại debounce update UI khi spam event.",
+      "createdAt": "2026-03-30T08:20:00.000Z",
+      "likeCount": 3,
+      "likedByMe": false
+    },
+    {
+      "id": "c_002",
+      "postId": "p_001",
+      "authorId": "u_me",
+      "content": "Mình thường dùng snapshot + patch, lúc reconnect thì fetch snapshot lại để sync.",
+      "createdAt": "2026-03-30T08:31:00.000Z",
+      "likeCount": 2,
+      "likedByMe": true
+    },
+    {
+      "id": "c_003",
+      "postId": "p_002",
+      "authorId": "u_anna",
+      "content": "Nice! UX kéo thả mượt là ăn điểm.",
+      "createdAt": "2026-03-30T10:05:00.000Z",
+      "likeCount": 1,
+      "likedByMe": false
+    },
+    {
+      "id": "c_004",
+      "postId": "p_002",
+      "authorId": "u_minh",
+      "content": "Bạn có dùng dnd-kit hay pangea dnd vậy?",
+      "createdAt": "2026-03-30T10:09:00.000Z",
+      "likeCount": 0,
+      "likedByMe": false
+    },
+    {
+      "id": "c_005",
+      "postId": "p_003",
+      "authorId": "u_me",
+      "content": "Mình tham gia pair được, kéo mình vào nhé!",
+      "createdAt": "2026-03-30T12:40:00.000Z",
+      "likeCount": 4,
+      "likedByMe": true
+    }
+  ]
+}
+

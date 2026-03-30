@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Header, Footer } from "@smart/components/layouts";
-import ProjectRedirectProvider from "@smart/providers/ProjectRedirectProvider";
+import { Header, Footer } from '@smart/components/layouts';
+import ProjectRedirectProvider from '@smart/providers/ProjectRedirectProvider';
 
 export default function ProjectLayout({
   children,
@@ -10,18 +10,7 @@ export default function ProjectLayout({
 }) {
   return (
     <ProjectRedirectProvider>
-        {/* Header */}
-        <Header />
-
-        {/* Body */}
-        <div className="relative">
-          <main className="bg-gray-100 dark:bg-gray-900 p-0 ">
-            {children}
-          </main>
-        </div>
-
-        {/* Footer */}
-        <Footer />
+      <div className="relative">{children}</div>
     </ProjectRedirectProvider>
   );
 }

@@ -15,7 +15,7 @@ export class ModelRegistryService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
 
   async onModuleInit() {
-    // await this.refresh();
+    await this.refresh();
   }
 
   async refresh() {
