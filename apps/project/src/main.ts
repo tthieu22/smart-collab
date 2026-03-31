@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ProjectModule } from './project.module';
 import { Logger } from '@nestjs/common';
-import { rabbitmqConfig } from './config/rabbitmq.config';
+import { getNestRabbitMQOptions } from './config/rabbitmq.config';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -12,11 +13,13 @@ async function bootstrap() {
 
   logger.log('App module created');
 
-  // Lấy config kết nối RabbitMQ
-  const rmqOptions = rabbitmqConfig('project_queue');
+  const config = app.get(ConfigService);
 
-  // Kết nối microservice RabbitMQ
-  app.connectMicroservice(rmqOptions);
+  // Listen project commands/events
+  app.connectMicroservice(getNestRabbitMQOptions('project_queue', config));
+
+  // Listen AI commands (migrated from ai-service)
+  app.connectMicroservice(getNestRabbitMQOptions('ai_queue', config));
 
   // Start microservice listener
   await app.startAllMicroservices();
@@ -26,7 +29,9 @@ async function bootstrap() {
   await app.listen(3002);
   logger.log('HTTP server listening on port 3002');
 
-  logger.log('🚀 Project Service is running and listening to RabbitMQ events');
+  logger.log(
+    '🚀 Project Service is running (project_queue + ai_queue) and HTTP on 3002',
+  );
 }
 
 bootstrap();

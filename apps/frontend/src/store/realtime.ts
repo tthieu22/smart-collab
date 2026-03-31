@@ -141,6 +141,9 @@ export class ProjectSocketManager {
 
           // correlationId callbacks
           if (msg?.correlationId) {
+            // BE gửi 2 lần cho cùng correlationId: {status:'received'} rồi {status:'success'|'error'}.
+            // Nếu gọi callback ngay ở 'received' thì lockAwareAction/waitForResponse sẽ resolve quá sớm.
+            if (msg?.status === 'received') return;
             const cbs = this.correlationCallbacks.get(msg.correlationId);
             if (cbs && cbs.length) {
               // call all callbacks (make a copy to avoid mutation issues)
@@ -219,65 +222,68 @@ export class ProjectSocketManager {
   private handleStoreUpdate(event: string, msg: any) {
     const store = projectStore.getState();
     if (event === 'realtime.action.response') {
+      // Some handlers on BE already return an envelope {status, correlationId, data}
+      // and gateway wraps again, resulting in msg.data.data.
+      const payload = msg?.data?.data ?? msg?.data;
       switch (msg.action) {
         case 'card.create':
           if (msg.status === 'success') {
-            store.addCard(msg.data.columnId, msg.data);
+            store.addCard(payload.columnId, payload);
           }
           break;
         case 'card.update':
           if (msg.status === 'success') {
-            store.updateCard(msg.data);
+            store.updateCard(payload);
           }
           break;
         case 'card.delete':
           if (msg.status === 'success') {
-            store.removeCard(msg.data.columnId, msg.data.cardId);
+            store.removeCard(payload.columnId, payload.cardId);
           }
           break;
         case 'card.move':
           if (msg.status === 'success') {
             store.moveCard(
-              msg.data.srcColumnId,
-              msg.data.newColumnId,
-              msg.data.cardId,
-              msg.data.newIndex
+              payload.srcColumnId,
+              payload.newColumnId,
+              payload.cardId,
+              payload.newIndex
             );
           }
           break;
         case 'card.copy':
           if (msg.status === 'success') {
-            store.addCard(msg.data.columnId, msg.data);
+            store.addCard(payload.columnId, payload);
           }
           break;
 
         case 'column.create':
           if (msg.status === 'success') {
-            store.addColumn(msg.data.boardId, msg.data);
+            store.addColumn(payload.boardId, payload);
           }
           break;
         case 'column.update':
           if (msg.status === 'success') {
-            store.updateColumn(msg.data);
+            store.updateColumn(payload);
           }
           break;
         case 'column.delete':
           if (msg.status === 'success') {
-            store.removeColumn(msg.data.boardId, msg.data.columnId);
+            store.removeColumn(payload.boardId, payload.columnId);
           }
           break;
         case 'column.move':
           if (msg.status === 'success') {
             // backend payload may use destIndex or newPosition depending on service implementation
             const destIndex =
-              msg.data?.destIndex ??
-              msg.data?.newPosition ??
-              msg.data?.position ??
+              payload?.destIndex ??
+              payload?.newPosition ??
+              payload?.position ??
               0;
             store.moveColumn(
-              msg.data.srcBoardId,
-              msg.data.destBoardId ?? msg.data.newBoardId,
-              msg.data.columnId,
+              payload.srcBoardId,
+              payload.destBoardId ?? payload.newBoardId,
+              payload.columnId,
               destIndex
             );
           }
@@ -286,28 +292,28 @@ export class ProjectSocketManager {
         case 'board.create':
         case 'board.update':
           if (msg.status === 'success') {
-            store.updateBoard(msg.data);
+            store.updateBoard(payload);
           }
           break;
         case 'board.delete':
           if (msg.status === 'success') {
-            store.removeBoard(msg.data.boardId);
+            store.removeBoard(payload.boardId);
           }
           break;
 
         case 'member.add':
           if (msg.status === 'success') {
-            store.addMember(msg.data);
+            store.addMember(payload);
           }
           break;
         case 'member.remove':
           if (msg.status === 'success') {
-            store.removeMember(msg.data.userId);
+            store.removeMember(payload.userId);
           }
           break;
         case 'member.role':
           if (msg.status === 'success') {
-            store.updateMember(msg.data);
+            store.updateMember(payload);
           }
           break;
 
