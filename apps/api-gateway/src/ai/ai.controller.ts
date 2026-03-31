@@ -6,6 +6,7 @@ import {
   Req,
   Inject,
   Logger,
+  Param,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ClientProxy } from '@nestjs/microservices';
@@ -52,6 +53,35 @@ export class AiController {
      *   board
      * }
      */
+    return result;
+  }
+
+  /**
+   * POST /projects/cards/:cardId/ai-generate
+   * Body: { type: 'title' | 'description' | 'comment' }
+   */
+  @Post('cards/:cardId/ai-generate')
+  async aiGenerateCard(
+    @Param('cardId') cardId: string,
+    @Body('type') type: 'title' | 'description' | 'comment',
+    @Req() req: any,
+  ) {
+    const user = req.user;
+
+    const result = await firstValueFrom(
+      this.aiClient
+        .send(
+          { cmd: 'ai.generate-card' },
+          {
+            cardId,
+            type,
+            userId: user.userId,
+            locale: 'vi',
+          },
+        )
+        .pipe(timeout(200000)),
+    );
+
     return result;
   }
 }

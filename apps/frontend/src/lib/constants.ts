@@ -38,6 +38,8 @@ export const API_ENDPOINTS = {
     CREATE: '/projects',
     UPDATE: '/projects/update',
     DELETE: '/projects/delete',
+    AI_BUILD: '/projects/ai-build',
+    CARD_AI_GENERATE: '/projects/cards/:cardId/ai-generate',
     ADD_MEMBER: '/projects/add-member',
     REMOVE_MEMBER: '/projects/remove-member',
     UPDATE_MEMBER_ROLE: '/projects/update-member-role',
@@ -45,6 +47,8 @@ export const API_ENDPOINTS = {
     GET: '/projects/get',
     COLUMN: {
       GET :'/projects/column',
+      GET_BY_PROJECT: '/projects/columns/project',
+      GET_BY_BOARD: '/projects/columns/board',
       
       CARD: {
         GET: '/projects/card',

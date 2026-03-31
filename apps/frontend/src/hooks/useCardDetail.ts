@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
+import { uploadService } from '@smart/services/upload.service';
 import { message } from 'antd';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import type {
@@ -10,6 +11,7 @@ import type {
   CardComment,
   ChecklistItem,
   CardLabel,
+  Column,
 } from '@smart/types/project';
 import { useUserStore } from '@smart/store/user';
 
@@ -22,6 +24,7 @@ export const useCardDetail = (
   const card = cards[cardId];
   const socket = getProjectSocketManager();
   const { currentUser } = useUserStore();
+  const currentUserProfile = currentUser as any;
 
   // Local state for editable fields
   const [title, setTitle] = useState('');
@@ -50,6 +53,24 @@ export const useCardDetail = (
   // New comment + checklist item inputs
   const [newComment, setNewComment] = useState('');
   const [newChecklistItem, setNewChecklistItem] = useState('');
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+
+  const syncColumnsToStore = useCallback((columnList: Column[]) => {
+    const store = projectStore.getState();
+    columnList.forEach((col) => {
+      const nextColumn: Column = {
+        ...col,
+        cardIds: col.cardIds ?? col.cards?.map((c) => c.id) ?? [],
+      };
+      store.updateColumn(nextColumn);
+      if (nextColumn.boardId) {
+        store.addColumn(nextColumn.boardId, nextColumn);
+      }
+      if (Array.isArray(col.cards) && col.cards.length) {
+        store.addCard(col.id, col.cards);
+      }
+    });
+  }, []);
 
   // Sync local editable states with card when card or isOpen changes
   useEffect(() => {
@@ -66,21 +87,81 @@ export const useCardDetail = (
   useEffect(() => {
     if (!isOpen || !cardId) return;
 
+    let canceled = false;
     const fetchCard = async () => {
       setLoading(true);
       try {
-        const fetched: any = await projectService.getCard(cardId);
-        console.log('Calling updateCard with:', fetched);
-        updateCard(fetched.data);
+        const maxAttempts = 6;
+        const retryDelayMs = 1000;
+        let attempt = 0;
+
+        while (!canceled && attempt < maxAttempts) {
+          attempt += 1;
+          const fetched: any = await projectService.getCard(cardId);
+          const fetchedCard = fetched?.data;
+
+          if (fetchedCard?.id) {
+            updateCard(fetchedCard);
+            return;
+          }
+
+          if (attempt < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+          }
+        }
+
+        throw new Error('Card chưa sẵn sàng');
       } catch {
-        message.error('Không thể tải card');
+        if (!canceled) {
+          message.warning('Card đang được xử lý, vui lòng đợi một chút');
+        }
       } finally {
-        setLoading(false);
+        if (!canceled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchCard();
-  }, [cardId, isOpen]);
+    return () => {
+      canceled = true;
+    };
+  }, [cardId, isOpen, updateCard]);
+
+  useEffect(() => {
+    if (!isOpen || !card?.projectId) return;
+
+    let canceled = false;
+    const fetchColumnsRealtimeFirst = async () => {
+      try {
+        const rtRes: any = await socket.getColumns(card.projectId);
+        if (canceled) return;
+        const realtimeColumns = rtRes?.data;
+        if (Array.isArray(realtimeColumns)) {
+          syncColumnsToStore(realtimeColumns);
+          return;
+        }
+      } catch {
+        // fallback to HTTP below
+      }
+
+      try {
+        const apiRes: any = await projectService.getColumnsByProject(card.projectId);
+        if (canceled) return;
+        const apiColumns = apiRes?.data;
+        if (Array.isArray(apiColumns)) {
+          syncColumnsToStore(apiColumns);
+        }
+      } catch {
+        // do not block card detail UX if columns cannot be fetched
+      }
+    };
+
+    fetchColumnsRealtimeFirst();
+    return () => {
+      canceled = true;
+    };
+  }, [isOpen, card?.projectId, socket, syncColumnsToStore]);
 
   // Cleanup AI typewriter interval on unmount
   useEffect(() => {
@@ -195,51 +276,56 @@ export const useCardDetail = (
       setAIState({ type, progress: 0, displayedText: '' });
       await new Promise((r) => setTimeout(r, 600));
 
-      const aiContent =
-        type === 'title'
-          ? `AI: Tối ưu "${originalTitle}" → "${originalTitle.trim()} (v${Date.now()
-              .toString()
-              .slice(-3)})"`
-          : `<p><strong>AI đã tạo mô tả:</strong></p>
-             <ul>
-               <li>Mục tiêu: ${title}</li>
-               <li>Ưu tiên: ${card.priority ?? 'Trung bình'}</li>
-               <li>Deadline: ${
-                 card.deadline
-                   ? new Date(card.deadline).toLocaleDateString('vi')
-                   : 'Chưa có'
-               }</li>
-             </ul>
-             <p>Hiệu ứng Google AI đang chạy...</p>`;
+      try {
+        const res: any = await projectService.aiGenerateCard(card.id, type);
+        const aiContent =
+          res?.content ??
+          res?.data?.content ??
+          res?.result?.content ??
+          (type === 'title' ? res?.data?.title : res?.data?.description) ??
+          '';
 
-      startTypewriter(aiContent, () => {
-        if (type === 'title') setTitle(aiContent);
-      });
+        if (!aiContent) throw new Error('AI không trả về nội dung');
+
+        startTypewriter(String(aiContent), async () => {
+          // Refresh from backend so UI stays consistent with persisted data
+          try {
+            const fetched: any = await projectService.getCard(card.id);
+            updateCard(fetched.data);
+          } catch {
+            // ignore
+          }
+        });
+      } catch (e: any) {
+        message.error(e?.message || 'AI generate thất bại');
+        setAIState({ type: null, progress: 0, displayedText: '' });
+      }
     },
-    [card, originalTitle, title, startTypewriter]
+    [card, startTypewriter, updateCard]
   );
 
   // Comment add (local update)
-  const addComment = useCallback(() => {
+  const addComment = useCallback(async () => {
     if (!newComment.trim() || !card) return;
-
-    const comment: CardComment = {
-      id: `c_${Date.now()}`,
-      cardId: card.id,
-      userId: 'current_user',
-      userName: 'Bạn',
-      avatar: null,
-      content: newComment.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    updateCard({
-      ...card,
-      comments: [comment, ...(card.comments || [])],
-    });
-
-    setNewComment('');
-  }, [newComment, card, updateCard]);
+    try {
+      await updateCardOnServer({
+        cardId: card.id,
+        action: 'add-comment',
+        data: {
+          content: newComment.trim(),
+          userName:
+            `${currentUserProfile?.firstName ?? ''} ${currentUserProfile?.lastName ?? ''}`.trim() ||
+            currentUser?.email ||
+            'User',
+          avatar: currentUserProfile?.avatar ?? null,
+        },
+        updatedById: currentUser?.id,
+      });
+      setNewComment('');
+    } catch {
+      // error already handled
+    }
+  }, [newComment, card, updateCardOnServer, currentUser?.id, currentUser?.email, currentUserProfile]);
 
   // Checklist helpers calling updateCardOnServer
   const addChecklistItem = useCallback(
@@ -299,28 +385,49 @@ export const useCardDetail = (
 
   // Attachment helpers
   const addAttachment = useCallback(
-    (file: File) => {
+    async (file: File) => {
       if (!card) return Promise.resolve();
+      setIsUploadingAttachment(true);
+      try {
+        const projectFolder = card.projectId;
+        const uploadRes: any = await uploadService.uploadFiles(projectFolder, [file]);
+        const uploaded = uploadRes?.data?.[0];
+        if (!uploadRes?.success || !uploaded?.url) {
+          throw new Error('Upload thất bại');
+        }
 
-      const attachmentData = {
-        name: file.name,
-        url: URL.createObjectURL(file),
-        size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-      };
-
-      return updateCardOnServer({
-        cardId: card.id,
-        action: 'add-attachment',
-        data: attachmentData,
-        updatedById: currentUser?.id ?? 'current_user',
-      });
+        return await updateCardOnServer({
+          cardId: card.id,
+          action: 'add-attachment',
+          data: {
+            name: uploaded.original_filename || file.name,
+            url: uploaded.url,
+            size: `${((uploaded.size || file.size) / 1024 / 1024).toFixed(2)} MB`,
+            publicId: uploaded.public_id,
+            fileType: uploaded.type,
+            fileSize: uploaded.size,
+            resourceType: uploaded.resource_type,
+            originalFilename: uploaded.original_filename || file.name,
+          },
+          updatedById: currentUser?.id ?? 'current_user',
+        });
+      } finally {
+        setIsUploadingAttachment(false);
+      }
     },
     [card, updateCardOnServer, currentUser?.id]
   );
 
   const removeAttachment = useCallback(
-    (attachmentId: string) => {
+    async (attachmentId: string) => {
       if (!card) return Promise.resolve();
+      const attachment = card.attachments?.find((item) => item.id === attachmentId);
+      if (attachment?.publicId) {
+        const deleteRes: any = await uploadService.deleteFiles([attachment.publicId]);
+        if (!deleteRes?.success) {
+          throw new Error('Xóa file thất bại');
+        }
+      }
       return updateCardOnServer({
         cardId: card.id,
         action: 'remove-attachment',
@@ -403,6 +510,7 @@ export const useCardDetail = (
     attachments: card?.attachments || [],
     addAttachment,
     removeAttachment,
+    isUploadingAttachment,
 
     safeLabels,
 

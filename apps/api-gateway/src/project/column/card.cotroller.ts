@@ -35,4 +35,28 @@ export class CardController {
       throw error;
     }
   }
+
+  @Get('columns/project/:projectId')
+  async getColumnsByProject(@Param('projectId') projectId: string) {
+    try {
+      return await firstValueFrom(
+        this.projectClient.send({ cmd: 'project.get.columnsByProject' }, projectId),
+      );
+    } catch (error: any) {
+      console.error(`[CardController] getColumnsByProject error:`, error);
+      throw error;
+    }
+  }
+
+  @Get('columns/board/:boardId')
+  async getColumnsByBoard(@Param('boardId') boardId: string) {
+    try {
+      return await firstValueFrom(
+        this.projectClient.send({ cmd: 'project.get.columnsByBoard' }, boardId),
+      );
+    } catch (error: any) {
+      console.error(`[CardController] getColumnsByBoard error:`, error);
+      throw error;
+    }
+  }
 }

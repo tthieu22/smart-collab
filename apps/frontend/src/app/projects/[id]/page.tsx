@@ -14,7 +14,7 @@ import DragDropContextProvider from '@smart/components/project/dnd/DragDropProvi
 
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { useBoardStore } from '@smart/store/setting';
-import { Project } from '@smart/types/project';
+import { Card, Column, Project } from '@smart/types/project';
 
 interface Props {
   params: { id: string };
@@ -53,6 +53,46 @@ export default function ProjectDetailPage({ params }: Props) {
     (b) => b.type === 'calendar'
   );
   const mainBoard = Object.values(boards).find((b) => b.type === 'board');
+
+  const syncColumnsToStore = (columnList: Column[]) => {
+    const store = projectStore.getState();
+    columnList.forEach((col) => {
+      const cardsInColumn: Card[] = Array.isArray(col.cards) ? col.cards : [];
+      const nextColumn: Column = {
+        ...col,
+        cardIds: col.cardIds ?? cardsInColumn.map((card) => card.id),
+      };
+      store.updateColumn(nextColumn);
+      if (nextColumn.boardId) {
+        store.addColumn(nextColumn.boardId, nextColumn);
+      }
+      if (cardsInColumn.length) {
+        store.addCard(nextColumn.id, cardsInColumn);
+      }
+    });
+  };
+
+  const syncCardsToStore = (cards: Card[]) => {
+    const store = projectStore.getState();
+    cards.forEach((card) => {
+      if (!card?.id || !card?.columnId) return;
+      store.addCard(card.columnId, card);
+    });
+  };
+
+  const getSnapshotDensity = (project?: Project | null) => {
+    const boardsCount = Array.isArray(project?.boards) ? project!.boards.length : 0;
+    const columnsCount = Array.isArray(project?.columns)
+      ? project!.columns.length
+      : Array.isArray(project?.boards)
+      ? project!.boards.reduce(
+          (sum, board) => sum + (Array.isArray(board.columns) ? board.columns.length : 0),
+          0
+        )
+      : 0;
+    const cardsCount = Array.isArray(project?.cards) ? project!.cards.length : 0;
+    return { boardsCount, columnsCount, cardsCount };
+  };
 
   const toggleComponent = (key: string) => {
     setActiveComponents((prev) => {
@@ -146,6 +186,104 @@ export default function ProjectDetailPage({ params }: Props) {
       canceled = true;
     };
   }, [projectId]);
+
+  useEffect(() => {
+    let canceled = false;
+    const socketManager = getProjectSocketManager();
+
+    const hydrateProjectRealtime = async () => {
+      const maxAttempts = 90;
+      let prevSignature = '';
+      let stableRounds = 0;
+
+      for (let attempt = 1; attempt <= maxAttempts && !canceled; attempt += 1) {
+        try {
+          const rtRes: any = await socketManager.getColumns(projectId);
+          const rtColumns = rtRes?.data;
+          if (Array.isArray(rtColumns) && rtColumns.length > 0) {
+            syncColumnsToStore(rtColumns);
+          }
+        } catch {
+          // fallback below
+        }
+
+        try {
+          const rtCardRes: any = await socketManager.getCards(projectId);
+          const rtCards = rtCardRes?.data;
+          if (Array.isArray(rtCards) && rtCards.length > 0) {
+            syncCardsToStore(rtCards);
+          }
+        } catch {
+          // fallback below
+        }
+
+        try {
+          const apiRes: any = await projectService.getColumnsByProject(projectId);
+          const apiColumns = apiRes?.data;
+          if (Array.isArray(apiColumns) && apiColumns.length > 0) {
+            syncColumnsToStore(apiColumns);
+          }
+        } catch {
+          // keep retrying while AI build may still be creating columns
+        }
+
+        // Re-sync full snapshot to avoid missing late cards in near-final columns.
+        try {
+          const projectRes: any = await projectService.getProject({
+            projectId,
+            correlationId: crypto.randomUUID(),
+          });
+          const nextProject: Project | undefined =
+            projectRes?.data ||
+            projectRes?.dto?.project ||
+            projectRes?.project ||
+            projectRes?.dto;
+          if (nextProject) {
+            updateProject(nextProject);
+            const nextDensity = getSnapshotDensity(nextProject);
+            const stateNow = projectStore.getState();
+            const currentColumnsCount = Object.keys(stateNow.columns).length;
+            const currentCardsCount = Object.keys(stateNow.cards).length;
+            const currentHasData = currentColumnsCount > 0 || currentCardsCount > 0;
+            const nextIsNotWeaker =
+              nextDensity.columnsCount >= currentColumnsCount &&
+              nextDensity.cardsCount >= currentCardsCount;
+
+            // Guard against transient/incomplete AI-build snapshots overriding full data.
+            if (!currentHasData || nextIsNotWeaker) {
+              setCurrentProject(nextProject);
+            }
+          }
+        } catch {
+          // keep polling; realtime may still be generating
+        }
+
+        const state = projectStore.getState();
+        const columnsCount = Object.keys(state.columns).length;
+        const cardsCount = Object.keys(state.cards).length;
+        const signature = `${columnsCount}:${cardsCount}`;
+
+        if (signature === prevSignature) {
+          stableRounds += 1;
+        } else {
+          prevSignature = signature;
+          stableRounds = 0;
+        }
+
+        // Stop only after data is stable for several rounds.
+        if (columnsCount > 0 && stableRounds >= 4) {
+          return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    };
+
+    hydrateProjectRealtime();
+    return () => {
+      canceled = true;
+    };
+  }, [projectId, setCurrentProject, updateProject]);
 
   if (loading) return <Loading text="Đang tải dữ liệu" />;
   if (!project) return <Loading text="Không tìm thấy dự án" />;

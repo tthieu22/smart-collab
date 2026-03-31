@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Space, Button, Upload, Typography, theme } from 'antd';
+import { Space, Button, Upload, Typography, theme, message } from 'antd';
 import { PaperClipOutlined, PlusOutlined } from '@ant-design/icons';
 import type { Attachment } from '@smart/types/project';
 
@@ -9,9 +9,17 @@ const { Text } = Typography;
 
 interface Props {
   attachments: Attachment[];
+  onAddAttachment: (file: File) => Promise<any>;
+  onRemoveAttachment: (attachmentId: string) => Promise<any>;
+  loading?: boolean;
 }
 
-const AttachmentsSection: React.FC<Props> = ({ attachments }) => {
+const AttachmentsSection: React.FC<Props> = ({
+  attachments,
+  onAddAttachment,
+  onRemoveAttachment,
+  loading = false,
+}) => {
   const { token } = theme.useToken();
 
   return (
@@ -58,14 +66,39 @@ const AttachmentsSection: React.FC<Props> = ({ attachments }) => {
                 </Text>
               </div>
             </div>
-            <Button type="link" size="small">
-              Download
-            </Button>
+            <Space>
+              <Button type="link" size="small" href={file.url} target="_blank">
+                Download
+              </Button>
+              <Button
+                danger
+                type="link"
+                size="small"
+                onClick={async () => {
+                  try {
+                    await onRemoveAttachment(file.id);
+                    message.success('Đã xóa file');
+                  } catch (e: any) {
+                    message.error(e?.message || 'Xóa file thất bại');
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            </Space>
           </div>
         ))}
 
-        <Upload>
-          <Button icon={<PlusOutlined />} style={{ borderRadius: token.borderRadiusLG }}>
+        <Upload
+          showUploadList={false}
+          beforeUpload={(file) => {
+            onAddAttachment(file as File).catch((e: any) =>
+              message.error(e?.message || 'Upload thất bại')
+            );
+            return false;
+          }}
+        >
+          <Button loading={loading} icon={<PlusOutlined />} style={{ borderRadius: token.borderRadiusLG }}>
             Upload File
           </Button>
         </Upload>

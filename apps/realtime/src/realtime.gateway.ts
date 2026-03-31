@@ -93,6 +93,33 @@ export class RealtimeGateway
     ],
 
     [
+      'column.get',
+      async (d) => {
+        const result = await this.column.getColumns({
+          projectId: d.projectId,
+          boardId: d.payload?.boardId,
+        });
+        return {
+          status: 'success',
+          data: result?.data ?? result,
+        };
+      },
+    ],
+    [
+      'card.get',
+      async (d) => {
+        const result = await this.card.getCards({
+          projectId: d.projectId,
+          columnId: d.payload?.columnId,
+        });
+        return {
+          status: 'success',
+          data: result?.data ?? result,
+        };
+      },
+    ],
+
+    [
       'column.create',
       async (d, u, client) => {
         const result = await this.column.createColumn(d, u);

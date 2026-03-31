@@ -549,6 +549,30 @@ export class ProjectSocketManager {
     );
   }
 
+  getColumns(
+    projectId: string,
+    options?: { boardId?: string },
+    cb?: (msg: any) => void
+  ) {
+    return this.lockAwareAction(
+      'column.get',
+      { projectId, payload: { boardId: options?.boardId } },
+      cb
+    );
+  }
+
+  getCards(
+    projectId: string,
+    options?: { columnId?: string },
+    cb?: (msg: any) => void
+  ) {
+    return this.lockAwareAction(
+      'card.get',
+      { projectId, payload: { columnId: options?.columnId } },
+      cb
+    );
+  }
+
   // Board
   createBoard(projectId: string, name: string, cb?: (msg: any) => void) {
     return this.lockAwareAction(

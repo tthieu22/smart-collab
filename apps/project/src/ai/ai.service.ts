@@ -150,6 +150,79 @@ export class AiService {
     };
   }
 
+  async generateCard(payload: {
+    cardId: string;
+    type: 'title' | 'description' | 'comment';
+    userId: string;
+    locale?: string;
+  }) {
+    const locale = payload?.locale ?? 'vi';
+    const cardRes = await this.rpc<any>('project.get.card', payload.cardId);
+    const card = this.unwrap(cardRes);
+    if (!card) {
+      return { success: false, message: 'Card not found' };
+    }
+
+    let prompt = '';
+    if (payload.type === 'title') prompt = this.promptFactory.generateCardTitle(card, locale);
+    if (payload.type === 'description')
+      prompt = this.promptFactory.generateCardDescription(card, locale);
+    if (payload.type === 'comment') prompt = this.promptFactory.generateCardComment(card, locale);
+
+    const aiRes = await this.llm.complete(prompt);
+
+    let content = '';
+    try {
+      const parsed = JSON.parse(aiRes.content);
+      content = String(parsed?.content ?? '').trim();
+    } catch {
+      content = String(aiRes.content ?? '').trim();
+    }
+
+    if (!content) {
+      return { success: false, message: 'Empty AI content' };
+    }
+
+    // Persist into backend immediately
+    if (payload.type === 'title') {
+      await this.rpc('project.card.update', {
+        projectId: card.projectId,
+        userId: payload.userId,
+        payload: {
+          cardId: card.id,
+          action: 'update-basic',
+          data: { title: content },
+        },
+      });
+    } else if (payload.type === 'description') {
+      await this.rpc('project.card.update', {
+        projectId: card.projectId,
+        userId: payload.userId,
+        payload: {
+          cardId: card.id,
+          action: 'update-basic',
+          data: { description: content },
+        },
+      });
+    } else if (payload.type === 'comment') {
+      await this.rpc('project.card.update', {
+        projectId: card.projectId,
+        userId: payload.userId,
+        payload: {
+          cardId: card.id,
+          action: 'add-comment',
+          data: {
+            content,
+            userName: 'AI',
+            avatar: null,
+          },
+        },
+      });
+    }
+
+    return { success: true, type: payload.type, content };
+  }
+
   private async generateBackground(
     project: any,
     boards: AiBoard[],

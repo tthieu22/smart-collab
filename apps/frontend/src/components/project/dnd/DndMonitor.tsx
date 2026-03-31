@@ -109,7 +109,7 @@ export function DndMonitor({
         activeItem?.boardId;
 
       const boardContainer = boardId
-        ? boardScrollContainers.current.get(boardId) ?? null
+        ? (boardScrollContainers.current.get(boardId) ?? null)
         : null;
 
       // Update scroll target (controller handles priority and edge detection)

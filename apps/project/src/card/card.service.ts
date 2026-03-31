@@ -47,6 +47,17 @@ export class CardService {
     return cards;
   }
 
+  async getCardsByProject(projectId: string) {
+    this.logger.log(`Fetching cards for project id: ${projectId}`);
+    const cards = await this.prisma.card.findMany({
+      where: { projectId },
+      orderBy: [{ columnId: 'asc' }, { position: 'asc' }],
+      include: { labels: true, views: true, column: true },
+    });
+    this.logger.log(`Found ${cards.length} cards in project ${projectId}`);
+    return cards;
+  }
+
   async createCard(params: {
     projectId: string;
     columnId: string;
@@ -136,126 +147,24 @@ export class CardService {
     updatedById?: string;
   }) {
     const { cardId, action, data, updatedById } = params;
+    const actionHandlers: Record<string, () => Promise<any>> = {
+      'update-basic': () => this.handleUpdateBasic(cardId, data, updatedById),
+      'add-comment': () => this.handleAddComment(cardId, data, updatedById),
+      'add-label': () => this.handleAddLabel(cardId, data),
+      'remove-label': () => this.handleRemoveLabel(cardId, data),
+      'add-checklist-item': () => this.handleAddChecklistItem(cardId, data),
+      'update-checklist-item': () => this.handleUpdateChecklistItem(cardId, data),
+      'remove-checklist-item': () => this.handleRemoveChecklistItem(cardId, data),
+      'add-attachment': () => this.handleAddAttachment(cardId, data, updatedById),
+      'remove-attachment': () => this.handleRemoveAttachment(cardId, data),
+      'update-cover': () => this.handleUpdateCover(cardId, data, updatedById),
+    };
 
-    let updatedCard;
-
-    switch (action) {
-      case "update-basic":
-        updatedCard = await this.prisma.card.update({
-          where: { id: cardId },
-          data: {
-            title: data.title,
-            description: data.description,
-            status: data.status,
-            deadline: data.deadline,
-            priority: data.priority,
-            updatedById,
-          },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "add-label":
-        await this.prisma.cardLabel.create({
-          data: { cardId, label: data.label },
-        });
-        updatedCard = await this.prisma.card.findUnique({
-          where: { id: cardId },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "remove-label":
-        await this.prisma.cardLabel.delete({
-          where: { id: data.labelId },
-        });
-        updatedCard = await this.prisma.card.findUnique({
-          where: { id: cardId },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "add-checklist-item":
-        await this.prisma.checklistItem.create({
-          data: {
-            cardId,
-            title: data.title,
-            position: data.position ?? 0,
-          },
-        });
-        updatedCard = await this.prisma.card.findUnique({
-          where: { id: cardId },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "update-checklist-item":
-        await this.prisma.checklistItem.update({
-          where: { id: data.itemId },
-          data: {
-            title: data.title,
-            done: data.done,
-          },
-        });
-        updatedCard = await this.prisma.card.findUnique({
-          where: { id: cardId },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "remove-checklist-item":
-        await this.prisma.checklistItem.delete({
-          where: { id: data.itemId },
-        });
-        updatedCard = await this.prisma.card.findUnique({
-          where: { id: cardId },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "add-attachment":
-        await this.prisma.attachment.create({
-          data: {
-            cardId,
-            name: data.name,
-            url: data.url,
-            size: data.size,
-            uploadedById: updatedById,
-          },
-        });
-        updatedCard = await this.prisma.card.findUnique({
-          where: { id: cardId },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "remove-attachment":
-        await this.prisma.attachment.delete({
-          where: { id: data.attachmentId },
-        });
-        updatedCard = await this.prisma.card.findUnique({
-          where: { id: cardId },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      case "update-cover":
-        updatedCard = await this.prisma.card.update({
-          where: { id: cardId },
-          data: {
-            coverUrl: data.coverUrl,
-            coverPublicId: data.coverPublicId,
-            coverFilename: data.coverFilename,
-            coverFileSize: data.coverFileSize,
-            updatedById,
-          },
-          include: this.CARD_INCLUDE_FULL,
-        });
-        break;
-
-      default:
-        throw new Error(`Unknown update action: ${action}`);
+    const execute = actionHandlers[action];
+    if (!execute) {
+      throw new Error(`Unknown update action: ${action}`);
     }
+    const updatedCard = await execute();
 
     await this.amqpConnection.publish("project-exchange", "card.updated", {
       card: updatedCard,
@@ -263,6 +172,129 @@ export class CardService {
     });
 
     return updatedCard;
+  }
+
+  private async findCardDetailById(cardId: string) {
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: this.CARD_INCLUDE_FULL,
+    });
+  }
+
+  private async handleUpdateBasic(cardId: string, data: any, updatedById?: string) {
+    return this.prisma.card.update({
+      where: { id: cardId },
+      data: {
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        deadline: data.deadline,
+        priority: data.priority,
+        updatedById,
+      },
+      include: this.CARD_INCLUDE_FULL,
+    });
+  }
+
+  private async handleAddComment(cardId: string, data: any, updatedById?: string) {
+    if (!updatedById) {
+      throw new Error("updatedById is required for add-comment");
+    }
+    if (!data?.content || !String(data.content).trim()) {
+      throw new Error("content is required");
+    }
+    await this.prisma.cardComment.create({
+      data: {
+        cardId,
+        userId: updatedById,
+        userName: String(data.userName || "User"),
+        avatar: data.avatar ?? null,
+        content: String(data.content).trim(),
+      },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleAddLabel(cardId: string, data: any) {
+    await this.prisma.cardLabel.create({
+      data: { cardId, label: data.label },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleRemoveLabel(cardId: string, data: any) {
+    await this.prisma.cardLabel.delete({
+      where: { id: data.labelId },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleAddChecklistItem(cardId: string, data: any) {
+    await this.prisma.checklistItem.create({
+      data: {
+        cardId,
+        title: data.title,
+        position: data.position ?? 0,
+      },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleUpdateChecklistItem(cardId: string, data: any) {
+    await this.prisma.checklistItem.update({
+      where: { id: data.itemId },
+      data: {
+        title: data.title,
+        done: data.done,
+      },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleRemoveChecklistItem(cardId: string, data: any) {
+    await this.prisma.checklistItem.delete({
+      where: { id: data.itemId },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleAddAttachment(cardId: string, data: any, updatedById?: string) {
+    await this.prisma.attachment.create({
+      data: {
+        cardId,
+        name: data.name,
+        url: data.url,
+        size: data.size,
+        uploadedById: updatedById,
+        publicId: data.publicId ?? null,
+        fileType: data.fileType ?? null,
+        fileSize: data.fileSize ?? null,
+        resourceType: data.resourceType ?? null,
+        originalFilename: data.originalFilename ?? null,
+      },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleRemoveAttachment(cardId: string, data: any) {
+    await this.prisma.attachment.delete({
+      where: { id: data.attachmentId },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleUpdateCover(cardId: string, data: any, updatedById?: string) {
+    return this.prisma.card.update({
+      where: { id: cardId },
+      data: {
+        coverUrl: data.coverUrl,
+        coverPublicId: data.coverPublicId,
+        coverFilename: data.coverFilename,
+        coverFileSize: data.coverFileSize,
+        updatedById,
+      },
+      include: this.CARD_INCLUDE_FULL,
+    });
   }
 
 

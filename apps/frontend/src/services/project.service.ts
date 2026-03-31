@@ -77,6 +77,39 @@ class ProjectService {
       method: 'GET',
     });
   }
+
+  getColumnsByProject(projectId: string) {
+    return autoRequest<ProjectResponse>(
+      `${API_ENDPOINTS.PROJECT.COLUMN.GET_BY_PROJECT}/${projectId}`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  getColumnsByBoard(boardId: string) {
+    return autoRequest<ProjectResponse>(
+      `${API_ENDPOINTS.PROJECT.COLUMN.GET_BY_BOARD}/${boardId}`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  aiBuildProject(prompt: string) {
+    return autoRequest<any>(API_ENDPOINTS.PROJECT.AI_BUILD, {
+      method: 'POST',
+      body: JSON.stringify({ prompt }),
+    });
+  }
+
+  aiGenerateCard(cardId: string, type: 'title' | 'description' | 'comment') {
+    const endpoint = API_ENDPOINTS.PROJECT.CARD_AI_GENERATE.replace(':cardId', cardId);
+    return autoRequest<any>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    });
+  }
 }
 
 export const projectService = new ProjectService();

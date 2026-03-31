@@ -1,6 +1,6 @@
 /**
  * ScrollController - Manages auto-scroll during drag operations
- * 
+ *
  * Features:
  * - Single requestAnimationFrame loop for smooth scrolling
  * - Priority system: column scroll first, board scroll as fallback
@@ -24,11 +24,11 @@ interface ScrollConfig {
   // Edge detection thresholds (pixels from edge)
   verticalThreshold: number;
   horizontalThreshold: number;
-  
+
   // Speed limits (pixels per frame)
   minSpeed: number;
   maxSpeed: number;
-  
+
   // Speed calculation zone (pixels)
   // Speed increases from minSpeed to maxSpeed as pointer approaches edge
   speedZone: number;
@@ -57,7 +57,7 @@ export class ScrollController {
    */
   private startScrollLoop(): void {
     if (this.rafId !== null) return;
-    
+
     this.isActive = true;
     const scroll = () => {
       if (!this.isActive || !this.currentTarget) {
@@ -66,7 +66,7 @@ export class ScrollController {
       }
 
       const { container, direction, speed } = this.currentTarget;
-      
+
       // Validate container still exists and is scrollable
       if (!container.isConnected) {
         this.stop();
@@ -123,12 +123,12 @@ export class ScrollController {
    */
   private calculateSpeed(distance: number): number {
     const { minSpeed, maxSpeed, speedZone } = this.config;
-    
+
     if (distance <= 0) return maxSpeed;
     if (distance >= speedZone) return minSpeed;
-    
+
     // Linear interpolation: closer = faster
-    const ratio = 1 - (distance / speedZone);
+    const ratio = 1 - distance / speedZone;
     return minSpeed + (maxSpeed - minSpeed) * ratio;
   }
 
@@ -143,7 +143,9 @@ export class ScrollController {
    * Check if container can scroll down
    */
   private canScrollDown(container: HTMLElement): boolean {
-    return container.scrollTop < container.scrollHeight - container.clientHeight - 1;
+    return (
+      container.scrollTop < container.scrollHeight - container.clientHeight - 1
+    );
   }
 
   /**
@@ -157,7 +159,9 @@ export class ScrollController {
    * Check if container can scroll right
    */
   private canScrollRight(container: HTMLElement): boolean {
-    return container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+    return (
+      container.scrollLeft < container.scrollWidth - container.clientWidth - 1
+    );
   }
 
   /**
@@ -226,7 +230,10 @@ export class ScrollController {
     }
 
     // Check bottom edge
-    if (distanceFromBottom < verticalThreshold && this.canScrollDown(container)) {
+    if (
+      distanceFromBottom < verticalThreshold &&
+      this.canScrollDown(container)
+    ) {
       const speed = this.calculateSpeed(distanceFromBottom);
       this.setTarget(container, 'down', speed);
       return true;
@@ -252,14 +259,20 @@ export class ScrollController {
     const distanceFromRight = right - pointer.x;
 
     // Check left edge
-    if (distanceFromLeft < horizontalThreshold && this.canScrollLeft(container)) {
+    if (
+      distanceFromLeft < horizontalThreshold &&
+      this.canScrollLeft(container)
+    ) {
       const speed = this.calculateSpeed(distanceFromLeft);
       this.setTarget(container, 'left', speed);
       return true;
     }
 
     // Check right edge
-    if (distanceFromRight < horizontalThreshold && this.canScrollRight(container)) {
+    if (
+      distanceFromRight < horizontalThreshold &&
+      this.canScrollRight(container)
+    ) {
       const speed = this.calculateSpeed(distanceFromRight);
       this.setTarget(container, 'right', speed);
       return true;
@@ -298,7 +311,7 @@ export class ScrollController {
   stop(): void {
     this.isActive = false;
     this.currentTarget = null;
-    
+
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
@@ -312,4 +325,3 @@ export class ScrollController {
     this.stop();
   }
 }
-

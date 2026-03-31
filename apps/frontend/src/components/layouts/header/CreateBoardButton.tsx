@@ -2,8 +2,20 @@
 
 import { useState, useEffect } from "react";
 import {
-  Button, Popover, Input, Select, Row, Col, Card, Typography,
-  Upload, ColorPicker, Space
+  Button,
+  Popover,
+  Input,
+  Select,
+  Row,
+  Col,
+  Card,
+  Typography,
+  Upload,
+  ColorPicker,
+  Space,
+  Modal,
+  Steps,
+  Spin,
 } from "antd";
 import { PlusOutlined, BgColorsOutlined, UploadOutlined, CheckOutlined } from "@ant-design/icons";
 import { useBoardStore } from "@smart/store/setting";
@@ -28,6 +40,12 @@ export default function CreateBoardButton() {
   const [background, setBackground] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
   const [fileObjs, setFileObjs] = useState<File[]>([]);
+
+  // AI create states (kept separate to not affect existing flow)
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
 
   // Singleton socket manager
   const projectSocketManager = getProjectSocketManager();
@@ -124,6 +142,40 @@ export default function CreateBoardButton() {
       setBackground(null);
       setColor(null);
       setFileObjs([]);
+    }
+  };
+
+  const handleCreateWithAI = async () => {
+    if (!aiPrompt.trim()) {
+      addNotification("Vui lòng nhập prompt cho AI", "error");
+      return;
+    }
+
+    setAiLoading(true);
+    setAiResult(null);
+
+    try {
+      const res = await projectService.aiBuildProject(aiPrompt.trim());
+      setAiResult(res);
+
+      const projectId =
+        res?.project?.id ??
+        res?.data?.project?.id ??
+        res?.data?.fullProject?.id ??
+        res?.data?.projectId;
+
+      if (!projectId) {
+        throw new Error("AI đã trả về nhưng không tìm thấy projectId");
+      }
+
+      addNotification("AI đã tạo project/board xong, đang chuyển hướng…", "success");
+      setAiOpen(false);
+      setAiPrompt("");
+      router.push(`/projects/${projectId}`);
+    } catch (err: any) {
+      addNotification(err.message || "AI build thất bại", "error");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -239,13 +291,69 @@ export default function CreateBoardButton() {
           <Option value="public">Public</Option>
         </Select>
         <Button type="primary" block onClick={handleCreate} className="rounded-md">Create</Button>
+        <Button
+          block
+          onClick={() => {
+            setOpen(false);
+            setAiOpen(true);
+          }}
+          className="rounded-md"
+        >
+          Create with AI
+        </Button>
       </Space>
     </div>
   );
 
   return (
-    <Popover content={content} trigger="click" open={open} onOpenChange={setOpen} placement="bottomLeft">
-      <Button type="primary" icon={<PlusOutlined />} className="rounded-lg shadow">Create Board</Button>
-    </Popover>
+    <>
+      <Popover content={content} trigger="click" open={open} onOpenChange={setOpen} placement="bottomLeft">
+        <Button type="primary" icon={<PlusOutlined />} className="rounded-lg shadow">Create Board</Button>
+      </Popover>
+
+      <Modal
+        title="Create board with AI"
+        open={aiOpen}
+        onCancel={() => {
+          if (aiLoading) return;
+          setAiOpen(false);
+          setAiPrompt("");
+          setAiResult(null);
+        }}
+        onOk={handleCreateWithAI}
+        okText={aiLoading ? "Generating..." : "Generate"}
+        cancelText="Cancel"
+        okButtonProps={{ disabled: aiLoading }}
+        cancelButtonProps={{ disabled: aiLoading }}
+        destroyOnClose
+      >
+        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+          <Steps
+            size="small"
+            current={aiLoading ? 1 : aiResult ? 2 : 0}
+            items={[
+              { title: "Nhập prompt" },
+              { title: "AI build" },
+              { title: "Chuyển hướng" },
+            ]}
+          />
+
+          <Input.TextArea
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder='Ví dụ: "Xuân thì - Phan Mạnh Quỳnh"'
+            autoSize={{ minRows: 3, maxRows: 6 }}
+            disabled={aiLoading}
+          />
+
+          {aiLoading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Spin />
+              <Text type="secondary">Đang tạo project/board…</Text>
+            </div>
+          )}
+        </Space>
+      </Modal>
+    </>
   );
 }

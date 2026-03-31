@@ -96,4 +96,14 @@ export class ColumnService {
       },
     );
   }
+
+  async getColumns(payload: { projectId?: string; boardId?: string }) {
+    if (payload?.boardId) {
+      return this.request('project.get.columnsByBoard', payload.boardId);
+    }
+    if (payload?.projectId) {
+      return this.request('project.get.columnsByProject', payload.projectId);
+    }
+    throw new Error('projectId or boardId is required');
+  }
 }

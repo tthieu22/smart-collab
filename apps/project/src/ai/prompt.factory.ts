@@ -175,4 +175,56 @@ Language: ${locale}
 ONLY JSON.
 `;
   }
+
+  // ================= CARD TITLE / DESCRIPTION / COMMENT =================
+  generateCardTitle(card: any, locale = 'vi') {
+    return `
+You are improving a Kanban card title.
+
+Card context:
+${JSON.stringify(card, null, 2)}
+
+Return ONLY valid JSON:
+{ "content": "A clearer, shorter title in ${locale}" }
+
+Rules:
+- Language: ${locale}
+- Max 80 characters if possible
+- No markdown, ONLY JSON
+`;
+  }
+
+  generateCardDescription(card: any, locale = 'vi') {
+    return `
+You are writing a helpful Kanban card description.
+
+Card context:
+${JSON.stringify(card, null, 2)}
+
+Return ONLY valid JSON:
+{ "content": "A concise description in ${locale}" }
+
+Rules:
+- Language: ${locale}
+- 2–6 bullet-like sentences, plain text (no markdown)
+- ONLY JSON
+`;
+  }
+
+  generateCardComment(card: any, locale = 'vi') {
+    return `
+You are generating a short activity comment for a Kanban card.
+
+Card context:
+${JSON.stringify(card, null, 2)}
+
+Return ONLY valid JSON:
+{ "content": "A short comment in ${locale}" }
+
+Rules:
+- Language: ${locale}
+- 1–2 sentences, plain text
+- ONLY JSON
+`;
+  }
 }

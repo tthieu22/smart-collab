@@ -32,6 +32,23 @@ export class CardHandler {
     }
   }
 
+  @MessagePattern({ cmd: 'project.get.cardsByProject' })
+  async handleGetCardsByProject(@Payload() projectId: string) {
+    this.logger.log(
+      `Handling get.cardsByProject request for projectId: ${projectId}`,
+    );
+    try {
+      const cards = await this.cardService.getCardsByProject(projectId);
+      return { success: true, data: cards };
+    } catch (error: any) {
+      this.logger.error(
+        `Error handling get.cardsByProject: ${error.message}`,
+        error.stack,
+      );
+      return { success: false, message: error.message || 'Cards not found' };
+    }
+  }
+
   @MessagePattern({ cmd: 'project.card.create' })
   async handleCreateCard(@Payload() payload: any) {
     this.logger.log(`[handleCreateCard] Received payload: ${JSON.stringify(payload)}`);

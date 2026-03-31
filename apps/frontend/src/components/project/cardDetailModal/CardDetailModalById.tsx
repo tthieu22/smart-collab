@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Modal, Divider, Skeleton, Typography, theme } from 'antd';
+import { Modal, Divider, Skeleton, theme, Typography } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { useCardDetail } from '@smart/hooks/useCardDetail';
 import TitleSection from './components/TitleSection';
@@ -43,6 +43,9 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
     addChecklistItem,
     progress,
     attachments,
+    addAttachment,
+    removeAttachment,
+    isUploadingAttachment,
     generateWithAI,
     updateBasic,
     safeLabels,
@@ -92,7 +95,24 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
     );
   }
 
-  if (!card && !title) return null;
+  if (!card && !title) {
+    return (
+      <Modal
+        open={isOpen}
+        onCancel={onClose}
+        footer={null}
+        zIndex={1300}
+        width={980}
+        centered
+        maskClosable
+      >
+        <div style={{ padding: 24 }}>
+          <Skeleton active paragraph={{ rows: 6 }} />
+          <Text type="secondary">Đang đồng bộ dữ liệu card từ realtime...</Text>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -170,7 +190,12 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
               progress={progress}
             />
 
-            <AttachmentsSection attachments={attachments} />
+            <AttachmentsSection
+              attachments={attachments}
+              onAddAttachment={addAttachment}
+              onRemoveAttachment={removeAttachment}
+              loading={isUploadingAttachment}
+            />
           </div>
 
           <ActivitySection

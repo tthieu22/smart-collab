@@ -120,4 +120,14 @@ export class CardService {
     return result;
   }
 
+  async getCards(payload: { projectId?: string; columnId?: string }) {
+    if (payload?.columnId) {
+      return this.request('project.get.cardsByColumn', payload.columnId);
+    }
+    if (payload?.projectId) {
+      return this.request('project.get.cardsByProject', payload.projectId);
+    }
+    throw new Error('projectId or columnId is required');
+  }
+
 }

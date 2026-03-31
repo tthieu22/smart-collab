@@ -279,7 +279,11 @@ export const projectStore = create<ProjectState>((set, get) => ({
         columns,
         boardColumns,
         boards: updatedBoards,
-        columnCards: { ...s.columnCards, [column.id]: [] },
+        // Keep cards that may have arrived before the column existed.
+        columnCards: {
+          ...s.columnCards,
+          [column.id]: s.columnCards[column.id] || [],
+        },
       };
     }),
 
