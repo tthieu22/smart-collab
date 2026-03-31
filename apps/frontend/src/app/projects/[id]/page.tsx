@@ -85,7 +85,8 @@ export default function ProjectDetailPage({ params }: Props) {
       }
     };
 
-    socketManager.joinProject(projectId).catch(console.error);
+    // Only join when entering this project detail page
+    projectStore.getState().setActiveProjectId(projectId);
 
     const unsubCreated = socketManager.subscribeCorrelation(
       'realtime.project.created',
@@ -99,7 +100,18 @@ export default function ProjectDetailPage({ params }: Props) {
     return () => {
       unsubCreated();
       unsubUpdated();
-      socketManager.leaveProject(projectId);
+    };
+  }, [projectId]);
+
+  // Best-effort leave on browser back/refresh/tab close
+  useEffect(() => {
+    const leave = () => projectStore.getState().setActiveProjectId(null);
+
+    window.addEventListener('pagehide', leave);
+    window.addEventListener('beforeunload', leave);
+    return () => {
+      window.removeEventListener('pagehide', leave);
+      window.removeEventListener('beforeunload', leave);
     };
   }, [projectId]);
 

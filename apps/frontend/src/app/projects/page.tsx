@@ -17,6 +17,10 @@ export default function ProjectListPage() {
   useHomeFeedBootstrap();
 
   useEffect(() => {
+    projectStore.getState().setActiveProjectId(null);
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
 
     const load = async () => {

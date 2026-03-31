@@ -33,101 +33,191 @@ export class RealtimeGateway
   private userClients = new Map<string, Set<string>>();
   private projectUsers = new Map<string, Set<string>>();
 
+  private roomForProject(projectId: string) {
+    return `project:${projectId}`;
+  }
+
   private handlers = new Map<string, Handler>([
-    ['card.create', async (d, u, client) => {
-      const result = await this.card.createCard(d, u);
-      this.emitRealtime(d.projectId, 'card.created', result, client.id);
-      return result;
-    }],
+    [
+      'card.create',
+      async (d, u, client) => {
+        const result = await this.card.createCard(d, u);
+        this.emitRealtime(d.projectId, 'card.created', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['card.update', async (d, u, client) => {
-      const result = await this.card.updateCard(d);
-      this.emitRealtime(d.projectId, 'card.updated', result, client.id);
-      return result;
-    }],
+    [
+      'card.update',
+      async (d, u, client) => {
+        const result = await this.card.updateCard(d);
+        this.emitRealtime(d.projectId, 'card.updated', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['card.delete', async (d, u, client) => {
-      const result = await this.card.deleteCard(d, u);
-      this.emitRealtime(d.projectId, 'card.deleted', { columnId: d.columnId, cardId: d.cardId }, client.id);
-      return result;
-    }],
+    [
+      'card.delete',
+      async (d, u, client) => {
+        const result = await this.card.deleteCard(d, u);
+        this.emitRealtime(
+          d.projectId,
+          'card.deleted',
+          { columnId: d.columnId, cardId: d.cardId },
+          client.id,
+        );
+        return {
+          status: 'success',
+          data: { columnId: d.columnId, cardId: d.cardId },
+          result,
+        };
+      },
+    ],
 
-    ['card.move', async (d, u, client) => {
-      const result = await this.card.moveCard(d, u);
-      this.emitRealtime(d.projectId, 'card.moved', result, client.id);
-      return result;
-    }],
+    [
+      'card.move',
+      async (d, u, client) => {
+        const result = await this.card.moveCard(d, u);
+        this.emitRealtime(d.projectId, 'card.moved', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['card.copy', async (d, u, client) => {
-      const result = await this.card.copyCard(d, u);
-      this.emitRealtime(d.projectId, 'card.copied', result, client.id);
-      return result;
-    }],
+    [
+      'card.copy',
+      async (d, u, client) => {
+        const result = await this.card.copyCard(d, u);
+        this.emitRealtime(d.projectId, 'card.copied', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['column.create', async (d, u, client) => {
-      const result = await this.column.createColumn(d, u);
-      this.emitRealtime(d.projectId, 'column.created', result, client.id);
-      return result;
-    }],
+    [
+      'column.create',
+      async (d, u, client) => {
+        const result = await this.column.createColumn(d, u);
+        this.emitRealtime(d.projectId, 'column.created', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['column.update', async (d, u, client) => {
-      const result = await this.column.updateColumn(d);
-      this.emitRealtime(d.projectId, 'column.updated', result, client.id);
-      return result;
-    }],
+    [
+      'column.update',
+      async (d, u, client) => {
+        const result = await this.column.updateColumn(d);
+        this.emitRealtime(d.projectId, 'column.updated', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['column.delete', async (d, u, client) => {
-      const result = await this.column.deleteColumn(d, u);
-      this.emitRealtime(d.projectId, 'column.deleted', { boardId: d.boardId, columnId: d.columnId }, client.id);
-      return result;
-    }],
+    [
+      'column.delete',
+      async (d, u, client) => {
+        const result = await this.column.deleteColumn(d, u);
+        this.emitRealtime(
+          d.projectId,
+          'column.deleted',
+          { boardId: d.boardId, columnId: d.columnId },
+          client.id,
+        );
+        return {
+          status: 'success',
+          data: { boardId: d.boardId, columnId: d.columnId },
+          result,
+        };
+      },
+    ],
 
-    ['column.move', async (d, u, client) => {
-      const result = await this.column.moveColumn(d, u);
-      this.emitRealtime(d.projectId, 'column.moved', result, client.id);
-      return result;
-    }],
+    [
+      'column.move',
+      async (d, u, client) => {
+        const result = await this.column.moveColumn(d, u);
+        this.emitRealtime(d.projectId, 'column.moved', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['board.create', async (d, u, client) => {
-      const result = await this.board.createBoard(d, u);
-      this.emitRealtime(d.projectId, 'board.created', result, client.id);
-      return result;
-    }],
+    [
+      'board.create',
+      async (d, u, client) => {
+        const result = await this.board.createBoard(d, u);
+        this.emitRealtime(d.projectId, 'board.created', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['board.update', async (d, u, client) => {
-      const result = await this.board.updateBoard(d);
-      this.emitRealtime(d.projectId, 'board.updated', result, client.id);
-      return result;
-    }],
+    [
+      'board.update',
+      async (d, u, client) => {
+        const result = await this.board.updateBoard(d);
+        this.emitRealtime(d.projectId, 'board.updated', result, client.id);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['board.delete', async (d, u, client) => {
-      const result = await this.board.deleteBoard(d, u);
-      this.emitRealtime(d.projectId, 'board.deleted', { boardId: d.boardId }, client.id);
-      return result;
-    }],
+    [
+      'board.delete',
+      async (d, u, client) => {
+        const result = await this.board.deleteBoard(d, u);
+        this.emitRealtime(
+          d.projectId,
+          'board.deleted',
+          { boardId: d.boardId },
+          client.id,
+        );
+        return { status: 'success', data: { boardId: d.boardId }, result };
+      },
+    ],
 
-    ['board.get', async (d, u, client) => {
-      const result = await this.board.getBoards(d);
-      return result;
-    }],
+    [
+      'board.get',
+      async (d, u, client) => {
+        const result = await this.board.getBoards(d);
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['member.add', async (d, u, client) => {
-      const result = await this.member.addMember(d, u);
-      this.emitRealtime(d.projectId, 'project.member_added', result, client.id);
-      return result;
-    }],
+    [
+      'member.add',
+      async (d, u, client) => {
+        const result = await this.member.addMember(d, u);
+        this.emitRealtime(
+          d.projectId,
+          'project.member_added',
+          result,
+          client.id,
+        );
+        return { status: 'success', data: result };
+      },
+    ],
 
-    ['member.remove', async (d, u, client) => {
-      const result = await this.member.removeMember(d, u);
-      this.emitRealtime(d.projectId, 'project.member_removed', { userId: d.userId }, client.id);
-      return result;
-    }],
+    [
+      'member.remove',
+      async (d, u, client) => {
+        const result = await this.member.removeMember(d, u);
+        this.emitRealtime(
+          d.projectId,
+          'project.member_removed',
+          { userId: d.userId },
+          client.id,
+        );
+        return { status: 'success', data: { userId: d.userId }, result };
+      },
+    ],
 
-    ['member.role', async (d, u, client) => {
-      const result = await this.member.updateMemberRole(d, u);
-      this.emitRealtime(d.projectId, 'project.member_role_updated', result, client.id);
-      return result;
-    }],
+    [
+      'member.role',
+      async (d, u, client) => {
+        const result = await this.member.updateMemberRole(d, u);
+        this.emitRealtime(
+          d.projectId,
+          'project.member_role_updated',
+          result,
+          client.id,
+        );
+        return { status: 'success', data: result };
+      },
+    ],
   ]);
 
   constructor(
@@ -141,7 +231,9 @@ export class RealtimeGateway
   ) {}
 
   afterInit() {
-    this.server.adapter(createAdapter(this.redis.duplicate(), this.redis.duplicate()));
+    this.server.adapter(
+      createAdapter(this.redis.duplicate(), this.redis.duplicate()),
+    );
     this.logger.log('WebSocket READY – Clean Result Only');
   }
 
@@ -152,13 +244,15 @@ export class RealtimeGateway
     try {
       const { sub: userId, projectIds = [] } = this.jwt.verify(token);
       (client as any).userId = userId;
+      (client as any).currentProjectId = undefined;
 
       this.userSockets.set(client.id, userId);
-      if (!this.userClients.has(userId)) this.userClients.set(userId, new Set());
+      if (!this.userClients.has(userId))
+        this.userClients.set(userId, new Set());
       this.userClients.get(userId)!.add(client.id);
 
       (projectIds as string[]).forEach((pid) => {
-        client.join(pid);
+        client.join(this.roomForProject(pid));
         this.addUserToProject(pid, userId);
       });
 
@@ -220,10 +314,11 @@ export class RealtimeGateway
     data: any,
     excludeClientId?: string,
   ) => {
+    const room = this.roomForProject(projectId);
     if (excludeClientId) {
-      this.server.to(projectId).except(excludeClientId).emit(event, data);
+      this.server.to(room).except(excludeClientId).emit(event, data);
     } else {
-      this.server.to(projectId).emit(event, data);
+      this.server.to(room).emit(event, data);
     }
   };
 
@@ -233,7 +328,12 @@ export class RealtimeGateway
     });
   };
 
-  private emitRealtime(projectId: string, event: string, data: any, excludeClientId?: string) {
+  private emitRealtime(
+    projectId: string,
+    event: string,
+    data: any,
+    excludeClientId?: string,
+  ) {
     this.emitToProject(projectId, `realtime.${event}`, data, excludeClientId);
   }
 
@@ -246,10 +346,13 @@ export class RealtimeGateway
     const userId = (client as any).userId;
 
     if (!event || !this.handlers.has(event)) {
-      return this.reply(client, correlationId, { status: 'error', message: 'Unknown event' });
+      return this.reply(client, correlationId, {
+        status: 'error',
+        message: 'Unknown event',
+      });
     }
 
-    this.reply(client, correlationId, { status: 'received' });
+    this.reply(client, correlationId, { status: 'received', action: event });
 
     try {
       const handler = this.handlers.get(event)!;
@@ -260,7 +363,15 @@ export class RealtimeGateway
         client,
       );
 
-      this.reply(client, correlationId, { action: event, ...result });
+      // Enforce consistent response envelope for FE:
+      // { correlationId, action, status, data?, message? }
+      const status = result?.status ?? 'success';
+      const dataOut = result?.data ?? result;
+      this.reply(client, correlationId, {
+        action: event,
+        status,
+        data: dataOut,
+      });
     } catch (err: any) {
       this.reply(client, correlationId, {
         status: 'error',
@@ -269,33 +380,48 @@ export class RealtimeGateway
       });
     }
   }
-  
+
   @SubscribeMessage('joinProject')
   async joinProject(
     @ConnectedSocket() client: Socket,
-    @MessageBody() projectId: string,
-    ack?: (success: boolean) => void,
-  ) {
+    @MessageBody() body: any,
+  ): Promise<boolean> {
     const userId = (client as any).userId;
+    const projectId = typeof body === 'string' ? body : body?.projectId;
+    const switchProject = Boolean(
+      typeof body === 'object' && body?.switchProject,
+    );
 
     if (!projectId || !userId) {
-      return ack?.(false);
+      return false;
     }
 
     // (Tùy chọn) Kiểm tra quyền
     // const isMember = await this.member.isMember(projectId, userId);
     // if (!isMember) return ack?.(false);
 
-    client.join(projectId);
+    // Optional "switch": leave previous current project room for this socket
+    if (switchProject) {
+      const prev = (client as any).currentProjectId as string | undefined;
+      if (prev && prev !== projectId) {
+        client.leave(this.roomForProject(prev));
+      }
+      (client as any).currentProjectId = projectId;
+    }
+
+    client.join(this.roomForProject(projectId));
     this.addUserToProject(projectId, userId);
 
-    ack?.(true);
     this.logger.log(`User ${userId} joined project: ${projectId}`);
+    return true;
   }
 
   @SubscribeMessage('leaveProject')
-  leave(@ConnectedSocket() c: Socket, @MessageBody() { projectId }: any) {
-    c.leave(projectId);
+  leave(@ConnectedSocket() c: Socket, @MessageBody() body: any): boolean {
+    const projectId = typeof body === 'string' ? body : body?.projectId;
+    if (!projectId) return false;
+
+    c.leave(this.roomForProject(projectId));
     const userId = (c as any).userId;
     const users = this.projectUsers.get(projectId);
     if (users?.has(userId)) {
@@ -303,6 +429,11 @@ export class RealtimeGateway
       if (users.size === 0) this.projectUsers.delete(projectId);
       this.broadcastOnline(projectId);
     }
+
+    const cur = (c as any).currentProjectId as string | undefined;
+    if (cur === projectId) (c as any).currentProjectId = undefined;
+    this.logger.log(`User ${userId} left project: ${projectId}`);
+    return true;
   }
 
   @SubscribeMessage('project.getOnline')

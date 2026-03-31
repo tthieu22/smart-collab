@@ -13,6 +13,7 @@ import {
 } from '@smart/types/project';
 
 interface ProjectState {
+  activeProjectId: string | null;
   currentProject: Project | null;
   allProjects: Project[];
 
@@ -27,6 +28,7 @@ interface ProjectState {
   columnCards: Record<string, string[]>;
   hasJoinedCurrentProject: boolean;
 
+  setActiveProjectId: (projectId: string | null) => void;
   setCurrentProject: (project: Project | null) => void;
   clearProjectStore: () => void;
 
@@ -73,6 +75,7 @@ interface ProjectState {
 }
 
 export const projectStore = create<ProjectState>((set, get) => ({
+  activeProjectId: null,
   currentProject: null,
   hasJoinedCurrentProject: false,
   allProjects: [],
@@ -84,6 +87,8 @@ export const projectStore = create<ProjectState>((set, get) => ({
   views: {},
   boardColumns: {},
   columnCards: {},
+
+  setActiveProjectId: (projectId) => set({ activeProjectId: projectId }),
 
   setCurrentProject: (project) => {
     if (project === null) {
@@ -185,6 +190,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
   clearProjectStore: () =>
     set({
+      activeProjectId: null,
       currentProject: null,
       allProjects: [],
       boards: {},
