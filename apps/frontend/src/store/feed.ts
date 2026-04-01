@@ -10,6 +10,7 @@ import type {
   FeedReactionType,
   FeedUser,
 } from '@smart/types/feed';
+import { autoRequest } from '../services/auto.request';
 
 type Entities<T extends { id: FeedID }> = Record<FeedID, T>;
 
@@ -26,6 +27,11 @@ function safeDec(n: number) {
   return Math.max(0, n - 1);
 }
 
+export interface DraftImage {
+  preview: string;
+  file: File;
+}
+
 interface FeedState {
   currentUserId: FeedID | null;
   isBootstrapped: boolean;
@@ -39,24 +45,26 @@ interface FeedState {
   postIds: FeedID[];
   commentsByPostId: Record<FeedID, FeedID[]>;
   draftText: string;
-  draftImages: string[];
+  draftImages: DraftImage[];
 
   bootstrap: (dataset: FeedDataset) => void;
   setLoading: (value: boolean) => void;
   setError: (value: string | null) => void;
 
-  createPost: (input: { content: string; media?: FeedPost['media'] }) => void;
-  toggleReaction: (postId: FeedID, reaction: FeedReactionType) => void;
+  createPost: (input: { content: string; media?: FeedPost['media'] }) => Promise<void>;
+  toggleReaction: (postId: FeedID, reaction: FeedReactionType) => Promise<void>;
   sharePost: (postId: FeedID) => void;
   toggleBookmark: (postId: FeedID) => void;
 
-  addComment: (postId: FeedID, content: string) => void;
+  addComment: (postId: FeedID, content: string) => Promise<void>;
   toggleCommentLike: (commentId: FeedID) => void;
+  followUser: (targetId: FeedID) => Promise<void>;
+  unfollowUser: (targetId: FeedID) => Promise<void>;
   setDraftText: (text: string) => void;
-  addDraftImages: (images: string[]) => void;
+  addDraftImages: (images: DraftImage[]) => void;
   removeDraftImage: (index: number) => void;
   clearDraft: () => void;
-  publishDraft: () => void;
+  publishDraft: () => Promise<void>;
 }
 
 export const useFeedStore = create<FeedState>((set, get) => ({
@@ -129,57 +137,64 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   setLoading: (value) => set({ isLoading: value }),
   setError: (value) => set({ error: value }),
 
-  createPost: ({ content, media }) =>
-    set((s) => {
-      if (!s.currentUserId) return s;
-      const id = `p_${Date.now()}`;
-      const now = new Date().toISOString();
-      const post: FeedPost = {
-        id,
-        authorId: s.currentUserId,
-        createdAt: now,
-        content,
-        media: media || [],
-        reactionSummary: { ...emptyReactions },
-        commentCount: 0,
-        shareCount: 0,
-        myReaction: null,
-        bookmarkedByMe: false,
-      };
-      return {
-        posts: { ...s.posts, [id]: post },
-        postIds: [id, ...s.postIds],
-      };
-    }),
+  createPost: async ({ content, media }) => {
+    try {
+      const res = await autoRequest<FeedPost>('/home/post', {
+        method: 'POST',
+        body: JSON.stringify({ content, media }),
+      });
+      
+      set((s) => ({
+        posts: {
+          ...s.posts,
+          [res.id]: {
+            ...res,
+            reactionSummary: { ...emptyReactions },
+            commentCount: 0,
+            shareCount: 0,
+            media: res.media || [],
+            myReaction: null,
+            bookmarkedByMe: false,
+          },
+        },
+        postIds: [res.id, ...s.postIds],
+      }));
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
 
-  toggleReaction: (postId, reaction) =>
+  toggleReaction: async (postId, reaction) => {
+    // Optimistic update
     set((s) => {
       const post = s.posts[postId];
       if (!post) return s;
 
       const prev = post.myReaction ?? null;
       const next = prev === reaction ? null : reaction;
-
       const summary: FeedReactionSummary = { ...emptyReactions, ...post.reactionSummary };
 
-      if (prev) {
-        summary[prev] = safeDec(summary[prev] || 0);
-      }
-      if (next) {
-        summary[next] = (summary[next] || 0) + 1;
-      }
+      if (prev) summary[prev] = safeDec(summary[prev] || 0);
+      if (next) summary[next] = (summary[next] || 0) + 1;
 
       return {
         posts: {
           ...s.posts,
-          [postId]: {
-            ...post,
-            myReaction: next,
-            reactionSummary: summary,
-          },
+          [postId]: { ...post, myReaction: next, reactionSummary: summary },
         },
       };
-    }),
+    });
+
+    try {
+      await autoRequest(`/home/post/${postId}/like`, {
+        method: 'POST',
+        body: JSON.stringify({ type: reaction.toUpperCase() }),
+      });
+    } catch (err: any) {
+      set({ error: err.message });
+      // Rollback logic could be added here
+    }
+  },
 
   sharePost: (postId) =>
     set((s) => {
@@ -202,35 +217,36 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       };
     }),
 
-  addComment: (postId, content) =>
-    set((s) => {
-      if (!s.currentUserId) return s;
-      const post = s.posts[postId];
-      if (!post) return s;
+  addComment: async (postId, content) => {
+    try {
+      const res = await autoRequest<FeedComment>(`/home/post/${postId}/comment`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
 
-      const id = `c_${Date.now()}`;
-      const now = new Date().toISOString();
-      const comment: FeedComment = {
-        id,
-        postId,
-        authorId: s.currentUserId,
-        content,
-        createdAt: now,
-        likeCount: 0,
-        likedByMe: false,
-      };
-
-      const list = [...(s.commentsByPostId[postId] || []), id];
-
-      return {
-        comments: { ...s.comments, [id]: comment },
-        commentsByPostId: { ...s.commentsByPostId, [postId]: list },
-        posts: {
-          ...s.posts,
-          [postId]: { ...post, commentCount: (post.commentCount || 0) + 1 },
-        },
-      };
-    }),
+      set((s) => {
+        const post = s.posts[postId];
+        const list = [...(s.commentsByPostId[postId] || []), res.id];
+        return {
+          comments: {
+            ...s.comments,
+            [res.id]: {
+              ...res,
+              likeCount: 0,
+              likedByMe: false,
+            },
+          },
+          commentsByPostId: { ...s.commentsByPostId, [postId]: list },
+          posts: {
+            ...s.posts,
+            [postId]: { ...post!, commentCount: (post!.commentCount || 0) + 1 },
+          },
+        };
+      });
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
 
   toggleCommentLike: (commentId) =>
     set((s) => {
@@ -249,6 +265,22 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       };
     }),
 
+  followUser: async (targetId: FeedID) => {
+    try {
+      await autoRequest(`/home/user/${targetId}/follow`, { method: 'POST' });
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
+
+  unfollowUser: async (targetId: FeedID) => {
+    try {
+      await autoRequest(`/home/user/${targetId}/unfollow`, { method: 'POST' });
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
+
   setDraftText: (text) => set({ draftText: text }),
   addDraftImages: (images) =>
     set((s) => ({ draftImages: [...s.draftImages, ...images].slice(0, 6) })),
@@ -257,19 +289,47 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       draftImages: s.draftImages.filter((_, i) => i !== index),
     })),
   clearDraft: () => set({ draftText: '', draftImages: [] }),
-  publishDraft: () => {
+  
+  publishDraft: async () => {
     const s = get();
     const content = s.draftText.trim();
-    const media = s.draftImages.map((url, i) => ({
-      id: `m_${Date.now()}_${i}`,
-      type: 'image' as const,
-      url,
-      alt: `upload-${i + 1}`,
-    }));
+    const draftImages = s.draftImages;
 
-    if (!content && !media.length) return;
-    s.createPost({ content: content || 'Ảnh mới', media });
-    s.clearDraft();
+    if (!content && !draftImages.length) return;
+
+    set({ isLoading: true });
+    try {
+      let mediaUrls: FeedPost['media'] = [];
+
+      // 1. Upload images if any
+      if (draftImages.length > 0) {
+        const formData = new FormData();
+        formData.append('action', 'upload');
+        formData.append('projectFolder', 'home_feed');
+        draftImages.forEach((img) => formData.append('files', img.file));
+
+        const uploadRes = await autoRequest<{ success: boolean; data: any[] }>('/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (uploadRes.success) {
+          mediaUrls = uploadRes.data.map((r, i) => ({
+            id: `m_${Date.now()}_${i}`,
+            type: 'image' as const,
+            url: r.url,
+            alt: `upload-${i + 1}`,
+          }));
+        }
+      }
+
+      // 2. Create post
+      await s.createPost({ content: content || 'Ảnh mới', media: mediaUrls });
+      s.clearDraft();
+    } catch (err: any) {
+      set({ error: err.message });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 }));
-

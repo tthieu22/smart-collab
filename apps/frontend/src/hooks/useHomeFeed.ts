@@ -1,22 +1,38 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import type { FeedDataset } from '@smart/types/feed';
 import { useFeedStore } from '@smart/store/feed';
-import homeFeedJson from '@smart/mock/home-feed.json';
-
-function asDataset(data: unknown): FeedDataset {
-  return data as FeedDataset;
-}
+import { useShallow } from 'zustand/react/shallow';
+import { autoRequest } from '../services/auto.request';
 
 export function useHomeFeedBootstrap() {
-  const isBootstrapped = useFeedStore((s) => s.isBootstrapped);
-  const bootstrap = useFeedStore((s) => s.bootstrap);
-
-  const dataset = useMemo(() => asDataset(homeFeedJson), []);
+  const { isBootstrapped, bootstrap, setLoading, setError } = useFeedStore(
+    useShallow((s) => ({
+      isBootstrapped: s.isBootstrapped,
+      bootstrap: s.bootstrap,
+      setLoading: s.setLoading,
+      setError: s.setError,
+    }))
+  );
 
   useEffect(() => {
-    if (!isBootstrapped) bootstrap(dataset);
-  }, [bootstrap, dataset, isBootstrapped]);
-}
+    if (isBootstrapped) return;
 
+    const fetchFeed = async () => {
+      setLoading(true);
+      try {
+        const data = await autoRequest<FeedDataset>('/home/feed', {
+          method: 'GET',
+        });
+        bootstrap(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeed();
+  }, [bootstrap, isBootstrapped, setLoading, setError]);
+}

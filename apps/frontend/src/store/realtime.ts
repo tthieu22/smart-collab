@@ -138,6 +138,7 @@ export class ProjectSocketManager {
         'realtime.comment.created',
         'realtime.comment.updated',
         'realtime.comment.deleted',
+        'realtime.notification.created',
         'realtime.action.response',
       ];
 
@@ -403,6 +404,11 @@ export class ProjectSocketManager {
       }
       case 'realtime.project.member_role_updated': {
         if (msg?.id) store.updateMember(msg);
+        break;
+      }
+      case 'realtime.notification.created': {
+        const { useUserNotificationStore } = require('./user-notifications');
+        useUserNotificationStore.getState().addNotification(msg);
         break;
       }
       default:

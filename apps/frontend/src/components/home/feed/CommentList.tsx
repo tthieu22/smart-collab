@@ -2,14 +2,19 @@
 
 import { useMemo } from 'react';
 import { useFeedStore } from '@smart/store/feed';
+import { useShallow } from 'zustand/react/shallow';
 import { Button } from '@smart/components/ui/button';
 import { Heart } from 'lucide-react';
 
 export default function CommentList({ postId }: { postId: string }) {
-  const commentIds = useFeedStore((s) => s.commentsByPostId[postId] || []);
-  const comments = useFeedStore((s) => s.comments);
-  const users = useFeedStore((s) => s.users);
-  const toggleCommentLike = useFeedStore((s) => s.toggleCommentLike);
+  const { commentIds, comments, users, toggleCommentLike } = useFeedStore(
+    useShallow((s) => ({
+      commentIds: s.commentsByPostId[postId] || [],
+      comments: s.comments,
+      users: s.users,
+      toggleCommentLike: s.toggleCommentLike,
+    }))
+  );
 
   const items = useMemo(
     () =>
@@ -66,4 +71,3 @@ export default function CommentList({ postId }: { postId: string }) {
     </div>
   );
 }
-

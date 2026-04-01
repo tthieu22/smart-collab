@@ -3,20 +3,33 @@
 import { useMemo, useRef } from 'react';
 import { Card } from '@smart/components/ui/card';
 import { Button } from '@smart/components/ui/button';
-import { useFeedStore } from '@smart/store/feed';
+import { useFeedStore, type DraftImage } from '@smart/store/feed';
+import { useShallow } from 'zustand/react/shallow';
 import { Camera, ImagePlus, SendHorizonal, X } from 'lucide-react';
 
 export default function FeedComposer() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
-  const draftText = useFeedStore((s) => s.draftText);
-  const draftImages = useFeedStore((s) => s.draftImages);
-  const setDraftText = useFeedStore((s) => s.setDraftText);
-  const addDraftImages = useFeedStore((s) => s.addDraftImages);
-  const removeDraftImage = useFeedStore((s) => s.removeDraftImage);
-  const publishDraft = useFeedStore((s) => s.publishDraft);
-  const me = useFeedStore((s) => (s.currentUserId ? s.users[s.currentUserId] : null));
+  const {
+    draftText,
+    draftImages,
+    setDraftText,
+    addDraftImages,
+    removeDraftImage,
+    publishDraft,
+    me,
+  } = useFeedStore(
+    useShallow((s) => ({
+      draftText: s.draftText,
+      draftImages: s.draftImages,
+      setDraftText: s.setDraftText,
+      addDraftImages: s.addDraftImages,
+      removeDraftImage: s.removeDraftImage,
+      publishDraft: s.publishDraft,
+      me: s.currentUserId ? s.users[s.currentUserId] : null,
+    }))
+  );
 
   const canPost = useMemo(
     () => draftText.trim().length > 0 || draftImages.length > 0,
@@ -25,17 +38,17 @@ export default function FeedComposer() {
 
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
-    const urls = await Promise.all(
+    const images = await Promise.all(
       Array.from(files).map(
         (file) =>
-          new Promise<string>((resolve) => {
+          new Promise<DraftImage>((resolve) => {
             const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onload = () => resolve({ preview: String(reader.result || ''), file });
             reader.readAsDataURL(file);
           }),
       ),
     );
-    addDraftImages(urls.filter(Boolean));
+    addDraftImages(images.filter((img) => img.preview));
   };
 
   return (
@@ -58,10 +71,10 @@ export default function FeedComposer() {
 
           {draftImages.length ? (
             <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {draftImages.map((url, idx) => (
-                <div key={`${url}-${idx}`} className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-neutral-800">
+              {draftImages.map((img, idx) => (
+                <div key={`${img.preview}-${idx}`} className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-neutral-800">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`draft-${idx}`} className="h-24 w-full object-cover" />
+                  <img src={img.preview} alt={`draft-${idx}`} className="h-24 w-full object-cover" />
                   <button
                     onClick={() => removeDraftImage(idx)}
                     className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
@@ -129,4 +142,3 @@ export default function FeedComposer() {
     </Card>
   );
 }
-
