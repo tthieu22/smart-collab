@@ -107,6 +107,13 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    const toIsoDateTime = (value: string | number | Date | undefined) => {
+      if (value == null) return undefined;
+      const date = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(date.getTime())) return undefined;
+      return date.toISOString();
+    };
+
     const { active, over } = event;
 
     // Nếu over là calendar thì KHÔNG cập nhật lại overData (để giữ start/end đúng)
@@ -178,8 +185,10 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
       return;
     }
 
-    function isCalendar(type: string | undefined): type is 'calendar' {
-      return type === 'calendar';
+    function isPersonalBoard(
+      type: string | undefined
+    ): type is 'inbox' | 'calendar' {
+      return type === 'inbox' || type === 'calendar';
     }
 
     if (activeItem.type === 'CARD') {
@@ -210,60 +219,59 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
         | 'calendar'
         | undefined;
 
-      if (isCalendar(destBoardType)) {
+      if (destBoardType === 'calendar') {
         const start = currentOverData?.start;
         const end = currentOverData?.end;
+        const calendarColumnId = currentOverData?.columnId;
 
         const payload = {
           cardId: String(active.id),
           srcBoardId,
           destBoardId,
-          destColumnId: null,
-          destIndex: null,
+          srcColumnId,
+          destColumnId: calendarColumnId,
+          destIndex: 0,
           start,
           end,
           userId: currentUserId,
         };
-        console.log(payload);
 
-        const isCopy = ctrlPressed || srcBoardId !== destBoardId;
+        const isCopy = ctrlPressed;
         if (isCopy) {
-          // socket.copyCard(projectId, payload);
+          socket.copyCard(
+            { projectId: undefined, userId: currentUserId },
+            payload
+          );
         } else {
-          // socket.moveCard(projectId, payload);
+          socket.moveCard(
+            { projectId: undefined, userId: currentUserId },
+            payload
+          );
         }
-      } else if (isCalendar(srcBoardType) && !isCalendar(destBoardType)) {
+
+        if (start) {
+          socket.updateCard(
+            undefined,
+            String(active.id),
+            'update-basic',
+            { deadline: toIsoDateTime(start) },
+            currentUserId
+          );
+        }
+      } else if (isPersonalBoard(srcBoardType) && !isPersonalBoard(destBoardType)) {
         const destColumnId =
           currentOverData?.columnId ??
           (currentOverData?.type === 'COLUMN' ? String(over.id) : null);
-
-        const destItems = destColumnId ? getColumnCardIds(destColumnId) : [];
-        const destIndex = findDropIndex(over, destItems);
-
-        const payload = {
-          cardId: String(active.id),
-          srcBoardId,
-          destBoardId,
-          destColumnId,
-          destIndex,
-          userId: currentUserId,
-        };
-
-        const isCopy = ctrlPressed || srcBoardId !== destBoardId;
-        if (isCopy) {
-          socket.copyCard(projectId, payload);
-        } else {
-          socket.moveCard(projectId, payload);
+        if (!destColumnId) {
+          setActiveId(null);
+          setOverId(null);
+          setActiveItem(null);
+          setOverData(null);
+          return;
         }
-      } else {
-        const destColumnId =
-          currentOverData?.columnId ??
-          (currentOverData?.type === 'COLUMN' ? String(over.id) : srcColumnId);
 
         const destItems = getColumnCardIds(destColumnId);
         const destIndex = findDropIndex(over, destItems);
-
-        const isCopy = ctrlPressed || srcBoardId !== destBoardId;
 
         const payload = {
           cardId: String(active.id),
@@ -275,10 +283,46 @@ export default function DragDropProvider({ children, boardTypes = {} }: Props) {
           userId: currentUserId,
         };
 
+        const isCopy = ctrlPressed;
         if (isCopy) {
-          socket.copyCard(projectId, payload);
+          socket.copyCard(
+            { projectId: undefined, userId: currentUserId },
+            payload
+          );
         } else {
-          socket.moveCard(projectId, payload);
+          socket.moveCard(
+            { projectId: undefined, userId: currentUserId },
+            payload
+          );
+        }
+      } else {
+        const destColumnId =
+          currentOverData?.columnId ??
+          (currentOverData?.type === 'COLUMN' ? String(over.id) : srcColumnId);
+
+        const destItems = getColumnCardIds(destColumnId);
+        const destIndex = findDropIndex(over, destItems);
+
+        const payload = {
+          cardId: String(active.id),
+          srcBoardId,
+          destBoardId,
+          srcColumnId,
+          destColumnId,
+          destIndex,
+          userId: currentUserId,
+        };
+
+        const srcIsPersonal = isPersonalBoard(srcBoardType);
+        const destIsPersonal = isPersonalBoard(destBoardType);
+        const scopeProjectId =
+          srcIsPersonal || destIsPersonal ? undefined : projectId;
+        const isCopy = ctrlPressed;
+
+        if (isCopy) {
+          socket.copyCard({ projectId: scopeProjectId, userId: currentUserId }, payload);
+        } else {
+          socket.moveCard({ projectId: scopeProjectId, userId: currentUserId }, payload);
         }
       }
     }

@@ -12,7 +12,6 @@ import {
 } from 'antd';
 import { Sparkles } from 'lucide-react';
 
-// Import chính và các plugin cần thiết
 import { MDXEditor } from '@mdxeditor/editor';
 import '@mdxeditor/editor/style.css';
 
@@ -34,6 +33,14 @@ import AIIcon from './AIIcon';
 
 const { Text } = Typography;
 
+// 👉 decode HTML entity (không cần lib)
+const decodeHTML = (html: string) => {
+  if (!html) return '';
+  const txt = document.createElement('textarea');
+  txt.innerHTML = html;
+  return txt.value;
+};
+
 interface Props {
   description: string;
   setDescription: (value: string) => void;
@@ -54,7 +61,44 @@ const DescriptionSection: React.FC<Props> = ({
   onBlur,
 }) => {
   const { token } = theme.useToken();
-  const isDark = token.colorBgContainer === '#141414'; // AntD dark mode có bg container là #141414
+  const isDark = token.colorBgContainer === '#141414';
+
+  const [localDescription, setLocalDescription] = React.useState(description);
+
+  const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Sync từ BE nhưng không overwrite khi đang gõ
+  React.useEffect(() => {
+    if (description !== localDescription) {
+      setLocalDescription(description);
+    }
+  }, [description]);
+
+  // cleanup
+  React.useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  const handleChange = (value: string) => {
+    setLocalDescription(value);
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      const decoded = decodeHTML(value); // 🔥 fix encode tại đây
+
+      if (decoded !== description) {
+        setDescription(decoded);
+        onBlur(decoded); // gửi BE
+      }
+    }, 800);
+  };
 
   const aiMenu = {
     items: [
@@ -68,10 +112,15 @@ const DescriptionSection: React.FC<Props> = ({
 
   return (
     <AIBorderWrapper active={isGenerating}>
-      {/* Dùng Card của AntD thay vì div custom để tự động theo theme sáng/tối */}
       <Card
         title={
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <Text strong>Description</Text>
             <Dropdown menu={aiMenu}>
               <Button
@@ -99,13 +148,10 @@ const DescriptionSection: React.FC<Props> = ({
           </>
         ) : (
           <MDXEditor
-            markdown={description || ''}
-            onChange={(value) => {
-              setDescription(value);
-              onBlur(value);
-            }}
+            markdown={localDescription || ''}
+            onChange={handleChange}
             placeholder="Viết nội dung kiểu Zalo, hỗ trợ markdown, paste list, emoji..."
-            className={isDark ? 'dark-theme' : ''} // Kích hoạt dark mode built-in của MDXEditor
+            className={isDark ? 'dark-theme' : ''}
             plugins={[
               headingsPlugin(),
               listsPlugin(),
@@ -118,7 +164,6 @@ const DescriptionSection: React.FC<Props> = ({
               codeBlockPlugin(),
               codeMirrorPlugin(),
             ]}
-            // Dùng Tailwind prose + dark:prose-invert để nội dung markdown đẹp và hỗ trợ dark mode hoàn hảo
             contentEditableClassName="prose prose-sm max-w-none focus:outline-none min-h-96 pt-2 dark:prose-invert"
           />
         )}

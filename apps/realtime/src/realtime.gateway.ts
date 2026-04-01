@@ -21,6 +21,7 @@ import { CardService } from './services/project/card.service';
 import { MemberService } from './services/project/member.service';
 
 type Handler = (data: any, userId: string, client: Socket) => Promise<any>;
+type RealtimeTarget = { projectId?: string; userId?: string };
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class RealtimeGateway
@@ -42,7 +43,7 @@ export class RealtimeGateway
       'card.create',
       async (d, u, client) => {
         const result = await this.card.createCard(d, u);
-        this.emitRealtime(d.projectId, 'card.created', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'card.created', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -51,7 +52,7 @@ export class RealtimeGateway
       'card.update',
       async (d, u, client) => {
         const result = await this.card.updateCard(d);
-        this.emitRealtime(d.projectId, 'card.updated', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'card.updated', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -61,7 +62,7 @@ export class RealtimeGateway
       async (d, u, client) => {
         const result = await this.card.deleteCard(d, u);
         this.emitRealtime(
-          d.projectId,
+          { projectId: d.projectId, userId: d.userId ?? u },
           'card.deleted',
           { columnId: d.columnId, cardId: d.cardId },
           client.id,
@@ -78,7 +79,7 @@ export class RealtimeGateway
       'card.move',
       async (d, u, client) => {
         const result = await this.card.moveCard(d, u);
-        this.emitRealtime(d.projectId, 'card.moved', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'card.moved', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -87,7 +88,7 @@ export class RealtimeGateway
       'card.copy',
       async (d, u, client) => {
         const result = await this.card.copyCard(d, u);
-        this.emitRealtime(d.projectId, 'card.copied', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'card.copied', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -123,7 +124,7 @@ export class RealtimeGateway
       'column.create',
       async (d, u, client) => {
         const result = await this.column.createColumn(d, u);
-        this.emitRealtime(d.projectId, 'column.created', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'column.created', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -132,7 +133,7 @@ export class RealtimeGateway
       'column.update',
       async (d, u, client) => {
         const result = await this.column.updateColumn(d);
-        this.emitRealtime(d.projectId, 'column.updated', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'column.updated', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -142,7 +143,7 @@ export class RealtimeGateway
       async (d, u, client) => {
         const result = await this.column.deleteColumn(d, u);
         this.emitRealtime(
-          d.projectId,
+          { projectId: d.projectId, userId: d.userId ?? u },
           'column.deleted',
           { boardId: d.boardId, columnId: d.columnId },
           client.id,
@@ -159,7 +160,7 @@ export class RealtimeGateway
       'column.move',
       async (d, u, client) => {
         const result = await this.column.moveColumn(d, u);
-        this.emitRealtime(d.projectId, 'column.moved', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'column.moved', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -168,7 +169,7 @@ export class RealtimeGateway
       'board.create',
       async (d, u, client) => {
         const result = await this.board.createBoard(d, u);
-        this.emitRealtime(d.projectId, 'board.created', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.ownerId ?? d.userId ?? u }, 'board.created', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -177,7 +178,7 @@ export class RealtimeGateway
       'board.update',
       async (d, u, client) => {
         const result = await this.board.updateBoard(d);
-        this.emitRealtime(d.projectId, 'board.updated', result, client.id);
+        this.emitRealtime({ projectId: d.projectId, userId: d.userId ?? u }, 'board.updated', result, client.id);
         return { status: 'success', data: result };
       },
     ],
@@ -187,7 +188,7 @@ export class RealtimeGateway
       async (d, u, client) => {
         const result = await this.board.deleteBoard(d, u);
         this.emitRealtime(
-          d.projectId,
+          { projectId: d.projectId, userId: d.userId ?? u },
           'board.deleted',
           { boardId: d.boardId },
           client.id,
@@ -356,12 +357,19 @@ export class RealtimeGateway
   };
 
   private emitRealtime(
-    projectId: string,
+    target: RealtimeTarget,
     event: string,
     data: any,
     excludeClientId?: string,
   ) {
-    this.emitToProject(projectId, `realtime.${event}`, data, excludeClientId);
+    if (target.projectId) {
+      this.emitToProject(target.projectId, `realtime.${event}`, data, excludeClientId);
+      return;
+    }
+
+    if (target.userId) {
+      this.emitToUser(target.userId, `realtime.${event}`, data);
+    }
   }
 
   @SubscribeMessage('realtime.action')

@@ -102,6 +102,13 @@ export class ProjectService {
       }
     }
 
+    // Ensure personal boards exist for the current user context.
+    if (userId) {
+      await this.ensureDefaultBoards(userId);
+    } else {
+      await this.ensureDefaultBoards(project.ownerId);
+    }
+
     const structure = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: {
@@ -128,7 +135,43 @@ export class ProjectService {
             position: true,
             columns: {
               orderBy: { position: 'asc' },
-              select: { id: true, title: true, position: true },
+              select: {
+                id: true,
+                boardId: true,
+                title: true,
+                position: true,
+                metadata: true,
+                createdAt: true,
+                updatedAt: true,
+                cards: {
+                  orderBy: { position: 'asc' },
+                  select: {
+                    id: true,
+                    projectId: true,
+                    columnId: true,
+                    title: true,
+                    description: true,
+                    status: true,
+                    deadline: true,
+                    priority: true,
+                    position: true,
+                    createdById: true,
+                    createdByName: true,
+                    createdByAvatar: true,
+                    updatedById: true,
+                    updatedByName: true,
+                    updatedByAvatar: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    coverPublicId: true,
+                    coverUrl: true,
+                    coverFileType: true,
+                    coverFileSize: true,
+                    coverResourceType: true,
+                    coverFilename: true,
+                  },
+                },
+              },
             },
           },
         },
@@ -137,7 +180,8 @@ export class ProjectService {
 
     const specialBoards = await this.prisma.board.findMany({
       where: {
-        ownerId: project.ownerId,
+        ownerId: userId ?? project.ownerId,
+        projectId: null,
         type: { in: ['inbox', 'calendar'] },
       },
       select: {
@@ -147,7 +191,43 @@ export class ProjectService {
         position: true,
         columns: {
           orderBy: { position: 'asc' },
-          select: { id: true, title: true, position: true },
+          select: {
+            id: true,
+            boardId: true,
+            title: true,
+            position: true,
+            metadata: true,
+            createdAt: true,
+            updatedAt: true,
+            cards: {
+              orderBy: { position: 'asc' },
+              select: {
+                id: true,
+                projectId: true,
+                columnId: true,
+                title: true,
+                description: true,
+                status: true,
+                deadline: true,
+                priority: true,
+                position: true,
+                createdById: true,
+                createdByName: true,
+                createdByAvatar: true,
+                updatedById: true,
+                updatedByName: true,
+                updatedByAvatar: true,
+                createdAt: true,
+                updatedAt: true,
+                coverPublicId: true,
+                coverUrl: true,
+                coverFileType: true,
+                coverFileSize: true,
+                coverResourceType: true,
+                coverFilename: true,
+              },
+            },
+          },
         },
       },
     });
@@ -188,7 +268,7 @@ export class ProjectService {
         projectId: null,
         type: { in: DEFAULT_TYPES },
       },
-      select: { type: true },
+      select: { id: true, type: true },
     });
 
     const existing = new Set(existingBoards.map((b) => b.type));
@@ -199,6 +279,25 @@ export class ProjectService {
           ownerId,
           type,
           title: type.charAt(0).toUpperCase() + type.slice(1),
+        });
+      }
+    }
+
+    // Backfill dữ liệu cũ: board đã tồn tại nhưng chưa có cột mặc định.
+    for (const board of existingBoards) {
+      const hasAnyColumn = await this.prisma.column.findFirst({
+        where: { boardId: board.id },
+        select: { id: true },
+      });
+
+      if (!hasAnyColumn) {
+        await this.prisma.column.create({
+          data: {
+            boardId: board.id,
+            projectId: null,
+            title: board.type === 'inbox' ? 'Inbox' : 'Schedule',
+            position: 0,
+          },
         });
       }
     }

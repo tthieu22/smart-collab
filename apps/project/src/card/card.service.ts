@@ -320,7 +320,7 @@ export class CardService {
     cardId: string;
     destColumnId: string;
     destIndex: number;
-    projectId: string;
+    projectId?: string;
     correlationId?: string;
     movedById: string;
     srcColumnId?: string;
@@ -351,7 +351,7 @@ export class CardService {
       throw new Error('Card not found');
     }
 
-    if (card.projectId !== projectId) {
+    if (projectId && card.projectId !== projectId) {
       throw new Error('Card does not belong to this project');
     }
 
@@ -364,9 +364,9 @@ export class CardService {
       select: { id: true, projectId: true },
     });
 
-    // if (!destColumn || destColumn.projectId !== projectId) {
-    //   throw new Error('Destination column not found or not in project');
-    // }
+    if (!destColumn) {
+      throw new Error('Destination column not found');
+    }
 
     // 3. Bắt đầu transaction: cập nhật position + card
     const result = await this.prisma.$transaction(async (tx) => {
@@ -432,6 +432,7 @@ export class CardService {
           where: { id: cardId },
           data: {
             columnId: destColumnId,
+            projectId: destColumn.projectId ?? null,
             position: destIndex,
             updatedById: movedById,
           },
@@ -455,7 +456,7 @@ export class CardService {
       srcColumnId: isSameColumn ? destColumnId : currentColumnId,
       destColumnId,
       destIndex,
-      projectId,
+      projectId: result.projectId ?? null,
       correlationId,
     });
 
@@ -467,7 +468,7 @@ export class CardService {
     cardId: string;
     destColumnId: string;
     destIndex?: number;
-    projectId: string;
+    projectId?: string;
     correlationId?: string;
     copiedById: string;
     srcColumnId?: string;
@@ -498,8 +499,17 @@ export class CardService {
       throw new Error('Original card not found');
     }
 
-    if (originalCard.projectId !== projectId) {
+    if (projectId && originalCard.projectId !== projectId) {
       throw new Error('Card does not belong to this project');
+    }
+
+    const destColumn = await this.prisma.column.findUnique({
+      where: { id: destColumnId },
+      select: { id: true, projectId: true },
+    });
+
+    if (!destColumn) {
+      throw new Error('Destination column not found');
     }
 
     // 2. Tính position (nếu không có destIndex → chèn cuối)
@@ -517,7 +527,7 @@ export class CardService {
 
       return await tx.card.create({
         data: {
-          projectId: originalCard.projectId,
+          projectId: destColumn.projectId ?? null,
           columnId: destColumnId,
           title: `${originalCard.title} (Copy)`,
           description: originalCard.description,
@@ -543,7 +553,7 @@ export class CardService {
       srcColumnId,
       destColumnId,
       destIndex: finalPosition,
-      projectId,
+      projectId: newCard.projectId ?? null,
       correlationId,
     });
 

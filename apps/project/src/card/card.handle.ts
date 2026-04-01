@@ -81,7 +81,7 @@ export class CardHandler {
         projectId: payload.projectId,
         correlationId: payload.correlationId,
         ...payload.payload,
-        updatedById: payload.userId,
+        updatedById: payload.userId ?? payload.payload?.updatedById,
       };
       const result = await this.cardService.updateCard(mergedParams);
       this.logger.log(`Card updated successfully: ${JSON.stringify(result)}`);

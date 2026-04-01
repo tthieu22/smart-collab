@@ -10,7 +10,6 @@ import {
   Get,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Public } from '../auth/decorators/roles.decorator'; // import decorator Public
 import { Project } from './dto/project.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -53,8 +52,7 @@ export class ProjectController {
     return result;
   }
 
-  /** GET PROJECT - public route */
-  @Public()
+  /** GET PROJECT */
   @Post('get')
   async getProject(@Body() body: Project,  @Req() req: any) {
     this.logger.log(`Received get project request: ${JSON.stringify(body)}`);
@@ -70,8 +68,7 @@ export class ProjectController {
     return result;
   }
 
-  /** GET ALL PROJECTS - public route */
-  @Public()
+  /** GET ALL PROJECTS */
   @Post('get-all')
   async getAllProjects(@Body() body: { userId?: string }, @Req() req: any) {
     const userId = req.user?.userId;
@@ -86,8 +83,7 @@ export class ProjectController {
     return result;
   }
   
-  /** GET ALL PROJECTS - public route */
-  @Public()
+  /** GET CARD BY ID */
   @Get('card')
   async getCardById(@Body() body: { cardId?: string }, @Req() req: any) {
     const userId = req.user?.userId;

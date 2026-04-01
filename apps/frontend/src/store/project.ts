@@ -149,6 +149,20 @@ export const projectStore = create<ProjectState>((set, get) => ({
       }
     });
 
+    // Also hydrate cards nested in board.columns (personal boards often come this way).
+    project.boards?.forEach((b) => {
+      b.columns?.forEach((c) => {
+        (c.cards || []).forEach((card) => {
+          cards[card.id] = card;
+          const colId = card.columnId || c.id;
+          columnCards[colId] = columnCards[colId] || [];
+          if (!columnCards[colId].includes(card.id)) {
+            columnCards[colId].push(card.id);
+          }
+        });
+      });
+    });
+
     // Members, labels, views
     project.members?.forEach((m) => (members[m.id] = m));
     project.labels?.forEach((l) => (labels[l.id] = l));

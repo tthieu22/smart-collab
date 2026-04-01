@@ -19,6 +19,8 @@ export interface MoveCopyCardPayload {
   destColumnId?: string;
   destIndex?: number;
   userId?: string,
+  start?: string;
+  end?: string;
 }
 export interface DragContextType {
   activeId: UniqueIdentifier | null;
@@ -44,7 +46,7 @@ export interface ProjectMember {
 // ------------------ CARD ------------------
 export interface Card {
   id: string;
-  projectId: string;
+  projectId?: string | null;
   columnId?: string | null; // ← nullable, không bắt buộc
   title: string;
   description?: string | null;
@@ -149,7 +151,7 @@ export interface CardView {
 // ------------------ COLUMN ------------------
 export interface Column {
   id: string;
-  projectId: string;
+  projectId?: string | null;
   boardId?: string | null;
   title: string;
   position: number;

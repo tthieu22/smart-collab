@@ -3,6 +3,7 @@
 import { io, Socket } from 'socket.io-client';
 import { projectStore } from '@smart/store/project';
 import { useAuthStore } from '@smart/store/auth';
+import { useUserStore } from '@smart/store/user';
 import { MoveCopyCardPayload } from '@smart/types/project';
 
 type CorrelationCallback = (msg: any) => void;
@@ -13,6 +14,11 @@ interface QueueItem {
   reject: (reason?: any) => void;
   attempt: number;
 }
+
+type RealtimeScope = {
+  projectId?: string;
+  userId?: string;
+};
 
 export class ProjectSocketManager {
   private socket: Socket | null = null;
@@ -439,10 +445,14 @@ export class ProjectSocketManager {
   ) {
     if (!this.socket) this.initSocket();
     const correlationId = crypto.randomUUID();
+    const authUserId = useUserStore.getState().currentUser?.id;
+    const scopeProjectId = payload.projectId;
+    const scopeUserId = payload.userId ?? authUserId;
     const msg = {
       correlationId,
-      projectId: payload.projectId,
-      payload: { ...payload, projectId: undefined },
+      projectId: scopeProjectId,
+      userId: scopeUserId,
+      payload: { ...payload, projectId: undefined, userId: undefined },
     };
 
     if (correlationCallback) {
@@ -455,7 +465,7 @@ export class ProjectSocketManager {
 
   // Card
   createCard(
-    projectId: string,
+    projectId: string | undefined,
     columnId: string,
     title: string,
     cb?: (msg: any) => void
@@ -467,21 +477,21 @@ export class ProjectSocketManager {
     );
   }
   moveCard(
-    projectId: string,
+    scope: RealtimeScope,
     payload: MoveCopyCardPayload,
     cb?: (msg: any) => void
   ) {
-    return this.lockAwareAction('card.move', { projectId, payload }, cb);
+    return this.lockAwareAction('card.move', { projectId: scope.projectId, userId: scope.userId, payload }, cb);
   }
   copyCard(
-    projectId: string,
+    scope: RealtimeScope,
     payload: MoveCopyCardPayload,
     cb?: (msg: any) => void
   ) {
-    return this.lockAwareAction('card.copy', { projectId, payload }, cb);
+    return this.lockAwareAction('card.copy', { projectId: scope.projectId, userId: scope.userId, payload }, cb);
   }
   updateCard(
-    projectId: string,
+    projectId: string | undefined,
     cardId: string,
     action: string,
     data: any,
@@ -490,7 +500,7 @@ export class ProjectSocketManager {
   ) {
     return this.lockAwareAction(
       'card.update',
-      { projectId, payload: { cardId, action, data, updatedById } },
+      { projectId, userId: updatedById, payload: { cardId, action, data, updatedById } },
       cb
     );
   }

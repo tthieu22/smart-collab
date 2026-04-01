@@ -51,6 +51,18 @@ export class BoardService {
       },
     });
 
+    // Personal boards must always have a working column for drag-drop/calendar.
+    if (type === 'inbox' || type === 'calendar') {
+      await this.prisma.column.create({
+        data: {
+          boardId: board.id,
+          projectId: null,
+          title: type === 'inbox' ? 'Inbox' : 'Schedule',
+          position: 0,
+        },
+      });
+    }
+
     const fullBoard = await this.getBoardById(board.id);
 
     await this.amqpConnection.publish(
@@ -110,6 +122,16 @@ export class BoardService {
     type: 'board' | 'inbox' | 'calendar';
   }) {
     const { projectId, ownerId, type } = params;
+
+    if ((type === 'inbox' || type === 'calendar') && ownerId) {
+      const personalBoard = await this.prisma.board.findFirst({
+        where: { ownerId, type, projectId: null },
+      });
+
+      if (!personalBoard) {
+        await this.createBoard({ ownerId, type });
+      }
+    }
 
     const where =
       type === 'board'

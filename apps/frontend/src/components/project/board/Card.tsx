@@ -41,15 +41,15 @@ export const Card = React.memo(function Card({
 
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const style = useMemo(
-    () => ({
-      transform: CSS.Transform.toString(transform),
+  const style = useMemo(() => {
+    const transformStr = CSS.Transform.toString(transform) || '';
+    return {
+      transform: isOverlay 
+        ? `${transformStr} rotate(5deg)`.trim() 
+        : transformStr,
       transition: transition || undefined,
-      // Quan trọng: khi là overlay → không bị ảnh hưởng bởi layout gốc
-      ...(isOverlay && { transform: `${CSS.Transform.toString(transform)} rotate(5deg)` }),
-    }),
-    [transform, transition, isOverlay]
-  );
+    };
+  }, [transform, transition, isOverlay]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -73,6 +73,9 @@ export const Card = React.memo(function Card({
 
       <div
         ref={setNodeRef}
+        id={card.id}
+        data-card-id={card.id}
+        data-column-id={columnId}
         style={style}
         {...attributes}
         {...listeners}

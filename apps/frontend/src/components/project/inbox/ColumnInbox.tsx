@@ -172,6 +172,8 @@ export default function Column({
   return (
     <div
       ref={setRef}
+      id={column.id}
+      data-column-id={column.id}
       style={style}
       className="flex flex-col h-full min-h-0 flex-shrink-0"
     >
