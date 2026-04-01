@@ -1,0 +1,28 @@
+home-service
+│
+├── pom.xml
+│
+├── src/main/java/com/smartcollab/home
+│
+│   ├── HomeServiceApplication.java
+│
+│   ├── controller
+│   │   └── HomeController.java
+│
+│   ├── service
+│   │   └── HomeService.java
+│
+│   ├── consumer
+│   │   └── HomeConsumer.java
+│
+│   ├── repository
+│   │   └── HomeRepository.java
+│
+│   ├── entity
+│   │   └── Home.java
+│
+│   └── config
+│       └── RabbitMQConfig.java
+│
+└── src/main/resources
+    └── application.properties

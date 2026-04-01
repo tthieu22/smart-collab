@@ -14,9 +14,9 @@
     </parent>
 
     <groupId>com.smartcollab</groupId>
-    <artifactId>notification-service</artifactId>
+    <artifactId>home-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>notification-service</name>
+    <name>home-service</name>
     <description>SmartCollab Notification Service</description>
 
     <properties>

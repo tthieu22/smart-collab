@@ -1,12 +1,12 @@
-package com.smartcollab.notification;
+package com.smartcollab.home;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class NotificationServiceApplication {
+public class HomeServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(NotificationServiceApplication.class, args);
+        SpringApplication.run(HomeServiceApplication.class, args);
     }
 }
