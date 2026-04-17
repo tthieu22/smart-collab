@@ -40,7 +40,7 @@ export class AuthService {
 
   /** 🔐 Tạo Access Token */
   private signAccessToken(payload: JwtPayload) {
-    return this.jwt.sign(payload, { expiresIn: this.accessTokenTTL });
+    return this.jwt.sign(payload, { expiresIn: this.accessTokenTTL as any });
   }
 
   /** 🔑 Sinh Refresh Token mới */

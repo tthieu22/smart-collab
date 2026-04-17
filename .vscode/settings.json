@@ -4,5 +4,6 @@
       "mode": "auto"
     }
   ],
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "CodeGPT.apiKey": "OpenAI"
 }

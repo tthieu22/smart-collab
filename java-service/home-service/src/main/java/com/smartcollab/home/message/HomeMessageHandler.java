@@ -1,7 +1,6 @@
 package com.smartcollab.home.message;
 
 import com.smartcollab.home.config.RabbitMQConfig;
-import com.smartcollab.home.dto.FeedResponseDTO;
 import com.smartcollab.home.model.*;
 import com.smartcollab.home.repository.*;
 import com.smartcollab.home.service.FeedService;
@@ -10,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.List;
@@ -17,7 +17,14 @@ import java.util.List;
 @Component
 @Slf4j
 @RequiredArgsConstructor
+public class HomeMessageHandler {
+
+    private final FeedService feedService;
+    private final NotificationService notificationService;
+    private final PostRepository postRepository;
     private final FollowerRepository followerRepository;
+    private final ReactionRepository reactionRepository;
+    private final CommentRepository commentRepository;
 
     @RabbitListener(queues = RabbitMQConfig.REQUESTS_QUEUE)
     public Object handleMessage(Map<String, Object> message) {

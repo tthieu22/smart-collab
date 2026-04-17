@@ -21,7 +21,7 @@ import { OtcModule } from '../otc/otc.module';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET', 'your-secret'),
         signOptions: {
-          expiresIn: config.get<string>('JWT_EXPIRES_IN', '15000000m'),
+          expiresIn: config.get('JWT_EXPIRES_IN') as any, // 👈 FIX
         },
       }),
     }),

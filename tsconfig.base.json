@@ -13,7 +13,12 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@smartcollab/*": ["libs/*"],
+      "@smart-collab/shared": ["libs/shared/src"],
+      "@smart-collab/shared/*": ["libs/shared/src/*"],
+      "@smart-collab/events": ["libs/events/src"],
+      "@smart-collab/events/*": ["libs/events/src/*"],
+      "@smart-collab/mailer": ["libs/mailer/src"],
+      "@smart-collab/mailer/*": ["libs/mailer/src/*"]
     }
   },
   "exclude": ["node_modules", "dist"]

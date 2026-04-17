@@ -1,14 +1,31 @@
 {
   "name": "smart-collab",
+  "version": "1.0.0",
   "private": true,
+
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+
   "scripts": {
-    "dev:all": "pnpm -r --parallel run dev"
+    "dev:all": "pnpm -r --parallel run dev",
+    "build:all": "pnpm -r run build",
+
+    "prisma:generate:auth": "pnpm --filter auth exec prisma generate",
+    "prisma:generate:project": "pnpm --filter project exec prisma generate",
+
+    "prisma:migrate:project": "pnpm --filter project exec prisma migrate dev",
+    "prisma:push:auth": "pnpm --filter auth exec prisma db push"
   },
+
   "packageManager": "pnpm@9.0.0",
+
   "engines": {
     "node": ">=18",
     "pnpm": ">=9.0.0"
   },
+
   "devDependencies": {
     "@nestjs/cli": "^11.0.16"
   }

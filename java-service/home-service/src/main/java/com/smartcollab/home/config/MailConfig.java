@@ -1,5 +1,4 @@
-package com.smartcollab.notification.config;
-
+package com.smartcollab.home.config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.context.annotation.Bean;

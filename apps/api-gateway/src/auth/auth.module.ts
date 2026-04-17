@@ -18,10 +18,12 @@ import { GoogleStrategy } from './strategies/google.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('jwt.secret') || process.env.JWT_SECRET || 'your-secret-key',
-        signOptions: { expiresIn: configService.get<string>('jwt.expiresIn') || process.env.JWT_EXPIRES_IN || '15m' },
-      }),
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: config.get('JWT_EXPIRES') as any, // 👈 FIX
+        },
+      })
     }),
 
     PassportModule.register({ defaultStrategy: 'jwt' }),

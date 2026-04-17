@@ -3,24 +3,25 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          https://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+ 
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.5</version>
-        <relativePath/>
+        <groupId>com.smartcollab</groupId>
+        <artifactId>java-service</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>..</relativePath>
     </parent>
 
     <groupId>com.smartcollab</groupId>
     <artifactId>home-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>home-service</name>
-    <description>SmartCollab Notification Service</description>
+    <description>SmartCollab Home Service</description>
 
     <properties>
         <java.version>21</java.version>
+        <lombok.version>1.18.32</lombok.version>
     </properties>
 
     <dependencies>
@@ -37,7 +38,6 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
-
         <!-- REDIS -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -50,7 +50,6 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-
         <!-- MONGODB -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -61,37 +60,35 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.6.0</version>
         </dependency>
 
-        <!-- ACTUATOR (monitoring) -->
+        <!-- ACTUATOR -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- PROMETHEUS METRICS -->
+        <!-- PROMETHEUS -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-
         <!-- DOTENV -->
         <dependency>
             <groupId>me.paulschwarz</groupId>
             <artifactId>spring-dotenv</artifactId>
-            <version>4.0.0</version>
         </dependency>
 
-        <!-- LOMBOK -->
+        <!-- LOMBOK (FIX CHÍNH Ở ĐÂY) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
 
-        <!-- CONFIG METADATA (for IDE autocomplete) -->
+        <!-- CONFIG METADATA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
@@ -105,11 +102,13 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+
+        <!-- SWAGGER COMMON -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-common</artifactId>
-            <version>2.6.0</version>
         </dependency>
+
         <!-- TEST -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -122,22 +121,24 @@
     <build>
         <plugins>
 
-            <!-- JAVA COMPILER -->
+            <!-- ✅ CHỈ GIỮ 1 COMPILER PLUGIN -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
                 <configuration>
-                    <release>21</release>
+                    <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
 
-            <!-- SPRING BOOT RUN -->
+            <!-- SPRING BOOT -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

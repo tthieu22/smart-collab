@@ -8,10 +8,15 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
+public class FeedService {
+
     private final FollowerRepository followerRepository;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
+    private final ReactionRepository reactionRepository;
+    private final UserRepository userRepository;
 
     public FeedResponseDTO getFeed(String currentUserId) {
         List<String> followingIds = followerRepository.findAllByFollowerId(currentUserId)
