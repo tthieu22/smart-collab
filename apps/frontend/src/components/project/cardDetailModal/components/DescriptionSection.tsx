@@ -138,8 +138,7 @@ const DescriptionSection: React.FC<Props> = ({
           </div>
         }
         bordered={false}
-        bodyStyle={{ padding: 16 }}
-        headStyle={{ padding: '12px 16px' }}
+        styles={{ body: { padding: 16 }, header: { padding: '12px 16px' } }}
       >
         {isGenerating ? (
           <>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFeedStore } from '@smart/store/feed';
 import { Card } from '@smart/components/ui/card';
 import { Button } from '@smart/components/ui/button';
@@ -19,16 +19,44 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
   const author = useFeedStore((s) => post ? s.users[post.authorId] : null);
   const fetchPostDetails = useFeedStore((s) => s.fetchPostDetails);
   const fetchComments = useFeedStore((s) => s.fetchComments);
+  const refreshPostData = useFeedStore((s) => s.refreshPostData);
   const toggleReaction = useFeedStore((s) => s.toggleReaction);
   const sharePost = useFeedStore((s) => s.sharePost);
   const toggleBookmark = useFeedStore((s) => s.toggleBookmark);
+  const [mediaIndex, setMediaIndex] = useState(0);
+
+  const media = useMemo(() => post?.media || [], [post?.media]);
+  const currentMedia = media[mediaIndex];
 
   useEffect(() => {
     if (postId) {
       fetchPostDetails(postId);
       fetchComments(postId);
+      refreshPostData(postId);
     }
-  }, [postId, fetchPostDetails, fetchComments]);
+  }, [postId, fetchPostDetails, fetchComments, refreshPostData]);
+
+  useEffect(() => {
+    setMediaIndex(0);
+  }, [postId]);
+
+  useEffect(() => {
+    if (!postId) return;
+    const timer = setInterval(() => {
+      refreshPostData(postId);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [postId, refreshPostData]);
+
+  useEffect(() => {
+    if (!media.length) {
+      setMediaIndex(0);
+      return;
+    }
+    if (mediaIndex > media.length - 1) {
+      setMediaIndex(media.length - 1);
+    }
+  }, [media, mediaIndex]);
 
   if (!post) {
     return (
@@ -49,17 +77,38 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
       <div className="grid grid-cols-1 overflow-hidden rounded-2xl bg-white border border-gray-100 dark:bg-neutral-950 dark:border-neutral-800 md:grid-cols-5 lg:grid-cols-6 shadow-xl">
         {/* Media Block */}
         <div className="col-span-1 border-b border-gray-100 dark:border-neutral-800 md:col-span-3 lg:col-span-4 md:border-b-0 md:border-r bg-black flex items-center justify-center min-h-[400px]">
-          {post.media && post.media.length > 0 ? (
+          {media.length > 0 && currentMedia ? (
             <div className="relative w-full h-full flex items-center justify-center">
-              {post.media[0].type === 'image' ? (
+              {currentMedia.type === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={post.media[0].url}
-                  alt={post.media[0].alt || 'Post media'}
+                  src={currentMedia.url}
+                  alt={currentMedia.alt || 'Post media'}
                   className="max-h-full max-w-full object-contain"
                 />
               ) : (
-                <video src={post.media[0].url} controls className="max-h-full max-w-full" />
+                <video src={currentMedia.url} controls className="max-h-full max-w-full" />
+              )}
+              {media.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="absolute left-3 rounded-full bg-black/50 text-white px-3 py-1"
+                    onClick={() => setMediaIndex((prev) => (prev - 1 + media.length) % media.length)}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-3 rounded-full bg-black/50 text-white px-3 py-1"
+                    onClick={() => setMediaIndex((prev) => (prev + 1) % media.length)}
+                  >
+                    ›
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/50 text-white text-xs px-2 py-1">
+                    {mediaIndex + 1}/{media.length}
+                  </div>
+                </>
               )}
             </div>
           ) : (

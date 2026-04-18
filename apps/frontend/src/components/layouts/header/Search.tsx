@@ -108,7 +108,7 @@ export function Search({ placeholder = "Search" }) {
             marginTop: 4,
             zIndex: 1000,
           }}
-          bodyStyle={{ padding: 0 }}
+          styles={{ body: { padding: 0 } }}
         >
           <List
             dataSource={filtered}

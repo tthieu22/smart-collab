@@ -10,6 +10,16 @@ export interface UserNotification {
   createdAt: string;
 }
 
+const normalizeNotification = (n: any): UserNotification => ({
+  id: n.id,
+  senderId: n.senderId,
+  type: n.type,
+  postId: n.postId,
+  commentId: n.commentId,
+  isRead: Boolean(n.isRead ?? n.read ?? false),
+  createdAt: n.createdAt,
+});
+
 interface UserNotificationState {
   notifications: UserNotification[];
   unreadCount: number;
@@ -21,16 +31,20 @@ interface UserNotificationState {
 export const useUserNotificationStore = create<UserNotificationState>((set) => ({
   notifications: [],
   unreadCount: 0,
-  setNotifications: (notifications) => set({ 
-    notifications, 
-    unreadCount: notifications.filter(n => !n.isRead).length 
-  }),
+  setNotifications: (notifications) => {
+    const normalized = notifications.map(normalizeNotification);
+    set({
+      notifications: normalized,
+      unreadCount: normalized.filter(n => !n.isRead).length
+    });
+  },
   addNotification: (n) => set((state) => {
+    const normalized = normalizeNotification(n);
     // Avoid duplicates
-    if (state.notifications.some(existing => existing.id === n.id)) return state;
+    if (state.notifications.some(existing => existing.id === normalized.id)) return state;
     return { 
-      notifications: [n, ...state.notifications],
-      unreadCount: state.unreadCount + 1
+      notifications: [normalized, ...state.notifications],
+      unreadCount: normalized.isRead ? state.unreadCount : state.unreadCount + 1
     };
   }),
   markAsRead: (id) => set((state) => {

@@ -15,7 +15,7 @@ export default function GlobalPostDetailModal() {
       footer={null}
       width={1024}
       centered
-      destroyOnClose
+      destroyOnHidden
       styles={{
         body: { padding: 0 }
       }}

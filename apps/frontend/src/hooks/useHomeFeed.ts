@@ -7,9 +7,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { autoRequest } from '../services/auto.request';
 
 export function useHomeFeedBootstrap() {
-  const { isBootstrapped, bootstrap, setLoading, setError } = useFeedStore(
+  const { bootstrap, setLoading, setError } = useFeedStore(
     useShallow((s) => ({
-      isBootstrapped: s.isBootstrapped,
       bootstrap: s.bootstrap,
       setLoading: s.setLoading,
       setError: s.setError,
@@ -17,8 +16,6 @@ export function useHomeFeedBootstrap() {
   );
 
   useEffect(() => {
-    if (isBootstrapped) return;
-
     const fetchFeed = async () => {
       setLoading(true);
       try {
@@ -34,5 +31,5 @@ export function useHomeFeedBootstrap() {
     };
 
     fetchFeed();
-  }, [bootstrap, isBootstrapped, setLoading, setError]);
+  }, [bootstrap, setLoading, setError]);
 }

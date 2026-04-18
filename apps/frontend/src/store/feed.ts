@@ -69,6 +69,8 @@ interface FeedState {
   publishDraft: () => Promise<void>;
   fetchPostDetails: (postId: FeedID) => Promise<void>;
   fetchComments: (postId: FeedID) => Promise<void>;
+  refreshPostData: (postId: FeedID) => Promise<void>;
+  reloadFeed: () => Promise<void>;
 }
 
 export const useFeedStore = create<FeedState>((set, get) => ({
@@ -396,6 +398,66 @@ export const useFeedStore = create<FeedState>((set, get) => ({
           },
         };
       });
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
+
+  refreshPostData: async (postId) => {
+    try {
+      const data = await autoRequest<FeedDataset>('/home/feed', { method: 'GET' });
+      const targetPost = data.posts.find((p) => p.id === postId);
+      if (!targetPost) return;
+
+      const relatedComments = data.comments.filter((c) => c.postId === postId);
+
+      set((s) => {
+        const users = { ...s.users };
+        data.users.forEach((u) => {
+          users[u.id] = u;
+        });
+
+        const comments = { ...s.comments };
+        const commentIds: FeedID[] = [];
+        relatedComments.forEach((c) => {
+          comments[c.id] = { ...c, likedByMe: Boolean(c.likedByMe) };
+          commentIds.push(c.id);
+        });
+
+        commentIds.sort((a, b) => {
+          const ca = comments[a];
+          const cb = comments[b];
+          return new Date(ca?.createdAt || 0).getTime() - new Date(cb?.createdAt || 0).getTime();
+        });
+
+        return {
+          users,
+          posts: {
+            ...s.posts,
+            [targetPost.id]: {
+              ...targetPost,
+              reactionSummary: { ...emptyReactions, ...(targetPost.reactionSummary || {}) },
+              media: targetPost.media || [],
+              myReaction: targetPost.myReaction ?? null,
+              bookmarkedByMe: Boolean(targetPost.bookmarkedByMe),
+            },
+          },
+          comments,
+          commentsByPostId: {
+            ...s.commentsByPostId,
+            [postId]: commentIds,
+          },
+        };
+      });
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
+
+  reloadFeed: async () => {
+    try {
+      const data = await autoRequest<FeedDataset>('/home/feed', { method: 'GET' });
+      get().bootstrap(data);
     } catch (err: any) {
       set({ error: err.message });
     }

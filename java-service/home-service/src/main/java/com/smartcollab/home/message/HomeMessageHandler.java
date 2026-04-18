@@ -25,6 +25,7 @@ public class HomeMessageHandler {
     private final FollowerRepository followerRepository;
     private final ReactionRepository reactionRepository;
     private final CommentRepository commentRepository;
+    private final NotificationRepository notificationRepository;
 
     @RabbitListener(queues = RabbitMQConfig.REQUESTS_QUEUE)
     public Object handleMessage(Map<String, Object> message) {
@@ -110,6 +111,19 @@ public class HomeMessageHandler {
                     Comment savedComment = commentRepository.save(comment);
                     notificationService.createNotification(po.getAuthorId(), userId, "COMMENT", pid, savedComment.getId());
                     return savedComment;
+
+                case "home.notification.list":
+                    return notificationRepository.findAllByRecipientIdOrderByCreatedAtDesc(userId);
+
+                case "home.notification.read":
+                    String notificationId = (String) payload.get("notificationId");
+                    Notification notification = notificationRepository.findByIdAndRecipientId(notificationId, userId).orElse(null);
+                    if (notification == null) {
+                        return Map.of("success", false, "message", "Notification not found");
+                    }
+                    notification.setRead(true);
+                    notificationRepository.save(notification);
+                    return Map.of("success", true, "id", notification.getId());
 
                 default:
                     log.warn("Unknown command: {}", cmd);

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req, UseGuards, Param, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Req, UseGuards, Param, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { firstValueFrom } from 'rxjs';
@@ -66,6 +66,27 @@ export class HomeController {
       this.homeClient.send({ cmd: 'home.user.unfollow' }, { 
         userId: req.user.userId,
         payload: { targetId } 
+      })
+    );
+  }
+
+  @Get('notifications')
+  @UseGuards(JwtAuthGuard)
+  async getNotifications(@Req() req: any) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.notification.list' }, {
+        userId: req.user.userId,
+      })
+    );
+  }
+
+  @Patch('notifications/:id/read')
+  @UseGuards(JwtAuthGuard)
+  async markNotificationRead(@Param('id') notificationId: string, @Req() req: any) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.notification.read' }, {
+        userId: req.user.userId,
+        payload: { notificationId },
       })
     );
   }
