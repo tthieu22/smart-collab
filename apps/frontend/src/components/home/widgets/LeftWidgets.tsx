@@ -45,6 +45,7 @@ export default function LeftWidgets() {
 
   const isHome = pathname === '/';
   const isProjects = pathname === '/projects' || pathname.startsWith('/projects/');
+  const isNews = pathname === '/news' || pathname.startsWith('/news/');
 
   return (
     <>
@@ -72,6 +73,12 @@ export default function LeftWidgets() {
             label="Dự án"
             sub="Boards / Inbox / Calendar"
             active={isProjects}
+          />
+          <Item
+            href="/news"
+            label="Tin tức"
+            sub="Bản tin AI & mẹo"
+            active={isNews}
           />
         </div>
       </Card>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   HomeOutlined,
   ProjectOutlined,
+  ReadOutlined,
 } from "@ant-design/icons";
 
 export function Navbar() {
@@ -16,6 +17,11 @@ export function Navbar() {
       key: "/projects",
       icon: <ProjectOutlined style={{ fontSize: 20 }} />,
       label: "Projects",
+    },
+    {
+      key: "/news",
+      icon: <ReadOutlined style={{ fontSize: 20 }} />,
+      label: "Tin tức",
     },
   ];
 

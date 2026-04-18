@@ -25,6 +25,7 @@ model User {
 
   refreshTokens                RefreshToken[]
   posts                        Post[]
+  newsArticles                 NewsArticle[]
   comments                     Comment[]
   reactions                    Reaction[]
   followers                    Follower[] @relation("Followers")
@@ -69,6 +70,20 @@ model Post {
   author    User     @relation(fields: [authorId], references: [id])
   comments  Comment[]
   reactions Reaction[]
+}
+
+/// Tin tức / bài AI — tách bộ sưu tập khỏi Post (bảng tin xã hội).
+model NewsArticle {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  authorId  String   @db.ObjectId
+  category  String   @default("NEWS") // NEWS | TIP
+  content   String
+  linkUrl   String?
+  media     Json?    @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation(fields: [authorId], references: [id])
 }
 
 model Comment {

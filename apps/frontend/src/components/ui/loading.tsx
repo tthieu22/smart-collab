@@ -18,10 +18,10 @@ export function Loading({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/75 dark:bg-neutral-950/75">
         <div className="text-center">
           <Spin indicator={antIcon} size={size} />
-          {text && <p className="mt-2 text-gray-600">{text}</p>}
+          {text && <p className="mt-2 text-gray-600 dark:text-gray-300">{text}</p>}
         </div>
       </div>
     );
@@ -31,7 +31,7 @@ export function Loading({
     <div className="flex items-center justify-center p-4">
       <div className="text-center">
         <Spin indicator={antIcon} size={size} />
-        {text && <p className="mt-2 text-gray-600">{text}</p>}
+        {text && <p className="mt-2 text-gray-600 dark:text-gray-300">{text}</p>}
       </div>
     </div>
   );

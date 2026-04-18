@@ -6,6 +6,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
+  RobotOutlined,
 } from "@ant-design/icons";
 import { useState, useCallback } from "react";
 import { useUserStore } from "@smart/store/user";
@@ -15,6 +16,7 @@ export function AvatarMenu() {
   const [open, setOpen] = useState(false);
 
   const { currentUser, clearUserStore } = useUserStore();
+  const isUserAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
 
   // helper: first close dropdown, then navigate on next tick
   const navigateLater = useCallback((path: string) => {
@@ -43,6 +45,26 @@ export function AvatarMenu() {
       navigateLater("/login");
     }
   }, [clearUserStore, navigateLater]);
+
+  const adminAiPostItems = isUserAdmin
+    ? [
+        {
+          key: "ai-auto-post",
+          label: (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateLater("/admin/ai-auto-post");
+              }}
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
+              <RobotOutlined />
+              <span>AI Auto Post</span>
+            </div>
+          ),
+        },
+      ]
+    : [];
 
   const items = [
     {
@@ -102,6 +124,7 @@ export function AvatarMenu() {
         </div>
       ),
     },
+    ...adminAiPostItems,
     {
       key: "logout",
       label: (

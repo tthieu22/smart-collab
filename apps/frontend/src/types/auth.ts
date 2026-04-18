@@ -1,7 +1,9 @@
+export type UserRole = 'ADMIN' | 'USER' | string;
+
 export interface User {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;

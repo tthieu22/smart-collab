@@ -4,6 +4,7 @@ import { HomeController } from './home.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule } from '@nestjs/microservices';
 import { getRabbitMQOptions } from '../config/rabbitmq.config';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -18,5 +19,6 @@ import { getRabbitMQOptions } from '../config/rabbitmq.config';
     ]),
   ],
   controllers: [HomeController],
+  providers: [RolesGuard],
 })
 export class HomeModule {}

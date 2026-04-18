@@ -5,14 +5,17 @@ import com.smartcollab.home.model.*;
 import com.smartcollab.home.repository.*;
 import com.smartcollab.home.service.FeedService;
 import com.smartcollab.home.service.NotificationService;
+import com.smartcollab.home.service.AutoPostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Slf4j
@@ -21,7 +24,9 @@ public class HomeMessageHandler {
 
     private final FeedService feedService;
     private final NotificationService notificationService;
+    private final AutoPostService autoPostService;
     private final PostRepository postRepository;
+    private final NewsArticleRepository newsArticleRepository;
     private final FollowerRepository followerRepository;
     private final ReactionRepository reactionRepository;
     private final CommentRepository commentRepository;
@@ -125,6 +130,77 @@ public class HomeMessageHandler {
                     notificationRepository.save(notification);
                     return Map.of("success", true, "id", notification.getId());
 
+                case "home.autopost.settings.get":
+                    return autoPostService.getSettings();
+
+                case "home.autopost.settings.update":
+                    return autoPostService.updateSettings(payload);
+
+                case "home.autopost.run-now":
+                    String topic = payload != null && payload.get("topic") != null
+                            ? String.valueOf(payload.get("topic"))
+                            : "tin tuc he thong";
+                    return autoPostService.runNow("MANUAL_ADMIN", topic, null);
+
+                case "home.news.list":
+                    return listNewsArticlesFiltered(payload);
+
+                case "home.news.get": {
+                    if (payload == null || payload.get("id") == null) {
+                        return Map.of("success", false, "message", "id required");
+                    }
+                    String getId = String.valueOf(payload.get("id")).trim();
+                    if (getId.isEmpty()) {
+                        return Map.of("success", false, "message", "id required");
+                    }
+                    Optional<NewsArticle> found = newsArticleRepository.findById(getId);
+                    if (found.isPresent()) {
+                        return found.get();
+                    }
+                    return Map.of("success", false, "message", "Not found");
+                }
+
+                case "home.news.create":
+                    NewsArticle newsPost = new NewsArticle();
+                    newsPost.setAuthorId(userId);
+                    newsPost.setCategory(normalizeNewsCategory(payload != null ? payload.get("category") : null));
+                    newsPost.setContent((String) payload.get("content"));
+                    newsPost.setLinkUrl(extractLinkUrl(payload));
+                    newsPost.setMedia(safeMediaList(payload != null ? payload.get("media") : null));
+                    newsPost.setCreatedAt(LocalDateTime.now());
+                    newsPost.setUpdatedAt(LocalDateTime.now());
+                    return newsArticleRepository.save(newsPost);
+
+                case "home.news.update":
+                    String newsId = (String) payload.get("id");
+                    NewsArticle existingPost = newsArticleRepository.findById(newsId).orElse(null);
+                    if (existingPost == null) {
+                        return Map.of("success", false, "message", "Post not found");
+                    }
+                    if (payload.get("content") != null) {
+                        existingPost.setContent((String) payload.get("content"));
+                    }
+                    if (payload.containsKey("category") && payload.get("category") != null) {
+                        existingPost.setCategory(normalizeNewsCategory(payload.get("category")));
+                    }
+                    if (payload.containsKey("linkUrl")) {
+                        existingPost.setLinkUrl(extractLinkUrl(payload));
+                    }
+                    if (payload.containsKey("media")) {
+                        existingPost.setMedia(safeMediaList(payload.get("media")));
+                    }
+                    existingPost.setUpdatedAt(LocalDateTime.now());
+                    return newsArticleRepository.save(existingPost);
+
+                case "home.news.delete":
+                    String deleteId = (String) payload.get("id");
+                    NewsArticle deletingPost = newsArticleRepository.findById(deleteId).orElse(null);
+                    if (deletingPost == null) {
+                        return Map.of("success", false, "message", "Post not found");
+                    }
+                    newsArticleRepository.delete(deletingPost);
+                    return Map.of("success", true, "id", deleteId);
+
                 default:
                     log.warn("Unknown command: {}", cmd);
                     return Map.of("error", "Unknown command");
@@ -133,5 +209,73 @@ public class HomeMessageHandler {
             log.error("Error processing message", e);
             return Map.of("error", e.getMessage());
         }
+    }
+
+    private List<NewsArticle> listNewsArticlesFiltered(Map<String, Object> payload) {
+        List<NewsArticle> all = newsArticleRepository.findAllByOrderByCreatedAtDesc();
+        if (payload == null || !payload.containsKey("category") || payload.get("category") == null) {
+            return all;
+        }
+        String cat = String.valueOf(payload.get("category")).trim();
+        if (cat.isEmpty()) {
+            return all;
+        }
+        if ("NEWS".equalsIgnoreCase(cat)) {
+            return all.stream()
+                    .filter(a -> {
+                        String c = a.getCategory();
+                        return c == null || c.isBlank() || "NEWS".equalsIgnoreCase(c);
+                    })
+                    .toList();
+        }
+        final String f = cat;
+        return all.stream()
+                .filter(a -> f.equalsIgnoreCase(a.getCategory()))
+                .toList();
+    }
+
+    private static String normalizeNewsCategory(Object raw) {
+        if (raw == null) {
+            return "NEWS";
+        }
+        String s = String.valueOf(raw).trim().toUpperCase();
+        if ("TIP".equals(s)) {
+            return "TIP";
+        }
+        return "NEWS";
+    }
+
+    private static String extractLinkUrl(Map<String, Object> payload) {
+        if (payload == null || !payload.containsKey("linkUrl")) {
+            return null;
+        }
+        Object v = payload.get("linkUrl");
+        if (v == null) {
+            return null;
+        }
+        String s = String.valueOf(v).trim();
+        return s.isEmpty() ? null : s;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> safeMediaList(Object raw) {
+        if (raw == null) {
+            return new ArrayList<>();
+        }
+        if (raw instanceof List<?> list) {
+            List<Map<String, Object>> out = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> m) {
+                    out.add((Map<String, Object>) m);
+                }
+            }
+            return out;
+        }
+        return new ArrayList<>();
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.AI_EVENTS_QUEUE)
+    public void handleAiProjectEvents(Map<String, Object> event) {
+        autoPostService.onAiProjectBuilt(event);
     }
 }

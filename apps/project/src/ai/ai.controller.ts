@@ -36,4 +36,10 @@ export class AiController {
     this.logger.log('[ai.generate-card]');
     return this.aiService.generateCard(payload);
   }
+
+  @MessagePattern({ cmd: 'ai.generate-news-post' })
+  async generateNewsPost(@Payload() payload: any) {
+    this.logger.log('[ai.generate-news-post]');
+    return this.aiService.generateNewsPost(payload);
+  }
 }

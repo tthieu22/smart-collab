@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { Card } from '@smart/components/ui/card';
 import { useFeedStore } from '@smart/store/feed';
+import { NewsPromoSideCard } from '@smart/components/news/NewsPromoSideCard';
+import { TipsGuideSideCard } from '@smart/components/news/TipsGuideSideCard';
 
 export default function RightWidgets() {
   const postIds = useFeedStore((s) => s.postIds);
@@ -32,21 +34,34 @@ export default function RightWidgets() {
 
   return (
     <>
-      <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800">
+      <Card
+        padding="small"
+        className="dark:bg-neutral-950 dark:border-neutral-800"
+      >
         <div className="text-sm font-semibold mb-2">Gợi ý theo dõi</div>
         <div className="space-y-3">
           {topAuthors.length ? (
             topAuthors.map((u) => (
-              <Link href={`/profile/${u.id}`} key={u.id} className="flex items-center gap-3 rounded-lg p-1 hover:bg-gray-50 dark:hover:bg-neutral-900">
+              <Link
+                href={`/profile/${u.id}`}
+                key={u.id}
+                className="flex items-center gap-3 rounded-lg p-1 hover:bg-gray-50 dark:hover:bg-neutral-900"
+              >
                 <div className="h-9 w-9 overflow-hidden rounded-full bg-gray-200 dark:bg-neutral-800">
                   {u.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={u.avatarUrl} alt={u.name} className="h-full w-full object-cover" />
+                    <img
+                      src={u.avatarUrl}
+                      alt={u.name}
+                      className="h-full w-full object-cover"
+                    />
                   ) : null}
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">{u.name}</div>
-                  <div className="text-xs text-gray-500 truncate">@{u.username}</div>
+                  <div className="text-xs text-gray-500 truncate">
+                    @{u.username}
+                  </div>
                 </div>
               </Link>
             ))
@@ -56,14 +71,9 @@ export default function RightWidgets() {
         </div>
       </Card>
 
-      <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800">
-        <div className="text-sm font-semibold mb-2">Tips</div>
-        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
-          <div>- Like/Comment/Share đang chạy local bằng Zustand.</div>
-          <div>- Thay JSON bằng API: chỉ cần gọi `bootstrap()` với dataset từ backend.</div>
-        </div>
-      </Card>
+      <NewsPromoSideCard />
+
+      <TipsGuideSideCard />
     </>
   );
 }
-

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Req, UseGuards, Param, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Req, UseGuards, Param, Inject, Query } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { firstValueFrom } from 'rxjs';
@@ -88,6 +88,95 @@ export class HomeController {
         userId: req.user.userId,
         payload: { notificationId },
       })
+    );
+  }
+
+  @Get('admin/auto-post/settings')
+  @UseGuards(JwtAuthGuard)
+  async getAutoPostSettings() {
+    return firstValueFrom(this.homeClient.send({ cmd: 'home.autopost.settings.get' }, {}));
+  }
+
+  @Patch('admin/auto-post/settings')
+  @UseGuards(JwtAuthGuard)
+  async updateAutoPostSettings(@Body() body: any) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.autopost.settings.update' }, { payload: body }),
+    );
+  }
+
+  @Post('admin/auto-post/run-now')
+  @UseGuards(JwtAuthGuard)
+  async runAutoPostNow(@Body() body: { topic?: string }) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.autopost.run-now' }, { payload: body ?? {} }),
+    );
+  }
+
+  @Get('admin/news')
+  @UseGuards(JwtAuthGuard)
+  async listNewsAdmin(@Query('category') category?: string) {
+    const payload =
+      category != null && String(category).trim() !== ''
+        ? { category: String(category).trim().toUpperCase() }
+        : {};
+    return firstValueFrom(this.homeClient.send({ cmd: 'home.news.list' }, { payload }));
+  }
+
+  @Get('news/:id')
+  @UseGuards(JwtAuthGuard)
+  async getNewsArticle(@Param('id') id: string) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.news.get' }, { payload: { id } }),
+    );
+  }
+
+  @Get('news')
+  @UseGuards(JwtAuthGuard)
+  async listNewsForUser(@Query('category') category?: string) {
+    const cat = (category?.trim() || 'NEWS').toUpperCase();
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.news.list' }, { payload: { category: cat } }),
+    );
+  }
+
+  @Post('admin/news')
+  @UseGuards(JwtAuthGuard)
+  async createNews(
+    @Body() body: { content: string; media?: any[]; category?: string; linkUrl?: string | null },
+    @Req() req: any,
+  ) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.news.create' }, {
+        userId: req.user.userId,
+        payload: body,
+      }),
+    );
+  }
+
+  @Patch('admin/news/:id')
+  @UseGuards(JwtAuthGuard)
+  async updateNews(
+    @Param('id') id: string,
+    @Body() body: { content?: string; category?: string; linkUrl?: string | null; media?: any[] },
+    @Req() req: any,
+  ) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.news.update' }, {
+        userId: req.user.userId,
+        payload: { id, ...body },
+      }),
+    );
+  }
+
+  @Post('admin/news/:id/delete')
+  @UseGuards(JwtAuthGuard)
+  async deleteNews(@Param('id') id: string, @Req() req: any) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.news.delete' }, {
+        userId: req.user.userId,
+        payload: { id },
+      }),
     );
   }
 }

@@ -23,9 +23,10 @@ interface UserState {
   setInitialized: (initialized: boolean) => void;
   setUserInitialized: (initialized: boolean) => void;
   clearUserStore: () => void;
+  isAdmin: () => boolean;
 }
 
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set, get) => ({
   currentUser: null,
   allUsers: [],
   isLoading: false,
@@ -63,4 +64,5 @@ export const useUserStore = create<UserState>((set) => ({
       isInitialized: false,
       isUserInitialized: false, // ✅ reset
     }),
+  isAdmin: () => String(get().currentUser?.role || '').toUpperCase() === 'ADMIN',
 }));

@@ -227,4 +227,23 @@ Rules:
 - ONLY JSON
 `;
   }
+
+  generateNewsPost(template: string, context: Record<string, unknown>, locale = 'vi') {
+    return `
+You are a social news writer for SmartCollab.
+
+Template:
+${template}
+
+Context:
+${JSON.stringify(context, null, 2)}
+
+Write a short feed post in language ${locale}. Keep it practical and concise.
+
+Return ONLY valid JSON:
+{
+  "content": "Final post content"
+}
+`;
+  }
 }

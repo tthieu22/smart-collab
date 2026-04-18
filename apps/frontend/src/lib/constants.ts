@@ -7,6 +7,7 @@ export const ROUTES = {
   PROFILE: '/auth/profile',
   SETTINGS: '/auth/settings',
   GOOGLE_CALLBACK: '/auth/google/callback',
+  ADMIN_AI_AUTO_POST: '/admin/ai-auto-post',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -55,6 +56,10 @@ export const API_ENDPOINTS = {
         PUT: '/projects/card',
       }
     }
+  },
+  HOME: {
+    ADMIN_AUTO_POST_SETTINGS: '/home/admin/auto-post/settings',
+    ADMIN_AUTO_POST_RUN_NOW: '/home/admin/auto-post/run-now',
   },
 } as const;
 

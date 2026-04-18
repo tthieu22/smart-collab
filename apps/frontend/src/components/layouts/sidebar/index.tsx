@@ -1,5 +1,6 @@
-import Link from 'next/link';
+'use client';
 
+import Link from 'next/link';
 export default function Sidebar() {
   return (
     <aside className="w-full">
@@ -13,6 +14,12 @@ export default function Sidebar() {
         </Link>
         <Link href="/projects" className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
           Dự án
+        </Link>
+        <Link href="/news" className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
+          Tin tuc
+        </Link>
+        <Link href="/admin/ai-auto-post" className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
+          AI Auto Post (test)
         </Link>
       </nav>
     </aside>

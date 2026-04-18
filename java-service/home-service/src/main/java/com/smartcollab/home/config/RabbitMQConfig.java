@@ -22,6 +22,8 @@ public class RabbitMQConfig {
     public static final String REQUESTS_QUEUE = "home_requests_queue";
     public static final String EXCHANGE = "notification_exchange";
     public static final String ROUTING_KEY = "notification_routing_key";
+    public static final String PROJECT_EVENTS_EXCHANGE = "project-exchange";
+    public static final String AI_EVENTS_QUEUE = "home_ai_events_queue";
 
     @Bean
     public Queue queue() {
@@ -41,5 +43,20 @@ public class RabbitMQConfig {
     @Bean
     public Binding binding(Queue queue, TopicExchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue aiEventsQueue() {
+        return new Queue(AI_EVENTS_QUEUE);
+    }
+
+    @Bean
+    public TopicExchange projectEventsExchange() {
+        return new TopicExchange(PROJECT_EVENTS_EXCHANGE);
+    }
+
+    @Bean
+    public Binding aiProjectBuiltBinding(Queue aiEventsQueue, TopicExchange projectEventsExchange) {
+        return BindingBuilder.bind(aiEventsQueue).to(projectEventsExchange).with("ai.project.built");
     }
 }

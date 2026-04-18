@@ -60,7 +60,11 @@ export class AiService {
     return res?.data ?? res;
   }
 
-  private async createColumn(projectId: string, boardId: string, title: string) {
+  private async createColumn(
+    projectId: string,
+    boardId: string,
+    title: string,
+  ) {
     const res = await this.rpc('project.column.create', {
       projectId,
       payload: { boardId, title },
@@ -83,13 +87,11 @@ export class AiService {
     return this.domainService.analyze(payload.prompt, payload.locale ?? 'vi');
   }
 
-  async buildProject(
-    payload: {
-      prompt: string;
-      ownerId: string;
-      locale?: string;
-    },
-  ): Promise<BuildProjectOutput> {
+  async buildProject(payload: {
+    prompt: string;
+    ownerId: string;
+    locale?: string;
+  }): Promise<BuildProjectOutput> {
     this.logger.log('AI BUILD PROJECT START');
     const locale = payload?.locale ?? 'vi';
 
@@ -136,8 +138,12 @@ export class AiService {
 
     this.events.boardReady(project, boards[0]);
 
-    this.generateBackground(project, boards, domain, payload.locale ?? 'vi')
-      .catch(err => this.logger.error('Background generation failed', err));
+    this.generateBackground(
+      project,
+      boards,
+      domain,
+      payload.locale ?? 'vi',
+    ).catch((err) => this.logger.error('Background generation failed', err));
 
     return {
       status: 'BOARD_READY',
@@ -164,10 +170,12 @@ export class AiService {
     }
 
     let prompt = '';
-    if (payload.type === 'title') prompt = this.promptFactory.generateCardTitle(card, locale);
+    if (payload.type === 'title')
+      prompt = this.promptFactory.generateCardTitle(card, locale);
     if (payload.type === 'description')
       prompt = this.promptFactory.generateCardDescription(card, locale);
-    if (payload.type === 'comment') prompt = this.promptFactory.generateCardComment(card, locale);
+    if (payload.type === 'comment')
+      prompt = this.promptFactory.generateCardComment(card, locale);
 
     const aiRes = await this.llm.complete(prompt);
 
@@ -223,6 +231,46 @@ export class AiService {
     return { success: true, type: payload.type, content };
   }
 
+  async generateNewsPost(payload: {
+    template: string;
+    context?: Record<string, unknown>;
+    locale?: string;
+  }) {
+    const locale = payload?.locale ?? 'vi';
+    const template =
+      payload?.template?.trim() ||
+      'Viet mot ban tin ngan gon ve chu de {{topic}}';
+    const prompt = this.promptFactory.generateNewsPost(
+      template,
+      payload?.context ?? {},
+      locale,
+    );
+    const aiRes = await this.llm.complete(prompt);
+    console.log('aiRes', aiRes);
+    let content = '';
+    try {
+      const parsed = JSON.parse(aiRes.content);
+      content = String(parsed?.content ?? '').trim();
+    } catch {
+      content = String(aiRes.content ?? '').trim();
+    }
+
+    const looksLikeTemplate =
+      !content || content === template || /\{\{\s*topic\s*\}\}/i.test(content);
+
+    if (looksLikeTemplate) {
+      return {
+        success: false,
+        message: 'LLM did not return usable news body (empty or template-like)',
+      };
+    }
+
+    return {
+      success: true,
+      content,
+    };
+  }
+
   private async generateBackground(
     project: any,
     boards: AiBoard[],
@@ -232,7 +280,6 @@ export class AiService {
     this.logger.log('Background AI generation started');
 
     for (const board of boards) {
-
       /* GENERATE COLUMNS */
 
       const columnPrompt = this.promptFactory.generateColumns(
@@ -252,8 +299,8 @@ export class AiService {
         this.logger.error('Parse columns JSON failed');
       }
 
-      let columnTitles = (columnsData.columns || []).map((c: any, idx: number) =>
-        String(c.title || `Cột ${idx + 1}`).trim(),
+      let columnTitles = (columnsData.columns || []).map(
+        (c: any, idx: number) => String(c.title || `Cột ${idx + 1}`).trim(),
       );
 
       if (columnTitles.length === 0) {
@@ -271,7 +318,6 @@ export class AiService {
             this.logger.debug(`Column created: ${JSON.stringify(column)}`);
             createdColumns.push(column);
           }
-
         } catch (err) {
           this.logger.error(`Create column failed: ${title}`, err);
         }
@@ -280,7 +326,6 @@ export class AiService {
       /* GENERATE CARDS */
 
       for (const column of createdColumns) {
-
         const cardPrompt = this.promptFactory.generateCards(
           board,
           column,
@@ -303,9 +348,7 @@ export class AiService {
         );
 
         for (const title of cardTitles) {
-
           try {
-
             const card = await this.createCard(project.id, column.id, title);
 
             // if (!card) continue;
@@ -352,7 +395,6 @@ export class AiService {
             //   componentType: 'board',
             //   ...viewData,
             // });
-
           } catch (err) {
             this.logger.error(
               `Card generation failed in column ${column.title}`,
