@@ -6,15 +6,14 @@ import { useShallow } from 'zustand/react/shallow';
 import { Button } from '@smart/components/ui/button';
 import { Heart } from 'lucide-react';
 
+const EMPTY_ARRAY: string[] = [];
+
 export default function CommentList({ postId }: { postId: string }) {
-  const { commentIds, comments, users, toggleCommentLike } = useFeedStore(
-    useShallow((s) => ({
-      commentIds: s.commentsByPostId[postId] || [],
-      comments: s.comments,
-      users: s.users,
-      toggleCommentLike: s.toggleCommentLike,
-    }))
-  );
+  // Separate selectors to avoid creating a new object on each render (prevents getSnapshot warning)
+  const commentIds = useFeedStore((s) => s.commentsByPostId[postId] || EMPTY_ARRAY);
+  const comments = useFeedStore((s) => s.comments);
+  const users = useFeedStore((s) => s.users);
+  const toggleCommentLike = useFeedStore((s) => s.toggleCommentLike);
 
   const items = useMemo(
     () =>

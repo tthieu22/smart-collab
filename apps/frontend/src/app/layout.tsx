@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes';
 import { AntdRegistry } from '@smart/providers/AntdRegistry';
 import { NotificationProvider } from '@smart/providers/NotificationProvider';
 import { AuthProvider } from '@smart/providers/AuthProvider';
+import GlobalPostDetailModal from '@smart/components/home/feed/GlobalPostDetailModal';
 
 export const metadata: Metadata = {
   title: 'Smart Collab',
@@ -25,7 +26,10 @@ export default function RootLayout({
         >
           <AntdRegistry>
             <NotificationProvider>
-              <AuthProvider>{children}</AuthProvider>
+              <AuthProvider>
+                {children}
+                <GlobalPostDetailModal />
+              </AuthProvider>
             </NotificationProvider>
           </AntdRegistry>
         </ThemeProvider>

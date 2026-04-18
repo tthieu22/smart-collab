@@ -325,7 +325,7 @@ export default function CreateBoardButton() {
         cancelText="Cancel"
         okButtonProps={{ disabled: aiLoading }}
         cancelButtonProps={{ disabled: aiLoading }}
-        destroyOnClose
+        destroyOnHidden
       >
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           <Steps

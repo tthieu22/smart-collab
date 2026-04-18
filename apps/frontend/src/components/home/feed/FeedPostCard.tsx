@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card } from '@smart/components/ui/card';
 import { Button } from '@smart/components/ui/button';
@@ -34,17 +34,22 @@ function reactionTotal(p: FeedPost) {
 }
 
 export default function FeedPostCard({ postId }: { postId: string }) {
-  const { post, author, toggleReaction, sharePost, toggleBookmark } = useFeedStore(
-    useShallow((s) => ({
-      post: s.posts[postId],
-      author: s.posts[postId] ? s.users[s.posts[postId].authorId] : null,
-      toggleReaction: s.toggleReaction,
-      sharePost: s.sharePost,
-      toggleBookmark: s.toggleBookmark,
-    }))
-  );
+  // Separate selectors to avoid creating a new object on each render
+  const post = useFeedStore((s) => s.posts[postId]);
+  const author = useFeedStore((s) => post ? s.users[post.authorId] : null);
+  const toggleReaction = useFeedStore((s) => s.toggleReaction);
+  const sharePost = useFeedStore((s) => s.sharePost);
+  const toggleBookmark = useFeedStore((s) => s.toggleBookmark);
+  const fetchComments = useFeedStore((s) => s.fetchComments);
+  const setActivePostId = useFeedStore((s) => s.setActivePostId);
 
   const [openComments, setOpenComments] = useState(false);
+
+  useEffect(() => {
+    if (openComments) {
+      fetchComments(postId);
+    }
+  }, [openComments, postId, fetchComments]);
 
   if (!post) return null;
 
@@ -90,30 +95,35 @@ export default function FeedPostCard({ postId }: { postId: string }) {
         </div>
       </div>
 
-      <div className="mt-3 text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words">
-        {post.content}
-      </div>
-
-      {media.length > 0 && (
-        <div className={`mt-3 grid gap-2 ${media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {media.map((m) => (
-            <div
-              key={m.id}
-              className="overflow-hidden rounded-xl bg-gray-100 dark:bg-neutral-900"
-            >
-              {m.type === 'image' ? (
-                <img
-                  src={m.url}
-                  alt={m.alt || 'media'}
-                  className="h-64 w-full object-cover"
-                />
-              ) : (
-                <video src={m.url} controls className="w-full h-auto" />
-              )}
-            </div>
-          ))}
+      <div 
+        onClick={() => setActivePostId(post.id)}
+        className="block group cursor-pointer"
+      >
+        <div className="mt-3 text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          {post.content}
         </div>
-      )}
+
+        {media.length > 0 && (
+          <div className={`mt-3 grid gap-2 ${media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {media.map((m) => (
+              <div
+                key={m.id}
+                className="overflow-hidden rounded-xl bg-gray-100 dark:bg-neutral-900 border border-transparent group-hover:border-blue-500/30 transition-all"
+              >
+                {m.type === 'image' ? (
+                  <img
+                    src={m.url}
+                    alt={m.alt || 'media'}
+                    className="h-64 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <video src={m.url} controls className="w-full h-auto" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
         <div className="flex items-center gap-2">
@@ -145,7 +155,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
         <Button
           variant="ghost"
           size="small"
-          onClick={() => setOpenComments(true)}
+          onClick={() => setActivePostId(post.id)}
         >
           <MessageCircle size={16} /> Comment
         </Button>
@@ -171,6 +181,8 @@ export default function FeedPostCard({ postId }: { postId: string }) {
       <Modal
         title={`Bình luận - ${author?.name || 'User'}`}
         open={openComments}
+        // Ensure children are unmounted when the modal closes to avoid stray state updates.
+        destroyOnHidden
         onCancel={() => setOpenComments(false)}
         footer={null}
         centered

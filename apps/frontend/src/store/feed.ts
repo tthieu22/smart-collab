@@ -36,6 +36,8 @@ interface FeedState {
   currentUserId: FeedID | null;
   isBootstrapped: boolean;
   isLoading: boolean;
+  activePostId: FeedID | null;
+  setActivePostId: (postId: FeedID | null) => void;
   error: string | null;
 
   users: Entities<FeedUser>;
@@ -65,11 +67,15 @@ interface FeedState {
   removeDraftImage: (index: number) => void;
   clearDraft: () => void;
   publishDraft: () => Promise<void>;
+  fetchPostDetails: (postId: FeedID) => Promise<void>;
+  fetchComments: (postId: FeedID) => Promise<void>;
 }
 
 export const useFeedStore = create<FeedState>((set, get) => ({
   currentUserId: null,
   isBootstrapped: false,
+  activePostId: null,
+  setActivePostId: (postId) => set({ activePostId: postId }),
   isLoading: false,
   error: null,
 
@@ -196,14 +202,24 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     }
   },
 
-  sharePost: (postId) =>
+  sharePost: (postId) => {
+    // Optimistic UI update
     set((s) => {
       const post = s.posts[postId];
       if (!post) return s;
       return {
         posts: { ...s.posts, [postId]: { ...post, shareCount: (post.shareCount || 0) + 1 } },
       };
-    }),
+    });
+    // Fire-and-forget request to backend
+    (async () => {
+      try {
+        await autoRequest(`/home/post/${postId}/share`, { method: 'POST' });
+      } catch (err: any) {
+        set({ error: err.message });
+      }
+    })();
+  },
 
   toggleBookmark: (postId) =>
     set((s) => {
@@ -330,6 +346,58 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       set({ error: err.message });
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  fetchPostDetails: async (postId) => {
+    try {
+      const res = await autoRequest<FeedPost>(`/home/post/${postId}`);
+      set((s) => ({
+        posts: {
+          ...s.posts,
+          [res.id]: {
+            ...res,
+            reactionSummary: { ...emptyReactions, ...(res.reactionSummary || {}) },
+            media: res.media || [],
+            myReaction: res.myReaction ?? null,
+            bookmarkedByMe: Boolean(res.bookmarkedByMe),
+          },
+        },
+      }));
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
+
+  fetchComments: async (postId) => {
+    try {
+      const res = await autoRequest<FeedComment[]>(`/home/post/${postId}/comments`);
+      set((s) => {
+        const newComments = { ...s.comments };
+        const commentIds: FeedID[] = [];
+
+        res.forEach((c) => {
+          newComments[c.id] = { ...c, likedByMe: Boolean(c.likedByMe) };
+          commentIds.push(c.id);
+        });
+
+        // Ensure order is correct (usually newest first on feed, but here maybe oldest first? bootstrap sorted them by createdAt)
+        commentIds.sort((a, b) => {
+          const ca = newComments[a];
+          const cb = newComments[b];
+          return new Date(ca?.createdAt || 0).getTime() - new Date(cb?.createdAt || 0).getTime();
+        });
+
+        return {
+          comments: newComments,
+          commentsByPostId: {
+            ...s.commentsByPostId,
+            [postId]: commentIds,
+          },
+        };
+      });
+    } catch (err: any) {
+      set({ error: err.message });
     }
   },
 }));

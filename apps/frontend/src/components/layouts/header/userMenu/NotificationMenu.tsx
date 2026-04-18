@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BellOutlined, LikeOutlined, CommentOutlined } from "@ant-design/icons";
 import { Dropdown, Card, Switch, Tabs, List, Avatar, Badge } from "antd";
 import { useUserNotificationStore } from "@smart/store/user-notifications";
+import { useFeedStore } from "@smart/store/feed";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 
@@ -13,12 +14,19 @@ export function NotificationMenu() {
   const [activeTab, setActiveTab] = useState<string>("live");
 
   const { notifications, unreadCount, markAsRead } = useUserNotificationStore();
+  const setActivePostId = useFeedStore((s) => s.setActivePostId);
 
   const renderNotification = (n: any) => {
     const isUnread = !n.isRead;
     return (
       <List.Item
-        onClick={() => markAsRead(n.id)}
+        onClick={() => {
+          markAsRead(n.id);
+          if (n.postId) {
+            setActivePostId(n.postId);
+            setOpen(false);
+          }
+        }}
         style={{
           cursor: "pointer",
           backgroundColor: isUnread ? "#f0f5ff" : "transparent",
