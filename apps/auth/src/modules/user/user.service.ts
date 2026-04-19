@@ -241,4 +241,25 @@ export class UserService {
       data: { password: hashedPassword },
     });
   }
+
+  async search(query: string) {
+    if (!query) return [];
+    return this.prisma.user.findMany({
+      where: {
+        OR: [
+          { email: { contains: query, mode: 'insensitive' } },
+          { firstName: { contains: query, mode: 'insensitive' } },
+          { lastName: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+      },
+      take: 20,
+    });
+  }
 }

@@ -32,7 +32,7 @@ public class HomeMessageHandler {
     private final CommentRepository commentRepository;
     private final NotificationRepository notificationRepository;
 
-    @RabbitListener(queues = RabbitMQConfig.REQUESTS_QUEUE)
+    @RabbitListener(queues = {RabbitMQConfig.REQUESTS_QUEUE, RabbitMQConfig.QUEUE})
     public Object handleMessage(Map<String, Object> message) {
         log.info("Received message from Gateway: {}", message);
         
@@ -211,6 +211,18 @@ public class HomeMessageHandler {
                     }
                     newsArticleRepository.delete(deletingPost);
                     return Map.of("success", true, "id", deleteId);
+                
+                case "home.notification.create":
+                    notificationService.createNotification(
+                        (String) payload.get("recipientId"),
+                        (String) payload.get("senderId"),
+                        (String) payload.get("type"),
+                        (String) payload.get("postId"),
+                        (String) payload.get("commentId"),
+                        (String) payload.get("projectId"),
+                        (String) payload.get("projectName")
+                    );
+                    return null; // Return null to avoid "ReplyTo" error for async events
 
                 default:
                     log.warn("Unknown command: {}", cmd);

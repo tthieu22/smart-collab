@@ -23,6 +23,13 @@ import { CardController } from './column/card.cotroller';
         useFactory: (configService: ConfigService) =>
           getRabbitMQOptions('project_queue', configService),
       },
+      {
+        name: 'AUTH_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) =>
+          getRabbitMQOptions('auth_queue', configService),
+      },
     ]),
   ],
   controllers: [ProjectController, CardController],

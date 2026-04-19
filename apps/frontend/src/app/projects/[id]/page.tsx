@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { projectStore } from '@smart/store/project';
+import { useUserStore } from '@smart/store/user';
 import { projectService } from '@smart/services/project.service';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import ProjectActionBar from '@smart/components/project/ProjectActionBar';
 import { Loading } from '@smart/components/ui/loading';
+import { autoRequest } from '@smart/services/auto.request';
+import { message } from 'antd';
 
 import Inbox from '@smart/components/project/inbox/Inbox';
 import Calendar from '@smart/components/project/calendar/Calendar';
@@ -24,6 +28,10 @@ const LOCAL_STORAGE_KEY = 'activeProjectComponents';
 
 export default function ProjectDetailPage({ params }: Props) {
   const projectId = params.id;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { currentUser } = useUserStore();
+
   const {
     currentProject,
     addProject,
@@ -34,6 +42,27 @@ export default function ProjectDetailPage({ params }: Props) {
 
   const [loading, setLoading] = useState(true);
   const activeCorrelationIdRef = useRef<string | null>(null);
+
+  // Auto-join project if invited
+  useEffect(() => {
+    const handleInvite = async () => {
+      const isInvite = searchParams.get('invite');
+      if (isInvite === 'true' && currentUser?.id && projectId) {
+        try {
+          await autoRequest('/projects/members', {
+            method: 'POST',
+            body: JSON.stringify({ projectId, userId: currentUser.id }),
+          });
+          message.success('Bạn đã tham gia dự án thành công!');
+          // Remove query params
+          router.replace(`/projects/${projectId}`, { scroll: false });
+        } catch (error) {
+          console.error('Failed to auto-join project:', error);
+        }
+      }
+    };
+    handleInvite();
+  }, [searchParams, currentUser?.id, projectId, router]);
 
   const [activeComponents, setActiveComponents] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -306,14 +335,14 @@ export default function ProjectDetailPage({ params }: Props) {
 
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter>
-      <div className="bg-gray-50 dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)]">
+      <div className="bg-gray-50 dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
         <ProjectActionBar
           activeComponents={activeComponents}
           onToggle={toggleComponent}
         />
 
         {/* ===== MAIN CONTENT ===== */}
-        <div className="fixed inset-x-0 bottom-14 top-16">
+        <div className="fixed inset-x-0 bottom-14 top-[100px]">
           <DragDropContextProvider
             boardTypes={{
               ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),

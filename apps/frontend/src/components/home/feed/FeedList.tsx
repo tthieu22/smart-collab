@@ -32,61 +32,45 @@ export default function FeedList() {
   return (
     <div className="space-y-6 pb-20 relative min-h-[500px]">
       {/* Pull to Refresh / Top Loading Indicator */}
-      <AnimatePresence>
-        {isLoading && postIds.length === 0 && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="flex flex-col items-center justify-center py-10 space-y-4">
-              <div className="relative">
-                <div className="absolute inset-0 blur-2xl bg-blue-500/20 rounded-full animate-pulse" />
-                <Spin size="large" />
-              </div>
-              <div className="text-center space-y-1">
-                <p className="text-neutral-700 dark:text-neutral-200 font-semibold tracking-tight">Đang làm mới bảng tin</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-500 animate-pulse">Vui lòng chờ trong giây lát...</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isLoading && postIds.length === 0 && (
+        <div className="overflow-hidden py-10 flex flex-col items-center justify-center space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 blur-2xl bg-blue-500/20 rounded-full animate-pulse" />
+            <Spin size="large" />
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-neutral-700 dark:text-neutral-200 font-semibold tracking-tight">Đang làm mới bảng tin</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 animate-pulse">Vui lòng chờ trong giây lát...</p>
+          </div>
+        </div>
+      )}
 
       {postIds.map((id) => (
         <FeedPostCard key={id} postId={id} />
       ))}
 
       {/* Loading Sentinel */}
-      <AnimatePresence>
-        {hasMore && (
-          <div ref={loadMoreRef} className="py-10">
-            {isLoading ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="w-full space-y-4"
-              >
-                <div className="w-full bg-white dark:bg-neutral-900 rounded-2xl p-4 shadow-sm animate-pulse space-y-4 border border-neutral-100 dark:border-neutral-800">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-200 dark:bg-neutral-800 rounded-full" />
-                    <div className="space-y-2">
-                      <div className="w-24 h-3 bg-gray-200 dark:bg-neutral-800 rounded" />
-                      <div className="w-16 h-2 bg-gray-200 dark:bg-neutral-800 rounded" />
-                    </div>
+      {hasMore && (
+        <div ref={loadMoreRef} className="py-10">
+          {isLoading ? (
+            <div className="w-full space-y-4">
+              <div className="w-full bg-white dark:bg-neutral-900 rounded-2xl p-4 shadow-sm animate-pulse space-y-4 border border-neutral-100 dark:border-neutral-800">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-neutral-800 rounded-full" />
+                  <div className="space-y-2">
+                    <div className="w-24 h-3 bg-gray-200 dark:bg-neutral-800 rounded" />
+                    <div className="w-16 h-2 bg-gray-200 dark:bg-neutral-800 rounded" />
                   </div>
-                  <div className="w-full h-32 bg-gray-200 dark:bg-neutral-800 rounded-xl" />
                 </div>
-              </motion.div>
-            ) : (
-              /* Invisible sentinel to trigger next load */
-              <div className="h-10 w-full" />
-            )}
-          </div>
-        )}
-      </AnimatePresence>
+                <div className="w-full h-32 bg-gray-200 dark:bg-neutral-800 rounded-xl" />
+              </div>
+            </div>
+          ) : (
+            /* Invisible sentinel to trigger next load */
+            <div className="h-10 w-full" />
+          )}
+        </div>
+      )}
 
       {!hasMore && postIds.length > 0 && (
         <motion.div 

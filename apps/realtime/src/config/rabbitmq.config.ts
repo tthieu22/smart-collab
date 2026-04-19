@@ -22,7 +22,8 @@ export const getNestRabbitMQOptions = (
 export const getGolevelupRabbitMQOptions = (configService: ConfigService) => ({
   exchanges: [
     { name: 'realtime-exchange', type: 'topic' },
-    { name: 'notification_exchange', type: 'topic' }
+    { name: 'notification_exchange', type: 'topic' },
+    { name: 'smart-collab', type: 'topic' }
   ],
   uri: `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
     'RABBITMQ_PASSWORD',

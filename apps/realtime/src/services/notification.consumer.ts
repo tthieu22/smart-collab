@@ -11,16 +11,17 @@ export class NotificationConsumer {
   @RabbitSubscribe({
     exchange: 'notification_exchange',
     routingKey: 'notification_routing_key',
-    queue: 'notification_queue',
+    queue: 'realtime_notification_queue',
   })
   public async handleNotification(msg: any) {
-    this.logger.log(`Received notification from Java: ${JSON.stringify(msg)}`);
+    this.logger.log(`Received notification: ${JSON.stringify(msg)}`);
     
-    // The message from Java already contains: id, recipientId, senderId, type, postId, commentId, createdAt
-    const { recipientId } = msg;
+    // Support both direct messages and pattern/data wrapped messages
+    const notification = msg.data || msg;
+    const { recipientId } = notification;
 
     if (recipientId) {
-      this.gateway.emitToUser(recipientId, 'realtime.notification.created', msg);
+      this.gateway.emitToUser(recipientId, 'realtime.notification.created', notification);
     }
   }
 }

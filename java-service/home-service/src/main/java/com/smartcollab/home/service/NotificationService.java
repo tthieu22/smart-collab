@@ -16,6 +16,10 @@ public class NotificationService {
     private final RabbitTemplate rabbitTemplate;
 
     public void createNotification(String recipientId, String senderId, String type, String postId, String commentId) {
+        createNotification(recipientId, senderId, type, postId, commentId, null, null);
+    }
+
+    public void createNotification(String recipientId, String senderId, String type, String postId, String commentId, String projectId, String projectName) {
         if (recipientId.equals(senderId)) return; // Don't notify self
 
         Notification notification = new Notification();
@@ -24,6 +28,8 @@ public class NotificationService {
         notification.setType(type);
         notification.setPostId(postId);
         notification.setCommentId(commentId);
+        notification.setProjectId(projectId);
+        notification.setProjectName(projectName);
         notification.setRead(false);
         notification.setCreatedAt(LocalDateTime.now());
 
@@ -37,6 +43,8 @@ public class NotificationService {
         message.put("type", type);
         message.put("postId", postId);
         message.put("commentId", commentId);
+        message.put("projectId", projectId);
+        message.put("projectName", projectName);
         message.put("createdAt", notification.getCreatedAt().toString());
 
         rabbitTemplate.convertAndSend("notification_exchange", "notification_routing_key", message);

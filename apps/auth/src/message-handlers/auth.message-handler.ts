@@ -267,12 +267,14 @@ export class AuthMessageHandler {
     }
   }
 
-  @MessagePattern({cmd:'auth.me'})
+
+
+  @MessagePattern({ cmd: 'auth.me' })
   async handleGetCurrentUser(
-    @Payload() getUserDto: GetUserMessageDto,
+    @Payload() data: { userId: string },
   ): Promise<UserResponseDto> {
     try {
-      const user = await this.userService.findOne(getUserDto.userId);
+      const user = await this.userService.findOne(data.userId);
       return {
         success: true,
         message: 'OK',
@@ -370,12 +372,28 @@ export class AuthMessageHandler {
   @MessagePattern({ cmd: 'auth.oauthExchange' })
   async handleOAuthExchange(@Payload() payload: { code: string }) {
     try {
-      const result = await this.authService.exchangeOAuthCode(payload.code);
-      if (!result) return { success: false, message: 'Invalid or expired code' };
-      return { success: true, message: 'OK', data: result };
+      const res = await this.authService.exchangeOAuthCode(payload.code);
+      if (!res) return { success: false, message: 'Invalid or expired code' };
+      return { success: true, message: 'OK', data: res };
     } catch (err: any) {
       this.logger.error(err);
       return { success: false, message: err.message || 'Exchange failed' };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.searchUsers' })
+  async handleSearchUsers(@Payload() payload: { query: string }) {
+    try {
+      const users = await this.userService.search(payload.query);
+      // Map to include a full name for easier display
+      const mappedUsers = users.map(u => ({
+        ...u,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email
+      }));
+      return { success: true, data: mappedUsers };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Search failed' };
     }
   }
 }

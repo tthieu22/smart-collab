@@ -1,19 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Form, Input, Button, Card } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { authService } from '@smart/services/auth.service';
 import { ApiError, ApiResponse, RegisterRequest } from '@smart/types/auth';
-import { useNotificationStore } from '@smart/store/notification'; // 👈 dùng store
+import { useNotificationStore } from '@smart/store/notification';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
 
-  // 👇 lấy hàm addNotification
   const { addNotification } = useNotificationStore();
 
   const onFinish = async (values: {
@@ -28,6 +28,7 @@ export default function RegisterPage() {
 
       if (values.password !== values.confirmPassword) {
         addNotification('Mật khẩu xác nhận không khớp', 'error');
+        setLoading(false);
         return;
       }
 
@@ -45,7 +46,8 @@ export default function RegisterPage() {
       } else {
         setLoading(false);
         addNotification('Đăng ký thành công! Hãy đăng nhập.', 'success');
-        router.push('/auth/login');
+        const searchStr = searchParams.toString();
+        router.push(`/auth/login${searchStr ? `?${searchStr}` : ''}`);
       }
     } catch (err: unknown) {
       setLoading(false);

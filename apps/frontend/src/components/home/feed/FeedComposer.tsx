@@ -19,6 +19,7 @@ export default function FeedComposer() {
     removeDraftImage,
     publishDraft,
     me,
+    isLoading,
   } = useFeedStore(
     useShallow((s) => ({
       draftText: s.draftText,
@@ -28,6 +29,7 @@ export default function FeedComposer() {
       removeDraftImage: s.removeDraftImage,
       publishDraft: s.publishDraft,
       me: s.currentUserId ? s.users[s.currentUserId] : null,
+      isLoading: s.isLoading,
     }))
   );
 
@@ -65,8 +67,9 @@ export default function FeedComposer() {
           <textarea
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
+            disabled={isLoading}
             placeholder="Bạn đang nghĩ gì?"
-            className="w-full min-h-24 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900"
+            className="w-full min-h-24 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 disabled:opacity-60"
           />
 
           {draftImages.length ? (
@@ -77,7 +80,8 @@ export default function FeedComposer() {
                   <img src={img.preview} alt={`draft-${idx}`} className="h-24 w-full object-cover" />
                   <button
                     onClick={() => removeDraftImage(idx)}
-                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
+                    disabled={isLoading}
+                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white disabled:opacity-50"
                     type="button"
                   >
                     <X size={12} />
@@ -93,6 +97,7 @@ export default function FeedComposer() {
             multiple
             accept="image/*"
             className="hidden"
+            disabled={isLoading}
             onChange={(e) => handleFiles(e.target.files)}
           />
           <input
@@ -101,6 +106,7 @@ export default function FeedComposer() {
             accept="image/*"
             capture="environment"
             className="hidden"
+            disabled={isLoading}
             onChange={(e) => handleFiles(e.target.files)}
           />
 
@@ -110,6 +116,7 @@ export default function FeedComposer() {
                 variant="secondary"
                 size="small"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
                 className="gap-2"
               >
                 <ImagePlus size={16} />
@@ -119,6 +126,7 @@ export default function FeedComposer() {
                 variant="secondary"
                 size="small"
                 onClick={() => cameraInputRef.current?.click()}
+                disabled={isLoading}
                 className="gap-2"
               >
                 <Camera size={16} />
@@ -130,11 +138,20 @@ export default function FeedComposer() {
               variant="primary"
               size="small"
               onClick={publishDraft}
-              disabled={!canPost}
-              className="gap-2"
+              disabled={!canPost || isLoading}
+              className="gap-2 min-w-[80px]"
             >
-              <SendHorizonal size={16} />
-              Đăng
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Đang đăng...
+                </>
+              ) : (
+                <>
+                  <SendHorizonal size={16} />
+                  Đăng
+                </>
+              )}
             </Button>
           </div>
         </div>

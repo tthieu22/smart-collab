@@ -22,6 +22,7 @@ public class RabbitMQConfig {
     public static final String REQUESTS_QUEUE = "home_requests_queue";
     public static final String EXCHANGE = "notification_exchange";
     public static final String ROUTING_KEY = "notification_routing_key";
+    public static final String CREATE_ROUTING_KEY = "notification.create";
     public static final String PROJECT_EVENTS_EXCHANGE = "project-exchange";
     public static final String AI_EVENTS_QUEUE = "home_ai_events_queue";
 
@@ -40,9 +41,11 @@ public class RabbitMQConfig {
         return new TopicExchange(EXCHANGE);
     }
 
+
+
     @Bean
-    public Binding binding(Queue queue, TopicExchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+    public Binding createBinding(Queue queue, TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(CREATE_ROUTING_KEY);
     }
 
     @Bean

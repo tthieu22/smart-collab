@@ -15,6 +15,8 @@ public class Notification {
     private String type;
     private String postId;
     private String commentId;
+    private String projectId;
+    private String projectName;
     private boolean isRead;
     private LocalDateTime createdAt;
 }

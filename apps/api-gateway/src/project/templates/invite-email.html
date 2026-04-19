@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lời mời tham gia dự án</title>
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+        }
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            padding: 40px 32px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .content {
+            padding: 48px 32px;
+            text-align: center;
+        }
+        .content p {
+            color: #4b5563;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .project-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 32px 0;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .project-icon {
+            width: 48px;
+            height: 48px;
+            background-color: #dbeafe;
+            color: #2563eb;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .project-info h3 {
+            margin: 0 0 4px 0;
+            color: #111827;
+            font-size: 18px;
+        }
+        .project-info p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .button:hover {
+            background-color: #1d4ed8;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 32px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Tham gia cùng nhóm của bạn!</h1>
+        </div>
+        <div class="content">
+            <p>Xin chào,</p>
+            <p>Bạn vừa nhận được lời mời tham gia cộng tác trong một dự án trên <strong>Smart Collab</strong>.</p>
+            
+            <div class="project-card">
+                <div class="project-icon">
+                    🚀
+                </div>
+                <div class="project-info">
+                    <h3>{{projectName}}</h3>
+                    <p>Được mời bởi {{inviterName}}</p>
+                </div>
+            </div>
+
+            <p>Để bắt đầu làm việc cùng mọi người, vui lòng tạo tài khoản hoặc đăng nhập và xác nhận tham gia dự án.</p>
+            
+            <a href="{{inviteUrl}}" class="button">Tham gia Dự án ngay</a>
+        </div>
+        <div class="footer">
+            <p>Nếu bạn không mong đợi email này, bạn có thể bỏ qua nó một cách an toàn.</p>
+            <p style="margin-top: 8px;">&copy; 2026 Smart Collab. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

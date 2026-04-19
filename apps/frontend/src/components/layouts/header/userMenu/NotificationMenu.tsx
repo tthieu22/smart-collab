@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BellOutlined, LikeOutlined, CommentOutlined } from "@ant-design/icons";
-import { Dropdown, Card, Switch, Tabs, List, Avatar, Badge } from "antd";
+import { Dropdown, Card, Switch, Tabs, List, Avatar, Badge, Button } from "antd";
 import { useUserNotificationStore } from "@smart/store/user-notifications";
 import { useFeedStore } from "@smart/store/feed";
 import { formatDistanceToNow } from "date-fns";
@@ -70,45 +70,112 @@ export function NotificationMenu() {
     [markAsRead, setActivePostId]
   );
 
+  const handleRespondInvite = useCallback(async (projectId: string, accept: boolean, notificationId: string) => {
+    try {
+      const res: any = await autoRequest(`/projects/${projectId}/respond-invite`, {
+        method: "POST",
+        body: JSON.stringify({ accept })
+      });
+      if (res?.success) {
+        markAsRead(notificationId);
+        autoRequest(`/home/notifications/${notificationId}/read`, { method: "PATCH" }).catch(() => {});
+        setOpen(false);
+        // Maybe redirect to project if accepted
+        if (accept) {
+          window.location.href = `/projects/${projectId}`;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to respond invite", err);
+    }
+  }, [markAsRead]);
+
   const renderNotification = useCallback((n: any) => {
     const isUnread = !n.isRead;
+    const isInvite = n.type === "PROJECT_INVITE";
+
     return (
       <List.Item
         key={n.id}
-        onClick={() => handleNotificationClick(n)}
+        onClick={() => !isInvite && handleNotificationClick(n)}
         style={{
-          cursor: "pointer",
+          cursor: isInvite ? "default" : "pointer",
           backgroundColor: isUnread
             ? isDark
               ? "rgba(0, 113, 227, 0.14)"
               : "#f0f5ff"
             : "transparent",
-          padding: "8px 12px",
-          borderRadius: 8,
-          marginBottom: 4,
+          padding: "12px",
+          borderRadius: 12,
+          marginBottom: 8,
+          border: `1px solid ${isUnread ? (isDark ? "rgba(0, 113, 227, 0.3)" : "#d6e4ff") : "transparent"}`,
+          transition: "all 0.2s ease",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch"
         }}
+        className="notification-item"
       >
-        <List.Item.Meta
-          avatar={
-            <Avatar
-              icon={n.type === "LIKE" ? <LikeOutlined /> : <CommentOutlined />}
-              style={{ backgroundColor: n.type === "LIKE" ? "#1890ff" : "#52c41a" }}
-            />
-          }
-          title={
-            <span style={{ fontSize: 13 }}>
-              {n.type === "LIKE" ? "Một người đã thích bài viết của bạn" : "Một người đã bình luận về bài viết của bạn"}
-            </span>
-          }
-          description={
-            <span style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.62)" : "#8c8c8c" }}>
+        <div style={{ display: "flex", width: "100%", gap: 12 }}>
+          <Avatar
+            icon={isInvite ? <BellOutlined /> : n.type === "LIKE" ? <LikeOutlined /> : <CommentOutlined />}
+            style={{ 
+              backgroundColor: isInvite ? "#faad14" : n.type === "LIKE" ? "#1890ff" : "#52c41a",
+              flexShrink: 0
+            }}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ 
+                fontSize: 13, 
+                fontWeight: isUnread ? 600 : 400,
+                color: isDark ? "#fff" : "#1d1d1f",
+                lineHeight: "1.4",
+                marginBottom: 4
+              }}>
+                {isInvite 
+                  ? `Bạn được mời tham gia dự án: ${n.projectName || 'Dự án mới'}` 
+                  : n.type === "LIKE" 
+                    ? "Một người đã thích bài viết của bạn" 
+                    : "Một người đã bình luận về bài viết của bạn"}
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.45)" : "#8c8c8c" }}>
               {formatNotificationTime(n.createdAt)}
-            </span>
-          }
-        />
+            </div>
+          </div>
+        </div>
+
+        {isInvite && isUnread && (
+          <div style={{ 
+            display: "flex", 
+            gap: 8, 
+            marginTop: 12, 
+            paddingTop: 12,
+            borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#f0f0f0"}`,
+            width: "100%", 
+            justifyContent: "flex-end" 
+          }}>
+            <Button 
+              size="small" 
+              style={{ borderRadius: 6, fontSize: 12 }}
+              onClick={() => handleRespondInvite(n.projectId, false, n.id)}
+            >
+              Từ chối
+            </Button>
+            <Button 
+              size="small" 
+              type="primary" 
+              style={{ borderRadius: 6, fontSize: 12 }}
+              onClick={() => handleRespondInvite(n.projectId, true, n.id)}
+            >
+              Chấp nhận
+            </Button>
+          </div>
+        )}
       </List.Item>
     );
-  }, [formatNotificationTime, handleNotificationClick, isDark]);
+  }, [formatNotificationTime, handleNotificationClick, handleRespondInvite, isDark]);
 
   const content = (
     <div

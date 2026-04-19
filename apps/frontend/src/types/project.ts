@@ -38,6 +38,7 @@ export interface ProjectMember {
   projectId: string
   userId: string
   role: "OWNER" | "ADMIN" | "MEMBER"
+  status: "PENDING" | "ACCEPTED" | "REJECTED"
   joinedAt: string
   user?: UserCache | null
 }

@@ -15,6 +15,7 @@ import { ColumnService } from './services/project/column.service';
 import { BoardService } from './services/project/board.service';
 import { MemberService } from './services/project/member.service';
 import { NotificationConsumer } from './services/notification.consumer';
+import { ProjectConsumer } from './services/project.consumer';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { NotificationConsumer } from './services/notification.consumer';
     ColumnService,
     MemberService,
     NotificationConsumer,
+    ProjectConsumer,
     {
       provide: 'REDIS_CLIENT',
       inject: [ConfigService],

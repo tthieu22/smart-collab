@@ -1,14 +1,18 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BoardService } from './board/board.service';
 import { ProjectMessage } from './dto/project.dto';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 @Injectable()
 export class ProjectService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly boardService: BoardService,
+    private readonly amqpConnection: AmqpConnection,
   ) {}
+
+  private readonly logger = new Logger(ProjectService.name);
 
   private slugify(str: string): string {
     return str
@@ -18,6 +22,21 @@ export class ProjectService {
       .trim()
       .replace(/\s+/g, '_')
       .toLowerCase();
+  }
+
+  private mapMembers(project: any) {
+    if (project && project.members) {
+      project.members = project.members.map((m: any) => ({
+        ...m,
+        user: {
+          id: m.userId,
+          firstName: m.userName || m.userEmail || 'User',
+          avatar: m.userAvatar,
+          email: m.userEmail,
+        },
+      }));
+    }
+    return project;
   }
 
   async createProject(msg: ProjectMessage) {
@@ -41,7 +60,14 @@ export class ProjectService {
     });
 
     await this.prisma.projectMember.create({
-      data: { projectId: project.id, userId: msg.ownerId!, role: 'ADMIN' },
+      data: { 
+        projectId: project.id, 
+        userId: msg.ownerId!, 
+        role: 'OWNER', // Change from ADMIN to OWNER for the creator
+        userName: (msg as any).userName,
+        userAvatar: (msg as any).userAvatar,
+        userEmail: (msg as any).userEmail
+      },
     });
 
     const defaultBoard = await this.boardService.createBoard({
@@ -126,6 +152,7 @@ export class ProjectService {
         fileSize: true,
         originalFilename: true,
         uploadedById: true,
+        members: true,
         boards: {
           orderBy: { position: 'asc' },
           select: {
@@ -238,7 +265,92 @@ export class ProjectService {
       board.columns.forEach(col => (col as any).boardId = board.id);
     });
 
-    return structure;
+    return this.mapMembers(structure);
+  }
+
+  async addMember(projectId: string, userId: string, role: string = 'MEMBER', userName?: string, userAvatar?: string, addedBy?: string, userEmail?: string) {
+    const existing = await this.prisma.projectMember.findFirst({
+      where: { projectId, userId },
+    });
+    if (existing) {
+      return { success: true, message: 'User is already a member' };
+    }
+    const member = await this.prisma.projectMember.create({
+      data: { projectId, userId, role, userName, userAvatar, userEmail, status: 'PENDING' },
+    });
+
+    // Notify home service about invitation
+    try {
+      const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+      this.amqpConnection.publish('notification_exchange', 'notification.create', {
+        pattern: 'home.notification.create',
+        data: {
+          recipientId: userId,
+          senderId: addedBy,
+          type: 'PROJECT_INVITE',
+          projectId: projectId,
+          projectName: project!.name,
+          content: `Bạn được mời tham gia dự án ${project!.name}`,
+        }
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to send invite notification: ${err.message}`);
+    }
+
+    // Notify realtime
+    const fullProject = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { members: true }
+    });
+
+    this.amqpConnection.publish('smart-collab', 'realtime.project.updated', {
+      project: this.mapMembers(fullProject)
+    });
+
+    return { success: true, message: 'Member added successfully', data: member };
+  }
+
+  async removeMember(projectId: string, userId: string) {
+    await this.prisma.projectMember.deleteMany({
+      where: { projectId, userId },
+    });
+
+    // Notify realtime
+    const fullProject = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { members: true }
+    });
+
+    this.amqpConnection.publish('smart-collab', 'realtime.project.updated', {
+      project: this.mapMembers(fullProject)
+    });
+
+    return { success: true, message: 'Member removed successfully' };
+  }
+
+  async respondInvite(projectId: string, userId: string, accept: boolean) {
+    if (accept) {
+      await this.prisma.projectMember.update({
+        where: { projectId_userId: { projectId, userId } },
+        data: { status: 'ACCEPTED', joinedAt: new Date() },
+      });
+    } else {
+      await this.prisma.projectMember.delete({
+        where: { projectId_userId: { projectId, userId } },
+      });
+    }
+
+    // Notify realtime
+    const fullProject = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { members: true }
+    });
+
+    this.amqpConnection.publish('smart-collab', 'realtime.project.updated', {
+      project: this.mapMembers(fullProject)
+    });
+
+    return { success: true, message: accept ? 'Invitation accepted' : 'Invitation declined' };
   }
 
   async getAllProjects(userId?: string, page: number = 1, limit: number = 10, search?: string) {

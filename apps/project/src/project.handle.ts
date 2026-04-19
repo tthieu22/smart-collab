@@ -75,4 +75,47 @@ export class ProjectHandler {
       return { success: false, message: error.message };
     }
   }
+
+  @MessagePattern({ cmd: 'project.add_member' })
+  async handleAddMember(@Payload() payload: { projectId: string; userId: string; role?: string; addedBy?: string; userName?: string; userAvatar?: string }) {
+    this.logger.log(`[project.add_member] Received payload: ${JSON.stringify(payload)}`);
+    try {
+      const result = await this.projectService.addMember(
+        payload.projectId, 
+        payload.userId, 
+        payload.role,
+        payload.userName,
+        payload.userAvatar,
+        payload.addedBy
+      );
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error handling project.add_member: ${error.message}`, error.stack);
+      return { success: false, message: error.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'project.remove_member' })
+  async handleRemoveMember(@Payload() payload: { projectId: string; userId: string }) {
+    this.logger.log(`[project.remove_member] Received payload: ${JSON.stringify(payload)}`);
+    try {
+      const result = await this.projectService.removeMember(payload.projectId, payload.userId);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error handling project.remove_member: ${error.message}`, error.stack);
+      return { success: false, message: error.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'project.member.respond_invite' })
+  async handleRespondInvite(@Payload() payload: { projectId: string; userId: string; accept: boolean }) {
+    this.logger.log(`[project.member.respond_invite] Received payload: ${JSON.stringify(payload)}`);
+    try {
+      const result = await this.projectService.respondInvite(payload.projectId, payload.userId, payload.accept);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error handling project.member.respond_invite: ${error.message}`, error.stack);
+      return { success: false, message: error.message };
+    }
+  }
 }

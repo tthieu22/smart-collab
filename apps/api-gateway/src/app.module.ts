@@ -10,6 +10,7 @@ import { ProjectModule } from './project/project.module';
 import { UploadModule } from './upload/upload.module';
 import { AiModule } from './ai/ai.module';
 import { HomeModule } from './home/home.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { HomeModule } from './home/home.module';
     ProjectModule,
     AiModule,
     HomeModule,
+    UserModule,
     // Upload moudle
     UploadModule,
   ],

@@ -6,6 +6,8 @@ export interface UserNotification {
   type: string;
   postId?: string;
   commentId?: string;
+  projectId?: string;
+  projectName?: string;
   isRead: boolean;
   createdAt: string;
 }
@@ -16,6 +18,8 @@ const normalizeNotification = (n: any): UserNotification => ({
   type: n.type,
   postId: n.postId,
   commentId: n.commentId,
+  projectId: n.projectId,
+  projectName: n.projectName,
   isRead: Boolean(n.isRead ?? n.read ?? false),
   createdAt: n.createdAt,
 });

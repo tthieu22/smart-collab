@@ -411,6 +411,10 @@ export class ProjectSocketManager {
         useUserNotificationStore.getState().addNotification(msg);
         break;
       }
+      case 'realtime.project.updated': {
+        if (msg?.id) store.setCurrentProject(msg);
+        break;
+      }
       default:
         break;
     }
