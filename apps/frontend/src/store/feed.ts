@@ -45,6 +45,9 @@ interface FeedState {
   comments: Entities<FeedComment>;
 
   postIds: FeedID[];
+  readPostIds: FeedID[];
+  hasMore: boolean;
+  page: number;
   commentsByPostId: Record<FeedID, FeedID[]>;
   draftText: string;
   draftImages: DraftImage[];
@@ -71,6 +74,7 @@ interface FeedState {
   fetchComments: (postId: FeedID) => Promise<void>;
   refreshPostData: (postId: FeedID) => Promise<void>;
   reloadFeed: () => Promise<void>;
+  fetchNextPage: () => Promise<void>;
 }
 
 export const useFeedStore = create<FeedState>((set, get) => ({
@@ -86,6 +90,9 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   comments: {},
 
   postIds: [],
+  readPostIds: [],
+  hasMore: true,
+  page: 0,
   commentsByPostId: {},
   draftText: '',
   draftImages: [],
@@ -136,9 +143,12 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       posts,
       comments,
       postIds,
+      readPostIds: [...postIds],
       commentsByPostId,
       isBootstrapped: true,
       error: null,
+      page: 0,
+      hasMore: dataset.posts.length > 0,
     });
   },
 
@@ -455,11 +465,77 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
 
   reloadFeed: async () => {
+    set({ isLoading: true, postIds: [], readPostIds: [], page: 0, hasMore: true });
     try {
       const data = await autoRequest<FeedDataset>('/home/feed', { method: 'GET' });
       get().bootstrap(data);
+      set({ isLoading: false }); // CRITICAL FIX: End loading state
     } catch (err: any) {
-      set({ error: err.message });
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  fetchNextPage: async () => {
+    const s = get();
+    if (s.isLoading || !s.hasMore) return;
+
+    set({ isLoading: true });
+    try {
+      const nextPage = s.page + 1;
+      const excludeIds = s.readPostIds.join(',');
+      const data = await autoRequest<FeedDataset>(
+        `/home/feed?page=${nextPage}&limit=5&excludeIds=${excludeIds}`,
+        { method: 'GET' }
+      );
+
+      if (data.posts.length === 0) {
+        set({ hasMore: false, isLoading: false });
+        return;
+      }
+
+      const users = { ...s.users };
+      const posts = { ...s.posts };
+      const comments = { ...s.comments };
+      const postIds = [...s.postIds];
+      const readPostIds = [...s.readPostIds];
+      const commentsByPostId = { ...s.commentsByPostId };
+
+      data.users.forEach((u) => (users[u.id] = u));
+      data.posts.forEach((p) => {
+        if (!posts[p.id]) {
+          posts[p.id] = {
+            ...p,
+            reactionSummary: { ...emptyReactions, ...(p.reactionSummary || {}) },
+            media: p.media || [],
+            myReaction: p.myReaction ?? null,
+            bookmarkedByMe: Boolean(p.bookmarkedByMe),
+          };
+          postIds.push(p.id);
+          readPostIds.push(p.id);
+        }
+      });
+
+      data.comments.forEach((c) => {
+        comments[c.id] = { ...c, likedByMe: Boolean(c.likedByMe) };
+        commentsByPostId[c.postId] = commentsByPostId[c.postId] || [];
+        if (!commentsByPostId[c.postId].includes(c.id)) {
+          commentsByPostId[c.postId].push(c.id);
+        }
+      });
+
+      set({
+        users,
+        posts,
+        comments,
+        postIds,
+        readPostIds,
+        commentsByPostId,
+        page: nextPage,
+        hasMore: data.posts.length >= 5,
+        isLoading: false,
+      });
+    } catch (err: any) {
+      set({ error: err.message, isLoading: false });
     }
   },
 }));

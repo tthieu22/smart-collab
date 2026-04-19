@@ -1,11 +1,30 @@
 import { useAuthStore } from '../store/auth'; // đường dẫn của bạn
 import { APP_CONFIG, API_ENDPOINTS } from '@smart/lib/constants';
 
+export interface AutoRequestOptions extends RequestInit {
+  params?: Record<string, any>;
+}
+
 export async function autoRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: AutoRequestOptions = {}
 ): Promise<T> {
-  const url = `${APP_CONFIG.API_BASE_URL}${endpoint}`;
+  let url = `${APP_CONFIG.API_BASE_URL}${endpoint}`;
+  
+  // Append query params if present
+  if (options.params) {
+    const query = new URLSearchParams();
+    Object.entries(options.params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        query.append(key, String(value));
+      }
+    });
+    const queryString = query.toString();
+    if (queryString) {
+      url += (url.includes('?') ? '&' : '?') + queryString;
+    }
+  }
+
   const { accessToken, setAccessToken, clearAuth } = useAuthStore.getState();
 
   // Nếu body là FormData, không set Content-Type

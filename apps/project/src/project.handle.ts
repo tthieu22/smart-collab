@@ -65,7 +65,10 @@ export class ProjectHandler {
     this.logger.log(`[project.get_all] Received payload: ${JSON.stringify(payload)}`);
     try {
       const userId = payload?.userId;
-      const projects = await this.projectService.getAllProjects(userId);
+      const page = payload?.page;
+      const limit = payload?.limit;
+      const search = payload?.search;
+      const projects = await this.projectService.getAllProjects(userId, page, limit, search);
       return { success: true, data: projects };
     } catch (error: any) {
       this.logger.error(`Error handling project.get_all: ${error.message}`, error.stack);

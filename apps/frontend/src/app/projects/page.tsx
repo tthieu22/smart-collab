@@ -1,107 +1,136 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import type { Project } from '@smart/types/project';
-import { Loading } from '@smart/components/ui/loading';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import LeftWidgets from '@smart/components/home/widgets/LeftWidgets';
-import RightWidgets from '@smart/components/home/widgets/RightWidgets';
 import { useHomeFeedBootstrap } from '@smart/hooks/useHomeFeed';
+import { Pagination } from 'antd';
+import ProjectCard from '@smart/components/project/ProjectCard';
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 9;
+
   useHomeFeedBootstrap();
 
   useEffect(() => {
     projectStore.getState().setActiveProjectId(null);
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
+  const load = async (page: number) => {
+    setLoading(true);
+    try {
+      const res: any = await projectService.getAllProjects({
+        page,
+        limit: pageSize
+      });
 
-    const load = async () => {
-      try {
-        const res: any = await projectService.getAllProjects();
-
-        if (res.success && Array.isArray(res.data)) {
-          const list: Project[] = res.data;
-          const st = projectStore.getState();
-          list.forEach((p) => st.addProject(p));
-          if (mounted) {
-            setProjects(list);
-          }
-        } else {
-          console.error(
-            'Load projects failed:',
-            res.message || 'Unknown error'
-          );
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (mounted) setLoading(false);
+      if (res.success && res.data && Array.isArray(res.data.items)) {
+        const list: Project[] = res.data.items;
+        const st = projectStore.getState();
+        list.forEach((p) => st.addProject(p));
+        setProjects(list);
+        setTotal(res.data.total || 0);
       }
-    };
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    load();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (loading) return <Loading text="Đang tải dữ liệu" />;
+  useEffect(() => {
+    load(currentPage);
+  }, [currentPage]);
 
   return (
     <SiteLayout leftSidebar={<LeftWidgets />} hideRightSidebar hideFooter>
-      <div className="mx-auto w-full max-w-[980px] space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => {
-            const bgStyle: React.CSSProperties = project.fileUrl
-              ? { backgroundImage: `url(${project.fileUrl})` }
-              : project.background
-                ? { backgroundImage: `url(${project.background})` }
-                : project.color
-                  ? { backgroundColor: project.color }
-                  : { backgroundImage: 'url(/backgrounds/muaxuan.png)' };
-
-            return (
-              <Link
-                key={project.id}
-                href={`/projects/${project.id}`}
-                className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-950"
-              >
-                <div
-                  className="relative h-40 w-full bg-cover bg-center"
-                  style={bgStyle}
-                >
-                  <div className="absolute inset-0 bg-black/20" />
-                  {project.visibility && (
-                    <span className="absolute left-2 top-2 rounded-md bg-blue-700 px-2 py-0.5 text-xs text-white shadow dark:bg-blue-900">
-                      {project.visibility.charAt(0).toUpperCase() +
-                        project.visibility.slice(1)}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col justify-between p-4">
-                  <h3 className="mb-2 truncate text-lg font-semibold capitalize text-gray-900 dark:text-gray-100">
-                    {project.name}
-                  </h3>
-                  <div className="space-y-1 text-sm capitalize text-gray-700 dark:text-gray-300">
-                    <p className="font-medium">
-                      Members: {project.members?.length || 0}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+      <div className="mx-auto w-full max-w-[1200px] space-y-8 px-4 py-6">
+        {/* HEADER */}
+        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+              Dự án của bạn
+            </h1>
+            <p className="mt-1 text-gray-500 dark:text-neutral-400">
+              Quản lý và theo dõi tiến độ công việc trong các không gian cộng tác.
+            </p>
+          </div>
         </div>
+
+        {/* LOADING STATE */}
+        {loading ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(pageSize)].map((_, i) => (
+              <div key={i} className="h-[280px] w-full animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* GRID LIST */}
+            {projects.length > 0 ? (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {projects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="mb-4 text-6xl opacity-20">📁</div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Chưa có dự án nào</h3>
+                <p className="text-gray-500 dark:text-neutral-400">Bạn chưa tham gia vào dự án nào. Hãy tạo mới hoặc yêu cầu lời mời!</p>
+              </div>
+            )}
+
+            {/* PAGINATION */}
+            {total > pageSize && (
+              <div className="flex justify-center pt-10">
+                <Pagination
+                  current={currentPage}
+                  total={total}
+                  pageSize={pageSize}
+                  onChange={(page) => setCurrentPage(page)}
+                  showSizeChanger={false}
+                  className="premium-pagination"
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
+
+      <style jsx global>{`
+        .premium-pagination .ant-pagination-item {
+          border-radius: 12px !important;
+          border: 1px solid #e5e7eb !important;
+          background: white !important;
+          font-weight: 600 !important;
+        }
+        .dark .premium-pagination .ant-pagination-item {
+          background: #171717 !important;
+          border-color: #262626 !important;
+        }
+        .premium-pagination .ant-pagination-item-active {
+          border-color: #3b82f6 !important;
+          background: #3b82f6 !important;
+        }
+        .premium-pagination .ant-pagination-item-active a {
+          color: white !important;
+        }
+        .dark .premium-pagination .ant-pagination-item a {
+          color: #a3a3a3 !important;
+        }
+        .premium-pagination .ant-pagination-prev, 
+        .premium-pagination .ant-pagination-next {
+          border-radius: 12px !important;
+        }
+      `}</style>
     </SiteLayout>
   );
 }

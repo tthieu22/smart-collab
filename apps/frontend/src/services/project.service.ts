@@ -3,7 +3,12 @@ import { API_ENDPOINTS } from '@smart/lib/constants';
 import { Project } from '@smart/types/project';
 
 type ProjectResponse = { status: string; message: string; dto?: any, card:any};
-type GetAllProjectsResponse = Project[];
+type GetAllProjectsResponse = {
+  items: Project[];
+  total: number;
+  page: number;
+  limit: number;
+};
 
 class ProjectService {
   // ------------------- Project CRUD -------------------
@@ -58,11 +63,22 @@ class ProjectService {
     });
   }
 
-  getAllProjects() {
-    // Nếu backend không cần dữ liệu truyền vào, ta có thể gửi body rỗng hoặc null
+  getAllProjects(pageOrOptions: number | any = 1, limit: number = 10) {
+    let page = 1;
+    let actualLimit = limit;
+    let otherOptions = {};
+
+    if (typeof pageOrOptions === 'object') {
+      page = pageOrOptions.page || 1;
+      actualLimit = pageOrOptions.limit || 10;
+      otherOptions = pageOrOptions;
+    } else {
+      page = pageOrOptions;
+    }
+
     return autoRequest<GetAllProjectsResponse>(API_ENDPOINTS.PROJECT.FIND_ALL, {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ page, limit: actualLimit, ...otherOptions }),
     });
   }
 

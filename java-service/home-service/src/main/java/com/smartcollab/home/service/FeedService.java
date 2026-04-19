@@ -18,29 +18,36 @@ public class FeedService {
     private final ReactionRepository reactionRepository;
     private final UserRepository userRepository;
 
-    public FeedResponseDTO getFeed(String currentUserId) {
+    public FeedResponseDTO getFeed(String currentUserId, int page, int limit, List<String> excludeIds) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, limit);
+        
         List<String> followingIds = followerRepository.findAllByFollowerId(currentUserId)
                 .stream().map(Follower::getFollowingId).collect(Collectors.toList());
         
-        List<Post> posts;
+        List<Post> posts = new ArrayList<>();
+        
         if (!followingIds.isEmpty()) {
-            // Prioritize followed users' posts
-            posts = postRepository.findAllByAuthorIdInOrderByCreatedAtDesc(followingIds);
+            // 1. Prioritize followed users' posts that haven't been read
+            posts = postRepository.findByAuthorIdInAndIdNotInOrderByCreatedAtDesc(followingIds, excludeIds, pageable);
             
-            // If few followed posts, fill with others
-            if (posts.size() < 10) {
-                List<Post> others = postRepository.findAllByOrderByCreatedAtDesc();
-                // Avoid duplicates
-                Set<String> postIds = posts.stream().map(Post::getId).collect(Collectors.toSet());
-                for (Post p : others) {
-                    if (!postIds.contains(p.getId())) {
-                        posts.add(p);
-                        if (posts.size() >= 20) break;
-                    }
-                }
+            // 2. If page not full, fill with other unread posts
+            if (posts.size() < limit) {
+                int remaining = limit - posts.size();
+                List<String> currentBatchIds = posts.stream().map(Post::getId).collect(Collectors.toList());
+                List<String> totalExclude = new ArrayList<>(excludeIds);
+                totalExclude.addAll(currentBatchIds);
+                
+                List<Post> others = postRepository.findByIdNotIn(totalExclude, org.springframework.data.domain.PageRequest.of(0, remaining));
+                posts.addAll(others);
             }
         } else {
-            posts = postRepository.findAllByOrderByCreatedAtDesc();
+            // No following: just show unread posts
+            posts = postRepository.findByIdNotIn(excludeIds, pageable);
+        }
+        
+        // 3. Fallback: If still no posts (all read), fetch random posts to keep feed alive
+        if (posts.isEmpty()) {
+            posts = postRepository.findRandomPosts(limit, excludeIds);
         }
         
         // Collect all author IDs to fetch users in one batch

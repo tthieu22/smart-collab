@@ -9,9 +9,20 @@ export class HomeController {
 
   @Get('feed')
   @UseGuards(JwtAuthGuard)
-  async getFeed(@Req() req: any) {
+  async getFeed(
+    @Req() req: any,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('excludeIds') excludeIds?: string,
+  ) {
     return firstValueFrom(
-      this.homeClient.send({ cmd: 'home.feed.get' }, { userId: req.user.userId })
+      this.homeClient.send(
+        { cmd: 'home.feed.get' },
+        { 
+          userId: req.user.userId,
+          payload: { page, limit, excludeIds }
+        }
+      )
     );
   }
 

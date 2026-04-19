@@ -13,10 +13,10 @@ export class ColumnService {
   ) {}
 
   private async request(pattern: string, data: any): Promise<any> {
-    this.logger.log(`[Column RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
+    // this.logger.log(`[Column RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
     try {
       const result = await this.projectClient.send({ cmd: pattern }, data).toPromise();
-      this.logger.log(`[Column RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
+      // this.logger.log(`[Column RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
       return result;
     } catch (err: any) {
       this.logger.error(`[Column RPC] Failed ${pattern}: ${err.message}`);

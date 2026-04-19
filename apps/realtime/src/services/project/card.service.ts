@@ -14,11 +14,11 @@ export class CardService {
   ) {}
 
   private async request(pattern: string, data: any): Promise<any> {
-    this.logger.log(`[Card RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
+    // this.logger.log(`[Card RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
     try {
       const observable = this.projectClient.send({ cmd: pattern }, data);
       const result = await lastValueFrom(observable);
-      this.logger.log(`[Card RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
+      // this.logger.log(`[Card RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
       return result;
     } catch (err: any) {
       this.logger.error(`[Card RPC] Failed ${pattern}: ${err.message}`);
@@ -30,7 +30,7 @@ export class CardService {
     this.logger.log(`[createCard] received payload: ${JSON.stringify(payload)}, userId: ${userId}`);
     const dto = { ...payload, createdById: userId };
     const result = await this.request('project.card.create', dto);
-    this.logger.log(`[createCard] completed with result: ${JSON.stringify(result)}`);
+    // this.logger.log(`[createCard] completed with result: ${JSON.stringify(result)}`);
     return {
       status: 'success',
       correlationId: payload.correlationId,
@@ -41,7 +41,7 @@ export class CardService {
   async updateCard(payload: any) {
     this.logger.log(`[updateCard] received payload: ${JSON.stringify(payload)}`);
     const result = await this.request('project.card.update', payload);
-    this.logger.log(`[updateCard] completed with result: ${JSON.stringify(result)}`);
+    // this.logger.log(`[updateCard] completed with result: ${JSON.stringify(result)}`);
     return {
       status: 'success',
       correlationId: payload.correlationId,
@@ -57,13 +57,13 @@ export class CardService {
       cardId,
       userId,
       async () => {
-        this.logger.log(`[deleteCard] Acquired lock for projectId=${projectId}, cardId=${cardId}`);
+        // this.logger.log(`[deleteCard] Acquired lock for projectId=${projectId}, cardId=${cardId}`);
         const res = await this.request('project.card.delete', { projectId, cardId, correlationId });
-        this.logger.log(`[deleteCard] Released lock for projectId=${projectId}, cardId=${cardId}`);
+        // this.logger.log(`[deleteCard] Released lock for projectId=${projectId}, cardId=${cardId}`);
         return { status: 'success', correlationId, data: res };
       },
     );
-    this.logger.log(`[deleteCard] completed with result: ${JSON.stringify(result)}`);
+    // this.logger.log(`[deleteCard] completed with result: ${JSON.stringify(result)}`);
     return result;
   }
 
@@ -81,14 +81,14 @@ export class CardService {
       cardId,
       userId,
       async () => {
-        this.logger.log(`[moveCard] Acquired lock for projectId=${projectId}, cardId=${cardId}`);
+        // this.logger.log(`[moveCard] Acquired lock for projectId=${projectId}, cardId=${cardId}`);
         const res = await this.request('project.card.move', payload);
-        this.logger.log(`[moveCard] Released lock for projectId=${projectId}, cardId=${cardId}`);
+        // this.logger.log(`[moveCard] Released lock for projectId=${projectId}, cardId=${cardId}`);
         return { status: 'success', correlationId, data: res };
       },
     );
 
-    this.logger.log(`[moveCard] completed with result: ${JSON.stringify(result)}`);
+    // this.logger.log(`[moveCard] completed with result: ${JSON.stringify(result)}`);
     return result;
   }
 
@@ -105,9 +105,9 @@ export class CardService {
       cardId,
       userId,
       async () => {
-        this.logger.log(`[copyCard] Acquired lock for projectId=${projectId}, cardId=${cardId}`);
+        // this.logger.log(`[copyCard] Acquired lock for projectId=${projectId}, cardId=${cardId}`);
         const res = await this.request('project.card.copy', payload);
-        this.logger.log(`[copyCard] Released lock for projectId=${projectId}, cardId=${cardId}`);
+        // this.logger.log(`[copyCard] Released lock for projectId=${projectId}, cardId=${cardId}`);
         return {
           status: 'success',
           correlationId,
@@ -116,7 +116,7 @@ export class CardService {
       },
     );
 
-    this.logger.log(`[copyCard] completed with result: ${JSON.stringify(result)}`);
+    // this.logger.log(`[copyCard] completed with result: ${JSON.stringify(result)}`);
     return result;
   }
 

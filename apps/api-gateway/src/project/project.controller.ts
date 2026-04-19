@@ -64,22 +64,26 @@ export class ProjectController {
       this.projectClient.send({ cmd: 'project.get' }, dto),
     );
 
-    this.logger.log(`Get project response: ${JSON.stringify(result)}`);
+    // this.logger.log(`Get project response: ${JSON.stringify(result)}`);
     return result;
   }
 
   /** GET ALL PROJECTS */
   @Post('get-all')
-  async getAllProjects(@Body() body: { userId?: string }, @Req() req: any) {
+  async getAllProjects(@Body() body: { userId?: string, page?: number, limit?: number, search?: string }, @Req() req: any) {
     const userId = req.user?.userId;
-    const dto = { ...body, userId };
+    const page = body.page ? Number(body.page) : 1;
+    const limit = body.limit ? Number(body.limit) : 10;
+    const search = body.search;
+    
+    const dto = { ...body, userId, page, limit, search };
     this.logger.log(`Received get-all projects request: ${JSON.stringify(dto)}`);
 
     const result = await firstValueFrom(
       this.projectClient.send({ cmd: 'project.get_all' }, dto),
     );
 
-    this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
+    // this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
     return result;
   }
   
@@ -94,7 +98,7 @@ export class ProjectController {
       this.projectClient.send({ cmd: 'project.get.card' }, dto),
     );
 
-    this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
+    // this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
     return result;
   }
 

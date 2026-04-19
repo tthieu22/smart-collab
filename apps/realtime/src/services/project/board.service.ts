@@ -13,10 +13,10 @@ export class BoardService {
   ) {}
 
   private async request(pattern: string, data: any): Promise<any> {
-    this.logger.log(`[Board RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
+    // this.logger.log(`[Board RPC] → ${pattern}, payload: ${JSON.stringify(data)}`);
     try {
       const result = await this.projectClient.send({ cmd: pattern }, data).toPromise();
-      this.logger.log(`[Board RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
+      // this.logger.log(`[Board RPC] ← ${pattern}, result: ${JSON.stringify(result)}`);
       return result;
     } catch (err: any) {
       this.logger.error(`[Board RPC] Failed ${pattern}: ${err.message}`);

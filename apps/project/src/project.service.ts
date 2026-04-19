@@ -241,21 +241,38 @@ export class ProjectService {
     return structure;
   }
 
-  async getAllProjects(userId?: string) {
+  async getAllProjects(userId?: string, page: number = 1, limit: number = 10, search?: string) {
     if (!userId) {
-      return [];
+      return { items: [], total: 0, page, limit };
     }
 
-    return this.prisma.project.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { members: { some: { userId } } },
-        ],
-      },
-      include: { members: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    const skip = (page - 1) * limit;
+    
+    const where: any = {
+      OR: [
+        { ownerId: userId },
+        { members: { some: { userId } } },
+      ],
+    };
+
+    if (search) {
+      where.name = { contains: search, mode: 'insensitive' };
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.project.findMany({
+        where,
+        include: { members: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.project.count({
+        where,
+      }),
+    ]);
+
+    return { items, total, page, limit };
   }
 
   private async ensureDefaultBoards(ownerId: string) {

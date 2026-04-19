@@ -53,7 +53,18 @@ public class HomeMessageHandler {
         try {
             switch (cmd) {
                 case "home.feed.get":
-                    return feedService.getFeed(userId);
+                    int page = payload != null && payload.get("page") != null ? Integer.parseInt(String.valueOf(payload.get("page"))) : 0;
+                    int limit = payload != null && payload.get("limit") != null ? Integer.parseInt(String.valueOf(payload.get("limit"))) : 10;
+                    List<String> excludeIds = new ArrayList<>();
+                    if (payload != null && payload.get("excludeIds") != null) {
+                        Object ex = payload.get("excludeIds");
+                        if (ex instanceof List) {
+                            excludeIds = (List<String>) ex;
+                        } else if (ex instanceof String s && !s.isEmpty()) {
+                            excludeIds = java.util.Arrays.asList(s.split(","));
+                        }
+                    }
+                    return feedService.getFeed(userId, page, limit, excludeIds);
 
                 case "home.post.create":
                     Post post = new Post();

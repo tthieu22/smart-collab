@@ -2,6 +2,8 @@
 
 import { MailOutlined, CalendarOutlined, AppstoreOutlined, SwitcherOutlined } from "@ant-design/icons";
 import { useBoardStore } from "@smart/store/setting";
+import { useState } from "react";
+import ProjectSwitchModal from "./ProjectSwitchModal";
 
 interface ProjectActionBarProps {
   activeComponents: string[];
@@ -11,6 +13,7 @@ interface ProjectActionBarProps {
 export default function ProjectActionBar({ activeComponents, onToggle }: ProjectActionBarProps) {
   // Dùng store để lấy theme nhưng không dùng biến style nữa, chỉ để biết theme hiện tại (nếu cần)
   const theme = useBoardStore((s) => s.theme);
+  const [isSwitchModalOpen, setIsSwitchModalOpen] = useState(false);
 
   const buttons = [
     { key: "inbox", label: "Inbox", icon: <MailOutlined /> },
@@ -32,7 +35,13 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
         return (
           <button
             key={key}
-            onClick={() => onToggle(key)}
+            onClick={() => {
+              if (key === "switch") {
+                setIsSwitchModalOpen(true);
+              } else {
+                onToggle(key);
+              }
+            }}
             className={`
               flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-150
               ${isActive 
@@ -46,6 +55,11 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
           </button>
         );
       })}
+
+      <ProjectSwitchModal 
+        isOpen={isSwitchModalOpen} 
+        onClose={() => setIsSwitchModalOpen(false)} 
+      />
     </div>
   );
 }
