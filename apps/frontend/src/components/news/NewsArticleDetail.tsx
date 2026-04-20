@@ -44,6 +44,10 @@ export function NewsArticleDetail({
           ) : null}
         </div>
 
+        <h1 className="mb-4 text-xl font-bold leading-tight text-gray-900 dark:text-gray-100">
+          {article.title || 'Tin tức mới'}
+        </h1>
+
         <NewsLinkifiedContent
           text={article.content}
           className="whitespace-pre-wrap break-words text-sm leading-7 text-gray-800 dark:text-gray-100"
@@ -58,7 +62,7 @@ export function NewsArticleDetail({
                 key={m.id}
                 className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-neutral-800 dark:bg-neutral-900"
               >
-                {m.type === 'image' ? (
+                {m.type?.toLowerCase() === 'image' ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={m.url}

@@ -46,7 +46,7 @@ export default function NewsPage() {
             </Card>
           ) : (
             articles.map((article) => {
-              const thumb = article.media?.find((m) => m.type === 'image') ?? article.media?.[0];
+              const thumb = article.media?.find((m) => m.type?.toLowerCase() === 'image') ?? article.media?.[0];
               const excerpt = article.content.replace(/\s+/g, ' ').trim();
               const excerptShort = excerpt.length > 180 ? `${excerpt.slice(0, 180)}…` : excerpt;
 
@@ -59,7 +59,7 @@ export default function NewsPage() {
                     <div className="flex gap-3">
                       {thumb?.url ? (
                         <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-900">
-                          {thumb.type === 'image' ? (
+                          {thumb.type?.toLowerCase() === 'image' ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={thumb.url}
@@ -72,7 +72,10 @@ export default function NewsPage() {
                         </div>
                       ) : null}
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium leading-snug text-gray-900 dark:text-gray-100">
+                        <h3 className="text-base font-bold leading-snug text-gray-900 dark:text-gray-100 mb-1">
+                          {article.title || 'Tin tức mới'}
+                        </h3>
+                        <p className="text-sm font-medium leading-snug text-gray-700 dark:text-gray-300">
                           {excerptShort || 'Bài không có nội dung'}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">

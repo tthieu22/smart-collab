@@ -148,7 +148,7 @@ public class AutoPostService {
             String imageUrl = data.get("imageUrl");
             if (imageUrl != null && !imageUrl.isBlank()) {
                 article.setMedia(List.of(Map.of(
-                    "type", "IMAGE",
+                    "type", "image",
                     "url", imageUrl
                 )));
             }
@@ -252,10 +252,10 @@ public class AutoPostService {
             // Basic guard: if body is too short or just repeats common prompt keywords, ignore it
             if (body.length() > 50 && !body.toLowerCase().contains("tao bai viet tin tuc")) {
                 Map<String, String> result = new HashMap<>();
-                result.put("title", String.valueOf(payload.getOrDefault("title", "Tin tức mới")));
+                result.put("title", payload.get("title") != null ? String.valueOf(payload.get("title")) : "Tin tức mới");
                 result.put("content", body);
-                result.put("imageUrl", String.valueOf(payload.getOrDefault("imageUrl", "")));
-                result.put("linkUrl", String.valueOf(payload.getOrDefault("linkUrl", "")));
+                result.put("imageUrl", payload.get("imageUrl") != null ? String.valueOf(payload.get("imageUrl")) : "");
+                result.put("linkUrl", payload.get("linkUrl") != null ? String.valueOf(payload.get("linkUrl")) : "");
                 return Optional.of(result);
             } else {
                 log.warn("AI returned content that is too short or looks like a prompt: {}", body);
@@ -267,10 +267,10 @@ public class AutoPostService {
             String body = String.valueOf(nested.get("content")).trim();
             if (!body.isEmpty()) {
                 Map<String, String> result = new HashMap<>();
-                result.put("title", String.valueOf(nested.getOrDefault("title", "Tin tức mới")));
+                result.put("title", nested.get("title") != null ? String.valueOf(nested.get("title")) : "Tin tức mới");
                 result.put("content", body);
-                result.put("imageUrl", String.valueOf(nested.getOrDefault("imageUrl", "")));
-                result.put("linkUrl", String.valueOf(nested.getOrDefault("linkUrl", "")));
+                result.put("imageUrl", nested.get("imageUrl") != null ? String.valueOf(nested.get("imageUrl")) : "");
+                result.put("linkUrl", nested.get("linkUrl") != null ? String.valueOf(nested.get("linkUrl")) : "");
                 return Optional.of(result);
             }
         }
