@@ -228,22 +228,25 @@ Rules:
 `;
   }
 
-  generateNewsPost(template: string, context: Record<string, unknown>, locale = 'vi') {
+  generateNewsPost(processedTemplate: string, context: Record<string, unknown>, locale = 'vi') {
     return `
-You are a social news writer for SmartCollab.
+You are a creative social news editor. 
+Search your knowledge (simulate a Google search) and use the PROVIDED web data to find real, specific details about this topic: "${processedTemplate}"
 
-Template:
-${template}
+PROVIDED WEB DATA (use as primary source):
+${context.scraped_web_data || 'No direct web data found. Use your general knowledge.'}
 
-Context:
-${JSON.stringify(context, null, 2)}
-
-Write a short feed post in language ${locale}. Keep it practical and concise.
-
-Return ONLY valid JSON:
-{
-  "content": "Final post content"
-}
+Write an engaging news post with a catchy title. 
+Rules:
+1. Language: ${locale}
+2. DO NOT repeat the instruction. Write the ACTUAL post content.
+3. Include a real link to a news source (Google News, Reuters, etc.) if possible.
+4. Return ONLY valid JSON: { 
+      "title": "A catchy title",
+      "content": "...", 
+      "imageUrl": "URL to a relevant image or a descriptive prompt for one",
+      "linkUrl": "A real news URL related to the topic"
+   }
 `;
   }
 

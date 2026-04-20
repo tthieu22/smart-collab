@@ -132,15 +132,27 @@ public class AutoPostService {
         int postCount = Math.max(1, Math.min(settings.getPostCountPerRun(), MAX_POSTS_PER_RUN));
         int saved = 0;
         for (int i = 0; i < postCount; i++) {
-            Optional<String> generated = generateContentWithAi(settings, topic, source, i + 1);
+            Optional<Map<String, String>> generated = generateContentWithAi(settings, topic, source, i + 1);
             if (generated.isEmpty()) {
-                log.warn("Skipping news item {} — AI did not return content", i + 1);
+                log.warn("[AutoPost] Item {} skipped: AI failed to generate quality content (possibly echoed prompt or content too short)", i + 1);
                 continue;
             }
+            Map<String, String> data = generated.get();
             NewsArticle article = new NewsArticle();
             article.setAuthorId(author.getId());
             article.setCategory("NEWS");
-            article.setContent(generated.get());
+            article.setTitle(data.get("title"));
+            article.setContent(data.get("content"));
+            article.setLinkUrl(data.get("linkUrl"));
+            
+            String imageUrl = data.get("imageUrl");
+            if (imageUrl != null && !imageUrl.isBlank()) {
+                article.setMedia(List.of(Map.of(
+                    "type", "IMAGE",
+                    "url", imageUrl
+                )));
+            }
+            
             article.setCreatedAt(LocalDateTime.now());
             article.setUpdatedAt(LocalDateTime.now());
             newsArticleRepository.save(article);
@@ -169,7 +181,7 @@ public class AutoPostService {
         );
     }
 
-    private Optional<String> generateContentWithAi(AutoPostSettings settings, String topic, String source, int index) {
+    private Optional<Map<String, String>> generateContentWithAi(AutoPostSettings settings, String topic, String source, int index) {
         try {
             Map<String, Object> pattern = Map.of("cmd", "ai.generate-news-post");
             Map<String, Object> context = new HashMap<>();
@@ -202,7 +214,7 @@ public class AutoPostService {
      * {@code { id, err, response: { success, content, ... } }}.
      * Plain maps without {@code response} are still supported.
      */
-    private Optional<String> extractNewsBodyFromNestAiReply(Object response) {
+    private Optional<Map<String, String>> extractNewsBodyFromNestAiReply(Object response) {
         if (response == null) {
             log.warn("AI RPC reply is null (timeout or no consumer?)");
             return Optional.empty();
@@ -237,8 +249,16 @@ public class AutoPostService {
         Object content = payload.get("content");
         if (content != null) {
             String body = String.valueOf(content).trim();
-            if (!body.isEmpty()) {
-                return Optional.of(body);
+            // Basic guard: if body is too short or just repeats common prompt keywords, ignore it
+            if (body.length() > 50 && !body.toLowerCase().contains("tao bai viet tin tuc")) {
+                Map<String, String> result = new HashMap<>();
+                result.put("title", String.valueOf(payload.getOrDefault("title", "Tin tức mới")));
+                result.put("content", body);
+                result.put("imageUrl", String.valueOf(payload.getOrDefault("imageUrl", "")));
+                result.put("linkUrl", String.valueOf(payload.getOrDefault("linkUrl", "")));
+                return Optional.of(result);
+            } else {
+                log.warn("AI returned content that is too short or looks like a prompt: {}", body);
             }
         }
 
@@ -246,7 +266,12 @@ public class AutoPostService {
         if (nestedData instanceof Map<?, ?> nested && nested.get("content") != null) {
             String body = String.valueOf(nested.get("content")).trim();
             if (!body.isEmpty()) {
-                return Optional.of(body);
+                Map<String, String> result = new HashMap<>();
+                result.put("title", String.valueOf(nested.getOrDefault("title", "Tin tức mới")));
+                result.put("content", body);
+                result.put("imageUrl", String.valueOf(nested.getOrDefault("imageUrl", "")));
+                result.put("linkUrl", String.valueOf(nested.getOrDefault("linkUrl", "")));
+                return Optional.of(result);
             }
         }
 

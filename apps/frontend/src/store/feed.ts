@@ -49,14 +49,16 @@ interface FeedState {
   hasMore: boolean;
   page: number;
   commentsByPostId: Record<FeedID, FeedID[]>;
+  draftTitle: string;
   draftText: string;
+  draftLinkUrl: string;
   draftImages: DraftImage[];
 
   bootstrap: (dataset: FeedDataset) => void;
   setLoading: (value: boolean) => void;
   setError: (value: string | null) => void;
 
-  createPost: (input: { content: string; media?: FeedPost['media'] }) => Promise<void>;
+  createPost: (input: { title?: string; content: string; linkUrl?: string; media?: FeedPost['media'] }) => Promise<void>;
   toggleReaction: (postId: FeedID, reaction: FeedReactionType) => Promise<void>;
   sharePost: (postId: FeedID) => void;
   toggleBookmark: (postId: FeedID) => void;
@@ -65,7 +67,9 @@ interface FeedState {
   toggleCommentLike: (commentId: FeedID) => void;
   followUser: (targetId: FeedID) => Promise<void>;
   unfollowUser: (targetId: FeedID) => Promise<void>;
+  setDraftTitle: (title: string) => void;
   setDraftText: (text: string) => void;
+  setDraftLinkUrl: (url: string) => void;
   addDraftImages: (images: DraftImage[]) => void;
   removeDraftImage: (index: number) => void;
   clearDraft: () => void;
@@ -94,7 +98,9 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   hasMore: true,
   page: 0,
   commentsByPostId: {},
+  draftTitle: '',
   draftText: '',
+  draftLinkUrl: '',
   draftImages: [],
 
   bootstrap: (dataset) => {
@@ -155,11 +161,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   setLoading: (value) => set({ isLoading: value }),
   setError: (value) => set({ error: value }),
 
-  createPost: async ({ content, media }) => {
+  createPost: async ({ title, content, linkUrl, media }) => {
     try {
       const res = await autoRequest<FeedPost>('/home/post', {
         method: 'POST',
-        body: JSON.stringify({ content, media }),
+        body: JSON.stringify({ title, content, linkUrl, media }),
       });
       
       set((s) => ({
@@ -309,18 +315,22 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     }
   },
 
+  setDraftTitle: (title) => set({ draftTitle: title }),
   setDraftText: (text) => set({ draftText: text }),
+  setDraftLinkUrl: (url) => set({ draftLinkUrl: url }),
   addDraftImages: (images) =>
     set((s) => ({ draftImages: [...s.draftImages, ...images].slice(0, 6) })),
   removeDraftImage: (index) =>
     set((s) => ({
       draftImages: s.draftImages.filter((_, i) => i !== index),
     })),
-  clearDraft: () => set({ draftText: '', draftImages: [] }),
+  clearDraft: () => set({ draftTitle: '', draftText: '', draftLinkUrl: '', draftImages: [] }),
   
   publishDraft: async () => {
     const s = get();
+    const title = s.draftTitle.trim();
     const content = s.draftText.trim();
+    const linkUrl = s.draftLinkUrl.trim();
     const draftImages = s.draftImages;
 
     if (!content && !draftImages.length) return;
@@ -352,7 +362,12 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       }
 
       // 2. Create post
-      await s.createPost({ content: content || 'Ảnh mới', media: mediaUrls });
+      await s.createPost({ 
+        title: title || undefined, 
+        content: content || 'Ảnh mới', 
+        linkUrl: linkUrl || undefined, 
+        media: mediaUrls 
+      });
       s.clearDraft();
     } catch (err: any) {
       set({ error: err.message });

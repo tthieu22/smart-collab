@@ -5,6 +5,7 @@ import { firstValueFrom, timeout, retry } from 'rxjs';
 import { DomainService } from './domain.service';
 import { EventsPublisher } from './events.publisher';
 import { PromptFactory } from './prompt.factory';
+import { ScraperService } from './scraper.service';
 import { LlmService } from '../llm/llm.service';
 
 import type { BuildProjectOutput } from './contracts';
@@ -32,6 +33,7 @@ export class AiService {
     private readonly domainService: DomainService,
     private readonly events: EventsPublisher,
     private readonly promptFactory: PromptFactory,
+    private readonly scraperService: ScraperService,
     private readonly llm: LlmService,
 
     private readonly projectGen: ProjectGenerator,
@@ -294,26 +296,52 @@ export class AiService {
     locale?: string;
   }) {
     const locale = payload?.locale ?? 'vi';
-    const template =
-      payload?.template?.trim() ||
-      'Viet mot ban tin ngan gon ve chu de {{topic}}';
+    let processedTemplate = payload.template;
+    if (payload?.context) {
+      Object.entries(payload.context).forEach(([key, val]) => {
+        const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'gi');
+        processedTemplate = processedTemplate.replace(regex, String(val));
+      });
+    }
+
+    // --- SCRAPING LOGIC ---
+    this.logger.log(`Performing web search/scrape for: ${processedTemplate}`);
+    const searchLinks = await this.scraperService.searchLinks(processedTemplate);
+    let scrapedContent = '';
+    
+    // Scrape top 2 links to get more data
+    for (const link of searchLinks.slice(0, 2)) {
+      const pageText = await this.scraperService.scrapeUrl(link);
+      if (pageText) {
+        scrapedContent += `\n--- CONTENT FROM ${link} ---\n${pageText}\n`;
+      }
+    }
+    
+    const context = {
+      ...(payload?.context ?? {}),
+      scraped_web_data: scrapedContent.substring(0, 5000) // Provide more data to AI
+    };
+
     const prompt = this.promptFactory.generateNewsPost(
-      template,
-      payload?.context ?? {},
+      processedTemplate,
+      context,
       locale,
     );
     const aiRes = await this.llm.complete(prompt);
-    console.log('aiRes', aiRes);
     let content = '';
+    let contentObj: any = {};
     try {
-      const parsed = JSON.parse(aiRes.content);
-      content = String(parsed?.content ?? '').trim();
+      contentObj = JSON.parse(aiRes.content);
+      content = String(contentObj?.content ?? '').trim();
     } catch {
       content = String(aiRes.content ?? '').trim();
     }
 
     const looksLikeTemplate =
-      !content || content === template || /\{\{\s*topic\s*\}\}/i.test(content);
+      !content || 
+      content.length < 20 || 
+      content.toLowerCase().includes(processedTemplate.toLowerCase().substring(0, 20)) ||
+      /\{\{\s*\w+\s*\}\}/i.test(content);
 
     if (looksLikeTemplate) {
       return {
@@ -324,7 +352,10 @@ export class AiService {
 
     return {
       success: true,
-      content,
+      title: contentObj.title || 'Tin tức mới',
+      content: contentObj.content || content,
+      imageUrl: contentObj.imageUrl || null,
+      linkUrl: contentObj.linkUrl || null
     };
   }
 

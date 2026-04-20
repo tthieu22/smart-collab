@@ -2,10 +2,10 @@
 
 import React, { useMemo, useState } from 'react';
 import { Row, Col, Card, Statistic, Progress, List, Avatar, Typography, theme as antdTheme, Tag, Tooltip, Space, Button, Skeleton, Empty, message } from 'antd';
-import { 
-  CheckCircleOutlined, 
-  ClockCircleOutlined, 
-  LineChartOutlined, 
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  LineChartOutlined,
   TeamOutlined,
   AlertOutlined,
   ThunderboltOutlined,
@@ -41,7 +41,7 @@ const DashboardView: React.FC<Props> = ({ board }) => {
   const { token } = antdTheme.useToken();
   const theme = useBoardStore((s) => s.theme);
   const { cards, columnCards, boardColumns, columns } = projectStore();
-  
+
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
 
@@ -75,7 +75,7 @@ const DashboardView: React.FC<Props> = ({ board }) => {
     const columnIds = boardColumns[board.id] || [];
     const lastColumnId = columnIds[columnIds.length - 1];
     const doneCards = boardCards.filter(c => c.columnId === lastColumnId || c.status === 'ARCHIVED');
-    
+
     const highPriority = boardCards.filter(c => c.priority === 3 || c.priority === 2).length;
     const overdue = boardCards.filter(c => c.deadline && dayjs(c.deadline).isBefore(dayjs()) && c.columnId !== lastColumnId).length;
 
@@ -160,14 +160,14 @@ const DashboardView: React.FC<Props> = ({ board }) => {
 
   const aiCardStyle = {
     ...cardStyle,
-    background: theme === 'dark' 
-      ? 'linear-gradient(135deg, rgba(30, 31, 34, 0.8) 0%, rgba(58, 48, 114, 0.2) 100%)' 
+    background: theme === 'dark'
+      ? 'linear-gradient(135deg, rgba(30, 31, 34, 0.8) 0%, rgba(58, 48, 114, 0.2) 100%)'
       : 'linear-gradient(135deg, #fff 0%, #f0f5ff 100%)',
     border: theme === 'dark' ? '1px solid rgba(131, 103, 255, 0.2)' : '1px solid rgba(24, 144, 255, 0.1)',
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 scroll-smooth scrollbar-hide">
+    <div className="flex-1 overflow-y-auto p-4 scroll-smooth scrollbar-hide">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -180,7 +180,7 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                 <ProjectOutlined className="text-white text-xl" />
               </div>
               <Title level={2} className="m-0">
-                Báo cáo {projectStore.getState().currentProject?.name} 
+                Báo cáo {projectStore.getState().currentProject?.name}
                 <Text type="secondary" style={{ fontSize: '20px', fontWeight: 400, marginLeft: '8px' }}>
                   / {board.title}
                 </Text>
@@ -188,9 +188,9 @@ const DashboardView: React.FC<Props> = ({ board }) => {
             </div>
             <Text type="secondary" className="text-sm">Phân tích hiệu suất dự án và thống kê chi tiết các hoạt động của thành viên.</Text>
           </div>
-          <Button 
-            type="primary" 
-            icon={isAiLoading ? <ReloadOutlined spin /> : <RobotOutlined />} 
+          <Button
+            type="primary"
+            icon={isAiLoading ? <ReloadOutlined spin /> : <RobotOutlined />}
             onClick={handleAiAnalyze}
             loading={isAiLoading}
             className="rounded-full px-6 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 border-none shadow-lg shadow-blue-500/20"
@@ -213,50 +213,51 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                   <div className="py-4">
                     <Skeleton active avatar paragraph={{ rows: 4 }} title />
                     <div className="flex gap-4 mt-6">
-                       <Skeleton.Button active shape="round" style={{ width: 150 }} />
-                       <Skeleton.Button active shape="round" style={{ width: 150 }} />
+                      <Skeleton.Button active shape="round" style={{ width: 150 }} />
+                      <Skeleton.Button active shape="round" style={{ width: 150 }} />
                     </div>
                   </div>
                 ) : aiAnalysis && (
                   <Row gutter={[32, 32]}>
-                    <Col xs={24} lg={12}>
-                      <Space direction="vertical" size="large">
+                    <Col xs={24} xl={13}>
+                      <div className="flex flex-col gap-6 h-full">
                         <div>
-                          <Space className="mb-4">
-                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                               <RobotOutlined />
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                              <RobotOutlined />
                             </div>
-                            <Title level={4} className="m-0">AI Summary</Title>
-                          </Space>
-                          <Paragraph className="text-lg leading-relaxed italic opacity-90">
+                            <Title level={4} className="m-0 tracking-tight">AI Summary</Title>
+                          </div>
+                          <Paragraph className="text-lg leading-relaxed italic opacity-90 break-words border-l-4 border-blue-500/30 pl-4 py-1">
                             "{aiAnalysis.summary}"
                           </Paragraph>
                         </div>
-                        
+
                         <div>
-                          <Text strong className="text-xs uppercase tracking-widest text-blue-500 mb-3 block">Gợi ý hành động</Text>
+                          <Text strong className="text-[10px] uppercase tracking-[0.2em] text-blue-500 mb-3 block">Gợi ý hành động</Text>
                           <div className="flex flex-wrap gap-2">
                             {aiAnalysis.recommendations.map((rec, i) => (
-                              <Tag key={i} color="blue" bordered={false} className="rounded-full px-4 py-1 flex items-center gap-2">
+                              <Tag key={i} color="blue" bordered={false} className="rounded-full px-4 py-1 flex items-center gap-2 m-0 bg-blue-500/10 text-blue-600 dark:text-blue-400">
                                 <RocketOutlined className="text-[10px]" /> {rec}
                               </Tag>
                             ))}
                           </div>
                         </div>
-                      </Space>
+                      </div>
                     </Col>
-                    
-                    <Col xs={24} lg={12}>
-                      <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-white/5' : 'bg-blue-50/50'} border border-blue-100/10`}>
-                        <Text strong className="text-xs uppercase tracking-widest text-indigo-500 mb-4 block">Nhận định chi tiết</Text>
+
+                    <Col xs={24} xl={11}>
+                      <div className={`p-6 rounded-2xl h-full ${theme === 'dark' ? 'bg-white/5' : 'bg-blue-50/30'} border border-blue-500/10`}>
+                        <Text strong className="text-[10px] uppercase tracking-[0.2em] text-indigo-500 mb-4 block">Nhận định chi tiết</Text>
                         <List
                           dataSource={aiAnalysis.insights}
+                          split={false}
                           renderItem={(insight) => (
-                            <List.Item className="border-none py-2">
-                              <Space align="start">
-                                <BulbOutlined className="text-orange-400 mt-1" />
-                                <Text className="opacity-85">{insight}</Text>
-                              </Space>
+                            <List.Item className="border-none py-2 px-0">
+                              <div className="flex items-start gap-3">
+                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                                <Text className="opacity-85 text-sm leading-relaxed">{insight}</Text>
+                              </div>
                             </List.Item>
                           )}
                         />
@@ -286,12 +287,12 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                   prefix={React.cloneElement(item.icon as React.DetailedReactHTMLElement<any, any>, { className: 'mr-3' })}
                 />
                 <div className="mt-2">
-                   <Progress 
-                      percent={stats.total > 0 ? (item.value / stats.total) * 100 : 0} 
-                      size="small" 
-                      showInfo={false} 
-                      strokeColor={item.color} 
-                   />
+                  <Progress
+                    percent={stats.total > 0 ? (item.value / stats.total) * 100 : 0}
+                    size="small"
+                    showInfo={false}
+                    strokeColor={item.color}
+                  />
                 </div>
               </Card>
             </Col>
@@ -316,14 +317,14 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                 </div>
               </div>
               <div className="mt-4 border-t dark:border-white/10 pt-6">
-                 <div className="flex justify-between items-center mb-2">
-                    <Text type="secondary" className="text-xs uppercase font-bold">Checklist hoàn thành</Text>
-                    <Text strong className="text-blue-500">{stats.checklistPercent}%</Text>
-                 </div>
-                 <Progress percent={stats.checklistPercent} status="active" strokeColor="#1890ff" />
-                 <Text type="secondary" className="text-[10px] block mt-1">
-                    {stats.doneChecklist} / {stats.totalChecklist} đầu việc trong checklist đã xong
-                 </Text>
+                <div className="flex justify-between items-center mb-2">
+                  <Text type="secondary" className="text-xs uppercase font-bold">Checklist hoàn thành</Text>
+                  <Text strong className="text-blue-500">{stats.checklistPercent}%</Text>
+                </div>
+                <Progress percent={stats.checklistPercent} status="active" strokeColor="#1890ff" />
+                <Text type="secondary" className="text-[10px] block mt-1">
+                  {stats.doneChecklist} / {stats.totalChecklist} đầu việc trong checklist đã xong
+                </Text>
               </div>
             </Card>
           </Col>
@@ -346,10 +347,10 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                           </Space>
                           <Text strong className="text-xs">{Math.round((m.done / m.count) * 100)}% hoàn thành</Text>
                         </div>
-                        <Progress 
-                          percent={(m.count / stats.total) * 100} 
+                        <Progress
+                          percent={(m.count / stats.total) * 100}
                           success={{ percent: (m.done / m.count) * 100 }}
-                          showInfo={false} 
+                          showInfo={false}
                           strokeColor={token.colorPrimary}
                         />
                       </div>
@@ -389,8 +390,8 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                       <Text strong className="text-xs">{item.title}</Text>
                       <Tag color="blue" bordered={false} className="m-0 text-[10px] px-2">{item.count} thẻ</Tag>
                     </div>
-                    <Progress 
-                      percent={stats.total > 0 ? (item.count / stats.total) * 100 : 0} 
+                    <Progress
+                      percent={stats.total > 0 ? (item.count / stats.total) * 100 : 0}
                       strokeColor={item.color}
                       showInfo={false}
                       status="active"
@@ -405,31 +406,31 @@ const DashboardView: React.FC<Props> = ({ board }) => {
           <Col xs={24}>
             <Card title={<Space><ClockCircleOutlined /> Công việc quan trọng sắp tới hạn</Space>} style={cardStyle}>
               <Row gutter={[24, 24]}>
-                 {upcomingTasks.length > 0 ? upcomingTasks.map(item => (
-                   <Col xs={24} md={12} lg={8} key={item.id}>
-                      <div className={`p-4 rounded-2xl border transition-all hover:border-blue-500/50 cursor-pointer ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-100 shadow-sm'}`}>
-                         <div className="flex justify-between items-start mb-3">
-                            <Tag color={item.priority === 3 ? 'red' : item.priority === 2 ? 'orange' : 'blue'}>
-                               {item.priority === 3 ? 'Khẩn cấp' : item.priority === 2 ? 'Cao' : 'Trung bình'}
-                            </Tag>
-                            <Text type="secondary" className="text-[10px]">{dayjs(item.deadline).format('DD MMM, YYYY')}</Text>
-                         </div>
-                         <Text strong className="block mb-2 text-sm truncate">{item.title}</Text>
-                         <div className="flex justify-between items-center">
-                            <Avatar.Group size="small" maxCount={2}>
-                               {item.members?.map(m => (
-                                 <Tooltip title={m.userName} key={m.userId}>
-                                    <Avatar src={m.userAvatar} icon={<UserOutlined />} />
-                                 </Tooltip>
-                               ))}
-                            </Avatar.Group>
-                            <Text type="secondary" className="text-[10px]">{item.columnId ? columns[item.columnId]?.title : ''}</Text>
-                         </div>
+                {upcomingTasks.length > 0 ? upcomingTasks.map(item => (
+                  <Col xs={24} md={12} lg={8} key={item.id}>
+                    <div className={`p-4 rounded-2xl border transition-all hover:border-blue-500/50 cursor-pointer ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-100 shadow-sm'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <Tag color={item.priority === 3 ? 'red' : item.priority === 2 ? 'orange' : 'blue'}>
+                          {item.priority === 3 ? 'Khẩn cấp' : item.priority === 2 ? 'Cao' : 'Trung bình'}
+                        </Tag>
+                        <Text type="secondary" className="text-[10px]">{dayjs(item.deadline).format('DD MMM, YYYY')}</Text>
                       </div>
-                   </Col>
-                 )) : (
-                   <Empty description="Không có công việc quan trọng nào sắp tới hạn" className="w-full py-10" />
-                 )}
+                      <Text strong className="block mb-2 text-sm truncate">{item.title}</Text>
+                      <div className="flex justify-between items-center">
+                        <Avatar.Group size="small" maxCount={2}>
+                          {item.members?.map(m => (
+                            <Tooltip title={m.userName} key={m.userId}>
+                              <Avatar src={m.userAvatar} icon={<UserOutlined />} />
+                            </Tooltip>
+                          ))}
+                        </Avatar.Group>
+                        <Text type="secondary" className="text-[10px]">{item.columnId ? columns[item.columnId]?.title : ''}</Text>
+                      </div>
+                    </div>
+                  </Col>
+                )) : (
+                  <Empty description="Không có công việc quan trọng nào sắp tới hạn" className="w-full py-10" />
+                )}
               </Row>
             </Card>
           </Col>

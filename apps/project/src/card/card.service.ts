@@ -80,12 +80,11 @@ export class CardService {
     }
 
     // 1. Tính position mới (chèn cuối)
-    const lastPosition = await this.prisma.card.findFirst({
+    const cards = await this.prisma.card.findMany({
       where: { columnId: params.columnId },
-      orderBy: { position: 'desc' },
-      select: { position: true },
+      orderBy: { position: 'asc' },
     });
-    const newPosition = (lastPosition?.position ?? -1) + 1;
+    const newPosition = cards.length;
 
     // 2. Lấy thông tin người tạo (nếu có)
     let createdByName: string | null = null;
@@ -129,7 +128,10 @@ export class CardService {
       },
     });
 
-    // 4. Chuẩn bị trả về (giữ nguyên correlationId nếu có)
+    // 4. Chuẩn hóa lại toàn bộ vị trí trong cột này để đảm bảo tính liên tục (0, 1, 2...)
+    await this.reorderCards(params.columnId);
+
+    // 5. Chuẩn bị trả về (giữ nguyên correlationId nếu có)
     const cardToReturn = {
       correlationId: params.correlationId,
       ...card,
@@ -177,6 +179,20 @@ export class CardService {
     });
 
     return updatedCard;
+  }
+
+  private async reorderCards(columnId: string | null) {
+    if (!columnId) return;
+    const cards = await this.prisma.card.findMany({
+      where: { columnId },
+      orderBy: { position: 'asc' },
+    });
+    for (let i = 0; i < cards.length; i++) {
+      await this.prisma.card.update({
+        where: { id: cards[i].id },
+        data: { position: i },
+      });
+    }
   }
 
   private async findCardDetailById(cardId: string) {
@@ -486,8 +502,23 @@ export class CardService {
         });
       }
 
-      return updatedCard;
+      // 4. Chuẩn hóa lại toàn bộ vị trí ở cả 2 cột (hoặc 1 cột nếu di chuyển nội bộ)
+      await this.reorderCards(currentColumnId);
+      if (destColumnId !== currentColumnId) {
+        await this.reorderCards(destColumnId);
+      }
+
+      // Lấy lại dữ liệu card sau khi đã chuẩn hóa vị trí
+      return this.prisma.card.findUnique({
+        where: { id: cardId },
+        include: { labels: true, views: true, column: true },
+      });
     });
+
+    if (!result) {
+      throw new Error(`Card ${cardId} not found after move`);
+    }
+
     const responseData = {
       srcColumnId: isSameColumn ? destColumnId : currentColumnId,
       newColumnId: result.columnId,
@@ -592,6 +623,8 @@ export class CardService {
       });
     });
 
+    await this.reorderCards(destColumnId);
+
     // 4. Publish event
     await this.amqpConnection.publish('project-exchange', 'card.copied', {
       card: newCard,
@@ -609,11 +642,9 @@ export class CardService {
   }
   
   private async getNextPosition(columnId: string): Promise<number> {
-    const lastCard = await this.prisma.card.findFirst({
+    const count = await this.prisma.card.count({
       where: { columnId },
-      orderBy: { position: 'desc' },
-      select: { position: true },
     });
-    return (lastCard?.position ?? -1) + 1;
+    return count;
   }
 }

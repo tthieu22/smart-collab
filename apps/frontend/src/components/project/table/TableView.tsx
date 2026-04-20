@@ -57,12 +57,12 @@ const TableView: React.FC<Props> = ({ board }) => {
         width: 100,
         render: (url: string) => {
           if (!url) return <div className="w-16 h-10 rounded bg-gray-50 dark:bg-neutral-800/50 border border-dashed border-gray-200 dark:border-neutral-700" />;
-          
+
           const isColor = url.startsWith('rgb') || url.startsWith('#');
           return (
-            <div 
+            <div
               className="w-16 h-10 rounded shadow-sm border border-gray-100 dark:border-neutral-700 transition-transform hover:scale-110 cursor-pointer overflow-hidden"
-              style={{ 
+              style={{
                 backgroundColor: isColor ? url : 'transparent',
                 backgroundImage: isColor ? 'none' : `url("${url}")`,
                 backgroundSize: 'cover',
@@ -80,7 +80,7 @@ const TableView: React.FC<Props> = ({ board }) => {
         width: 250,
         fixed: 'left' as const, // Cố định bên trái
         render: (text: string, record: Card) => (
-          <span 
+          <span
             className="font-medium cursor-pointer hover:text-blue-500 transition-colors"
             onClick={() => setSelectedCardId(record.id)}
           >
@@ -215,14 +215,14 @@ const TableView: React.FC<Props> = ({ board }) => {
   ];
 
   return (
-    <div className="flex-1 flex flex-col p-6 bg-white dark:bg-neutral-900 m-4 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800 min-h-0">
+    <div className="flex-1 flex flex-col p-6 bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800 min-h-0">
       {/* Header with Title and Pagination */}
       <div className="mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0">
         <div>
           <h2 className="text-xl font-semibold dark:text-white">Danh sách công việc</h2>
           <p className="text-sm text-gray-500 dark:text-neutral-400">Tổng cộng {boardCards.length} công việc</p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3 bg-gray-50 dark:bg-neutral-800/50 p-2 rounded-lg border border-gray-100 dark:border-neutral-700 w-full lg:w-auto">
           <Pagination
             size="small"
@@ -248,7 +248,7 @@ const TableView: React.FC<Props> = ({ board }) => {
             content={
               <div className="flex flex-col gap-2 max-h-[300px] overflow-auto p-1">
                 {columnOptions.map(opt => (
-                  <Checkbox 
+                  <Checkbox
                     key={opt.value}
                     checked={visibleColumns.includes(opt.value)}
                     onChange={(e) => {

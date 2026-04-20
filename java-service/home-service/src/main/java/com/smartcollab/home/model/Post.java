@@ -13,7 +13,9 @@ public class Post {
     @Id
     private String id;
     private String authorId;
+    private String title;
     private String content;
+    private String linkUrl;
     private List<Map<String, Object>> media;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

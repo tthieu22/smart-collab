@@ -44,7 +44,9 @@ export interface FeedPost {
   id: FeedID;
   authorId: FeedID;
   createdAt: string; // ISO
+  title?: string;
   content: string;
+  linkUrl?: string;
   media?: FeedMedia[];
 
   reactionSummary: FeedReactionSummary;

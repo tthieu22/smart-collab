@@ -98,7 +98,7 @@ export default function Board({ board }: Props) {
           <h1 className={`text-lg font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             {currentProject?.name}
           </h1>
-          <div className="h-4 w-[1px] bg-white/20" />
+          <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'}`} />
           <div className="flex -space-x-2 overflow-hidden">
             {currentProject?.members?.slice(0, 5).map((member) => {
               const name = (member.user?.firstName && member.user.firstName !== 'User')

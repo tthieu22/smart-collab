@@ -26,11 +26,11 @@ export class ColumnService {
     const board = await this.prisma.board.findUnique({ where: { id: boardId } });
     if (!board) throw new Error(`Board not found: ${boardId}`);
 
-    const lastColumn = await this.prisma.column.findFirst({
+    const columns = await this.prisma.column.findMany({
       where: { boardId },
-      orderBy: { position: 'desc' },
+      orderBy: { position: 'asc' },
     });
-    const newPosition = (lastColumn?.position ?? -1) + 1;
+    const newPosition = columns.length;
 
     const column = await this.prisma.column.create({
       data: {
@@ -47,6 +47,7 @@ export class ColumnService {
     });
 
     const fullColumn = await this.getColumnById(column.id);
+    await this.reorderColumns(boardId);
     this.logger.log(`[COLUMN] Created column ${column.id}`);
 
     // Publish event
@@ -155,6 +156,12 @@ export class ColumnService {
 
     const fullColumn = await this.getColumnById(updatedColumn.id);
 
+    // Chuẩn hóa lại vị trí ở cả 2 board
+    await this.reorderColumns(sourceBoardId);
+    if (targetBoardId !== sourceBoardId) {
+      await this.reorderColumns(targetBoardId);
+    }
+
     this.logger.log(`[COLUMN] Moved ${columnId} → board ${targetBoardId} at ${newPosition}`);
 
     const responseData = {
@@ -209,5 +216,20 @@ export class ColumnService {
         views: true,
       },
     });
+  }
+
+  private async reorderColumns(boardId: string) {
+    const columns = await this.prisma.column.findMany({
+      where: { boardId },
+      orderBy: { position: 'asc' },
+    });
+    for (let i = 0; i < columns.length; i++) {
+      if (columns[i].position !== i) {
+        await this.prisma.column.update({
+          where: { id: columns[i].id },
+          data: { position: i },
+        });
+      }
+    }
   }
 }

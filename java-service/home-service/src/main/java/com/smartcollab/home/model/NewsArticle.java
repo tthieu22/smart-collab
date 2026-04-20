@@ -16,6 +16,7 @@ public class NewsArticle {
     private String authorId;
     /** NEWS = bản tin; TIP = mẹo / hướng dẫn (hiển thị sidebar). */
     private String category;
+    private String title;
     private String content;
     /** Liên kết ngoài tùy chọn (ví dụ “Đọc thêm”). */
     private String linkUrl;

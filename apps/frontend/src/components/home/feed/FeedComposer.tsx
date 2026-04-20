@@ -12,9 +12,13 @@ export default function FeedComposer() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
+    draftTitle,
     draftText,
+    draftLinkUrl,
     draftImages,
+    setDraftTitle,
     setDraftText,
+    setDraftLinkUrl,
     addDraftImages,
     removeDraftImage,
     publishDraft,
@@ -22,9 +26,13 @@ export default function FeedComposer() {
     isLoading,
   } = useFeedStore(
     useShallow((s) => ({
+      draftTitle: s.draftTitle,
       draftText: s.draftText,
+      draftLinkUrl: s.draftLinkUrl,
       draftImages: s.draftImages,
+      setDraftTitle: s.setDraftTitle,
       setDraftText: s.setDraftText,
+      setDraftLinkUrl: s.setDraftLinkUrl,
       addDraftImages: s.addDraftImages,
       removeDraftImage: s.removeDraftImage,
       publishDraft: s.publishDraft,
@@ -63,13 +71,31 @@ export default function FeedComposer() {
           ) : null}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 space-y-2">
+          <input
+            type="text"
+            value={draftTitle}
+            onChange={(e) => setDraftTitle(e.target.value)}
+            disabled={isLoading}
+            placeholder="Tiêu đề bài viết (tùy chọn)"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-bold outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 disabled:opacity-60"
+          />
+
           <textarea
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
             disabled={isLoading}
             placeholder="Bạn đang nghĩ gì?"
             className="w-full min-h-24 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 disabled:opacity-60"
+          />
+
+          <input
+            type="text"
+            value={draftLinkUrl}
+            onChange={(e) => setDraftLinkUrl(e.target.value)}
+            disabled={isLoading}
+            placeholder="Liên kết tham khảo (http://...)"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 disabled:opacity-60 italic"
           />
 
           {draftImages.length ? (

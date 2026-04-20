@@ -61,7 +61,7 @@ const TimelineView: React.FC<Props> = ({ board }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden h-full p-4 select-none">
+    <div className="flex-1 flex flex-col overflow-hidden h-full select-none">
       {/* Header & Controls */}
       <div className="flex items-center justify-between mb-4 bg-white dark:bg-[#1e1f22]/80 backdrop-blur-xl p-3 rounded-xl border dark:border-white/10 shadow-sm">
         <div className="flex items-center gap-3">

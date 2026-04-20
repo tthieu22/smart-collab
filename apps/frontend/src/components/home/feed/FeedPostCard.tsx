@@ -99,9 +99,31 @@ export default function FeedPostCard({ postId }: { postId: string }) {
         onClick={() => setActivePostId(post.id)}
         className="block group cursor-pointer"
       >
-        <div className="mt-3 text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        {post.title && (
+          <div className="mt-3 text-base font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
+            {post.title}
+          </div>
+        )}
+
+        <div className="mt-2 text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words opacity-90 leading-relaxed">
           {post.content}
         </div>
+
+        {post.linkUrl && (
+          <div className="mt-3">
+            <Button 
+              variant="outline" 
+              size="small" 
+              className="text-xs text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(post.linkUrl, '_blank');
+              }}
+            >
+              Xem chi tiết
+            </Button>
+          </div>
+        )}
 
         {media.length > 0 && (
           <div className={`mt-3 grid gap-2 ${media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>

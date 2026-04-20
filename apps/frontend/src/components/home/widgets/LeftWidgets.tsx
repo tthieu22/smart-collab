@@ -80,6 +80,12 @@ export default function LeftWidgets() {
             sub="Bản tin AI & mẹo"
             active={isNews}
           />
+          <Item
+            href="/admin/ai-auto-post"
+            label="Cấu hình AI"
+            sub="Tự động đăng bài"
+            active={pathname === '/admin/ai-auto-post'}
+          />
         </div>
       </Card>
     </>
