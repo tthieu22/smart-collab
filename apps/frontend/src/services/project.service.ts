@@ -112,6 +112,20 @@ class ProjectService {
     );
   }
 
+  updateColumn(data: { columnId: string; title?: string; position?: number }) {
+    return autoRequest<any>(API_ENDPOINTS.PROJECT.COLUMN.UPDATE, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteColumn(columnId: string) {
+    return autoRequest<any>(API_ENDPOINTS.PROJECT.COLUMN.DELETE, {
+      method: 'DELETE',
+      body: JSON.stringify({ columnId }),
+    });
+  }
+
   aiBuildProject(prompt: string) {
     return autoRequest<any>(API_ENDPOINTS.PROJECT.AI_BUILD, {
       method: 'POST',

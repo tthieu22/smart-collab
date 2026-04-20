@@ -101,8 +101,15 @@ export class ProjectSocketManager {
 
       this.socket.on('connect', () => {
         if (process.env.NODE_ENV === 'development')
-          console.log('Socket connected', this.socket?.id);
-        // Rejoin rooms that were previously joined
+          console.log('🟢 Socket connected', this.socket?.id);
+        
+        // Re-join active project if set
+        if (this.activeProjectId) {
+          console.log('🔄 Re-joining active project after connect:', this.activeProjectId);
+          this.joinProject(this.activeProjectId, { switchProject: true });
+        }
+        
+        // Re-join other rooms
         this.joinAllRooms();
       });
 
@@ -227,6 +234,9 @@ export class ProjectSocketManager {
   }
 
   private handleStoreUpdate(event: string, msg: any) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[REALTIME EVENT] ${event}`, msg);
+    }
     const store = projectStore.getState();
     if (event === 'realtime.action.response') {
       // Some handlers on BE already return an envelope {status, correlationId, data}

@@ -155,6 +155,16 @@ export default function Column({
     }
   }, [column.id, cardIds.length, isOverlay]);
 
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [newTitle, setNewTitle] = useState(column.title);
+
+  // Đồng bộ title khi column từ store thay đổi (ví dụ qua socket)
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setNewTitle(column.title);
+    }
+  }, [column.title, isEditingTitle]);
+
   // Toggle collapsed
   const toggleCollapse = useCallback(() => {
     setCollapsed((prev) => !prev);
@@ -164,13 +174,38 @@ export default function Column({
     console.log('Filter cards in column', column.id);
   }, [column.id]);
 
-  const handleRename = useCallback(() => {
-    console.log('Rename column', column.id);
-  }, [column.id]);
+  const handleRename = useCallback(async () => {
+    if (!newTitle.trim() || newTitle === column.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+    try {
+      const res = await projectService.updateColumn({
+        columnId: column.id,
+        title: newTitle.trim(),
+      });
+      if (res.status === 'success') {
+        // Cập nhật local store nếu cần, hoặc dựa vào socket
+        setIsEditingTitle(false);
+      }
+    } catch (error) {
+      console.error('Failed to rename column', error);
+    }
+  }, [column.id, column.title, newTitle]);
 
-  const handleDelete = useCallback(() => {
-    console.log('Delete column', column.id);
-  }, [column.id]);
+  const handleDelete = useCallback(async () => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa cột "${column.title}" và tất cả thẻ bên trong?`)) {
+      try {
+        const res = await projectService.deleteColumn(column.id);
+        if (res.status === 'success') {
+          // Xóa khỏi store local
+          projectStore.getState().removeColumn(boardId, column.id);
+        }
+      } catch (error) {
+        console.error('Failed to delete column', error);
+      }
+    }
+  }, [column.id, column.title, boardId]);
 
   const extraItems = useMemo(
     () => [
@@ -185,39 +220,7 @@ export default function Column({
     []
   );
 
-  // Đo chiều rộng tiêu đề - debounce resize event để tránh tốn performance
-  const [titleWidth, setTitleWidth] = useState<number | null>(null);
-  const measureRef = useRef<HTMLDivElement | null>(null);
-  const debounceTimeout = useRef<number | null>(null);
 
-  const measureTitleWidth = useCallback(() => {
-    const measEl = measureRef.current;
-    if (!measEl) return;
-    measEl.textContent = column.title || '';
-    setTitleWidth(Math.ceil(measEl.getBoundingClientRect().width));
-  }, [column.title]);
-
-  useLayoutEffect(() => {
-    measureTitleWidth();
-  }, [measureTitleWidth]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
-      }
-      debounceTimeout.current = window.setTimeout(() => {
-        measureTitleWidth();
-      }, 200);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => {
-      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [measureTitleWidth]);
-
-  const collapsedHeight = titleWidth ? titleWidth + 40 : 180;
 
   return (
     <div
@@ -226,22 +229,62 @@ export default function Column({
       data-column-id={column.id}
       style={style}
       className={`
-        flex flex-col h-full min-h-0 flex-shrink-0
-        ${collapsed ? 'w-12' : 'max-w-[300px]'}
+        flex flex-col h-full min-h-0 flex-shrink-0 transition-all duration-300 ease-in-out
+        ${collapsed ? 'w-10 overflow-hidden' : 'w-[280px]'}
         will-change-transform column-glass-neon p-2
       `}
     >
       {/* ================= HEADER ================= */}
-      {!collapsed && (
+      {!collapsed ? (
         <div
-          className="shrink-0 active:cursor-grabbing select-none"
-          {...attributes}
-          {...listeners}
+          className="shrink-0 active:cursor-grabbing select-none mb-3"
+          {...(!isEditingTitle ? attributes : {})}
+          {...(!isEditingTitle ? listeners : {})}
           style={{ touchAction: 'none' }}
         >
-          <div className="flex items-center justify-between">
-            <h4 className="truncate">{column.title}</h4>
+          <div className="flex items-center justify-between group/header">
+            {isEditingTitle ? (
+              <input
+                autoFocus
+                className="bg-white/10 border border-blue-500 outline-none rounded px-1 w-full text-sm font-bold text-gray-800 dark:text-gray-100"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onBlur={handleRename}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') handleRename();
+                  if (e.key === 'Escape') {
+                    setNewTitle(column.title);
+                    setIsEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <h4 
+                className="truncate font-bold text-sm tracking-tight text-gray-800 dark:text-gray-100 cursor-text hover:bg-gray-200/50 dark:hover:bg-white/5 px-1 rounded transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingTitle(true);
+                }}
+              >
+                {column.title}
+              </h4>
+            )}
             <ColumnMenu
+              collapsed={collapsed}
+              onToggleCollapse={toggleCollapse}
+              onFilter={handleFilter}
+              onRename={() => setIsEditingTitle(true)}
+              onDelete={handleDelete}
+              extraItems={extraItems}
+            />
+          </div>
+        </div>
+      ) : (
+        /* ================= COLLAPSED HEADER (Vertical Icon) ================= */
+        <div className="flex flex-col items-center gap-4 py-2">
+           <ColumnMenu
               collapsed={collapsed}
               onToggleCollapse={toggleCollapse}
               onFilter={handleFilter}
@@ -249,21 +292,23 @@ export default function Column({
               onDelete={handleDelete}
               extraItems={extraItems}
             />
-          </div>
         </div>
       )}
 
       {/* ================= COLLAPSED VIEW ================= */}
       {collapsed && (
         <div
-          className="flex-1 flex items-center justify-center cursor-pointer"
+          className="flex-1 flex flex-col items-center justify-start cursor-pointer group mt-4"
           onClick={() => setCollapsed(false)}
           role="button"
           tabIndex={0}
         >
           <div
-            className="rotate-90 whitespace-nowrap text-xs font-medium text-gray-700 dark:text-gray-200"
-            style={{ height: collapsedHeight }}
+            style={{ 
+              writingMode: 'vertical-rl',
+              textOrientation: 'mixed'
+            }}
+            className="whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors"
           >
             {column.title}
           </div>

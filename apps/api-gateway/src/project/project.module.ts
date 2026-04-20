@@ -5,6 +5,7 @@ import { ProjectController } from './project.controller';
 import { getGolevelupRabbitMQOptions, getRabbitMQOptions } from '../config/rabbitmq.config';
 import { ClientsModule } from '@nestjs/microservices';
 import { CardController } from './column/card.cotroller';
+import { ColumnController } from './column/column.controller';
 
 @Module({
   imports: [
@@ -32,6 +33,6 @@ import { CardController } from './column/card.cotroller';
       },
     ]),
   ],
-  controllers: [ProjectController, CardController],
+  controllers: [ProjectController, CardController, ColumnController],
 })
 export class ProjectModule {}

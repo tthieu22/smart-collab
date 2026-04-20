@@ -50,6 +50,8 @@ export const API_ENDPOINTS = {
       GET :'/projects/column',
       GET_BY_PROJECT: '/projects/columns/project',
       GET_BY_BOARD: '/projects/columns/board',
+      UPDATE: '/projects/columns/update',
+      DELETE: '/projects/columns/delete',
       
       CARD: {
         GET: '/projects/card',

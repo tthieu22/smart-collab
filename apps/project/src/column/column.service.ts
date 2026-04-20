@@ -49,6 +49,14 @@ export class ColumnService {
     const fullColumn = await this.getColumnById(column.id);
     this.logger.log(`[COLUMN] Created column ${column.id}`);
 
+    // Publish event
+    if (fullColumn) {
+      await this.amqpConnection.publish('project-exchange', 'column.created', {
+        projectId: projectId || board.projectId!,
+        column: fullColumn,
+      });
+    }
+
     return fullColumn;
   }
 
@@ -62,7 +70,18 @@ export class ColumnService {
         position: params.position,
       },
     });
-    return this.getColumnById(column.id);
+    const fullColumn = await this.getColumnById(column.id);
+    
+    // Publish event
+    if (fullColumn) {
+      this.logger.log(`[COLUMN] Publishing column.updated event for column ${fullColumn.id}`);
+      await this.amqpConnection.publish('project-exchange', 'column.updated', {
+        projectId: fullColumn.projectId,
+        column: fullColumn,
+      });
+    }
+
+    return fullColumn;
   }
 
   /** 🔴 Xóa column + card liên quan */
@@ -71,10 +90,20 @@ export class ColumnService {
     const column = await this.prisma.column.findUnique({ where: { id: columnId } });
     if (!column) throw new Error('Column not found');
 
+    const projectId = column.projectId;
+
     await this.prisma.card.deleteMany({ where: { columnId } });
     await this.prisma.column.delete({ where: { id: columnId } });
 
     this.logger.log(`[COLUMN] Deleted ${columnId}`);
+
+    // Publish event
+    await this.amqpConnection.publish('project-exchange', 'column.deleted', {
+      projectId,
+      columnId,
+      boardId: column.boardId,
+    });
+
     return { columnId };
   }
   /** 🟢 Di chuyển column sang vị trí khác hoặc board khác */
