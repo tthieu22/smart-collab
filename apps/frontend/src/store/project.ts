@@ -406,9 +406,22 @@ export const projectStore = create<ProjectState>((set, get) => ({
       const columnCards = { ...s.columnCards };
 
       const oldCard = cards[updatedCard.id];
+      
+      // Nếu card chưa có trong store (ví dụ sau khi reload), ta vẫn cho phép thêm vào
       if (!oldCard) {
-        console.warn(`[updateCard] Card id=${updatedCard.id} không tồn tại trong store`);
-        return s;
+        console.log(`[updateCard] Card id=${updatedCard.id} chưa có trong store, tiến hành thêm mới`);
+        cards[updatedCard.id] = updatedCard;
+        
+        // Cập nhật columnCards nếu có columnId
+        if (updatedCard.columnId) {
+          const colId = updatedCard.columnId;
+          columnCards[colId] = columnCards[colId] || [];
+          if (!columnCards[colId].includes(updatedCard.id)) {
+            columnCards[colId].push(updatedCard.id);
+            columnCards[colId].sort((a, b) => (cards[a]?.position ?? 0) - (cards[b]?.position ?? 0));
+          }
+        }
+        return { cards, columnCards };
       }
 
       // Ép kiểu để chắc chắn columnId là string hợp lệ

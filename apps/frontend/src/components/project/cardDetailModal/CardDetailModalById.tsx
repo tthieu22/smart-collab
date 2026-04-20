@@ -143,16 +143,22 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
       transitionName="ant-zoom"
       maskTransitionName="ant-fade"
       styles={{
+        content: {
+          padding: 0,
+          background: token.colorBgContainer,
+          borderRadius: '16px',
+          overflow: 'hidden',
+        },
         body: {
           maxHeight: '88vh',
           padding: 0,
           overflowY: 'auto',
-          background: token.colorBgLayout,
+          background: token.colorBgContainer,
           scrollbarWidth: 'none',
         },
         mask: {
           backdropFilter: 'blur(10px)',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(0, 0, 0, 0.45)',
         },
       }}
     >
@@ -164,9 +170,6 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
           setTitle={setTitle}
           editingTitle={editingTitle}
           setEditingTitle={setEditingTitle}
-          isGenerating={isGeneratingTitle}
-          aiProgress={aiProgress}
-          onAIGenerate={() => generateWithAI('title')}
           onBlur={(updatedTitle) => {
             if (!aiGenerating) {
               updateBasic({ title: updatedTitle });

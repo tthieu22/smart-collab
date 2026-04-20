@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Skeleton, Progress, Typography, theme } from 'antd';
-import AIBorderWrapper from './AIBorderWrapper';
-import AIIcon from './AIIcon';
+import { Input, Typography, theme } from 'antd';
 
 const { Title } = Typography;
 
@@ -12,9 +10,6 @@ interface Props {
   setTitle: (v: string) => void;
   editingTitle: boolean;
   setEditingTitle: (v: boolean) => void;
-  isGenerating: boolean;
-  aiProgress: number;
-  onAIGenerate: () => void;
   onBlur: (updatedTitle: string) => void;
 }
 
@@ -23,9 +18,6 @@ const TitleSection: React.FC<Props> = ({
   setTitle,
   editingTitle,
   setEditingTitle,
-  isGenerating,
-  aiProgress,
-  onAIGenerate,
   onBlur,
 }) => {
   const { token } = theme.useToken();
@@ -45,20 +37,8 @@ const TitleSection: React.FC<Props> = ({
   };
 
   return (
-    <AIBorderWrapper active={isGenerating}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {isGenerating ? (
-          <div style={{ flex: 1 }}>
-            <Skeleton.Input active style={{ width: '100%', height: 32, borderRadius: token.borderRadius }} />
-            <Progress
-              percent={aiProgress}
-              size="small"
-              showInfo={false}
-              style={{ marginTop: 8 }}
-              strokeColor={token.colorPrimary}
-            />
-          </div>
-        ) : editingTitle ? (
+        {editingTitle ? (
           <Input
             value={localTitle}
             onChange={e => setLocalTitle(e.target.value)}
@@ -89,23 +69,9 @@ const TitleSection: React.FC<Props> = ({
             >
               {title || 'Untitled Card'}
             </Title>
-            <Button
-              icon={<AIIcon />}
-              onClick={onAIGenerate}
-              loading={isGenerating}
-              style={{
-                background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorSuccess})`,
-                color: token.colorTextLightSolid,
-                border: 'none',
-                fontWeight: 'bold',
-              }}
-            >
-              AI Title
-            </Button>
           </>
         )}
       </div>
-    </AIBorderWrapper>
   );
 };
 
