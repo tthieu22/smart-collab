@@ -23,6 +23,7 @@ export class CardService {
     attachments: {
       orderBy: [{ uploadedAt: "desc" as const }],
     },
+    members: true,
     column: true,
     project: true,
   };
@@ -41,7 +42,7 @@ export class CardService {
     const cards = await this.prisma.card.findMany({
       where: { columnId },
       orderBy: { position: 'asc' },
-      include: { labels: true, views: true, column: true },
+      include: this.CARD_INCLUDE_FULL,
     });
     this.logger.log(`Found ${cards.length} cards in column ${columnId}`);
     return cards;
@@ -52,7 +53,7 @@ export class CardService {
     const cards = await this.prisma.card.findMany({
       where: { projectId },
       orderBy: [{ columnId: 'asc' }, { position: 'asc' }],
-      include: { labels: true, views: true, column: true },
+      include: this.CARD_INCLUDE_FULL,
     });
     this.logger.log(`Found ${cards.length} cards in project ${projectId}`);
     return cards;
@@ -65,6 +66,7 @@ export class CardService {
     description?: string;
     correlationId?: string;
     status?: string;
+    startDate?: Date;
     deadline?: Date;
     priority?: number;
     createdById?: string;
@@ -105,6 +107,7 @@ export class CardService {
         title: params.title,
         description: params.description ?? null,
         status: params.status ?? 'ACTIVE',
+        startDate: params.startDate ?? null,
         deadline: params.deadline ?? null,
         priority: params.priority ?? null,
         position: newPosition,
@@ -158,6 +161,8 @@ export class CardService {
       'add-attachment': () => this.handleAddAttachment(cardId, data, updatedById),
       'remove-attachment': () => this.handleRemoveAttachment(cardId, data),
       'update-cover': () => this.handleUpdateCover(cardId, data, updatedById),
+      'add-member': () => this.handleAddMember(cardId, data),
+      'remove-member': () => this.handleRemoveMember(cardId, data),
     };
 
     const execute = actionHandlers[action];
@@ -188,6 +193,7 @@ export class CardService {
         title: data.title,
         description: data.description,
         status: data.status,
+        startDate: data.startDate,
         deadline: data.deadline,
         priority: data.priority,
         updatedById,
@@ -217,7 +223,11 @@ export class CardService {
 
   private async handleAddLabel(cardId: string, data: any) {
     await this.prisma.cardLabel.create({
-      data: { cardId, label: data.label },
+      data: { 
+        cardId, 
+        label: data.label,
+        color: data.color 
+      },
     });
     return this.findCardDetailById(cardId);
   }
@@ -225,6 +235,42 @@ export class CardService {
   private async handleRemoveLabel(cardId: string, data: any) {
     await this.prisma.cardLabel.delete({
       where: { id: data.labelId },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleAddMember(cardId: string, data: any) {
+    // Tránh add trùng
+    const existing = await this.prisma.cardMember.findUnique({
+      where: {
+        cardId_userId: {
+          cardId,
+          userId: data.userId,
+        },
+      },
+    });
+
+    if (existing) return this.findCardDetailById(cardId);
+
+    await this.prisma.cardMember.create({
+      data: {
+        cardId,
+        userId: data.userId,
+        userName: data.userName,
+        userAvatar: data.userAvatar,
+      },
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  private async handleRemoveMember(cardId: string, data: any) {
+    await this.prisma.cardMember.delete({
+      where: {
+        cardId_userId: {
+          cardId,
+          userId: data.userId,
+        },
+      },
     });
     return this.findCardDetailById(cardId);
   }
@@ -532,6 +578,7 @@ export class CardService {
           title: `${originalCard.title} (Copy)`,
           description: originalCard.description,
           status: originalCard.status,
+          startDate: originalCard.startDate,
           deadline: originalCard.deadline,
           priority: originalCard.priority,
           position: finalPosition,

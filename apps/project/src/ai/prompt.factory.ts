@@ -246,4 +246,34 @@ Return ONLY valid JSON:
 }
 `;
   }
+
+  // ================= BOARD ANALYSIS / SUMMARY =================
+  analyzeBoard(boardInfo: any, locale = 'vi') {
+    return `
+You are a senior project manager and data analyst.
+Analyze the following Kanban board data and provide a concise summary, key insights, and recommendations.
+
+Board Data:
+${JSON.stringify(boardInfo, null, 2)}
+
+Return ONLY valid JSON:
+{
+  "summary": "Tóm tắt ngắn gọn tình trạng dự án (2-3 câu)",
+  "insights": [
+    "Phân tích về khối lượng công việc của thành viên",
+    "Phân tích về các công việc quá hạn hoặc ưu tiên cao",
+    "Nhận xét về tiến độ hoàn thành"
+  ],
+  "recommendations": [
+    "Gợi ý hành động 1",
+    "Gợi ý hành động 2"
+  ]
+}
+
+Rules:
+- Language: ${locale}
+- CHỈ TRẢ VỀ JSON HỢP LỆ.
+- Focus on productivity and identifying bottlenecks.
+`;
+  }
 }

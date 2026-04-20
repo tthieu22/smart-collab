@@ -140,6 +140,12 @@ class ProjectService {
       body: JSON.stringify({ type }),
     });
   }
+
+  analyzeBoard(boardId: string) {
+    return autoRequest<any>(`/projects/${boardId}/ai-analyze-board`, {
+      method: 'POST',
+    });
+  }
 }
 
 export const projectService = new ProjectService();

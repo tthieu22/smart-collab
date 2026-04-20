@@ -84,4 +84,25 @@ export class AiController {
 
     return result;
   }
+
+  /**
+   * POST /projects/:id/ai-analyze-board
+   */
+  @Post(':id/ai-analyze-board')
+  async analyzeBoard(@Param('id') boardId: string, @Req() req: any) {
+    const result = await firstValueFrom(
+      this.aiClient
+        .send(
+          { cmd: 'ai.analyze-board' },
+          {
+            boardId,
+            userId: req.user.userId,
+            locale: 'vi',
+          },
+        )
+        .pipe(timeout(200000)),
+    );
+
+    return result;
+  }
 }

@@ -110,6 +110,7 @@ model Card {
   title        String
   description  String?
   status       String   @default("ACTIVE")
+  startDate    DateTime?
   deadline     DateTime?
   priority     Int?
   position     Int      @default(0)
@@ -138,6 +139,7 @@ model Card {
   column  Column?  @relation(fields: [columnId], references: [id], onDelete: SetNull)
 
   labels      CardLabel[]
+  members     CardMember[]
   views       CardView[]
   comments    CardComment[]
   checklist   ChecklistItem[]
@@ -145,6 +147,21 @@ model Card {
 
   @@index([projectId, status, updatedAt])
   @@index([columnId, position])
+}
+
+// ------------------ CARD MEMBER ------------------
+model CardMember {
+  id          String   @id @default(uuid())
+  cardId      String
+  userId      String
+  userName    String?
+  userAvatar  String?
+  joinedAt    DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, userId])
+  @@index([userId])
 }
 
 // ------------------ CARD COMMENT ------------------
@@ -206,6 +223,7 @@ model CardLabel {
   id     String @id @default(uuid())
   cardId String
   label  String
+  color  String?
 
   card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 

@@ -42,4 +42,10 @@ export class AiController {
     this.logger.log('[ai.generate-news-post]');
     return this.aiService.generateNewsPost(payload);
   }
+
+  @MessagePattern({ cmd: 'ai.analyze-board' })
+  async analyzeBoard(@Payload() payload: any) {
+    this.logger.log('[ai.analyze-board]');
+    return this.aiService.analyzeBoard(payload);
+  }
 }

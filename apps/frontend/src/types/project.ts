@@ -52,6 +52,7 @@ export interface Card {
   title: string;
   description?: string | null;
   status: "ACTIVE" | "ARCHIVED" | "DELETED";
+  startDate?: string | null;
   deadline?: string | null;
   priority?: number | null;
   position: number;
@@ -81,6 +82,7 @@ export interface Card {
   comments?: CardComment[];
   checklist?: ChecklistItem[];
   attachments?: Attachment[];
+  members?: CardMember[];
 }
 
 // ------------------ CARD COMMENT ------------------
@@ -132,6 +134,16 @@ export interface CardLabel {
   label: string;
   color: string; // ← BẮT BUỘC, không optional
   name?: string | null;
+}
+
+// ------------------ CARD MEMBER ------------------
+export interface CardMember {
+  id: string;
+  cardId: string;
+  userId: string;
+  userName?: string | null;
+  userAvatar?: string | null;
+  joinedAt: string;
 }
 
 // ------------------ CARD VIEW ------------------

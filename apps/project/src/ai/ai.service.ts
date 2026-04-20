@@ -231,6 +231,63 @@ export class AiService {
     return { success: true, type: payload.type, content };
   }
 
+  async analyzeBoard(payload: { boardId: string; userId?: string; locale?: string }) {
+    const locale = payload?.locale ?? 'vi';
+    
+    // 1. Get all data for the board
+    const boardRes = await this.rpc<any>('project.get', { 
+      projectId: payload.boardId,
+      userId: payload.userId 
+    });
+    const project = this.unwrap(boardRes);
+    
+    if (!project) {
+      return { success: false, message: 'Project not found' };
+    }
+
+    // 2. Find the target board in the project structure
+    // If payload.boardId is a project ID, take the first board. 
+    // If it's a board ID, find it.
+    let targetBoard = project.boards?.find((b: any) => b.id === payload.boardId);
+    if (!targetBoard && project.boards?.length > 0) {
+      targetBoard = project.boards[0];
+    }
+
+    if (!targetBoard) {
+      return { success: false, message: 'No board found in project' };
+    }
+
+    // Prepare a simplified version of the board for AI
+    const boardData = {
+      title: targetBoard.title,
+      description: project.description,
+      columns: targetBoard.columns?.map((col: any) => ({
+        title: col.title,
+        cards: col.cards?.map((card: any) => ({
+          title: card.title,
+          status: card.status,
+          priority: card.priority,
+          deadline: card.deadline,
+          members: card.members?.map((m: any) => m.userName),
+          labelCount: card.labels?.length || 0,
+          checklistCount: card.checklist?.length || 0,
+          checklistDone: card.checklist?.filter((i: any) => i.done).length || 0
+        })) || []
+      })) || []
+    };
+
+    const prompt = this.promptFactory.analyzeBoard(boardData, locale);
+    const aiRes = await this.llm.complete(prompt);
+
+    try {
+      const analysis = JSON.parse(aiRes.content);
+      return { success: true, analysis };
+    } catch (err) {
+      this.logger.error('Parse board analysis failed', aiRes.content);
+      return { success: false, message: 'AI analysis failed to parse' };
+    }
+  }
+
   async generateNewsPost(payload: {
     template: string;
     context?: Record<string, unknown>;
