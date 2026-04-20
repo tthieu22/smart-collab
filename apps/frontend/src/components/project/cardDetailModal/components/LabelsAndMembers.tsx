@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Space, Tag, Avatar, Button, Typography, Modal, Input, theme, List } from 'antd';
-import { PlusOutlined, UserOutlined } from '@ant-design/icons';
+import { Space, Tag, Avatar, Button, Typography, Modal, Input, theme, List, Tooltip } from 'antd';
+import { PlusOutlined, UserOutlined, CloseOutlined } from '@ant-design/icons';
 import { useBoardStore } from '@smart/store/setting';
 import { projectStore } from '@smart/store/project';
 
@@ -14,10 +14,19 @@ interface Label {
   color: string;
 }
 
+interface Member {
+  userId: string;
+  userName?: string | null;
+  userAvatar?: string | null;
+}
+
 interface Props {
   labels: Label[];
+  cardMembers: Member[];
   onAddLabel?: (label: Label) => void;
-  onAddMember?: (memberId: string) => void;
+  onRemoveLabel?: (labelId: string) => void;
+  onAddMember?: (member: any) => void;
+  onRemoveMember?: (userId: string) => void;
   onInviteMember?: (email: string) => void;
 }
 
@@ -36,7 +45,15 @@ function rgbToHex(rgb: string): string {
   );
 }
 
-const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, onInviteMember }) => {
+const LabelsAndMembers: React.FC<Props> = ({ 
+  labels, 
+  cardMembers,
+  onAddLabel, 
+  onRemoveLabel,
+  onAddMember, 
+  onRemoveMember,
+  onInviteMember 
+}) => {
   const { token } = theme.useToken();
 
   // Lấy colors từ zustand store, convert rgb sang hex nếu cần
@@ -47,13 +64,12 @@ const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, on
     [colorsRaw]
   );
 
-  // Lấy members (object) từ projectStore, chuyển thành array
-  const membersObj = projectStore(state => state.members);
-  const members = useMemo(() => Object.values(membersObj || {}), [membersObj]);
+  // Lấy members (object) từ projectStore, chuyển thành array (đây là danh sách member CỦA PROJECT để chọn)
+  const projectMembersObj = projectStore(state => state.members);
+  const projectMembers = useMemo(() => Object.values(projectMembersObj || {}), [projectMembersObj]);
 
   // Modal Label states
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
-  // Khởi tạo selectedColor với màu đầu tiên đã chuẩn hex
   const [selectedColor, setSelectedColor] = useState<string>(colors[0] ?? '#000000');
   const [newLabelName, setNewLabelName] = useState('');
 
@@ -61,21 +77,29 @@ const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, on
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
 
-  // Lọc members theo search (tên + email)
-  const filteredMembers = useMemo(() => {
+  // Lọc project members theo search (tên + email) và loại bỏ những người ĐÃ CÓ trong card
+  const filteredProjectMembers = useMemo(() => {
     const keyword = memberSearch.trim().toLowerCase();
-    if (!keyword) return members;
+    const existingUserIds = cardMembers.map(m => m.userId);
+    
+    let list = projectMembers.filter(m => !existingUserIds.includes(m.userId));
 
-    return members.filter(m => {
+    if (!keyword) return list;
+
+    return list.filter(m => {
       const fullName = `${m.user?.firstName ?? ''} ${m.user?.lastName ?? ''}`.toLowerCase();
       const email = m.user?.email?.toLowerCase() ?? '';
       return fullName.includes(keyword) || email.includes(keyword);
     });
-  }, [memberSearch, members]);
+  }, [memberSearch, projectMembers, cardMembers]);
 
-  // Thêm member (gọi callback truyền member.id)
-  const handleAddMember = (memberId: string) => {
-    onAddMember?.(memberId);
+  // Thêm member
+  const handleSelectMember = (pm: any) => {
+    onAddMember?.({
+      userId: pm.userId,
+      userName: `${pm.user?.firstName ?? ''} ${pm.user?.lastName ?? ''}`.trim() || pm.user?.email,
+      userAvatar: pm.user?.avatar
+    });
     setIsMemberModalOpen(false);
     setMemberSearch('');
   };
@@ -118,138 +142,180 @@ const LabelsAndMembers: React.FC<Props> = ({ labels, onAddLabel, onAddMember, on
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+    <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size="large">
       <div>
-        <Text strong style={{ color: token.colorText }}>Labels:</Text>{' '}
-        <Space>
+        <Text strong style={{ color: token.colorText, display: 'block', marginBottom: 8 }}>Labels:</Text>
+        <div className="flex flex-wrap gap-2 items-center">
           {labels.map(l => (
-            <Tag key={l.id} color={l.color}>
+            <Tag 
+              key={l.id} 
+              color={l.color} 
+              closable 
+              onClose={() => onRemoveLabel?.(l.id)}
+              className="px-3 py-0.5 rounded-full border-none flex items-center gap-1"
+            >
               {l.name}
             </Tag>
           ))}
-          <Button size="small" icon={<PlusOutlined />} onClick={showLabelModal}>
-            Add
+          <Button 
+            size="small" 
+            icon={<PlusOutlined />} 
+            onClick={showLabelModal}
+            className="rounded-full border-dashed"
+          >
+            Thêm nhãn
           </Button>
-        </Space>
+        </div>
       </div>
 
       <div>
-        <Text strong style={{ color: token.colorText }}>Members:</Text>{' '}
-        <Space>
-          {members.slice(0, 3).map(m => (
-            <Avatar
-              key={m.id}
-              size="small"
-              src={m.user?.avatar ?? undefined}
-              icon={!m.user?.avatar && <UserOutlined />}
-              alt={`${m.user?.firstName ?? ''} ${m.user?.lastName ?? ''}`}
-            />
+        <Text strong style={{ color: token.colorText, display: 'block', marginBottom: 8 }}>Members:</Text>
+        <div className="flex flex-wrap gap-2 items-center">
+          {cardMembers.map(m => (
+            <Tooltip title={m.userName} key={m.userId}>
+              <div className="relative group">
+                <Avatar
+                  size="medium"
+                  src={m.userAvatar ?? undefined}
+                  icon={!m.userAvatar && <UserOutlined />}
+                  className="border-2 border-white dark:border-neutral-800 shadow-sm"
+                />
+                <div 
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity z-10"
+                  onClick={() => onRemoveMember?.(m.userId)}
+                >
+                  <CloseOutlined style={{ fontSize: 8 }} />
+                </div>
+              </div>
+            </Tooltip>
           ))}
-          <Button size="small" icon={<PlusOutlined />} onClick={showMemberModal}>
-            Add
-          </Button>
-        </Space>
+          <Button 
+            size="small" 
+            icon={<PlusOutlined />} 
+            onClick={showMemberModal}
+            shape="circle"
+            className="flex items-center justify-center border-dashed"
+          />
+        </div>
       </div>
 
       {/* Modal thêm Label */}
       <Modal
-        title="Add Label"
+        title="Tạo nhãn mới"
         open={isLabelModalOpen}
         onOk={handleLabelModalOk}
         onCancel={handleLabelModalCancel}
-        okText="Add"
-        cancelText="Cancel"
+        okText="Tạo nhãn"
+        cancelText="Hủy"
+        centered
       >
-        <Input
-          placeholder="Label name"
-          value={newLabelName}
-          onChange={e => setNewLabelName(e.target.value)}
-          style={{ marginBottom: 16 }}
-        />
-
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          {colors.map(color => (
-            <div
-              key={color}
-              onClick={() => setSelectedColor(color)}
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 4,
-                backgroundColor: color,
-                cursor: 'pointer',
-                border: selectedColor === color ? `3px solid ${token.colorPrimary}` : '1px solid #ccc',
-              }}
-            />
-          ))}
-
-          <input
-            type="color"
-            value={selectedColor}
-            onChange={e => setSelectedColor(e.target.value)}
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 4,
-              border: `1px solid #ccc`,
-              cursor: 'pointer',
-              padding: 0,
-              marginLeft: 8,
-              backgroundColor: 'transparent',
-            }}
-            title="Choose custom color"
+        <div className="py-4">
+          <Text type="secondary" className="mb-2 block">Tên nhãn</Text>
+          <Input
+            placeholder="Ví dụ: Quan trọng, Khẩn cấp..."
+            value={newLabelName}
+            onChange={e => setNewLabelName(e.target.value)}
+            style={{ marginBottom: 16 }}
+            autoFocus
           />
+
+          <Text type="secondary" className="mb-2 block">Chọn màu sắc</Text>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            {colors.map(color => (
+              <div
+                key={color}
+                onClick={() => setSelectedColor(color)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 6,
+                  backgroundColor: color,
+                  cursor: 'pointer',
+                  border: selectedColor === color ? `2px solid ${token.colorPrimary}` : '2px solid transparent',
+                  boxShadow: selectedColor === color ? '0 0 0 2px rgba(0,0,0,0.05)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              />
+            ))}
+
+            <Tooltip title="Màu tùy chỉnh">
+              <input
+                type="color"
+                value={selectedColor}
+                onChange={e => setSelectedColor(e.target.value)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 6,
+                  border: `1px solid #ccc`,
+                  cursor: 'pointer',
+                  padding: 0,
+                  backgroundColor: 'transparent',
+                }}
+              />
+            </Tooltip>
+          </div>
         </div>
       </Modal>
 
       {/* Modal thêm Member */}
       <Modal
-        title="Add Member"
+        title="Thêm thành viên vào thẻ"
         open={isMemberModalOpen}
         onCancel={handleMemberModalCancel}
         footer={null}
+        centered
       >
         <Input
-          placeholder="Search members by name or email"
+          placeholder="Tìm kiếm theo tên hoặc email..."
           value={memberSearch}
           onChange={e => setMemberSearch(e.target.value)}
           style={{ marginBottom: 16 }}
           allowClear
+          prefix={<UserOutlined className="text-gray-400" />}
         />
 
-        {filteredMembers.length > 0 ? (
+        {filteredProjectMembers.length > 0 ? (
           <List
             size="small"
             bordered
-            dataSource={filteredMembers}
-            renderItem={member => (
+            className="rounded-lg overflow-hidden border-gray-100 dark:border-neutral-700"
+            dataSource={filteredProjectMembers}
+            renderItem={pm => (
               <List.Item
-                key={member.id}
-                style={{ cursor: 'pointer' }}
-                onClick={() => handleAddMember(member.id)}
+                key={pm.id}
+                className="hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors"
+                onClick={() => handleSelectMember(pm)}
               >
-                <Avatar
-                  size="small"
-                  src={member.user?.avatar ?? undefined}
-                  icon={!member.user?.avatar && <UserOutlined />}
-                  style={{ marginRight: 8 }}
-                />
-                <span>{`${member.user?.firstName ?? ''} ${member.user?.lastName ?? ''}`} ({member.user?.email})</span>
+                <div className="flex items-center gap-3 w-full">
+                  <Avatar
+                    size="small"
+                    src={pm.user?.avatar ?? undefined}
+                    icon={!pm.user?.avatar && <UserOutlined />}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-medium">{`${pm.user?.firstName ?? ''} ${pm.user?.lastName ?? ''}`}</span>
+                    <span className="text-xs text-gray-400">{pm.user?.email}</span>
+                  </div>
+                </div>
               </List.Item>
             )}
             style={{ maxHeight: 300, overflowY: 'auto' }}
           />
         ) : (
-          <div>
-            <Text>No member found.</Text> <br />
-            <Button
-              type="primary"
-              style={{ marginTop: 12 }}
-              onClick={handleInvite}
-              disabled={!memberSearch.trim()}
-            >
-              Invite "{memberSearch.trim()}" by email
-            </Button>
+          <div className="text-center py-8 bg-gray-50 dark:bg-neutral-800/50 rounded-lg border border-dashed border-gray-200 dark:border-neutral-700">
+            <Text type="secondary">Không tìm thấy thành viên mới nào.</Text> <br />
+            {memberSearch.trim() && (
+              <Button
+                type="primary"
+                ghost
+                size="small"
+                style={{ marginTop: 12 }}
+                onClick={handleInvite}
+              >
+                Mời "{memberSearch.trim()}" qua email
+              </Button>
+            )}
           </div>
         )}
       </Modal>

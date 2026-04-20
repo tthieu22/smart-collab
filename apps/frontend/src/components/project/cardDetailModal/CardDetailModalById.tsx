@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Modal, Divider, Skeleton, theme, Typography } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import { Modal, Divider, Skeleton, theme, Typography, Button, Popconfirm } from 'antd';
+import { CloseOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons';
 import { useCardDetail } from '@smart/hooks/useCardDetail';
 import TitleSection from './components/TitleSection';
 import DescriptionSection from './components/DescriptionSection';
@@ -10,6 +10,9 @@ import LabelsAndMembers from './components/LabelsAndMembers';
 import ChecklistSection from './components/ChecklistSection';
 import AttachmentsSection from './components/AttachmentsSection';
 import ActivitySection from './components/ActivitySection';
+import DatesSection from './components/DatesSection';
+import PrioritySection from './components/PrioritySection';
+import CoverSection from './components/CoverSection';
 
 const { Text } = Typography;
 
@@ -51,35 +54,47 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
     safeLabels,
     aiGenerating,
     addLabel,
-    // Nếu có addMember trong hook, destructure thêm ở đây
+    removeLabel,
+    deleteCard,
+    addMember,
+    removeMember,
+    updateCover,
   } = useCardDetail(cardId, isOpen, onClose);
 
   const { token } = theme.useToken();
 
-  // Hàm xử lý gọi addLabel từ hook
   const handleAddLabel = async (label: { id: string; name: string; color: string }) => {
     try {
-      await addLabel(label.name);
+      await addLabel(label.name, label.color);
     } catch (error) {
       // Có thể xử lý lỗi ở đây
     }
   };
 
-  // Hàm xử lý thêm member, bạn cần bổ sung logic tương tự addLabel
-  const handleAddMember = async (memberId: string) => {
+  const handleRemoveLabel = async (labelId: string) => {
+    try {
+      await removeLabel(labelId);
+    } catch (error) {
+      // Xử lý lỗi
+    }
+  };
+
+  // Hàm xử lý thêm member
+  const handleAddMember = async (memberData: { userId: string; userName: string; userAvatar?: string }) => {
     if (!card) return;
     try {
-      // TODO: Gọi hàm addMember tương ứng hoặc API
-      // Ví dụ: await addMember(memberId);
-      // Nếu chưa có hàm addMember, bạn cần bổ sung ở hook useCardDetail
-
-      // Nếu chưa có backend thì có thể update local như ví dụ sau:
-      // updateCard({ ...card, members: [...(card.members || []), newMemberObject] });
-
-      // Hiện tại chưa có chức năng cụ thể nên để trống hoặc log
-      console.log('Add member:', memberId);
+      await addMember(memberData.userId, memberData.userName, memberData.userAvatar);
     } catch (error) {
-      // Xử lý lỗi nếu cần
+      console.error('Add member failed:', error);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!card) return;
+    try {
+      await removeMember(userId);
+    } catch (error) {
+      console.error('Remove member failed:', error);
     }
   };
 
@@ -141,6 +156,8 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
         },
       }}
     >
+      <CoverSection coverUrl={card?.coverUrl} onUpdate={updateCover} />
+
       <div style={{ padding: 24 }}>
         <TitleSection
           title={title}
@@ -161,9 +178,27 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
           <div style={{ flex: 2 }}>
             <LabelsAndMembers
               labels={safeLabels}
+              cardMembers={card?.members || []}
               onAddLabel={handleAddLabel}
+              onRemoveLabel={handleRemoveLabel}
               onAddMember={handleAddMember}
+              onRemoveMember={handleRemoveMember}
             />
+            <Divider style={{ margin: '16px 0', borderColor: token.colorBorder }} />
+
+            <DatesSection
+              startDate={card?.startDate}
+              deadline={card?.deadline}
+              onChange={(dates) => updateBasic(dates)}
+            />
+
+            <Divider style={{ margin: '16px 0', borderColor: token.colorBorder }} />
+
+            <PrioritySection
+              priority={card?.priority}
+              onChange={(priority) => updateBasic({ priority })}
+            />
+
             <Divider style={{ margin: '16px 0', borderColor: token.colorBorder }} />
 
             <DescriptionSection
@@ -196,6 +231,33 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
               onRemoveAttachment={removeAttachment}
               loading={isUploadingAttachment}
             />
+
+            <Divider style={{ margin: '20px 0', borderColor: token.colorBorder }} />
+
+            <div className="flex flex-col gap-2">
+              <Text strong className="text-xs uppercase text-gray-500 mb-2">Thao tác</Text>
+              <div className="flex gap-2">
+                <Button
+                  icon={<CheckOutlined />}
+                  onClick={() => updateBasic({ status: card?.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED' })}
+                  className="flex-1"
+                >
+                  {card?.status === 'ARCHIVED' ? 'Hoàn tác hoàn thành' : 'Đánh dấu hoàn thành'}
+                </Button>
+                <Popconfirm
+                  title="Xóa thẻ"
+                  description="Bạn có chắc chắn muốn xóa thẻ này không?"
+                  onConfirm={deleteCard}
+                  okText="Xóa"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button danger icon={<DeleteOutlined />} className="flex-1">
+                    Xóa thẻ
+                  </Button>
+                </Popconfirm>
+              </div>
+            </div>
           </div>
 
           <ActivitySection

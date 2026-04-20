@@ -6,6 +6,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card as CardType } from '@smart/types/project';
 import { useDragContext } from '../dnd/DragContext';
 import CardDetailModal from '../cardDetailModal/CardDetailModalById';
+import { CheckOutlined, MoreOutlined, DeleteOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
+import { getProjectSocketManager } from '@smart/store/realtime';
+import { message, Tooltip, Dropdown, Popconfirm, Avatar } from 'antd';
 
 interface Props {
   card: CardType;
@@ -60,6 +63,44 @@ export const Card = React.memo(function Card({
     [activeId, isOverlay]
   );
 
+  const handleArchive = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        const socket = getProjectSocketManager();
+        await socket.updateCard(boardId, card.id, 'update-basic', { status: 'ARCHIVED' });
+        message.success('Đã hoàn thành công việc');
+      } catch (error) {
+        message.error('Thao tác thất bại');
+      }
+    },
+    [boardId, card.id]
+  );
+
+  const handleDelete = useCallback(
+    async () => {
+      try {
+        const socket = getProjectSocketManager();
+        await socket.deleteCard(boardId, card.id);
+        message.success('Đã xóa thẻ');
+      } catch (error) {
+        message.error('Xóa thẻ thất bại');
+      }
+    },
+    [boardId, card.id]
+  );
+
+  const priorityInfo = useMemo(() => {
+    if (card.priority === undefined || card.priority === null) return null;
+    const priorities = [
+      { label: 'Thấp', color: '#52c41a' },
+      { label: 'Trung bình', color: '#1890ff' },
+      { label: 'Cao', color: '#fa8c16' },
+      { label: 'Khẩn cấp', color: '#f5222d' },
+    ];
+    return priorities[card.priority] || null;
+  }, [card.priority]);
+
   // Khi đang kéo (không phải overlay) → ẩn hoàn toàn và co chiều cao về 0
   const isBeingDragged = isDragging && !isOverlay;
 
@@ -81,15 +122,16 @@ export const Card = React.memo(function Card({
         {...listeners}
         onClick={handleClick}
         className={`
+          group/card
           ${isBeingDragged 
             ? 'h-0 p-0 m-0 overflow-hidden opacity-0 scale-95' 
             : 'my-1 p-3 h-auto'
           }
-          transition-all duration-200 select-none
-          bg-white dark:bg-gray-800 rounded-lg border
+          transition-all duration-300 select-none
+          bg-white dark:bg-neutral-800 rounded-lg border
           ${isOverlay 
             ? 'border-blue-500 shadow-2xl ring-4 ring-blue-400/30 scale-105 cursor-grabbing' 
-            : 'border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg cursor-pointer'
+            : 'border-gray-200 dark:border-neutral-700 shadow-sm hover:shadow-lg cursor-pointer'
           }
           ${!activeId && !isOverlay 
             ? 'hover:border-blue-400/50 hover:ring-2 hover:ring-blue-400/20' 
@@ -97,16 +139,131 @@ export const Card = React.memo(function Card({
           }
         `}
       >
+        {/* Card Cover */}
+        {card.coverUrl && (
+          <div 
+            className="h-20 w-full bg-cover bg-center rounded-t-lg -mt-3 -mx-3 mb-3"
+            style={{ 
+              backgroundColor: (card.coverUrl.startsWith('rgb') || card.coverUrl.startsWith('#')) ? card.coverUrl : 'transparent',
+              backgroundImage: (card.coverUrl.startsWith('rgb') || card.coverUrl.startsWith('#')) ? 'none' : `url(${card.coverUrl})`
+            }}
+          />
+        )}
+
         {/* Nội dung chỉ hiện khi không bị ẩn */}
-        <div className={isBeingDragged ? 'opacity-0' : 'opacity-100'}>
-          <h4 className="font-medium text-gray-900 dark:text-gray-100">
-            {card.title}
-          </h4>
-          {card.description && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-3 leading-relaxed">
-              {card.description}
-            </p>
+        <div className={`relative ${isBeingDragged ? 'opacity-0' : 'opacity-100'}`}>
+          {/* Radio-style Complete Button (Left) - Slide in animation */}
+          {!isOverlay && (
+            <div 
+              onClick={handleArchive}
+              className="absolute -left-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-gray-300 dark:border-neutral-600 opacity-0 translate-x-4 group-hover/card:translate-x-8 group-hover/card:opacity-100 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-500/20 transition-all duration-300 flex items-center justify-center cursor-pointer z-20 bg-white dark:bg-neutral-800 shadow-sm"
+            >
+              <CheckOutlined className="text-[10px] text-green-500 dark:text-green-400" />
+            </div>
           )}
+
+          {/* More Actions Menu (Right) - Fade and slide in animation */}
+          {!isOverlay && (
+            <div className="absolute -right-2 -top-1 opacity-0 translate-x-2 group-hover/card:translate-x-0 group-hover/card:opacity-100 z-20 transition-all duration-300">
+              <Dropdown
+                trigger={['click']}
+                placement="bottomRight"
+                dropdownRender={() => (
+                  <div className="bg-white dark:bg-neutral-800 shadow-2xl border border-gray-100 dark:border-neutral-700 rounded-lg overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
+                    <div 
+                      className="px-3 py-2.5 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer text-sm dark:text-neutral-200 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); }}
+                    >
+                      <EditOutlined className="text-xs text-blue-500" />
+                      <span>Chỉnh sửa</span>
+                    </div>
+                    <Popconfirm
+                      title="Xóa thẻ"
+                      description="Bạn có chắc chắn muốn xóa?"
+                      onConfirm={handleDelete}
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <div 
+                        className="px-3 py-2.5 flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer text-sm text-red-500 dark:text-red-400 transition-colors border-t border-gray-50 dark:border-neutral-700"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DeleteOutlined className="text-xs" />
+                        <span>Xóa thẻ</span>
+                      </div>
+                    </Popconfirm>
+                  </div>
+                )}
+              >
+                <div 
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-md transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreOutlined className="text-gray-400 dark:text-neutral-500" />
+                </div>
+              </Dropdown>
+            </div>
+          )}
+
+          {/* Content Wrapper with padding transition */}
+          <div className="transition-all duration-300 group-hover/card:pl-8 pl-0 pr-4">
+            {priorityInfo && (
+              <div className="flex items-center gap-1.5 mb-2">
+                <div 
+                  className="w-2 h-2 rounded-full shadow-sm" 
+                  style={{ backgroundColor: priorityInfo.color }} 
+                />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  {priorityInfo.label}
+                </span>
+              </div>
+            )}
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 leading-snug mb-2">
+              {card.title}
+            </h4>
+            
+            {/* Labels display */}
+            {card.labels && card.labels.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {card.labels.map((l) => (
+                  <Tooltip key={l.id} title={l.label}>
+                    <div 
+                      className="h-1.5 min-w-[32px] rounded-full shadow-sm"
+                      style={{ backgroundColor: l.color || '#94A3B8' }}
+                    />
+                  </Tooltip>
+                ))}
+              </div>
+            )}
+
+            {card.description && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                {card.description}
+              </p>
+            )}
+
+            {/* Members display */}
+            {card.members && card.members.length > 0 && (
+              <div className="flex justify-end mt-3">
+                <Avatar.Group 
+                  maxCount={3} 
+                  size="small"
+                  maxStyle={{ color: '#f56a00', backgroundColor: '#fde3cf', fontSize: '10px' }}
+                >
+                  {card.members.map((m) => (
+                    <Tooltip key={m.userId} title={m.userName}>
+                      <Avatar 
+                        src={m.userAvatar} 
+                        icon={<UserOutlined />} 
+                        className="border-2 border-white dark:border-neutral-800"
+                      />
+                    </Tooltip>
+                  ))}
+                </Avatar.Group>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

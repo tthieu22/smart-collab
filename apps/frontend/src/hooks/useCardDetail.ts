@@ -134,7 +134,7 @@ export const useCardDetail = (
     let canceled = false;
     const fetchColumnsRealtimeFirst = async () => {
       try {
-        const rtRes: any = await socket.getColumns(card.projectId);
+        const rtRes: any = await socket.getColumns(card.projectId || '');
         if (canceled) return;
         const realtimeColumns = rtRes?.data;
         if (Array.isArray(realtimeColumns)) {
@@ -146,7 +146,7 @@ export const useCardDetail = (
       }
 
       try {
-        const apiRes: any = await projectService.getColumnsByProject(card.projectId);
+        const apiRes: any = await projectService.getColumnsByProject(card.projectId || '');
         if (canceled) return;
         const apiColumns = apiRes?.data;
         if (Array.isArray(apiColumns)) {
@@ -182,7 +182,7 @@ export const useCardDetail = (
       setIsUpdating(true);
       try {
         const res = await socket.updateCard(
-          card.projectId,
+          card.projectId || '',
           cardId,
           payload.action,
           payload.data,
@@ -205,6 +205,7 @@ export const useCardDetail = (
       title?: string;
       description?: string;
       status?: string;
+      startDate?: string | null;
       deadline?: string | null;
       priority?: number | null;
     }) => {
@@ -214,7 +215,8 @@ export const useCardDetail = (
         title: fields.title ?? title,
         description: fields.description ?? description,
         status: fields.status,
-        deadline: fields.deadline,
+        startDate: fields.startDate ?? card.startDate,
+        deadline: fields.deadline ?? card.deadline,
         priority: fields.priority,
       };
 
@@ -390,7 +392,7 @@ export const useCardDetail = (
       setIsUploadingAttachment(true);
       try {
         const projectFolder = card.projectId;
-        const uploadRes: any = await uploadService.uploadFiles(projectFolder, [file]);
+        const uploadRes: any = await uploadService.uploadFiles(projectFolder || '', [file]);
         const uploaded = uploadRes?.data?.[0];
         if (!uploadRes?.success || !uploaded?.url) {
           throw new Error('Upload thất bại');
@@ -515,12 +517,12 @@ export const useCardDetail = (
     safeLabels,
 
     updateBasic,
-    addLabel: (label: string) =>
+    addLabel: (label: string, color?: string) =>
       card
         ? updateCardOnServer({
             cardId: card.id,
             action: 'add-label',
-            data: { label },
+            data: { label, color },
           })
         : Promise.resolve(),
     removeLabel: (labelId: string) =>
@@ -531,10 +533,36 @@ export const useCardDetail = (
             data: { labelId },
           })
         : Promise.resolve(),
+    addMember: (userId: string, userName?: string, userAvatar?: string) =>
+      card
+        ? updateCardOnServer({
+            cardId: card.id,
+            action: 'add-member',
+            data: { userId, userName, userAvatar },
+          })
+        : Promise.resolve(),
+    removeMember: (userId: string) =>
+      card
+        ? updateCardOnServer({
+            cardId: card.id,
+            action: 'remove-member',
+            data: { userId },
+          })
+        : Promise.resolve(),
     updateChecklistItem,
     removeChecklistItem,
     updateCover,
 
+    deleteCard: async () => {
+      if (!card) return;
+      try {
+        await socket.deleteCard(card.projectId || '', card.id);
+        message.success('Đã xóa thẻ');
+        onClose();
+      } catch (error) {
+        message.error('Xóa thẻ thất bại');
+      }
+    },
     onClose,
   };
 };

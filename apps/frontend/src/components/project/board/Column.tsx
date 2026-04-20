@@ -330,7 +330,7 @@ export default function Column({
               <div className="min-h-[60px]">
                 {cardIds.map((cardId, idx) => {
                   const card = cards[cardId];
-                  if (!card) return null;
+                  if (!card || card.status === 'ARCHIVED') return null;
 
                   const insertBefore = shouldShowBeforeCard(cardId);
 
