@@ -143,15 +143,37 @@ public class AutoPostService {
             article.setCategory("NEWS");
             article.setTitle(data.get("title"));
             article.setContent(data.get("content"));
-            article.setLinkUrl(data.get("linkUrl"));
+            
+            String linkUrl = data.get("linkUrl");
+            if (linkUrl != null && (linkUrl.contains("google.com/search") || linkUrl.contains("bing.com/search"))) {
+                linkUrl = null; // Filter out search links
+            }
+            article.setLinkUrl(linkUrl);
             
             String imageUrl = data.get("imageUrl");
-            if (imageUrl != null && !imageUrl.isBlank()) {
-                article.setMedia(List.of(Map.of(
-                    "type", "image",
-                    "url", imageUrl
-                )));
+            boolean isDirectLink = imageUrl != null && imageUrl.startsWith("http") && 
+                                   (imageUrl.toLowerCase().contains(".jpg") || 
+                                    imageUrl.toLowerCase().contains(".jpeg") || 
+                                    imageUrl.toLowerCase().contains(".png") || 
+                                    imageUrl.toLowerCase().contains("images.unsplash.com"));
+
+            if (!isDirectLink) {
+                // Dynamic fallback: use keywords to get a relevant image from loremflickr
+                String keywords = data.get("imageKeywords");
+                if (keywords == null || keywords.isBlank()) {
+                    keywords = topic != null ? topic : "news,tech";
+                }
+                // Clean keywords: replace spaces/special chars with commas
+                String cleanKeywords = keywords.toLowerCase()
+                                            .replaceAll("[^a-z0-9,]+", ",")
+                                            .replaceAll(",+", ",");
+                imageUrl = "https://loremflickr.com/1200/800/" + cleanKeywords;
             }
+            
+            article.setMedia(List.of(Map.of(
+                "type", "image",
+                "url", imageUrl
+            )));
             
             article.setCreatedAt(LocalDateTime.now());
             article.setUpdatedAt(LocalDateTime.now());

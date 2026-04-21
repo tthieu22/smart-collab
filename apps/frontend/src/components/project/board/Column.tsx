@@ -261,7 +261,7 @@ export default function Column({
                 }}
               />
             ) : (
-              <h4 
+              <h4
                 className="truncate font-bold text-sm tracking-tight text-gray-800 dark:text-gray-100 cursor-text hover:bg-gray-200/50 dark:hover:bg-white/5 px-1 rounded transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -284,14 +284,14 @@ export default function Column({
       ) : (
         /* ================= COLLAPSED HEADER (Vertical Icon) ================= */
         <div className="flex flex-col items-center gap-4 py-2">
-           <ColumnMenu
-              collapsed={collapsed}
-              onToggleCollapse={toggleCollapse}
-              onFilter={handleFilter}
-              onRename={handleRename}
-              onDelete={handleDelete}
-              extraItems={extraItems}
-            />
+          <ColumnMenu
+            collapsed={collapsed}
+            onToggleCollapse={toggleCollapse}
+            onFilter={handleFilter}
+            onRename={handleRename}
+            onDelete={handleDelete}
+            extraItems={extraItems}
+          />
         </div>
       )}
 
@@ -304,7 +304,7 @@ export default function Column({
           tabIndex={0}
         >
           <div
-            style={{ 
+            style={{
               writingMode: 'vertical-rl',
               textOrientation: 'mixed'
             }}

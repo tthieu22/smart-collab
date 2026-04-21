@@ -1,24 +1,52 @@
-"use client";
-
 import { useRouter } from "next/navigation";
-import { Dropdown, Avatar, Card } from "antd";
+import { Dropdown, Avatar, Card, Divider } from "antd";
 import {
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
   RobotOutlined,
+  BgColorsOutlined,
+  BulbOutlined,
+  MoonOutlined,
+  DesktopOutlined,
+  CheckOutlined,
 } from "@ant-design/icons";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useUserStore } from "@smart/store/user";
+import { useBoardStore } from "@smart/store/setting";
 
 export function AvatarMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-
   const { currentUser, clearUserStore } = useUserStore();
   const isUserAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
 
-  // helper: first close dropdown, then navigate on next tick
+  const theme = useBoardStore((s) => s.theme);
+  const setTheme = useBoardStore((s) => s.setTheme);
+  const [currentTheme, setCurrentTheme] = useState<string | null>(theme);
+
+  useEffect(() => {
+    setCurrentTheme(theme);
+  }, [theme]);
+
+  const handleSetTheme = (val: "light" | "dark" | "system") => {
+    if (val === "light" || val === "dark") setTheme(val);
+    setCurrentTheme(val);
+    try {
+      localStorage.setItem("theme", val);
+    } catch {}
+
+    if (val === "dark") {
+      document.documentElement.classList.add("dark");
+    } else if (val === "light") {
+      document.documentElement.classList.remove("dark");
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (prefersDark) document.documentElement.classList.add("dark");
+      else document.documentElement.classList.remove("dark");
+    }
+  };
+
   const navigateLater = useCallback((path: string) => {
     setOpen(false);
     setTimeout(() => {
@@ -26,130 +54,120 @@ export function AvatarMenu() {
     }, 50);
   }, [router]);
 
-  const handleProfileClick = useCallback((e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const profilePath = currentUser?.id ? `/profile/${currentUser.id}` : "/profile";
-    navigateLater(profilePath);
-  }, [currentUser?.id, navigateLater]);
-
-  const handleUserSettings = useCallback(() => {
-    navigateLater("/user/settings");
-  }, [navigateLater]);
-
-  const handleLogout = useCallback(() => {
-    try {
+  const onMenuClick = (info: any) => {
+    const { key } = info;
+    if (key === "profile" || key === "card") {
+      const profilePath = currentUser?.id ? `/profile/${currentUser.id}` : "/profile";
+      navigateLater(profilePath);
+    } else if (key === "user-setting") {
+      navigateLater("/user/settings");
+    } else if (key === "logout") {
       clearUserStore();
-    } catch (e) {
-      console.error("Logout error:", e);
-    } finally {
       navigateLater("/login");
+    } else if (key === "ai-auto-post") {
+      navigateLater("/admin/ai-auto-post");
+    } else if (key === "theme-light") {
+      handleSetTheme("light");
+    } else if (key === "theme-dark") {
+      handleSetTheme("dark");
+    } else if (key === "theme-system") {
+      handleSetTheme("system");
     }
-  }, [clearUserStore, navigateLater]);
+  };
 
-  const adminAiPostItems = isUserAdmin
-    ? [
-        {
-          key: "ai-auto-post",
-          label: (
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                navigateLater("/admin/ai-auto-post");
-              }}
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
-              <RobotOutlined />
-              <span>AI Auto Post</span>
-            </div>
-          ),
-        },
-      ]
-    : [];
-
-  const items = [
+  const items: any[] = [
     {
       key: "card",
       label: (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            handleProfileClick(e);
-          }}
-        >
-          <Card hoverable style={{ width: 280, padding: 2 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Avatar size={48} icon={<UserOutlined />}>
-                {currentUser?.email?.charAt(0).toUpperCase() || null}
-              </Avatar>
-              <div>
-                <div style={{ fontWeight: 600 }}>
-                  {currentUser?.email?.split("@")[0] || "Khách"}
-                </div>
-                <div style={{ color: "#666", fontSize: 13 }}>
-                  {currentUser?.email || "user@example.com"}
-                </div>
+        <Card bordered={false} bodyStyle={{ padding: "8px 4px" }} className="dark:bg-neutral-900 border-none">
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 240 }}>
+            <Avatar size={48} src={currentUser?.avatar} icon={!currentUser?.avatar && <UserOutlined />}>
+              {!currentUser?.avatar && (currentUser?.email?.charAt(0).toUpperCase() || null)}
+            </Avatar>
+            <div style={{ overflow: "hidden" }}>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }} className="truncate">
+                {currentUser?.email?.split("@")[0] || "Khách"}
+              </div>
+              <div style={{ color: "#888", fontSize: 12 }} className="truncate">
+                {currentUser?.email || "user@example.com"}
               </div>
             </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
       ),
     },
+    { type: 'divider' },
     {
       key: "profile",
-      label: (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            handleProfileClick(e);
-          }}
-          style={{ display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <UserOutlined />
-          <span>Thông tin cá nhân</span>
-        </div>
-      ),
+      icon: <UserOutlined />,
+      label: "Thông tin cá nhân",
     },
     {
       key: "user-setting",
-      label: (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            handleUserSettings();
-          }}
-          style={{ display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <SettingOutlined />
-          <span>Cài đặt người dùng</span>
-        </div>
-      ),
+      icon: <SettingOutlined />,
+      label: "Cài đặt người dùng",
     },
-    ...adminAiPostItems,
+    {
+      key: "theme",
+      icon: <BgColorsOutlined />,
+      label: "Giao diện",
+      children: [
+        {
+          key: "theme-light",
+          icon: <BulbOutlined />,
+          label: (
+            <div className="flex items-center justify-between min-w-[120px]">
+              <span>Sáng</span>
+              {currentTheme === "light" && <CheckOutlined className="text-blue-500" />}
+            </div>
+          )
+        },
+        {
+          key: "theme-dark",
+          icon: <MoonOutlined />,
+          label: (
+            <div className="flex items-center justify-between min-w-[120px]">
+              <span>Tối</span>
+              {currentTheme === "dark" && <CheckOutlined className="text-blue-500" />}
+            </div>
+          )
+        },
+        {
+          key: "theme-system",
+          icon: <DesktopOutlined />,
+          label: (
+            <div className="flex items-center justify-between min-w-[120px]">
+              <span>Hệ thống</span>
+              {currentTheme === "system" && <CheckOutlined className="text-blue-500" />}
+            </div>
+          )
+        }
+      ]
+    },
+    ...(isUserAdmin ? [
+      {
+        key: "ai-auto-post",
+        icon: <RobotOutlined />,
+        label: "AI Auto Post",
+      }
+    ] : []),
+    { type: 'divider' },
     {
       key: "logout",
-      label: (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            handleLogout();
-          }}
-          style={{ display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <LogoutOutlined />
-          <span>Đăng xuất</span>
-        </div>
-      ),
+      icon: <LogoutOutlined />,
+      label: "Đăng xuất",
+      danger: true,
     },
   ];
 
   return (
     <Dropdown
-      menu={{ items }}
+      menu={{ items, onClick: onMenuClick }}
       placement="bottomRight"
       trigger={["click"]}
       open={open}
       onOpenChange={(o) => setOpen(o)}
-      getPopupContainer={() => document.body}
+      overlayClassName="avatar-menu-dropdown"
     >
       <div
         className={`i-box ${open ? "active" : ""} hover:bg-gray-50 dark:hover:bg-neutral-800`}
@@ -164,11 +182,11 @@ export function AvatarMenu() {
           transition: "all 0.2s ease",
         }}
       >
-        <Avatar size="small" icon={<UserOutlined />}>
-          {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : null}
+        <Avatar size="small" src={currentUser?.avatar} icon={!currentUser?.avatar && <UserOutlined />}>
+          {!currentUser?.avatar && (currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : null)}
         </Avatar>
       </div>
     </Dropdown>
   );
-
 }
+

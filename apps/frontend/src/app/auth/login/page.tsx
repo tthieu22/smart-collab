@@ -11,6 +11,8 @@ import { useUserStore } from '@smart/store/user';
 import { useNotificationStore } from '@smart/store/notification';
 import { ROUTES, APP_CONFIG, API_ENDPOINTS } from '@smart/lib/constants';
 import type { LoginCredentials, ApiError } from '@smart/types/auth';
+import { QrLoginModal } from '@smart/components/auth/QrLoginModal';
+import { QrcodeOutlined } from '@ant-design/icons';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLocalLoading] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -160,6 +163,18 @@ export default function LoginPage() {
         >
           Đăng nhập với Google
         </Button>
+
+        <Button
+          icon={<QrcodeOutlined />}
+          size="large"
+          block
+          onClick={() => setQrModalOpen(true)}
+          style={{ marginBottom: 16 }}
+        >
+          Quét mã đăng nhập
+        </Button>
+
+        <QrLoginModal open={qrModalOpen} onCancel={() => setQrModalOpen(false)} />
 
         <p style={{ textAlign: 'center' }}>
           Chưa có tài khoản?{' '}

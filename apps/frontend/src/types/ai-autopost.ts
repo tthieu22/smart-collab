@@ -17,6 +17,7 @@ export type NewsArticleCategory = 'NEWS' | 'TIP';
 export interface NewsArticle {
   id: string;
   authorId: string;
+  title?: string;
   category?: NewsArticleCategory;
   content: string;
   /** Liên kết ngoài (nút “Đọc thêm”). */

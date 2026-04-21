@@ -114,11 +114,11 @@ export default function ProjectDetailPage({ params }: Props) {
     const columnsCount = Array.isArray(project?.columns)
       ? project!.columns.length
       : Array.isArray(project?.boards)
-      ? project!.boards.reduce(
+        ? project!.boards.reduce(
           (sum, board) => sum + (Array.isArray(board.columns) ? board.columns.length : 0),
           0
         )
-      : 0;
+        : 0;
     const cardsCount = Array.isArray(project?.cards) ? project!.cards.length : 0;
     return { boardsCount, columnsCount, cardsCount };
   };
@@ -135,8 +135,6 @@ export default function ProjectDetailPage({ params }: Props) {
       return updated;
     });
   };
-
-  // Note: không chặn scroll toàn trang để header/footer luôn hiển thị.
 
   useEffect(() => {
     const socketManager = getProjectSocketManager();
@@ -332,9 +330,8 @@ export default function ProjectDetailPage({ params }: Props) {
   const boardClass = isSingle
     ? `${basePanel} flex-1`
     : `${basePanel} min-w-[700px]`;
-
   return (
-    <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter>
+    <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter noScroll>
       <div className="bg-gray-50 dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
         <ProjectActionBar
           activeComponents={activeComponents}
@@ -342,7 +339,7 @@ export default function ProjectDetailPage({ params }: Props) {
         />
 
         {/* ===== MAIN CONTENT ===== */}
-        <div className="fixed inset-x-0 bottom-14 top-[100px]">
+        <div className="fixed inset-x-0 bottom-0 top-[104px]">
           <DragDropContextProvider
             boardTypes={{
               ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),
@@ -372,6 +369,49 @@ export default function ProjectDetailPage({ params }: Props) {
           </DragDropContextProvider>
         </div>
       </div>
+
+      <style jsx global>{`
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        ::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+
+        /* Track */
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        /* Handle */
+        ::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 10px;
+          transition: background 0.3s;
+        }
+
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+          background: #404040;
+        }
+
+        .dark ::-webkit-scrollbar-thumb:hover {
+          background: #525252;
+        }
+
+        /* Hide scrollbar track but show thumb on hover or active scroll */
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: #d1d5db transparent;
+        }
+
+        .dark * {
+          scrollbar-color: #404040 transparent;
+        }
+      `}</style>
     </SiteLayout>
   );
 }

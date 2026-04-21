@@ -9,6 +9,7 @@ export default function SiteLayout({
   fullWidth = false,
   hideLeftSidebar = false,
   hideRightSidebar = false,
+  noScroll = false,
 }: {
   children: React.ReactNode;
   leftSidebar?: React.ReactNode;
@@ -17,9 +18,13 @@ export default function SiteLayout({
   fullWidth?: boolean;
   hideLeftSidebar?: boolean;
   hideRightSidebar?: boolean;
+  noScroll?: boolean;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-neutral-950 dark:text-gray-100">
+    <div className={cn(
+      "flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-neutral-950 dark:text-gray-100",
+      noScroll && "h-screen overflow-hidden"
+    )}>
       <div className="sticky top-0 z-50">
         <Header />
       </div>
@@ -28,6 +33,7 @@ export default function SiteLayout({
         className={cn(
           'mx-auto flex w-full flex-1 gap-4 px-3 py-4',
           fullWidth ? 'max-w-none' : 'max-w-[1400px]',
+          noScroll && 'h-full overflow-hidden'
         )}
       >
         {!hideLeftSidebar ? (

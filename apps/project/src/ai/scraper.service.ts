@@ -8,7 +8,7 @@ export class ScraperService {
   /**
    * Simple scraper to get text content from a URL
    */
-  async scrapeUrl(url: string): Promise<string> {
+  async scrapeUrl(url: string): Promise<{ text: string; images: string[] }> {
     try {
       this.logger.log(`Scraping URL: ${url}`);
       const response = await axios.get(url, {
@@ -28,6 +28,36 @@ export class ScraperService {
       if (articleMatch) contentArea = articleMatch[1];
       else if (mainMatch) contentArea = mainMatch[1];
 
+      // Extract images
+      const images: string[] = [];
+      
+      // 1. Look for Open Graph images (usually the best ones)
+      const ogMatch = html.match(/<meta\b[^>]*property="og:image"[^>]*content="([^"]+)"/i) || 
+                      html.match(/<meta\b[^>]*content="([^"]+)"[^>]*property="og:image"/i);
+      if (ogMatch) images.push(ogMatch[1]);
+
+      // 2. Look for Twitter images
+      const twitterMatch = html.match(/<meta\b[^>]*name="twitter:image"[^>]*content="([^"]+)"/i);
+      if (twitterMatch) images.push(twitterMatch[1]);
+
+      // 3. Look for regular images in content
+      const imgRegex = /<img\b[^>]*src="([^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/gi;
+      let imgMatch;
+      while ((imgMatch = imgRegex.exec(contentArea)) !== null) {
+        let imgUrl = imgMatch[1];
+        if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+        if (imgUrl.startsWith('/')) {
+           try {
+             const origin = new URL(url).origin;
+             imgUrl = origin + imgUrl;
+           } catch {}
+        }
+        if (imgUrl.startsWith('http') && !images.includes(imgUrl)) {
+          images.push(imgUrl);
+        }
+        if (images.length >= 10) break;
+      }
+
       // Basic HTML stripping
       const text = contentArea
         .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, '')
@@ -36,10 +66,10 @@ export class ScraperService {
         .replace(/\s+/g, ' ')
         .trim();
 
-      return text.substring(0, 5000); // Limit to 5k chars for AI context
+      return { text: text.substring(0, 5000), images };
     } catch (error: any) {
       this.logger.warn(`Failed to scrape ${url}: ${error.message}`);
-      return '';
+      return { text: '', images: [] };
     }
   }
 

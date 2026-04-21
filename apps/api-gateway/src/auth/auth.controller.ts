@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   HttpException,
   HttpStatus,
@@ -10,6 +11,8 @@ import {
   Req,
   UseGuards,
   UnauthorizedException,
+  Param,
+  Delete,
   Headers,
   Logger,
 } from '@nestjs/common';
@@ -299,6 +302,180 @@ export class AuthController {
         error.message || 'OAuth exchange failed',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@Req() req: any, @Body() body: any): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.updateProfile({ userId, data: body });
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Update profile failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(@Req() req: any, @Body() body: any): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.changePassword({ userId, data: body });
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Change password failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('resend-code')
+  @UseGuards(JwtAuthGuard)
+  async resendCode(@Req() req: any): Promise<ApiResponse> {
+    try {
+      const email = req.user.email;
+      return await this.authClient.resendCode({ email });
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Resend code failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('disconnect-google')
+  @UseGuards(JwtAuthGuard)
+  async disconnectGoogle(@Req() req: any): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.disconnectGoogle({ userId });
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Disconnect Google failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('delete-account')
+  @UseGuards(JwtAuthGuard)
+  async deleteAccount(@Req() req: any, @Body() body: { password?: string }): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.removeAccount({ userId, password: body.password });
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Delete account failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('audit-logs')
+  @UseGuards(JwtAuthGuard)
+  async getAuditLogs(@Req() req: any): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.getLogs({ userId });
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Get audit logs failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('export-data')
+  @UseGuards(JwtAuthGuard)
+  async exportData(@Req() req: any): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.exportData({ userId });
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Export data failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('qr/generate')
+  async generateQr(@Req() req: any): Promise<ApiResponse> {
+    try {
+      const context = {
+        ip: req.ip || req.connection.remoteAddress,
+        ua: req.headers['user-agent'],
+      };
+      return await this.authClient.generateQrToken({ context });
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('qr/scan')
+  @UseGuards(JwtAuthGuard)
+  async scanQr(@Req() req: any, @Body() body: { token: string }): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.scanQrToken({ token: body.token, userId });
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('qr/confirm')
+  @UseGuards(JwtAuthGuard)
+  async confirmQr(@Req() req: any, @Body() body: { token: string }): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.confirmQrToken({ token: body.token, userId });
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('qr/check/:token')
+  async checkQr(@Param('token') token: string, @Res({ passthrough: true }) res: Response): Promise<ApiResponse> {
+    try {
+      const result = await this.authClient.checkQrStatus({ token });
+      
+      if (result.success && result.data?.status === 'CONFIRMED' && result.data?.refreshToken) {
+        this.cookieService.setRefreshCookie(
+          res,
+          result.data.refreshToken,
+          new Date(result.data.refreshTokenExpiresAt),
+        );
+      }
+      
+      return result;
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('devices')
+  @UseGuards(JwtAuthGuard)
+  async getDevices(@Req() req: any): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.getDevices({ userId });
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Delete('devices/remove/:id')
+  @UseGuards(JwtAuthGuard)
+  async removeDevice(@Req() req: any, @Param('id') deviceId: string): Promise<ApiResponse> {
+    try {
+      const userId = req.user.userId;
+      return await this.authClient.removeDevice({ userId, deviceId });
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

@@ -39,9 +39,32 @@ class NewsService {
     return normalizeNewsArticle(raw as NewsArticle);
   }
 
-  async listPublished(): Promise<NewsArticle[]> {
-    const res = await autoRequest<unknown>('/home/news?category=NEWS', { method: 'GET' });
-    return unwrapNewsList(res);
+  async listPublished(params: { page?: number; limit?: number; q?: string } = {}): Promise<{ data: NewsArticle[]; total: number; page: number; limit: number }> {
+    const searchParams = new URLSearchParams();
+    searchParams.append('category', 'NEWS');
+    if (params.page !== undefined) searchParams.append('page', params.page.toString());
+    if (params.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    if (params.q) searchParams.append('q', params.q);
+
+    const qs = searchParams.toString();
+    const res = await autoRequest<any>(`/home/news?${qs}`, { method: 'GET' });
+
+    if (Array.isArray(res)) {
+      return {
+        data: res.map((item) => normalizeNewsArticle(item as NewsArticle)),
+        total: res.length,
+        page: 0,
+        limit: res.length,
+      };
+    }
+
+    const data = res?.data || res?.items || [];
+    return {
+      data: (Array.isArray(data) ? data : []).map((item) => normalizeNewsArticle(item as NewsArticle)),
+      total: res?.total || 0,
+      page: res?.page || 0,
+      limit: res?.limit || 10,
+    };
   }
 
   async listTips(): Promise<NewsArticle[]> {

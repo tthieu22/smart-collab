@@ -241,4 +241,95 @@ export class AuthService {
 
     return this.issueTokensForUser(user);
   }
+
+  /** 📱 QR Login Logic */
+  async generateQrToken(context?: { ip?: string; ua?: string }) {
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    return this.prisma.qrLogin.create({
+      data: { 
+        token, 
+        expiresAt,
+        ip: context?.ip,
+        userAgent: context?.ua
+      },
+    });
+  }
+
+  async scanQrToken(token: string, userId: string) {
+    const qr = await this.prisma.qrLogin.findUnique({ where: { token } });
+    if (!qr || qr.expiresAt < new Date()) {
+      throw new Error('Mã QR không hợp lệ hoặc đã hết hạn');
+    }
+
+    return this.prisma.qrLogin.update({
+      where: { token },
+      data: { userId, status: 'SCANNED' },
+    });
+  }
+
+  async confirmQrToken(token: string, userId: string) {
+    const qr = await this.prisma.qrLogin.findUnique({ where: { token } });
+    if (!qr || qr.status === 'EXPIRED' || qr.expiresAt < new Date()) {
+      throw new Error('Mã QR không hợp lệ hoặc đã hết hạn');
+    }
+
+    return this.prisma.qrLogin.update({
+      where: { token },
+      data: { userId, status: 'CONFIRMED' },
+    });
+  }
+
+  async checkQrStatus(token: string) {
+    const qr = await this.prisma.qrLogin.findUnique({ where: { token } });
+    if (!qr) throw new Error('Mã QR không tồn tại');
+
+    if (qr.status === 'EXPIRED' || qr.expiresAt < new Date()) {
+      if (qr.status === 'PENDING' || qr.status === 'SCANNED') {
+        await this.prisma.qrLogin.update({ where: { token }, data: { status: 'EXPIRED' } });
+      }
+      return { status: 'EXPIRED' };
+    }
+
+    if (qr.status === 'SCANNED') {
+      return { status: 'SCANNED' };
+    }
+
+    if (qr.status === 'CONFIRMED' && qr.userId) {
+      const user = await this.users.findOne(qr.userId);
+      if (!user) throw new Error('User not found');
+
+      const tokens = await this.issueTokensForUser({
+        id: user.id,
+        email: user.email,
+        role: user.role as string,
+      });
+
+      // Track device
+      await this.prisma.device.create({
+        data: {
+          userId: user.id,
+          refreshToken: tokens.refreshToken,
+          ip: qr.ip,
+          userAgent: qr.userAgent,
+          deviceName: qr.userAgent ? this.parseUA(qr.userAgent) : 'Unknown Device',
+        }
+      });
+
+      // Cleanup
+      await this.prisma.qrLogin.delete({ where: { token } });
+
+      return { status: 'CONFIRMED', ...tokens, user };
+    }
+
+    return { status: 'PENDING' };
+  }
+
+  private parseUA(ua: string) {
+    if (ua.includes('Windows')) return 'Chrome on Windows';
+    if (ua.includes('iPhone')) return 'Safari on iPhone';
+    if (ua.includes('Android')) return 'Chrome on Android';
+    if (ua.includes('Macintosh')) return 'Safari on Mac';
+    return 'Unknown Device';
+  }
 }

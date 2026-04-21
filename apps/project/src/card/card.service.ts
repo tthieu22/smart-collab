@@ -181,17 +181,20 @@ export class CardService {
     return updatedCard;
   }
 
-  private async reorderCards(columnId: string | null) {
+  private async reorderCards(columnId: string | null, tx?: any) {
     if (!columnId) return;
-    const cards = await this.prisma.card.findMany({
+    const client = tx || this.prisma;
+    const cards = await client.card.findMany({
       where: { columnId },
       orderBy: { position: 'asc' },
     });
     for (let i = 0; i < cards.length; i++) {
-      await this.prisma.card.update({
-        where: { id: cards[i].id },
-        data: { position: i },
-      });
+      if (cards[i].position !== i) {
+        await client.card.update({
+          where: { id: cards[i].id },
+          data: { position: i },
+        });
+      }
     }
   }
 
@@ -503,16 +506,18 @@ export class CardService {
       }
 
       // 4. Chuẩn hóa lại toàn bộ vị trí ở cả 2 cột (hoặc 1 cột nếu di chuyển nội bộ)
-      await this.reorderCards(currentColumnId);
+      await this.reorderCards(currentColumnId, tx);
       if (destColumnId !== currentColumnId) {
-        await this.reorderCards(destColumnId);
+        await this.reorderCards(destColumnId, tx);
       }
 
       // Lấy lại dữ liệu card sau khi đã chuẩn hóa vị trí
-      return this.prisma.card.findUnique({
+      return tx.card.findUnique({
         where: { id: cardId },
         include: { labels: true, views: true, column: true },
       });
+    }, {
+      timeout: 30000
     });
 
     if (!result) {
@@ -602,7 +607,7 @@ export class CardService {
         });
       }
 
-      return await tx.card.create({
+      const created = await tx.card.create({
         data: {
           projectId: destColumn.projectId ?? null,
           columnId: destColumnId,
@@ -621,9 +626,12 @@ export class CardService {
         },
         include: { labels: true, views: true, column: true },
       });
-    });
 
-    await this.reorderCards(destColumnId);
+      await this.reorderCards(destColumnId, tx);
+      return created;
+    }, {
+      timeout: 30000
+    });
 
     // 4. Publish event
     await this.amqpConnection.publish('project-exchange', 'card.copied', {

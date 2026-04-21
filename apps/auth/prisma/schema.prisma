@@ -20,6 +20,8 @@ model User {
   isVerified                   Boolean  @default(false)
   emailVerificationCode        String?
   emailVerificationCodeExpires DateTime?
+  emailNotifications           Boolean  @default(true)
+  pushNotifications            Boolean  @default(true)
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
 
@@ -31,6 +33,10 @@ model User {
   followers                    Follower[] @relation("Followers")
   following                    Follower[] @relation("Following")
   receivedNotifications        Notification[] @relation("Recipient")
+  auditLogs                    AuditLog[]
+  devices                      Device[]
+  deletedAt                    DateTime?
+  loginCount                   Int      @default(0)
 }
 
 model Follower {
@@ -120,4 +126,42 @@ model Notification {
   createdAt   DateTime @default(now())
 
   recipient   User     @relation(name: "Recipient", fields: [recipientId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  action    String   // LOGIN, UPDATE_PROFILE, CHANGE_PASSWORD, etc.
+  details   String?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model QrLogin {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String?  @db.ObjectId
+  status    String   @default("PENDING") // PENDING, SCANNED, CONFIRMED, EXPIRED
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+}
+
+model Device {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  refreshToken String?  @unique
+  ip           String?
+  userAgent    String?
+  deviceName   String?  // e.g. "Chrome on Windows"
+  location     String?
+  lastUsed     DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id])
 }

@@ -308,18 +308,23 @@ export class AiService {
     this.logger.log(`Performing web search/scrape for: ${processedTemplate}`);
     const searchLinks = await this.scraperService.searchLinks(processedTemplate);
     let scrapedContent = '';
+    const scrapedImages: string[] = [];
     
     // Scrape top 2 links to get more data
     for (const link of searchLinks.slice(0, 2)) {
-      const pageText = await this.scraperService.scrapeUrl(link);
-      if (pageText) {
-        scrapedContent += `\n--- CONTENT FROM ${link} ---\n${pageText}\n`;
+      const { text, images } = await this.scraperService.scrapeUrl(link);
+      if (text) {
+        scrapedContent += `\n--- CONTENT FROM ${link} ---\n${text}\n`;
       }
+      images.forEach(img => {
+        if (!scrapedImages.includes(img)) scrapedImages.push(img);
+      });
     }
     
     const context = {
       ...(payload?.context ?? {}),
-      scraped_web_data: scrapedContent.substring(0, 5000) // Provide more data to AI
+      scraped_web_data: scrapedContent.substring(0, 5000), // Provide more data to AI
+      scraped_images: scrapedImages.slice(0, 10) // Provide image candidates
     };
 
     const prompt = this.promptFactory.generateNewsPost(
@@ -355,7 +360,8 @@ export class AiService {
       title: contentObj.title || 'Tin tức mới',
       content: contentObj.content || content,
       imageUrl: contentObj.imageUrl || null,
-      linkUrl: contentObj.linkUrl || null
+      linkUrl: contentObj.linkUrl || null,
+      imageKeywords: contentObj.imageKeywords || null
     };
   }
 

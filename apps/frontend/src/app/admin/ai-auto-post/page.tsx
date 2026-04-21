@@ -26,8 +26,11 @@ import {
   Zap, 
   Image as ImageIcon,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  LayoutGrid,
+  List as ListIcon
 } from 'lucide-react';
+import { NewsCard } from '@smart/components/news/NewsCard';
 
 const defaultSettings: AutoPostSettings = {
   enabled: false,
@@ -159,6 +162,7 @@ function AutoPostSection({ settings, setSettings, onSave, onRunNow, isSaving }: 
 export default function AdminAiAutoPostPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [message, setMessage] = useState('');
   const [settings, setSettings] = useState<AutoPostSettings>(defaultSettings);
   
@@ -346,7 +350,7 @@ export default function AdminAiAutoPostPage() {
 
   return (
     <SiteLayout leftSidebar={<LeftWidgets />} rightSidebar={<RightWidgets />}>
-      <div className="mx-auto w-full max-w-[720px] space-y-8 pb-20">
+      <div className={`mx-auto w-full space-y-8 pb-20 transition-all duration-500 ${viewMode === 'grid' ? 'max-w-7xl' : 'max-w-4xl'}`}>
         
         {/* Header Section */}
         <div className="flex flex-col gap-2">
@@ -472,10 +476,27 @@ export default function AdminAiAutoPostPage() {
         {/* 3. Search & Article List Section */}
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-              <MessageSquare className="w-6 h-6 text-blue-500" />
-              Published Feed
-            </h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-blue-500" />
+                Published Feed
+              </h2>
+              
+              <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <ListIcon size={18} />
+                </button>
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <LayoutGrid size={18} />
+                </button>
+              </div>
+            </div>
             
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:w-64">
@@ -511,114 +532,41 @@ export default function AdminAiAutoPostPage() {
                 <p className="text-sm text-gray-400">Try adjusting your search or filters.</p>
               </div>
             ) : (
-              <div className="grid gap-4">
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {articles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="group relative overflow-hidden rounded-2xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300"
-                  >
-                    <div className="p-4 flex gap-4">
-                      {/* Compact Media Preview */}
-                      {(article.media?.length ?? 0) > 0 && (
-                        <div className="shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-neutral-950 ring-1 ring-black/5">
-                          <img 
-                            src={normalizeNewsMedia(article.media)[0].url} 
-                            alt="" 
-                            className="h-full w-full object-cover" 
-                          />
-                          {article.media!.length > 1 && (
-                            <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/60 text-[10px] font-black text-white backdrop-blur-sm">
-                              +{article.media!.length - 1}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex-1 flex flex-col min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                            article.category === 'TIP' 
-                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' 
-                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                          }`}>
-                            {article.category || 'NEWS'}
-                          </span>
-                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
-                            {article.createdAt ? new Date(article.createdAt).toLocaleDateString() : 'Recent'}
-                          </span>
-                        </div>
-
-                        {editingId === article.id ? (
-                          <div className="space-y-3 mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <textarea
-                              className="w-full min-h-[80px] rounded-xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-950 p-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all dark:text-white"
-                              value={editingContent}
-                              onChange={(e) => setEditingContent(e.target.value)}
-                            />
-                            <div className="flex gap-2">
-                              <button 
-                                onClick={saveEditNews}
-                                className="px-4 py-1.5 rounded-lg bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
-                              >
-                                Save Changes
-                              </button>
-                              <button 
-                                onClick={() => setEditingId(null)}
-                                className="px-4 py-1.5 rounded-lg border border-gray-200 dark:border-neutral-800 text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-neutral-800"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-2 font-medium">
-                              {article.content}
-                            </p>
-                            {article.linkUrl && (
-                              <a 
-                                href={article.linkUrl} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold"
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                                {new URL(article.linkUrl).hostname}
-                              </a>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      {/* Floating Actions on Hover */}
-                      <div className="shrink-0 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <NewsCard 
+                    key={article.id} 
+                    article={article} 
+                    variant={viewMode}
+                    actions={
+                      <div className="flex items-center gap-1">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
                             setEditingId(article.id);
                             setEditingContent(article.content);
                             setEditingCategory(article.category === 'TIP' ? 'TIP' : 'NEWS');
                             setEditingLinkUrl(article.linkUrl?.trim() ?? '');
                             setEditingMedia(normalizeNewsMedia(article.media));
                           }}
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-400 hover:text-blue-500 transition-all"
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-400 hover:text-blue-500 transition-all flex items-center gap-1"
                         >
                           <Edit3 className="w-4 h-4" />
+                          <span className="text-[10px] font-bold">Edit</span>
                         </button>
                         <button
-                          onClick={() => removeNews(article.id)}
-                          className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-all"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeNews(article.id);
+                          }}
+                          className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-all flex items-center gap-1"
                         >
                           <Trash2 className="w-4 h-4" />
+                          <span className="text-[10px] font-bold">Delete</span>
                         </button>
-                        <Link
-                          href={`/news/${article.id}`}
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-400 hover:text-emerald-500 transition-all"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
                       </div>
-                    </div>
-                  </div>
+                    }
+                  />
                 ))}
               </div>
             )}

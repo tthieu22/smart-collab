@@ -1,14 +1,10 @@
-"use client";
-
 import { NotificationMenu } from "./NotificationMenu";
-import { SettingMenu } from "./SettingMenu";
 import { AvatarMenu } from "./AvatarMenu";
 
 export function UserMenu() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+    <div className="flex items-center gap-4">
       <NotificationMenu />
-      <SettingMenu />
       <AvatarMenu />
     </div>
   );

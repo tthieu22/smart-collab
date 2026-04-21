@@ -208,4 +208,123 @@ export class AuthService {
     );
   }
 
+  async updateProfile(payload: { userId: string; data: any }): Promise<AuthResponse> {
+    try {
+      this.logger.log(`Update profile for user: ${payload.userId}`);
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'auth.updateProfile' }, payload),
+      );
+    } catch (error: any) {
+      this.logger.error('Update profile error:', error);
+      throw error;
+    }
+  }
+
+  async changePassword(payload: { userId: string; data: any }): Promise<AuthResponse> {
+    try {
+      this.logger.log(`Change password for user: ${payload.userId}`);
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'auth.changePassword' }, payload),
+      );
+    } catch (error: any) {
+      this.logger.error('Change password error:', error);
+      throw error;
+    }
+  }
+
+  async resendCode(payload: { email: string }): Promise<AuthResponse> {
+    try {
+      this.logger.log(`Resend code to: ${payload.email}`);
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'auth.resendCode' }, payload),
+      );
+    } catch (error: any) {
+      this.logger.error('Resend code error:', error);
+      throw error;
+    }
+  }
+
+  async disconnectGoogle(payload: { userId: string }): Promise<AuthResponse> {
+    try {
+      this.logger.log(`Disconnect Google for user: ${payload.userId}`);
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'auth.disconnectGoogle' }, payload),
+      );
+    } catch (error: any) {
+      this.logger.error('Disconnect Google error:', error);
+      throw error;
+    }
+  }
+
+  async removeAccount(payload: { userId: string; password?: string }): Promise<AuthResponse> {
+    try {
+      this.logger.log(`Remove account for user: ${payload.userId}`);
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'auth.removeAccount' }, payload),
+      );
+    } catch (error: any) {
+      this.logger.error('Remove account error:', error);
+      throw error;
+    }
+  }
+
+  async getLogs(payload: { userId: string }): Promise<AuthResponse> {
+    try {
+      this.logger.log(`Get logs for user: ${payload.userId}`);
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'auth.getLogs' }, payload),
+      );
+    } catch (error: any) {
+      this.logger.error('Get logs error:', error);
+      throw error;
+    }
+  }
+
+  async exportData(payload: { userId: string }): Promise<AuthResponse> {
+    try {
+      this.logger.log(`Export data for user: ${payload.userId}`);
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'auth.exportData' }, payload),
+      );
+    } catch (error: any) {
+      this.logger.error('Export data error:', error);
+      throw error;
+    }
+  }
+
+  async generateQrToken(payload: { context?: { ip?: string; ua?: string } }): Promise<AuthResponse> {
+    return await firstValueFrom(
+      this.authClient.send({ cmd: 'auth.generateQrToken' }, payload),
+    );
+  }
+
+  async scanQrToken(payload: { token: string; userId: string }): Promise<AuthResponse> {
+    return await firstValueFrom(
+      this.authClient.send({ cmd: 'auth.scanQrToken' }, payload),
+    );
+  }
+
+  async confirmQrToken(payload: { token: string; userId: string }): Promise<AuthResponse> {
+    return await firstValueFrom(
+      this.authClient.send({ cmd: 'auth.confirmQrToken' }, payload),
+    );
+  }
+
+  async checkQrStatus(payload: { token: string }): Promise<AuthResponse> {
+    return await firstValueFrom(
+      this.authClient.send({ cmd: 'auth.checkQrStatus' }, payload),
+    );
+  }
+
+  async getDevices(payload: { userId: string }): Promise<AuthResponse> {
+    return await firstValueFrom(
+      this.authClient.send({ cmd: 'auth.getDevices' }, payload),
+    );
+  }
+
+  async removeDevice(payload: { userId: string; deviceId: string }): Promise<AuthResponse> {
+    return await firstValueFrom(
+      this.authClient.send({ cmd: 'auth.removeDevice' }, payload),
+    );
+  }
 }

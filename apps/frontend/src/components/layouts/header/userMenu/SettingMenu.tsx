@@ -48,18 +48,6 @@ export function SettingMenu() {
 
   const items = [
     {
-      key: "profile",
-      label: (
-        <div
-          style={{ display: "flex", alignItems: "center", gap: 8 }}
-          onClick={() => router.push("/user")}
-        >
-          <SettingOutlined />
-          <span>Cài đặt cá nhân</span>
-        </div>
-      ),
-    },
-    {
       key: "theme",
       label: (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -71,36 +59,54 @@ export function SettingMenu() {
         {
           key: "theme-light",
           label: (
-            <div className="theme-option" onClick={() => handleSet("light")}>
+            <div 
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minWidth: 120, padding: "4px 0" }} 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSet("light");
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <BulbOutlined />
                 <span>Sáng</span>
               </div>
-              {current === "light" && <CheckOutlined />}
+              {current === "light" && <CheckOutlined style={{ color: "#1890ff" }} />}
             </div>
           ),
         },
         {
           key: "theme-dark",
           label: (
-            <div className="theme-option" onClick={() => handleSet("dark")}>
+            <div 
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minWidth: 120, padding: "4px 0" }} 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSet("dark");
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <MoonOutlined />
                 <span>Tối</span>
               </div>
-              {current === "dark" && <CheckOutlined />}
+              {current === "dark" && <CheckOutlined style={{ color: "#1890ff" }} />}
             </div>
           ),
         },
         {
           key: "theme-system",
           label: (
-            <div className="theme-option" onClick={() => handleSet("system")}>
+            <div 
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minWidth: 120, padding: "4px 0" }} 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSet("system");
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <DesktopOutlined />
                 <span>Hệ thống</span>
               </div>
-              {current === "system" && <CheckOutlined />}
+              {current === "system" && <CheckOutlined style={{ color: "#1890ff" }} />}
             </div>
           ),
         },

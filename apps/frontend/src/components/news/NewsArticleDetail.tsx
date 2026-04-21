@@ -15,82 +15,111 @@ export function NewsArticleDetail({
 }) {
   const media = article.media ?? [];
   const dateLabel = article.createdAt
-    ? new Date(article.createdAt).toLocaleString('vi-VN')
+    ? new Date(article.createdAt).toLocaleDateString('vi-VN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     : '';
 
   return (
-    <div className="space-y-4">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-      >
-        <ArrowLeft size={18} />
-        Quay lại danh sách
-      </Link>
-
-      <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
+    <article className="max-w-4xl mx-auto space-y-8 pb-20">
+      <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-900 pb-4">
+        <Link
+          href={backHref}
+          className="group inline-flex items-center gap-2 text-sm font-black text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 transition-colors uppercase tracking-widest"
+        >
+          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+          Danh sách tin
+        </Link>
+        
+        <div className="flex items-center gap-2">
           {article.category === 'TIP' ? (
-            <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              Mẹo &amp; hướng dẫn
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30">
+              Mẹo & Hướng dẫn
             </span>
           ) : (
-            <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
               Tin tức
             </span>
           )}
-          {dateLabel ? (
-            <span className="text-xs text-gray-500 dark:text-gray-400">{dateLabel}</span>
-          ) : null}
         </div>
+      </div>
 
-        <h1 className="mb-4 text-xl font-bold leading-tight text-gray-900 dark:text-gray-100">
+      <header className="space-y-4">
+        <h1 className="text-4xl md:text-5xl font-black leading-tight text-gray-900 dark:text-white tracking-tight">
           {article.title || 'Tin tức mới'}
         </h1>
+        
+        <div className="flex items-center gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-2">
+             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">A</div>
+             <span>Ban biên tập Autonexus</span>
+          </div>
+          <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-neutral-800" />
+          <time dateTime={article.createdAt}>{dateLabel}</time>
+        </div>
+      </header>
 
+      {/* Main Content Area */}
+      <div className="prose prose-lg dark:prose-invert max-w-none">
         <NewsLinkifiedContent
           text={article.content}
-          className="whitespace-pre-wrap break-words text-sm leading-7 text-gray-800 dark:text-gray-100"
+          className="whitespace-pre-wrap break-words text-lg leading-8 text-gray-800 dark:text-neutral-200 font-medium"
         />
+      </div>
 
-        {media.length > 0 ? (
-          <div
-            className={`mt-4 grid gap-2 ${media.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
-          >
+      {/* Media Gallery */}
+      {media.length > 0 && (
+        <div className="space-y-4">
+          <div className={`grid gap-4 ${media.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
             {media.map((m) => (
-              <div
-                key={m.id}
-                className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-neutral-800 dark:bg-neutral-900"
-              >
+              <figure key={m.id} className="group relative overflow-hidden rounded-3xl bg-gray-100 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-xl shadow-black/5">
                 {m.type?.toLowerCase() === 'image' ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={m.url}
-                    alt={m.alt || 'Ảnh bài viết'}
-                    className="max-h-[420px] w-full object-cover"
+                    alt={m.alt || 'Ảnh minh họa'}
+                    className="w-full h-auto max-h-[600px] object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : (
-                  <video src={m.url} controls className="w-full max-h-[420px] bg-black" />
+                  <video src={m.url} controls className="w-full max-h-[600px] bg-black" />
                 )}
-              </div>
+                {m.alt && (
+                  <figcaption className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 text-center uppercase tracking-widest">
+                    {m.alt}
+                  </figcaption>
+                )}
+              </figure>
             ))}
           </div>
-        ) : null}
+        </div>
+      )}
 
-        {article.linkUrl?.trim() ? (
-          <div className="mt-6 border-t border-gray-100 pt-4 dark:border-neutral-800">
-            <a
+      {/* External Link */}
+      {article.linkUrl?.trim() && (
+        <div className="pt-8 border-t border-gray-100 dark:border-neutral-900">
+          <div className="p-8 rounded-3xl bg-gray-50 dark:bg-neutral-900/50 border border-gray-100 dark:border-neutral-800 flex flex-col items-center text-center gap-4">
+             <div className="p-3 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm">
+                <ExternalLink size={24} className="text-blue-600 dark:text-blue-400" />
+             </div>
+             <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tìm hiểu thêm chi tiết</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Xem nguồn tin gốc hoặc tài liệu đính kèm bên dưới.</p>
+             </div>
+             <a
               href={article.linkUrl.trim()}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-gray-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-100 dark:hover:bg-neutral-800"
+              className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-8 py-4 text-sm font-black text-white shadow-xl shadow-blue-500/20 transition-all hover:bg-blue-700 hover:scale-[1.02] active:scale-95"
             >
-              <ExternalLink size={16} />
-              Mở liên kết đính kèm
+              Mở liên kết nguồn
             </a>
           </div>
-        ) : null}
-      </Card>
-    </div>
+        </div>
+      )}
+    </article>
   );
 }

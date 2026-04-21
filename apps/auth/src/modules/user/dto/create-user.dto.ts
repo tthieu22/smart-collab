@@ -35,5 +35,13 @@ export class CreateUserDto {
   isVerified?: boolean;
 
   @IsOptional()
-  role?: string; // ✅ TypeScript nhận diện được
+  role?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  emailNotifications?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  pushNotifications?: boolean;
 }

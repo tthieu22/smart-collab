@@ -103,6 +103,10 @@ export class AuthMessageHandler {
         context,
       );
 
+      // Increment login count and log action
+      await this.userService.incrementLoginCount(user.id);
+      await this.userService.createLog(user.id, 'LOGIN', `Logged in via ${context.ua || 'unknown'}`);
+
       return {
         success: true,
         message: 'Login successful',
@@ -394,6 +398,141 @@ export class AuthMessageHandler {
     } catch (err: any) {
       this.logger.error(err);
       return { success: false, message: err.message || 'Search failed' };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.updateProfile' })
+  async handleUpdateProfile(@Payload() payload: { userId: string; data: any }) {
+    try {
+      const updatedUser = await this.userService.update(payload.userId, payload.data);
+      return { success: true, message: 'Cập nhật thông tin thành công', data: updatedUser };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Cập nhật thất bại' };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.changePassword' })
+  async handleChangePassword(@Payload() payload: { userId: string; data: any }) {
+    try {
+      await this.userService.changePassword(payload.userId, payload.data);
+      return { success: true, message: 'Đổi mật khẩu thành công' };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Đổi mật khẩu thất bại' };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.resendCode' })
+  async handleResendCode(@Payload() payload: { email: string }) {
+    try {
+      await this.userService.resendVerificationCode(payload.email);
+      return { success: true, message: 'Đã gửi lại mã xác thực' };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Gửi lại mã thất bại' };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.disconnectGoogle' })
+  async handleDisconnectGoogle(@Payload() payload: { userId: string }) {
+    try {
+      await this.userService.disconnectGoogle(payload.userId);
+      return { success: true, message: 'Đã hủy liên kết Google' };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Hủy liên kết thất bại' };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.removeAccount' })
+  async handleRemoveAccount(@Payload() payload: { userId: string; password?: string }) {
+    try {
+      await this.userService.deleteAccount(payload.userId, payload.password);
+      return { success: true, message: 'Đã xóa tài khoản vĩnh viễn' };
+    } catch (err: any) {
+      this.logger.error(err);
+      return { success: false, message: err.message || 'Xóa tài khoản thất bại' };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.getLogs' })
+  async handleGetLogs(@Payload() payload: { userId: string }) {
+    try {
+      const logs = await this.userService.getLogs(payload.userId);
+      return { success: true, data: logs };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.exportData' })
+  async handleExportData(@Payload() payload: { userId: string }) {
+    try {
+      const data = await this.userService.exportData(payload.userId);
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.generateQrToken' })
+  async handleGenerateQrToken(@Payload() payload: { context?: { ip?: string; ua?: string } }) {
+    try {
+      const qr = await this.authService.generateQrToken(payload.context);
+      return { success: true, data: qr };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.scanQrToken' })
+  async handleScanQrToken(@Payload() payload: { token: string; userId: string }) {
+    try {
+      await this.authService.scanQrToken(payload.token, payload.userId);
+      return { success: true, message: 'Đã quét mã' };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.confirmQrToken' })
+  async handleConfirmQrToken(@Payload() payload: { token: string; userId: string }) {
+    try {
+      await this.authService.confirmQrToken(payload.token, payload.userId);
+      return { success: true, message: 'Đăng nhập thành công trên trình duyệt' };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.checkQrStatus' })
+  async handleCheckQrStatus(@Payload() payload: { token: string }) {
+    try {
+      const res = await this.authService.checkQrStatus(payload.token);
+      return { success: true, data: res };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.getDevices' })
+  async handleGetDevices(@Payload() payload: { userId: string }) {
+    try {
+      const devices = await this.userService.getDevices(payload.userId);
+      return { success: true, data: devices };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.removeDevice' })
+  async handleRemoveDevice(@Payload() payload: { userId: string; deviceId: string }) {
+    try {
+      await this.userService.removeDevice(payload.userId, payload.deviceId);
+      return { success: true, message: 'Đã gỡ thiết bị' };
+    } catch (err: any) {
+      return { success: false, message: err.message };
     }
   }
 }

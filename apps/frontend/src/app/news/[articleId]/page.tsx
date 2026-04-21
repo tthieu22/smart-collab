@@ -50,17 +50,18 @@ export default function NewsArticlePage() {
 
   if (!article) {
     return (
-      <SiteLayout leftSidebar={<LeftWidgets />} rightSidebar={<RightWidgets />}>
-        <div className="mx-auto max-w-[680px] rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-300">
-          {error || 'Không có dữ liệu.'}
+      <SiteLayout hideLeftSidebar hideRightSidebar>
+        <div className="mx-auto max-w-4xl pt-20 flex flex-col items-center justify-center text-center gap-4">
+          <div className="text-4xl font-black text-gray-200 dark:text-neutral-800">404</div>
+          <p className="text-lg font-bold text-gray-500">{error || 'Không tìm thấy bài viết.'}</p>
         </div>
       </SiteLayout>
     );
   }
 
   return (
-    <SiteLayout leftSidebar={<LeftWidgets />} rightSidebar={<RightWidgets />}>
-      <div className="mx-auto w-full max-w-[680px]">
+    <SiteLayout hideLeftSidebar hideRightSidebar>
+      <div className="w-full">
         <NewsArticleDetail article={article} />
       </div>
     </SiteLayout>

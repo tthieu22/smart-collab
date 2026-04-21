@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
+import { 
+  PlusOutlined, 
+  BgColorsOutlined, 
+  UploadOutlined, 
+  CheckOutlined,
+  RocketOutlined 
+} from "@ant-design/icons";
+import { 
   Button,
   Popover,
   Input,
@@ -16,8 +23,8 @@ import {
   Modal,
   Steps,
   Spin,
+  Divider
 } from "antd";
-import { PlusOutlined, BgColorsOutlined, UploadOutlined, CheckOutlined } from "@ant-design/icons";
 import { useBoardStore } from "@smart/store/setting";
 import { useNotificationStore } from '@smart/store/notification';
 import { projectService } from "@smart/services/project.service";
@@ -30,7 +37,15 @@ import { useRouter } from "next/navigation";
 const { Option } = Select;
 const { Text } = Typography;
 
-export default function CreateBoardButton() {
+export default function CreateBoardButton({ 
+  children, 
+  forceAiOpen = false,
+  onAiClose
+}: { 
+  children?: React.ReactNode;
+  forceAiOpen?: boolean;
+  onAiClose?: () => void;
+}) {
   const router = useRouter();
   const { colors, images } = useBoardStore();
   const { addNotification } = useNotificationStore();
@@ -49,6 +64,13 @@ export default function CreateBoardButton() {
 
   // Singleton socket manager
   const projectSocketManager = getProjectSocketManager();
+  
+  useEffect(() => {
+    if (forceAiOpen) {
+      setAiOpen(true);
+    }
+  }, [forceAiOpen]);
+
   useEffect(() => {
     if (open && !background) {
       if (images.length > 0) setBackground(images[0]);
@@ -252,27 +274,28 @@ export default function CreateBoardButton() {
   );
 
   const content = (
-    <div>
-      <Space direction="vertical" size={16}>
-        <Card size="small" className="shadow-sm"
+    <div className="w-[280px]">
+      <Space direction="vertical" size={16} className="w-full">
+        <Card size="small" className="shadow-sm overflow-hidden"
           style={{
             backgroundImage: background?.startsWith("/background") || background?.startsWith("data:image") ? `url(${background})` : undefined,
             backgroundColor: background && !background.startsWith("http") && !background.startsWith("data:image") ? background : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            height: 120,
-            borderRadius: 10,
+            height: 100,
+            borderRadius: 12,
+            border: 'none'
           }}
         />
         <div>
-          <Text strong className="block mb-1">Ảnh nền</Text>
+          <Text strong className="text-xs uppercase tracking-wider text-gray-400 mb-2 block">Hình nền</Text>
           <Row gutter={[8, 8]}>
             {images.slice(0, 3).map(img => <Col span={6} key={img}>{renderImageBox(img)}</Col>)}
             <Col span={6}>{renderUploadBox()}</Col>
           </Row>
         </div>
         <div>
-          <Text strong className="block mb-1">Màu nền</Text>
+          <Text strong className="text-xs uppercase tracking-wider text-gray-400 mb-2 block">Màu sắc</Text>
           <Row gutter={8}>
             {colors.slice(0, 5).map(c => <Col span={4} key={c}>{renderColorBox(c)}</Col>)}
             <Col span={4}>
@@ -284,22 +307,42 @@ export default function CreateBoardButton() {
             </Col>
           </Row>
         </div>
-        <Input placeholder="Nhập tiêu đề bảng..." value={title} onChange={e => setTitle(e.target.value)} className="mb-3 rounded-md" />
-        <Select value={visibility} onChange={setVisibility} className="w-full rounded-md">
-          <Option value="private">Cá nhân</Option>
-          <Option value="workspace">Workspace</Option>
-          <Option value="public">Public</Option>
-        </Select>
-        <Button type="primary" block onClick={handleCreate} className="rounded-md">Create</Button>
+        <div className="space-y-3">
+          <Input placeholder="Tiêu đề bảng..." value={title} onChange={e => setTitle(e.target.value)} className="h-10 rounded-lg" />
+          <Select value={visibility} onChange={setVisibility} className="w-full h-10 rounded-lg">
+            <Option value="private">Cá nhân</Option>
+            <Option value="workspace">Workspace</Option>
+            <Option value="public">Công khai</Option>
+          </Select>
+        </div>
+        
+        <Button type="primary" block onClick={handleCreate} className="h-10 rounded-lg font-bold shadow-md shadow-blue-500/20">
+          Tạo bảng mới
+        </Button>
+
+        <div className="flex items-center gap-2 py-1">
+          <div className="h-[1px] flex-1 bg-gray-100" />
+          <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Hoặc</span>
+          <div className="h-[1px] flex-1 bg-gray-100" />
+        </div>
+
         <Button
           block
           onClick={() => {
             setOpen(false);
             setAiOpen(true);
           }}
-          className="rounded-md"
+          className="h-11 rounded-xl border-none text-white font-bold flex items-center justify-center gap-2 overflow-hidden relative group"
+          style={{
+            background: 'linear-gradient(135deg, #4285F4 0%, #34A853 25%, #FBBC05 50%, #EA4335 100%)',
+            boxShadow: '0 4px 15px rgba(66, 133, 244, 0.3)'
+          }}
         >
-          Create with AI
+          <span className="relative z-10 flex items-center gap-2">
+            <PlusOutlined />
+            Tạo bằng AI (Gemini)
+          </span>
+          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </Button>
       </Space>
     </div>
@@ -307,49 +350,67 @@ export default function CreateBoardButton() {
 
   return (
     <>
-      <Popover content={content} trigger="click" open={open} onOpenChange={setOpen} placement="bottomLeft">
-        <Button type="primary" icon={<PlusOutlined />} className="rounded-lg shadow">Create Board</Button>
+      <Popover content={content} trigger="click" open={open} onOpenChange={setOpen} placement="bottomLeft" overlayClassName="premium-popover">
+        {children || <Button type="primary" icon={<PlusOutlined />} className="rounded-lg shadow">Create Board</Button>}
       </Popover>
 
       <Modal
-        title="Create board with AI"
+        title={
+          <div className="flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 font-black text-xl">
+             <RocketOutlined className="text-blue-600" />
+             Xây dựng dự án với AI
+          </div>
+        }
         open={aiOpen}
         onCancel={() => {
           if (aiLoading) return;
           setAiOpen(false);
           setAiPrompt("");
           setAiResult(null);
+          onAiClose?.();
         }}
         onOk={handleCreateWithAI}
-        okText={aiLoading ? "Generating..." : "Generate"}
-        cancelText="Cancel"
-        okButtonProps={{ disabled: aiLoading }}
-        cancelButtonProps={{ disabled: aiLoading }}
+        okText={aiLoading ? "Đang xử lý..." : "Bắt đầu tạo"}
+        cancelText="Hủy bỏ"
+        okButtonProps={{ 
+          className: "h-10 rounded-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 border-none shadow-lg shadow-blue-500/30",
+          disabled: aiLoading 
+        }}
+        cancelButtonProps={{ disabled: aiLoading, className: "h-10 rounded-lg" }}
         destroyOnHidden
+        width={600}
+        centered
       >
-        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+        <Space direction="vertical" size={20} style={{ width: "100%" }} className="py-4">
+          <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-800">
+             <Text className="text-blue-700 dark:text-blue-300 text-sm font-medium">
+                💡 Mẹo: Mô tả chi tiết dự án của bạn (ví dụ: "Tạo một bảng quản lý dự án xây dựng website thương mại điện tử với các giai đoạn thiết kế, phát triển và test").
+             </Text>
+          </div>
+
           <Steps
             size="small"
             current={aiLoading ? 1 : aiResult ? 2 : 0}
             items={[
-              { title: "Nhập prompt" },
-              { title: "AI build" },
-              { title: "Chuyển hướng" },
+              { title: "Mô tả ý tưởng" },
+              { title: "AI đang xây dựng" },
+              { title: "Hoàn tất" },
             ]}
           />
 
           <Input.TextArea
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder='Ví dụ: "Xuân thì - Phan Mạnh Quỳnh"'
-            autoSize={{ minRows: 3, maxRows: 6 }}
+            placeholder='Tôi muốn tạo một dự án về...'
+            autoSize={{ minRows: 4, maxRows: 8 }}
             disabled={aiLoading}
+            className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-lg p-4"
           />
 
           {aiLoading && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Spin />
-              <Text type="secondary">Đang tạo project/board…</Text>
+            <div className="flex flex-col items-center justify-center py-6 animate-pulse">
+              <Spin size="large" />
+              <Text type="secondary" className="mt-4 font-medium italic">Gemini đang phân tích và thiết kế cấu trúc dự án cho bạn...</Text>
             </div>
           )}
         </Space>

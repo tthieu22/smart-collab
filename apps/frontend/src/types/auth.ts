@@ -5,6 +5,12 @@ export interface User {
   email: string;
   role: UserRole;
   isVerified: boolean;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatar?: string | null;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  loginCount: number;
   createdAt: string;
   updatedAt: string;
   googleId?: string | null;

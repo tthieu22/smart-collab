@@ -231,21 +231,31 @@ Rules:
   generateNewsPost(processedTemplate: string, context: Record<string, unknown>, locale = 'vi') {
     return `
 You are a creative social news editor. 
-Search your knowledge (simulate a Google search) and use the PROVIDED web data to find real, specific details about this topic: "${processedTemplate}"
+Search your knowledge and use the PROVIDED web data to find real, specific details about this topic: "${processedTemplate}"
 
 PROVIDED WEB DATA (use as primary source):
 ${context.scraped_web_data || 'No direct web data found. Use your general knowledge.'}
+
+IMAGE CANDIDATES (Pick one for imageUrl if it matches the topic):
+${context.scraped_images && (context.scraped_images as string[]).length > 0 
+  ? (context.scraped_images as string[]).join('\n') 
+  : 'No direct image links found.'}
 
 Write an engaging news post with a catchy title. 
 Rules:
 1. Language: ${locale}
 2. DO NOT repeat the instruction. Write the ACTUAL post content.
-3. Include a real link to a news source (Google News, Reuters, etc.) if possible.
-4. Return ONLY valid JSON: { 
+3. Include a real link to a news source (Google News, Reuters, etc.) if possible. NEVER use Google Search links (google.com/search).
+4. For "imageUrl": provide a DIRECT image link (ending in .jpg, .png, etc.). 
+   - PRIORITIZE one of the IMAGE CANDIDATES above if they are relevant.
+   - DO NOT use text descriptions like "An image of...".
+   - If you cannot find a direct link or the candidates are irrelevant, use this high-quality placeholder: https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1080
+5. Return ONLY valid JSON: { 
       "title": "A catchy title",
       "content": "...", 
-      "imageUrl": "URL to a relevant image or a descriptive prompt for one",
-      "linkUrl": "A real news URL related to the topic"
+      "imageUrl": "A DIRECT IMAGE URL ONLY (no text descriptions)",
+      "linkUrl": "A real news article URL (no search links)",
+      "imageKeywords": "3-5 English keywords for image search (e.g., artificial intelligence, robot, tech)"
    }
 `;
   }

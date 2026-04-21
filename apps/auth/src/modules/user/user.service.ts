@@ -96,6 +96,9 @@ export class UserService {
         avatar: true,
         role: true,
         isVerified: true,
+        emailNotifications: true,
+        pushNotifications: true,
+        loginCount: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -116,6 +119,9 @@ export class UserService {
         avatar: true,
         role: true,
         isVerified: true,
+        emailNotifications: true,
+        pushNotifications: true,
+        loginCount: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -172,6 +178,9 @@ export class UserService {
         avatar: true,
         role: true,
         isVerified: true,
+        emailNotifications: true,
+        pushNotifications: true,
+        loginCount: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -180,6 +189,9 @@ export class UserService {
       id: updatedUser.id,
       email: updatedUser.email
     });
+
+    await this.createLog(id, 'UPDATE_PROFILE', 'Updated profile information');
+
     if (!updatedUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -240,6 +252,7 @@ export class UserService {
       where: { id: userId },
       data: { password: hashedPassword },
     });
+    await this.createLog(userId, 'CHANGE_PASSWORD', 'Changed account password');
   }
 
   async search(query: string) {
@@ -260,6 +273,81 @@ export class UserService {
         avatar: true,
       },
       take: 20,
+    });
+  }
+
+  async disconnectGoogle(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { googleId: null },
+    });
+  }
+
+  async deleteAccount(userId: string, passwordConfirm?: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.password && passwordConfirm) {
+      const isMatch = await bcrypt.compare(passwordConfirm, user.password);
+      if (!isMatch) throw new Error('Mật khẩu không đúng');
+    }
+
+    // Soft delete: set deletedAt
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { deletedAt: new Date() },
+    });
+    
+    await this.createLog(userId, 'DELETE_ACCOUNT_REQUEST', 'Account marked for deletion (30 days grace period)');
+    await syncDeleteUser(userId); // Sync to other services (maybe they handle soft delete too)
+  }
+
+  async incrementLoginCount(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { loginCount: { increment: 1 } },
+    });
+  }
+
+  async createLog(userId: string, action: string, details?: string) {
+    return this.prisma.auditLog.create({
+      data: { userId, action, details },
+    });
+  }
+
+  async getLogs(userId: string) {
+    return this.prisma.auditLog.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+  }
+
+  async exportData(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        posts: true,
+        comments: true,
+        auditLogs: true,
+        devices: true,
+      },
+    });
+    if (!user) throw new Error('User not found');
+    const { password, emailVerificationCode, ...safeData } = user;
+    return safeData;
+  }
+
+  async getDevices(userId: string) {
+    return this.prisma.device.findMany({
+      where: { userId },
+      orderBy: { lastUsed: 'desc' },
+    });
+  }
+
+  async removeDevice(userId: string, deviceId: string) {
+    return this.prisma.device.delete({
+      where: { id: deviceId, userId },
     });
   }
 }
