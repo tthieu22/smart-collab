@@ -126,29 +126,44 @@ export class HomeController {
 
   @Get('admin/news')
   @UseGuards(JwtAuthGuard)
-  async listNewsAdmin(@Query('category') category?: string) {
-    const payload =
-      category != null && String(category).trim() !== ''
-        ? { category: String(category).trim().toUpperCase() }
-        : {};
+  async listNewsAdmin(
+    @Query('category') category?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('q') q?: string,
+  ) {
+    const payload: any = {
+      page: page != null ? Number(page) : 0,
+      limit: limit != null ? Number(limit) : 10,
+      q: q || '',
+    };
+    if (category != null && String(category).trim() !== '') {
+      payload.category = String(category).trim().toUpperCase();
+    }
     return firstValueFrom(this.homeClient.send({ cmd: 'home.news.list' }, { payload }));
   }
 
   @Get('news/:id')
   @UseGuards(JwtAuthGuard)
   async getNewsArticle(@Param('id') id: string) {
-    return firstValueFrom(
-      this.homeClient.send({ cmd: 'home.news.get' }, { payload: { id } }),
-    );
+    return firstValueFrom(this.homeClient.send({ cmd: 'home.news.get' }, { payload: { id } }));
   }
 
   @Get('news')
   @UseGuards(JwtAuthGuard)
-  async listNewsForUser(@Query('category') category?: string) {
-    const cat = (category?.trim() || 'NEWS').toUpperCase();
-    return firstValueFrom(
-      this.homeClient.send({ cmd: 'home.news.list' }, { payload: { category: cat } }),
-    );
+  async listNewsForUser(
+    @Query('category') category?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('q') q?: string,
+  ) {
+    const payload = {
+      category: (category?.trim() || 'NEWS').toUpperCase(),
+      page: page != null ? Number(page) : 0,
+      limit: limit != null ? Number(limit) : 10,
+      q: q || '',
+    };
+    return firstValueFrom(this.homeClient.send({ cmd: 'home.news.list' }, { payload }));
   }
 
   @Post('admin/news')

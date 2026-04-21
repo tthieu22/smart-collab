@@ -234,27 +234,56 @@ public class HomeMessageHandler {
         }
     }
 
-    private List<NewsArticle> listNewsArticlesFiltered(Map<String, Object> payload) {
+    private Map<String, Object> listNewsArticlesFiltered(Map<String, Object> payload) {
         List<NewsArticle> all = newsArticleRepository.findAllByOrderByCreatedAtDesc();
-        if (payload == null || !payload.containsKey("category") || payload.get("category") == null) {
-            return all;
+        
+        // 1. Filter by category
+        String cat = (payload != null && payload.get("category") != null) ? String.valueOf(payload.get("category")).trim() : "";
+        List<NewsArticle> filtered = all;
+        if (!cat.isEmpty()) {
+            if ("NEWS".equalsIgnoreCase(cat)) {
+                filtered = all.stream()
+                        .filter(a -> a.getCategory() == null || a.getCategory().isBlank() || "NEWS".equalsIgnoreCase(a.getCategory()))
+                        .toList();
+            } else {
+                filtered = all.stream()
+                        .filter(a -> cat.equalsIgnoreCase(a.getCategory()))
+                        .toList();
+            }
         }
-        String cat = String.valueOf(payload.get("category")).trim();
-        if (cat.isEmpty()) {
-            return all;
-        }
-        if ("NEWS".equalsIgnoreCase(cat)) {
-            return all.stream()
-                    .filter(a -> {
-                        String c = a.getCategory();
-                        return c == null || c.isBlank() || "NEWS".equalsIgnoreCase(c);
-                    })
+
+        // 2. Filter by search query (q)
+        String q = (payload != null && payload.get("q") != null) ? String.valueOf(payload.get("q")).trim().toLowerCase() : "";
+        if (!q.isEmpty()) {
+            filtered = filtered.stream()
+                    .filter(a -> (a.getContent() != null && a.getContent().toLowerCase().contains(q)) ||
+                                (a.getLinkUrl() != null && a.getLinkUrl().toLowerCase().contains(q)))
                     .toList();
         }
-        final String f = cat;
-        return all.stream()
-                .filter(a -> f.equalsIgnoreCase(a.getCategory()))
-                .toList();
+
+        int total = filtered.size();
+
+        // 3. Pagination
+        int page = (payload != null && payload.get("page") != null) ? Integer.parseInt(String.valueOf(payload.get("page"))) : 0;
+        int limit = (payload != null && payload.get("limit") != null) ? Integer.parseInt(String.valueOf(payload.get("limit"))) : 10;
+        
+        if (page < 0) page = 0;
+        if (limit <= 0) limit = 10;
+
+        int fromIndex = page * limit;
+        if (fromIndex >= filtered.size()) {
+            return Map.of("data", new ArrayList<>(), "total", total, "page", page, "limit", limit);
+        }
+        
+        int toIndex = Math.min(fromIndex + limit, filtered.size());
+        List<NewsArticle> paginated = filtered.subList(fromIndex, toIndex);
+
+        return Map.of(
+            "data", paginated,
+            "total", total,
+            "page", page,
+            "limit", limit
+        );
     }
 
     private static String normalizeNewsCategory(Object raw) {

@@ -4,9 +4,19 @@ import type { NewsArticle, CreateNewsPayload, UpdateNewsPayload } from '@smart/t
 
 interface NewsAdminState {
   articles: NewsArticle[];
+  total: number;
+  page: number;
+  limit: number;
+  q: string;
+  category?: NewsArticleCategory;
   isLoading: boolean;
   error: string | null;
-  fetchNews: () => Promise<void>;
+  fetchNews: (params?: {
+    page?: number;
+    limit?: number;
+    q?: string;
+    category?: NewsArticleCategory;
+  }) => Promise<void>;
   createNews: (payload: CreateNewsPayload) => Promise<void>;
   updateNews: (payload: UpdateNewsPayload) => Promise<void>;
   deleteNews: (id: string) => Promise<void>;
@@ -14,13 +24,31 @@ interface NewsAdminState {
 
 export const useNewsAdminStore = create<NewsAdminState>((set, get) => ({
   articles: [],
+  total: 0,
+  page: 0,
+  limit: 10,
+  q: '',
+  category: undefined,
   isLoading: false,
   error: null,
-  fetchNews: async () => {
-    set({ isLoading: true, error: null });
+  fetchNews: async (params = {}) => {
+    const state = get();
+    const newParams = {
+      page: params.page !== undefined ? params.page : state.page,
+      limit: params.limit !== undefined ? params.limit : state.limit,
+      q: params.q !== undefined ? params.q : state.q,
+      category: params.category !== undefined ? params.category : state.category,
+    };
+
+    set({ isLoading: true, error: null, ...newParams });
     try {
-      const articles = await newsService.listAdmin();
-      set({ articles });
+      const res = await newsService.listAdmin(newParams);
+      set({
+        articles: res.data,
+        total: res.total,
+        page: res.page,
+        limit: res.limit,
+      });
     } catch {
       set({ error: 'Khong the tai danh sach tin tuc' });
     } finally {
@@ -29,14 +57,17 @@ export const useNewsAdminStore = create<NewsAdminState>((set, get) => ({
   },
   createNews: async (payload: CreateNewsPayload) => {
     await newsService.create(payload);
-    await get().fetchNews();
+    const { page, limit, q, category } = get();
+    await get().fetchNews({ page, limit, q, category });
   },
   updateNews: async (payload: UpdateNewsPayload) => {
     await newsService.update(payload);
-    await get().fetchNews();
+    const { page, limit, q, category } = get();
+    await get().fetchNews({ page, limit, q, category });
   },
   deleteNews: async (id: string) => {
     await newsService.remove(id);
-    await get().fetchNews();
+    const { page, limit, q, category } = get();
+    await get().fetchNews({ page, limit, q, category });
   },
 }));

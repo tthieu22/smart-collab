@@ -49,10 +49,39 @@ class NewsService {
     return unwrapNewsList(res);
   }
 
-  async listAdmin(category?: NewsArticleCategory): Promise<NewsArticle[]> {
-    const q = category ? `?category=${encodeURIComponent(category)}` : '';
-    const res = await autoRequest<unknown>(`/home/admin/news${q}`, { method: 'GET' });
-    return unwrapNewsList(res);
+  async listAdmin(params: {
+    category?: NewsArticleCategory;
+    page?: number;
+    limit?: number;
+    q?: string;
+  } = {}): Promise<{ data: NewsArticle[]; total: number; page: number; limit: number }> {
+    const searchParams = new URLSearchParams();
+    if (params.category) searchParams.append('category', params.category);
+    if (params.page !== undefined) searchParams.append('page', params.page.toString());
+    if (params.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    if (params.q) searchParams.append('q', params.q);
+
+    const qs = searchParams.toString();
+    const q = qs ? `?${qs}` : '';
+    const res = await autoRequest<any>(`/home/admin/news${q}`, { method: 'GET' });
+
+    // Handle both old array format and new paginated object format
+    if (Array.isArray(res)) {
+      return {
+        data: res.map((item) => normalizeNewsArticle(item as NewsArticle)),
+        total: res.length,
+        page: 0,
+        limit: res.length,
+      };
+    }
+
+    const data = res?.data || res?.items || [];
+    return {
+      data: (Array.isArray(data) ? data : []).map((item) => normalizeNewsArticle(item as NewsArticle)),
+      total: res?.total || 0,
+      page: res?.page || 0,
+      limit: res?.limit || 10,
+    };
   }
 
   async create(payload: CreateNewsPayload): Promise<NewsArticle> {
