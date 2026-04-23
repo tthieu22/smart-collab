@@ -38,7 +38,7 @@ export default function RightWidgets() {
         padding="small"
         className="dark:bg-neutral-950 dark:border-neutral-800"
       >
-        <div className="text-sm font-semibold mb-2">Gợi ý theo dõi</div>
+        <div className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">Gợi ý theo dõi</div>
         <div className="space-y-3">
           {topAuthors.length ? (
             topAuthors.map((u) => (

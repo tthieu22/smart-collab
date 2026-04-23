@@ -14,17 +14,22 @@ export class SearchController {
   ) {}
 
   @Get()
-  async search(@Query('q') q: string, @Req() req: any) {
+  async search(
+    @Query('q') q: string, 
+    @Query('limit') limit: string,
+    @Req() req: any
+  ) {
     if (!q) {
       return { projects: [], news: [], posts: [] };
     }
 
+    const searchLimit = parseInt(limit) || 20;
     const userId = req.user?.userId;
 
     try {
       // 1. Search Projects
       const projectResult: any = await firstValueFrom(
-        this.projectClient.send({ cmd: 'project.get_all' }, { search: q, page: 1, limit: 5, userId })
+        this.projectClient.send({ cmd: 'project.get_all' }, { search: q, page: 1, limit: searchLimit, userId })
       );
 
       // 2. Search News & Posts (Calling Java service)
@@ -33,7 +38,7 @@ export class SearchController {
           { cmd: 'home.search.global' },
           { 
             userId: req.user?.userId,
-            payload: { q }
+            payload: { q, limit: searchLimit }
           }
         )
       );

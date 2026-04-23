@@ -24,7 +24,7 @@ export function NewsPromoSideCard() {
           }),
         );
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -32,7 +32,7 @@ export function NewsPromoSideCard() {
 
   return (
     <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800">
-      <div className="mb-2 text-sm font-semibold">Tin tức</div>
+      <div className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Tin tức</div>
       <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
         Bản tin AI / quản trị — tách khỏi bài đăng trên Home Feed.
       </p>

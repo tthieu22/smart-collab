@@ -78,7 +78,7 @@ export default function FeedComposer() {
             onChange={(e) => setDraftTitle(e.target.value)}
             disabled={isLoading}
             placeholder="Tiêu đề bài viết (tùy chọn)"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-bold outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 disabled:opacity-60"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-bold outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white disabled:opacity-60"
           />
 
           <textarea
@@ -86,7 +86,7 @@ export default function FeedComposer() {
             onChange={(e) => setDraftText(e.target.value)}
             disabled={isLoading}
             placeholder="Bạn đang nghĩ gì?"
-            className="w-full min-h-24 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 disabled:opacity-60"
+            className="w-full min-h-24 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-100 disabled:opacity-60"
           />
 
           <input
@@ -95,7 +95,7 @@ export default function FeedComposer() {
             onChange={(e) => setDraftLinkUrl(e.target.value)}
             disabled={isLoading}
             placeholder="Liên kết tham khảo (http://...)"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 disabled:opacity-60 italic"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-gray-300 disabled:opacity-60 italic"
           />
 
           {draftImages.length ? (

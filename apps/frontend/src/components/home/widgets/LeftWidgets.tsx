@@ -65,7 +65,7 @@ export default function LeftWidgets() {
       </Card>
 
       <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800">
-        <div className="text-sm font-semibold mb-2">Khám phá</div>
+        <div className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">Khám phá</div>
         <div className="space-y-1">
           <Item href="/" label="Bảng tin" sub="Feed kiểu Facebook" active={isHome} />
           <Item

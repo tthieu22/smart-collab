@@ -12,9 +12,9 @@ interface ProjectCardProps {
   gridCols?: 1 | 2 | 3;
 }
 
-export default function ProjectCard({ 
-  project, 
-  onClick, 
+export default function ProjectCard({
+  project,
+  onClick,
   className = "",
   showMembers = true,
   gridCols = 3
@@ -30,16 +30,14 @@ export default function ProjectCard({
   const isList = gridCols === 1;
 
   const content = (
-    <div className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${
-      isList ? 'flex-row h-56' : 'flex-col'
-    } ${className}`}>
+    <div className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isList ? 'flex-row h-56' : 'flex-col'
+      } ${className}`}>
       {/* BACKGROUND IMAGE / COLOR CONTAINER */}
       <div
-        className={`relative overflow-hidden z-0 ${
-          isList ? 'w-1/3 h-full shrink-0 rounded-l-[24px]' : 'h-40 w-full rounded-t-[24px]'
-        }`}
+        className={`relative overflow-hidden z-0 ${isList ? 'w-1/3 h-full shrink-0 rounded-l-[24px]' : 'h-40 w-full rounded-t-[24px]'
+          }`}
       >
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
           style={bgStyle}
         />
@@ -54,15 +52,13 @@ export default function ProjectCard({
       {/* PROJECT INFO */}
       <div className={`flex flex-1 flex-col justify-between ${isList ? 'p-8' : 'p-6'}`}>
         <div className="min-w-0">
-          <h3 className={`mb-2 truncate font-black capitalize text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors tracking-tight ${
-            isList ? 'text-2xl md:text-3xl' : gridCols === 2 ? 'text-xl' : 'text-lg'
-          }`}>
+          <h3 className={`mb-2 truncate font-bold capitalize text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors tracking-tight ${isList ? 'text-xl' : gridCols === 2 ? 'text-lg' : 'text-base'
+            }`}>
             {project.name}
           </h3>
           {project.description && (
-            <p className={`text-gray-500 dark:text-neutral-400 font-medium ${
-              isList ? 'line-clamp-3 text-base leading-relaxed' : 'line-clamp-2 text-sm'
-            }`}>
+            <p className={`text-gray-500 dark:text-neutral-400 font-medium ${isList ? 'line-clamp-3 text-base leading-relaxed' : 'line-clamp-2 text-sm'
+              }`}>
               {project.description}
             </p>
           )}
@@ -73,8 +69,8 @@ export default function ProjectCard({
             <div className="flex items-center space-x-3">
               <div className="flex -space-x-2.5">
                 {[...Array(Math.min(project.members?.length || 0, 4))].map((_, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className="h-8 w-8 rounded-full border-2 border-white bg-gray-200 dark:border-neutral-900 dark:bg-neutral-800 ring-2 ring-transparent group-hover:ring-blue-500/20 transition-all"
                   />
                 ))}

@@ -73,7 +73,7 @@ export default function Board({ board }: Props) {
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 h-full ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+      className={`relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 h-full font-sans ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
         }`}
       style={{
         backgroundColor:

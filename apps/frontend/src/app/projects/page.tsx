@@ -7,11 +7,13 @@ import type { Project } from '@smart/types/project';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import LeftWidgets from '@smart/components/home/widgets/LeftWidgets';
 import { useHomeFeedBootstrap } from '@smart/hooks/useHomeFeed';
-import { Pagination, Button, Tour, type TourProps, Space, Typography, Card } from 'antd';
+import { Button, Tour, type TourProps, Typography } from 'antd';
+import { Card } from '@smart/components/ui/card';
 import ProjectCard from '@smart/components/project/ProjectCard';
 import CreateBoardButton from '@smart/components/layouts/header/CreateBoardButton';
-import { PlusOutlined, RobotOutlined, RocketOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, RocketOutlined, InfoCircleOutlined, LayoutOutlined } from '@ant-design/icons';
 import { LayoutGrid, Columns, Square } from 'lucide-react';
+import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
 
 const { Title, Paragraph } = Typography;
 
@@ -37,20 +39,11 @@ export default function ProjectListPage() {
     setForceAiOpen(true);
   };
 
-  const [isSticky, setIsSticky] = useState(false);
   const [gridCols, setGridCols] = useState<1 | 2 | 3>(3);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsSticky(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
     projectStore.getState().setActiveProjectId(null);
-    
+
     // Check if first time visiting
     const hasSeenTour = localStorage.getItem('hasSeenProjectsTour');
     if (!hasSeenTour) {
@@ -105,132 +98,119 @@ export default function ProjectListPage() {
 
   return (
     <SiteLayout leftSidebar={<LeftWidgets />} hideRightSidebar hideFooter>
-      <div className="mx-auto w-full max-w-[1200px] px-4 pt-0 pb-6">
-        {/* FLOATING HEADER */}
-        <div 
-          className={`sticky top-[72px] z-20 transition-all duration-500 mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center px-8 rounded-[32px] border border-gray-200 dark:border-neutral-800 shadow-2xl shadow-black/5 mt-6 ${
-            isSticky 
-              ? 'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl py-4' 
-              : 'bg-white dark:bg-neutral-900 py-8'
-          }`}
-          ref={headerRef}
-        >
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
-              Dự án của bạn
-            </h1>
-            <p className="mt-1 text-gray-500 dark:text-neutral-400">
-              Quản lý và theo dõi tiến độ công việc trong các không gian cộng tác.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 dark:bg-neutral-800 p-1 rounded-xl ring-1 ring-black/5">
-              <button 
-                onClick={() => setGridCols(1)}
-                className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                title="1 Column"
-              >
-                <Square size={18} />
-              </button>
-              <button 
-                onClick={() => setGridCols(2)}
-                className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                title="2 Columns"
-              >
-                <Columns size={18} />
-              </button>
-              <button 
-                onClick={() => setGridCols(3)}
-                className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                title="3 Columns"
-              >
-                <LayoutGrid size={18} />
-              </button>
+      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500 pt-4">
+        {/* HEADER CARD - STYLED LIKE NEWS */}
+        <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/10 shadow-lg shadow-black/5" ref={headerRef}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <LayoutOutlined className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Dự án của bạn</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Quản lý và theo dõi tiến độ công việc trong các không gian cộng tác.
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                icon={<InfoCircleOutlined />}
-                onClick={() => setTourOpen(true)}
-                className="dark:bg-neutral-900 dark:border-neutral-800 h-10 rounded-xl"
-              >
-                Hướng dẫn
-              </Button>
+              {/* View Mode Toggle */}
+              <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
+                <button
+                  onClick={() => setGridCols(1)}
+                  className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="1 Column"
+                >
+                  <Square size={18} />
+                </button>
+                <button
+                  onClick={() => setGridCols(2)}
+                  className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="2 Columns"
+                >
+                  <Columns size={18} />
+                </button>
+                <button
+                  onClick={() => setGridCols(3)}
+                  className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="3 Columns"
+                >
+                  <LayoutGrid size={18} />
+                </button>
+              </div>
 
-              <div ref={createBtnRef}>
-                <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    className="rounded-xl shadow-lg shadow-blue-500/20 h-10 px-4 font-bold flex items-center gap-2"
-                  >
-                    Tạo dự án mới
-                  </Button>
-                </CreateBoardButton>
+              <div className="flex items-center gap-2">
+                <Button
+                  icon={<InfoCircleOutlined />}
+                  onClick={() => setTourOpen(true)}
+                  className="dark:bg-neutral-900 dark:border-neutral-800 h-10 rounded-xl flex items-center hover:text-blue-500"
+                >
+                  Hướng dẫn
+                </Button>
+
+                <div ref={createBtnRef}>
+                  <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      className="rounded-xl shadow-lg shadow-blue-500/20 h-10 px-4 font-bold flex items-center gap-2"
+                    >
+                      Tạo dự án mới
+                    </Button>
+                  </CreateBoardButton>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
-        {/* LOADING STATE */}
+        {/* CONTENT AREA */}
         {loading ? (
-          <div className={`grid gap-6 ${
-            gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-          }`}>
-            {[...Array(pageSize)].map((_, i) => (
+          <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+            }`}>
+            {[...Array(9)].map((_, i) => (
               <div key={i} className="h-[280px] w-full animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800" />
             ))}
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-4">
             {/* GRID LIST */}
             {projects.length > 0 ? (
-              <div className={`grid gap-6 ${
-                gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-              }`}>
+              <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                }`}>
                 {projects.map((project) => (
                   <ProjectCard key={project.id} project={project} gridCols={gridCols} />
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-24 text-center bg-white dark:bg-neutral-900 rounded-[32px] border border-dashed border-gray-200 dark:border-neutral-800 shadow-sm animate-in fade-in zoom-in duration-500">
-                <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-6">
+              <Card padding="large" className="flex flex-col items-center justify-center py-20 text-center dark:bg-neutral-950 dark:border-neutral-800 border-dashed animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-6">
                   <RocketOutlined className="text-4xl text-blue-500" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Bắt đầu dự án đầu tiên</h3>
-                <p className="text-gray-500 dark:text-neutral-400 max-w-md mx-auto mb-8">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Bắt đầu dự án đầu tiên</h3>
+                <p className="text-sm text-gray-500 dark:text-neutral-400 max-w-md mx-auto mb-8">
                   Bạn chưa có dự án nào. Hãy để AI giúp bạn xây dựng một không gian làm việc chuyên nghiệp chỉ trong vài giây.
                 </p>
-                <Space size="middle">
-                  <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={<PlusOutlined />}
-                      className="rounded-xl h-14 px-8 font-bold text-lg shadow-xl shadow-blue-500/30"
-                    >
-                      Tạo ngay bây giờ
-                    </Button>
-                  </CreateBoardButton>
-                </Space>
-              </div>
+                <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<PlusOutlined />}
+                    className="rounded-xl h-12 px-8 font-bold shadow-xl shadow-blue-500/30"
+                  >
+                    Tạo ngay bây giờ
+                  </Button>
+                </CreateBoardButton>
+              </Card>
             )}
 
-            {/* PAGINATION */}
-            {total > pageSize && (
-              <div className="flex justify-center pt-10">
-                <Pagination
-                  current={currentPage}
-                  total={total}
-                  pageSize={pageSize}
-                  onChange={(page) => setCurrentPage(page)}
-                  showSizeChanger={false}
-                  className="premium-pagination"
-                />
-              </div>
-            )}
+            <PremiumPagination
+              current={currentPage}
+              total={total}
+              pageSize={pageSize}
+              onChange={setCurrentPage}
+            />
           </div>
         )}
       </div>
@@ -247,30 +227,6 @@ export default function ProjectListPage() {
       />
 
       <style jsx global>{`
-        .premium-pagination .ant-pagination-item {
-          border-radius: 12px !important;
-          border: 1px solid #e5e7eb !important;
-          background: white !important;
-          font-weight: 600 !important;
-        }
-        .dark .premium-pagination .ant-pagination-item {
-          background: #171717 !important;
-          border-color: #262626 !important;
-        }
-        .premium-pagination .ant-pagination-item-active {
-          border-color: #3b82f6 !important;
-          background: #3b82f6 !important;
-        }
-        .premium-pagination .ant-pagination-item-active a {
-          color: white !important;
-        }
-        .dark .premium-pagination .ant-pagination-item a {
-          color: #a3a3a3 !important;
-        }
-        .premium-pagination .ant-pagination-prev, 
-        .premium-pagination .ant-pagination-next {
-          border-radius: 12px !important;
-        }
         .custom-tour-title {
           font-weight: 800;
           color: #1d4ed8;

@@ -56,6 +56,7 @@ export const AntdRegistry = ({ children }: { children: React.ReactNode }) => {
           token: {
             borderRadius: 12,
             colorPrimary: '#1677ff',
+            fontFamily: 'var(--font-inter)',
           },
           components: {
             Modal: {

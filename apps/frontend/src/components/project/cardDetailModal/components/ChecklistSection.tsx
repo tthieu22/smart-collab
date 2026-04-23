@@ -98,7 +98,6 @@ const ChecklistSection: React.FC<Props> = ({
           suffix={<PlusOutlined style={{ color: token.colorTextDisabled }} />}
           style={{
             borderRadius: token.borderRadiusLG,
-            fontFamily: 'Inter',
             fontSize: 14,
           }}
         />

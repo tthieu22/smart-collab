@@ -61,7 +61,7 @@ export default function NewsArticlePage() {
 
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar>
-      <div className="w-full">
+      <div className="w-full font-sans">
         <NewsArticleDetail article={article} />
       </div>
     </SiteLayout>

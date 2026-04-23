@@ -6,7 +6,13 @@ import { NotificationProvider } from '@smart/providers/NotificationProvider';
 import { AuthProvider } from '@smart/providers/AuthProvider';
 import GlobalPostDetailModal from '@smart/components/home/feed/GlobalPostDetailModal';
 import { Spin } from 'antd';
+import { Inter } from 'next/font/google';
 import React from 'react';
+
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'Smart Collab',
@@ -19,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
+    <html lang="vi" suppressHydrationWarning>
+      <body className={`${inter.className} ${inter.variable} font-sans antialiased bg-gray-50/50 dark:bg-[#0a0a0a]`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

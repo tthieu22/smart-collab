@@ -22,7 +22,7 @@ export function TipsGuideSideCard() {
       .then((list) => {
         if (!cancelled) setTipArticles(list.slice(0, 8));
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -37,7 +37,7 @@ export function TipsGuideSideCard() {
       padding="small"
       className="dark:bg-neutral-950 dark:border-neutral-800"
     >
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
         <BulbOutlined className="text-amber-500" />
         <span>Mẹo &amp; hướng dẫn</span>
       </div>

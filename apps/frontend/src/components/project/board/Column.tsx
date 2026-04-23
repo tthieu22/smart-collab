@@ -231,7 +231,7 @@ export default function Column({
       className={`
         flex flex-col h-full min-h-0 flex-shrink-0 transition-all duration-300 ease-in-out
         ${collapsed ? 'w-10 overflow-hidden' : 'w-[280px]'}
-        will-change-transform column-glass-neon p-2
+        will-change-transform column-glass-neon p-2 font-sans
       `}
     >
       {/* ================= HEADER ================= */}
