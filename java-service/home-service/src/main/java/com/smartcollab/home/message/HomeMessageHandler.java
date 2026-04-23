@@ -37,18 +37,25 @@ public class HomeMessageHandler {
         log.info("Received message from Gateway: {}", message);
         
         Object patternObj = message.get("pattern");
+        log.info("Pattern Object Type: {}, Content: {}", patternObj != null ? patternObj.getClass().getName() : "null", patternObj);
+        
         String cmd = "";
         if (patternObj instanceof Map) {
             cmd = (String) ((Map<?, ?>) patternObj).get("cmd");
         } else if (patternObj instanceof String) {
             cmd = (String) patternObj;
         }
+        log.info("Extracted Command: '{}'", cmd);
 
         Map<String, Object> data = (Map<String, Object>) message.get("data");
+        log.info("Data Object: {}", data);
+        
         String userId = data != null ? (String) data.get("userId") : null;
         Map<String, Object> payload = (data != null && data.get("payload") != null) 
             ? (Map<String, Object>) data.get("payload") 
             : data;
+        
+        log.info("UserId: {}, Payload: {}", userId, payload);
 
         try {
             switch (cmd) {
@@ -223,6 +230,32 @@ public class HomeMessageHandler {
                         (String) payload.get("projectName")
                     );
                     return null; // Return null to avoid "ReplyTo" error for async events
+                
+                case "home.search.global":
+                    String query = payload != null && payload.get("q") != null ? String.valueOf(payload.get("q")).trim() : "";
+                    log.info("Global Search Query: '{}'", query);
+                    if (query.isEmpty()) {
+                        return Map.of("news", new ArrayList<>(), "posts", new ArrayList<>());
+                    }
+                    
+                    // Improved word-based search (AND logic across words, any order)
+                    String[] words = query.split("\\s+");
+                    StringBuilder sb = new StringBuilder();
+                    for (String w : words) {
+                        sb.append("(?=.*").append(java.util.regex.Pattern.quote(w)).append(")");
+                    }
+                    sb.append(".*");
+                    String regex = sb.toString();
+                    log.info("Search Regex: '{}'", regex);
+                    
+                    List<NewsArticle> news = newsArticleRepository.findByTitleRegexOrContentRegex(regex, regex);
+                    List<Post> posts = postRepository.findByTitleRegexOrContentRegex(regex, regex);
+                    log.info("Global Search Results: News found: {}, Posts found: {}", news.size(), posts.size());
+                    
+                    return Map.of(
+                        "news", news,
+                        "posts", posts
+                    );
 
                 default:
                     log.warn("Unknown command: {}", cmd);

@@ -11,6 +11,7 @@ import { UploadModule } from './upload/upload.module';
 import { AiModule } from './ai/ai.module';
 import { HomeModule } from './home/home.module';
 import { UserModule } from './user/user.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { UserModule } from './user/user.module';
     UserModule,
     // Upload moudle
     UploadModule,
+    SearchModule,
   ],
 })
 export class AppModule {}

@@ -372,7 +372,10 @@ export class ProjectService {
     };
 
     if (search) {
-      where.name = { contains: search, mode: 'insensitive' };
+      const words = search.trim().split(/\s+/);
+      where.AND = words.map(word => ({
+        name: { contains: word, mode: 'insensitive' }
+      }));
     }
 
     const [items, total] = await Promise.all([

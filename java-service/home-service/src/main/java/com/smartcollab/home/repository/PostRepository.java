@@ -15,4 +15,8 @@ public interface PostRepository extends MongoRepository<Post, String> {
         "{ $sample: { size: ?0 } }"
     })
     List<Post> findRandomPosts(int size, java.util.Collection<String> excludeIds);
+    List<Post> findByTitleContainingIgnoreCase(String title);
+    List<Post> findByTitleRegex(String regex);
+    @org.springframework.data.mongodb.repository.Query("{ '$or': [ { 'title': { '$regex': ?0, '$options': 'i' } }, { 'content': { '$regex': ?1, '$options': 'i' } } ] }")
+    List<Post> findByTitleRegexOrContentRegex(String titleRegex, String contentRegex);
 }

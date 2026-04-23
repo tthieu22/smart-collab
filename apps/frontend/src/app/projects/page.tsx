@@ -11,6 +11,7 @@ import { Pagination, Button, Tour, type TourProps, Space, Typography, Card } fro
 import ProjectCard from '@smart/components/project/ProjectCard';
 import CreateBoardButton from '@smart/components/layouts/header/CreateBoardButton';
 import { PlusOutlined, RobotOutlined, RocketOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { LayoutGrid, Columns, Square } from 'lucide-react';
 
 const { Title, Paragraph } = Typography;
 
@@ -19,7 +20,7 @@ export default function ProjectListPage() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 9;
+  const pageSize = 20;
 
   // Tour refs
   const headerRef = useRef(null);
@@ -35,6 +36,17 @@ export default function ProjectListPage() {
     // Trigger AI modal after tour ends
     setForceAiOpen(true);
   };
+
+  const [isSticky, setIsSticky] = useState(false);
+  const [gridCols, setGridCols] = useState<1 | 2 | 3>(3);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsSticky(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     projectStore.getState().setActiveProjectId(null);
@@ -93,10 +105,14 @@ export default function ProjectListPage() {
 
   return (
     <SiteLayout leftSidebar={<LeftWidgets />} hideRightSidebar hideFooter>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-6">
-        {/* STICKY HEADER */}
+      <div className="mx-auto w-full max-w-[1200px] px-4 pt-0 pb-6">
+        {/* FLOATING HEADER */}
         <div 
-          className="sticky top-0 z-20 bg-gray-50/80 dark:bg-neutral-950/80 backdrop-blur-md py-4 mb-8 border-b border-gray-200 dark:border-neutral-800 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center transition-all duration-300"
+          className={`sticky top-[72px] z-20 transition-all duration-500 mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center px-8 rounded-[32px] border border-gray-200 dark:border-neutral-800 shadow-2xl shadow-black/5 mt-6 ${
+            isSticky 
+              ? 'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl py-4' 
+              : 'bg-white dark:bg-neutral-900 py-8'
+          }`}
           ref={headerRef}
         >
           <div>
@@ -108,33 +124,61 @@ export default function ProjectListPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button 
-              icon={<InfoCircleOutlined />} 
-              onClick={() => setTourOpen(true)}
-              className="dark:bg-neutral-900 dark:border-neutral-800"
-            >
-              Hướng dẫn
-            </Button>
-            
-            <div ref={createBtnRef}>
-              <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
-                <Button 
-                  type="primary" 
-                  size="large"
-                  icon={<PlusOutlined />} 
-                  className="rounded-xl shadow-lg shadow-blue-500/20 h-12 px-6 font-bold flex items-center gap-2"
-                >
-                  Tạo dự án mới
-                </Button>
-              </CreateBoardButton>
+          <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 dark:bg-neutral-800 p-1 rounded-xl ring-1 ring-black/5">
+              <button 
+                onClick={() => setGridCols(1)}
+                className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                title="1 Column"
+              >
+                <Square size={18} />
+              </button>
+              <button 
+                onClick={() => setGridCols(2)}
+                className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                title="2 Columns"
+              >
+                <Columns size={18} />
+              </button>
+              <button 
+                onClick={() => setGridCols(3)}
+                className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+                title="3 Columns"
+              >
+                <LayoutGrid size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                icon={<InfoCircleOutlined />}
+                onClick={() => setTourOpen(true)}
+                className="dark:bg-neutral-900 dark:border-neutral-800 h-10 rounded-xl"
+              >
+                Hướng dẫn
+              </Button>
+
+              <div ref={createBtnRef}>
+                <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    className="rounded-xl shadow-lg shadow-blue-500/20 h-10 px-4 font-bold flex items-center gap-2"
+                  >
+                    Tạo dự án mới
+                  </Button>
+                </CreateBoardButton>
+              </div>
             </div>
           </div>
         </div>
 
         {/* LOADING STATE */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={`grid gap-6 ${
+            gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+          }`}>
             {[...Array(pageSize)].map((_, i) => (
               <div key={i} className="h-[280px] w-full animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800" />
             ))}
@@ -143,9 +187,11 @@ export default function ProjectListPage() {
           <div className="space-y-8">
             {/* GRID LIST */}
             {projects.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className={`grid gap-6 ${
+                gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+              }`}>
                 {projects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
+                  <ProjectCard key={project.id} project={project} gridCols={gridCols} />
                 ))}
               </div>
             ) : (
@@ -159,10 +205,10 @@ export default function ProjectListPage() {
                 </p>
                 <Space size="middle">
                   <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
-                    <Button 
-                      type="primary" 
+                    <Button
+                      type="primary"
                       size="large"
-                      icon={<PlusOutlined />} 
+                      icon={<PlusOutlined />}
                       className="rounded-xl h-14 px-8 font-bold text-lg shadow-xl shadow-blue-500/30"
                     >
                       Tạo ngay bây giờ
@@ -189,10 +235,10 @@ export default function ProjectListPage() {
         )}
       </div>
 
-      <Tour 
-        open={tourOpen} 
-        onClose={handleTourClose} 
-        steps={tourSteps} 
+      <Tour
+        open={tourOpen}
+        onClose={handleTourClose}
+        steps={tourSteps}
         indicatorsRender={(current, total) => (
           <span className="text-xs font-bold text-blue-500">
             {current + 1} / {total}
