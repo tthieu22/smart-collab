@@ -6,6 +6,7 @@ import {
   HomeOutlined,
   ProjectOutlined,
   ReadOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 
 import { useFeedStore } from "@smart/store/feed";
@@ -25,6 +26,11 @@ export function Navbar() {
       key: "/news",
       icon: <ReadOutlined style={{ fontSize: 20 }} />,
       label: "Tin tức",
+    },
+    {
+      key: "/admin/ai-auto-post",
+      icon: <SettingOutlined style={{ fontSize: 20 }} />,
+      label: "Cấu hình AI",
     },
   ];
 

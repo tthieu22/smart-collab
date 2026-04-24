@@ -756,7 +756,7 @@ export function UserSettingForm() {
       <Card 
         className="flex-1 border border-gray-100 dark:border-neutral-800 rounded-[32px] bg-white dark:bg-neutral-950 overflow-hidden flex flex-col"
         style={{ boxShadow: '0 20px 50px -12px rgba(0,0,0,0.08)' }}
-        bodyStyle={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        styles={{ body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' } }}
       >
         <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
           <div className="max-w-5xl mx-auto h-full">

@@ -10,6 +10,7 @@ import com.smartcollab.home.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/social")
@@ -19,6 +20,14 @@ public class SocialController {
     private final CommentRepository commentRepository;
     private final ReactionRepository reactionRepository;
     private final NotificationService notificationService;
+    private final com.smartcollab.home.repository.UserRepository userRepository;
+
+    @PatchMapping("/user/mood")
+    public com.smartcollab.home.model.User updateMood(@RequestBody Map<String, String> payload, @RequestHeader("X-User-Id") String userId) {
+        com.smartcollab.home.model.User user = userRepository.findById(userId).orElseThrow();
+        user.setMood(payload.get("mood"));
+        return userRepository.save(user);
+    }
 
     @PostMapping("/post")
     public Post createPost(@RequestBody Post post, @RequestHeader("X-User-Id") String userId) {

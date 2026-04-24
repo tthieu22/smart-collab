@@ -6,11 +6,11 @@ import { Typography, Empty, Spin, Button } from "antd";
 import { PremiumPagination } from "@smart/components/ui/PremiumPagination";
 import { searchService, SearchResults } from "@smart/services/search.service";
 import SiteLayout from "@smart/components/layouts/SiteLayout";
-import LeftWidgets from "@smart/components/home/widgets/LeftWidgets";
 import { Card } from "@smart/components/ui/card";
 import ProjectCard from "@smart/components/project/ProjectCard";
 import { NewsCard } from "@smart/components/news/NewsCard";
-import { Search, LayoutGrid, Newspaper, MessageSquare, ArrowLeft } from "lucide-react";
+import { Search, LayoutGrid, Newspaper, MessageSquare, ArrowLeft, Sparkles } from "lucide-react";
+import { PageHeader } from "@smart/components/ui/PageHeader";
 import Link from "next/link";
 
 const { Title } = Typography;
@@ -94,25 +94,13 @@ function SearchContent() {
     const paginatedPosts = results.posts.slice((postPage - 1) * pageSize, postPage * pageSize);
 
     return (
-        <div className="mx-auto w-full max-w-5xl space-y-8 pb-10 transition-all duration-500 pt-4">
+        <div className="mx-auto w-full max-w-6xl space-y-8 pb-10 transition-all duration-500 pt-4 px-4 md:px-0">
             {/* Header section */}
-            <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/10 shadow-lg shadow-black/5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <Search className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                            <h1 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1">
-                                Kết quả cho: <span className="text-blue-600 dark:text-blue-400">"{query}"</span>
-                            </h1>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Tìm thấy {results.projects.length + results.news.length + results.posts.length} kết quả phù hợp.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </Card>
+            <PageHeader
+                icon={<Search />}
+                title="Kết quả tìm kiếm"
+                description={`Tìm thấy ${results.projects.length + results.news.length + results.posts.length} kết quả phù hợp cho từ khóa "${query}"`}
+            />
 
             {noResults ? (
                 <Card padding="large" className="dark:bg-neutral-950 dark:border-neutral-800 py-32 flex flex-col items-center text-center">
@@ -206,7 +194,7 @@ function SearchContent() {
 
 export default function SearchPage() {
     return (
-        <SiteLayout leftSidebar={<LeftWidgets />} hideRightSidebar hideFooter>
+        <SiteLayout hideRightSidebar hideFooter>
             <Suspense fallback={
                 <div className="flex items-center justify-center min-h-[60vh]">
                     <Spin size="large" />

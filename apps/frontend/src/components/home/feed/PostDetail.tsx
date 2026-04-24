@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useFeedStore } from '@smart/store/feed';
+import UserAvatar from '@smart/components/ui/UserAvatar';
 import { Card } from '@smart/components/ui/card';
 import { Button } from '@smart/components/ui/button';
 import { Heart, MessageCircle, Send, Bookmark, ChevronLeft } from 'lucide-react';
@@ -117,17 +118,10 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
         </div>
 
         {/* Content & Comments Block */}
-        <div className="col-span-1 flex flex-col md:col-span-2 lg:col-span-2 h-[600px] md:h-auto">
+        <div className="col-span-1 flex flex-col md:col-span-2 lg:col-span-2 min-h-[500px] md:h-auto">
           {/* Header */}
           <div className="flex items-center gap-3 border-b border-gray-100 dark:border-neutral-800 p-4">
-            <Link
-              href={`/profile/${author?.id || post.authorId}`}
-              className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-neutral-800"
-            >
-              {author?.avatarUrl && (
-                <img src={author.avatarUrl} alt={author.name} className="h-full w-full object-cover" />
-              )}
-            </Link>
+            <UserAvatar userId={post.authorId} size="md" />
             <div className="min-w-0">
               <Link href={`/profile/${author?.id || post.authorId}`} className="block font-semibold hover:underline truncate">
                 {author?.name || 'User'}

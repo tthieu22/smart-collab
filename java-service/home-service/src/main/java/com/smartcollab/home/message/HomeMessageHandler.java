@@ -31,6 +31,7 @@ public class HomeMessageHandler {
     private final ReactionRepository reactionRepository;
     private final CommentRepository commentRepository;
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
     @RabbitListener(queues = {RabbitMQConfig.REQUESTS_QUEUE, RabbitMQConfig.QUEUE})
     public Object handleMessage(Map<String, Object> message) {
@@ -76,8 +77,14 @@ public class HomeMessageHandler {
                 case "home.post.create":
                     Post post = new Post();
                     post.setAuthorId(userId);
+                    post.setTitle((String) payload.get("title"));
                     post.setContent((String) payload.get("content"));
+                    post.setLinkUrl((String) payload.get("linkUrl"));
                     post.setMedia((List<Map<String, Object>>) payload.get("media"));
+                    post.setVisibility((String) payload.get("visibility"));
+                    post.setMood((String) payload.get("mood"));
+                    post.setBackgroundStyle((String) payload.get("backgroundStyle"));
+                    
                     post.setCreatedAt(LocalDateTime.now());
                     post.setUpdatedAt(LocalDateTime.now());
                     Post savedPost = postRepository.save(post);
@@ -106,6 +113,33 @@ public class HomeMessageHandler {
                     followerRepository.findByFollowerIdAndFollowingId(userId, unfollowId)
                             .ifPresent(followerRepository::delete);
                     return Map.of("success", true);
+
+                case "home.user.mood.update":
+                    String mood = (String) payload.get("mood");
+                    User u = userRepository.findById(userId).orElseThrow();
+                    u.setMood(mood);
+                    userRepository.save(u);
+                    return Map.of("success", true, "mood", mood != null ? mood : "");
+
+                case "home.user.sync":
+                    String sId = (String) payload.get("id");
+                    User sUser = userRepository.findById(sId).orElse(new User());
+                    sUser.setId(sId);
+                    sUser.setEmail((String) payload.get("email"));
+                    sUser.setFirstName((String) payload.get("firstName"));
+                    sUser.setLastName((String) payload.get("lastName"));
+                    sUser.setAvatar((String) payload.get("avatar"));
+                    sUser.setCoverImage((String) payload.get("coverImage"));
+                    sUser.setBio((String) payload.get("bio"));
+                    sUser.setLocation((String) payload.get("location"));
+                    sUser.setWebsite((String) payload.get("website"));
+                    sUser.setBirthday((String) payload.get("birthday"));
+                    sUser.setCreatedAt(payload.get("createdAt") != null ? String.valueOf(payload.get("createdAt")) : null);
+                    if (payload.containsKey("mood")) sUser.setMood((String) payload.get("mood"));
+                    if (payload.containsKey("role")) sUser.setRole((String) payload.get("role"));
+                    userRepository.save(sUser);
+                    log.info("Synced user: {}", sId);
+                    return null;
 
                 case "home.post.like":
                     String postId = (String) payload.get("postId");
@@ -230,6 +264,35 @@ public class HomeMessageHandler {
                         (String) payload.get("projectName")
                     );
                     return null; // Return null to avoid "ReplyTo" error for async events
+
+                case "home.user.media.get": {
+                    String mUserId = (String) payload.get("targetUserId");
+                    List<Post> userPosts = postRepository.findAllByAuthorIdOrderByCreatedAtDesc(mUserId);
+                    List<Map<String, Object>> allMedia = new ArrayList<>();
+                    for (Post postObj : userPosts) {
+                        if (postObj.getMedia() != null) {
+                            allMedia.addAll(postObj.getMedia());
+                        }
+                    }
+                    return allMedia;
+                }
+
+                case "home.user.profile.data": {
+                    String pUserId = (String) payload.get("targetUserId");
+                    List<Follower> profileFollowers = followerRepository.findAllByFollowingId(pUserId);
+                    List<Follower> profileFollowing = followerRepository.findAllByFollowerId(pUserId);
+                    
+                    boolean isFollowing = false;
+                    if (userId != null) {
+                        isFollowing = followerRepository.existsByFollowerIdAndFollowingId(userId, pUserId);
+                    }
+
+                    return Map.of(
+                        "followersCount", profileFollowers.size(),
+                        "followingCount", profileFollowing.size(),
+                        "isFollowing", isFollowing
+                    );
+                }
                 
                 case "home.search.global":
                     String query = payload != null && payload.get("q") != null ? String.valueOf(payload.get("q")).trim() : "";

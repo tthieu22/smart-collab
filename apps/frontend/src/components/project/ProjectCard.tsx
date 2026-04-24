@@ -50,7 +50,7 @@ export default function ProjectCard({
       </div>
 
       {/* PROJECT INFO */}
-      <div className={`flex flex-1 flex-col justify-between ${isList ? 'p-8' : 'p-6'}`}>
+      <div className={`flex flex-1 flex-col justify-between ${isList ? 'p-6' : 'p-4'}`}>
         <div className="min-w-0">
           <h3 className={`mb-2 truncate font-bold capitalize text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors tracking-tight ${isList ? 'text-xl' : gridCols === 2 ? 'text-lg' : 'text-base'
             }`}>

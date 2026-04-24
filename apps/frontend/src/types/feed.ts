@@ -5,7 +5,14 @@ export interface FeedUser {
   name: string;
   username: string;
   avatarUrl?: string | null;
+  coverImage?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  website?: string | null;
+  birthday?: string | null;
+  mood?: string | null;
   verified?: boolean;
+  createdAt?: string;
 }
 
 export type FeedMediaType = 'image' | 'video';
@@ -55,6 +62,10 @@ export interface FeedPost {
 
   myReaction?: FeedReactionType | null;
   bookmarkedByMe?: boolean;
+
+  visibility?: 'public' | 'friends' | 'private';
+  mood?: string | null;
+  backgroundStyle?: string | null;
 }
 
 export interface FeedDataset {

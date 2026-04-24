@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
-import LeftWidgets from '@smart/components/home/widgets/LeftWidgets';
-import RightWidgets from '@smart/components/home/widgets/RightWidgets';
 import { Loading } from '@smart/components/ui/loading';
 import { Card } from '@smart/components/ui/card';
 import { aiAutoPostService } from '@smart/services/ai-autopost.service';
@@ -28,8 +26,10 @@ import {
   ExternalLink,
   MessageSquare,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  Sparkles
 } from 'lucide-react';
+import { PageHeader } from '@smart/components/ui/PageHeader';
 import { NewsCard } from '@smart/components/news/NewsCard';
 
 const defaultSettings: AutoPostSettings = {
@@ -349,14 +349,15 @@ export default function AdminAiAutoPostPage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <SiteLayout leftSidebar={<LeftWidgets />} rightSidebar={<RightWidgets />}>
-      <div className={`mx-auto w-full space-y-8 pb-20 transition-all duration-500 ${viewMode === 'grid' ? 'max-w-7xl' : 'max-w-4xl'}`}>
+    <SiteLayout>
+      <div className={`mx-auto w-full space-y-6 pt-4 pb-20 px-4 md:px-0 transition-all duration-500 ${viewMode === 'grid' ? 'max-w-7xl' : 'max-w-5xl'}`}>
         
         {/* Header Section */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">Content Hub</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Manage your news, tips, and automated AI generation in one place.</p>
-        </div>
+        <PageHeader 
+          icon={<Sparkles />}
+          title="Trung tâm Nội dung AI"
+          description="Quản lý tin tức, mẹo vặt và các bài viết tự động từ hệ thống AI của bạn."
+        />
 
         {/* Global Message Toast-like */}
         {message && (

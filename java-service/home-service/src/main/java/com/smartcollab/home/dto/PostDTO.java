@@ -19,4 +19,9 @@ public class PostDTO {
     private long shareCount;
     private String myReaction;
     private boolean bookmarkedByMe;
+    private String visibility;
+    private String mood;
+    private String backgroundStyle;
+    private String title;
+    private String linkUrl;
 }

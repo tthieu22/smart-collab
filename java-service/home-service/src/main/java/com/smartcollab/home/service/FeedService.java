@@ -70,7 +70,14 @@ public class FeedService {
                 .name((firstName + " " + lastName).trim())
                 .username(u.getEmail() != null ? u.getEmail().split("@")[0] : "user")
                 .avatarUrl(u.getAvatar())
+                .coverImage(u.getCoverImage())
+                .bio(u.getBio())
+                .location(u.getLocation())
+                .website(u.getWebsite())
+                .birthday(u.getBirthday())
+                .mood(u.getMood())
                 .verified(u.getRole() != null && u.getRole().equals("ADMIN"))
+                .createdAt(u.getCreatedAt())
                 .build();
         }).collect(Collectors.toList());
 
@@ -93,6 +100,11 @@ public class FeedService {
                     .reactionSummary(summary)
                     .myReaction(myReaction.map(r -> r.getType().toLowerCase()).orElse(null))
                     .bookmarkedByMe(false) // logic not implemented yet
+                    .visibility(post.getVisibility())
+                    .mood(post.getMood())
+                    .backgroundStyle(post.getBackgroundStyle())
+                    .title(post.getTitle())
+                    .linkUrl(post.getLinkUrl())
                     .build();
         }).collect(Collectors.toList());
 

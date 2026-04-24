@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
-import LeftWidgets from '@smart/components/home/widgets/LeftWidgets';
 import { Loading } from '@smart/components/ui/loading';
-import { Card } from '@smart/components/ui/card';
 import { newsService } from '@smart/services/news.service';
 import type { NewsArticle } from '@smart/types/ai-autopost';
 import { Newspaper, LayoutGrid, Columns, Square } from 'lucide-react';
 import { NewsCard } from '@smart/components/news/NewsCard';
 import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
+import { PageHeader } from '@smart/components/ui/PageHeader';
+import { Card } from '@smart/components/ui/card';
 
 export default function NewsPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,6 @@ export default function NewsPage() {
   }, [fetchArticles]);
 
   const handlePageChange = (p: number) => {
-    // antd pagination is 1-indexed, API is 0-indexed
     fetchArticles(p - 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -51,51 +50,43 @@ export default function NewsPage() {
     return <Loading fullScreen text="Đang tải tin tức..." />;
   }
 
-  return (
-    <SiteLayout leftSidebar={<LeftWidgets />} hideRightSidebar>
-      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500 pt-4">
-        <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/10 shadow-lg shadow-black/5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Newspaper className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Tin tức mới nhất</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Quản lý và theo dõi các tin tức, bài viết mới nhất từ hệ thống.
-                </p>
-              </div>
-            </div>
+  const extra = (
+    <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
+      <button
+        onClick={() => setGridCols(1)}
+        className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+        title="1 Column"
+      >
+        <Square size={18} />
+      </button>
+      <button
+        onClick={() => setGridCols(2)}
+        className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+        title="2 Columns"
+      >
+        <Columns size={18} />
+      </button>
+      <button
+        onClick={() => setGridCols(3)}
+        className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+        title="3 Columns"
+      >
+        <LayoutGrid size={18} />
+      </button>
+    </div>
+  );
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
-                <button
-                  onClick={() => setGridCols(1)}
-                  className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                  title="1 Column"
-                >
-                  <Square size={18} />
-                </button>
-                <button
-                  onClick={() => setGridCols(2)}
-                  className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                  title="2 Columns"
-                >
-                  <Columns size={18} />
-                </button>
-                <button
-                  onClick={() => setGridCols(3)}
-                  className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                  title="3 Columns"
-                >
-                  <LayoutGrid size={18} />
-                </button>
-              </div>
-            </div>
-          </div>
-          {error ? <p className="mt-3 text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p> : null}
-        </Card>
+  return (
+    <SiteLayout>
+      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500 pt-4">
+        <PageHeader
+          icon={<Newspaper className="w-5 h-5" />}
+          title="Tin tức mới nhất"
+          description="Quản lý và theo dõi các tin tức, bài viết mới nhất từ hệ thống."
+          extra={extra}
+        />
+
+        {error && <Card className="bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20 py-3 px-4 text-sm text-red-600 dark:text-red-400">{error}</Card>}
 
         <div className={`min-h-[500px] ${gridCols === 1
             ? 'space-y-4'
@@ -109,10 +100,10 @@ export default function NewsPage() {
               <p className="text-sm font-bold text-gray-500">Đang tải...</p>
             </div>
           ) : articles.length === 0 ? (
-            <Card padding="small" className={`dark:bg-neutral-950 dark:border-neutral-800 py-20 flex flex-col items-center ${gridCols !== 1 ? 'col-span-full' : ''}`}>
+            <div className={`py-20 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-neutral-800 rounded-2xl ${gridCols !== 1 ? 'col-span-full' : ''}`}>
               <Newspaper className="w-12 h-12 text-gray-300 mb-4" />
               <p className="text-lg font-bold text-gray-400">Không tìm thấy tin nào.</p>
-            </Card>
+            </div>
           ) : (
             articles.map((article) => (
               <NewsCard

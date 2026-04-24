@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
-import LeftWidgets from '@smart/components/home/widgets/LeftWidgets';
-import RightWidgets from '@smart/components/home/widgets/RightWidgets';
 import { Loading } from '@smart/components/ui/loading';
 import { NewsArticleDetail } from '@smart/components/news/NewsArticleDetail';
 import { newsService } from '@smart/services/news.service';

@@ -21,7 +21,7 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
     : excerpt;
 
   const content = (
-    <div className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isGrid ? 'flex-col h-full' : 'flex-row h-56'
+    <div className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isGrid ? 'flex-col h-full' : 'flex-row min-h-[240px]'
       }`}>
       {/* Media Section */}
       <div className={`relative overflow-hidden z-0 ${isGrid ? 'h-40 w-full' : 'w-1/3 h-full shrink-0'
@@ -51,7 +51,7 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
       </div>
 
       {/* Content Section */}
-      <div className={`flex flex-1 flex-col justify-between ${isGrid ? 'p-6' : 'p-8'}`}>
+      <div className={`flex flex-1 flex-col justify-between ${isGrid ? 'p-4' : 'p-6'}`}>
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
             <Calendar size={12} />
@@ -62,7 +62,7 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
             }`}>
             {article.title || 'Tin tức mới'}
           </h3>
-          <p className={`text-gray-500 dark:text-neutral-400 font-medium ${isGrid ? 'text-sm line-clamp-2' : 'text-base line-clamp-2 leading-relaxed'
+          <p className={`text-gray-500 dark:text-neutral-400 font-medium ${isGrid ? 'text-sm' : 'text-base leading-relaxed'
             }`}>
             {excerptShort || 'Bài không có nội dung'}
           </p>

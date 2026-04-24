@@ -3,14 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@smart/components/ui/card';
-import { BulbOutlined } from '@ant-design/icons';
 import { newsService } from '@smart/services/news.service';
 import { pickRandomNewsTips } from '@smart/lib/news-tips';
 import type { NewsArticle } from '@smart/types/ai-autopost';
+import { Lightbulb, Info } from 'lucide-react';
 
-/**
- * Sidebar phải: mẹo từ bài category TIP (API) + gợi ý ngẫu nhiên từ danh sách tĩnh.
- */
 export function TipsGuideSideCard() {
   const [tipArticles, setTipArticles] = useState<NewsArticle[]>([]);
   const [staticTips, setStaticTips] = useState<string[]>([]);
@@ -20,7 +17,7 @@ export function TipsGuideSideCard() {
     newsService
       .listTips()
       .then((list) => {
-        if (!cancelled) setTipArticles(list.slice(0, 8));
+        if (!cancelled) setTipArticles(list.slice(0, 3));
       })
       .catch(() => { });
     return () => {
@@ -35,42 +32,47 @@ export function TipsGuideSideCard() {
   return (
     <Card
       padding="small"
-      className="dark:bg-neutral-950 dark:border-neutral-800"
+      className="dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/10 shadow-sm"
     >
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
-        <BulbOutlined className="text-amber-500" />
-        <span>Mẹo &amp; hướng dẫn</span>
+      <div className="flex items-center gap-2 mb-4 px-1">
+        <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-500/10" />
+        <div className="text-sm font-bold text-gray-900 dark:text-gray-100">Mẹo & hướng dẫn</div>
       </div>
 
-      {tipArticles.length > 0 ? (
-        <div className="mb-4 space-y-2 border-b border-gray-100 pb-3 dark:border-neutral-800">
-          <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Bài mẹo (danh mục TIP)
-          </div>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+      <div className="space-y-4">
+        {tipArticles.length > 0 && (
+          <div className="space-y-2">
             {tipArticles.map((a) => (
-              <li key={a.id} className="leading-snug">
-                <Link
-                  href={`/news/${a.id}`}
-                  className="hover:text-blue-600 hover:underline dark:hover:text-blue-400"
-                >
-                  {a.content.replace(/\s+/g, ' ').trim().slice(0, 200)}
-                  {a.content.length > 200 ? '…' : ''}
-                </Link>
+              <Link
+                href={`/news/${a.id}`}
+                key={a.id}
+                className="flex gap-2 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-neutral-900 transition-colors group border border-transparent hover:border-amber-100/50 dark:hover:border-amber-900/20"
+              >
+                <div className="mt-1">
+                   <Info size={12} className="text-blue-500" />
+                </div>
+                <div className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                  {a.content.replace(/\s+/g, ' ').trim()}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-xl p-3 border border-amber-100/50 dark:border-amber-900/20">
+          <div className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider mb-2">
+            Gợi ý nhanh
+          </div>
+          <ul className="space-y-2">
+            {staticTips.map((t, i) => (
+              <li key={i} className="text-[11px] text-amber-800/80 dark:text-amber-200/70 leading-relaxed flex gap-2">
+                <span className="text-amber-400">•</span>
+                {t}
               </li>
             ))}
           </ul>
         </div>
-      ) : null}
-
-      <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        Gợi ý nhanh
       </div>
-      <ul className="mt-2 list-inside list-disc space-y-2 text-sm text-gray-600 dark:text-gray-300">
-        {staticTips.map((t, i) => (
-          <li key={i}>{t}</li>
-        ))}
-      </ul>
     </Card>
   );
 }

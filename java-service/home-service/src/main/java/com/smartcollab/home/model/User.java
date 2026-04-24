@@ -13,5 +13,12 @@ public class User {
     private String firstName;
     private String lastName;
     private String avatar;
+    private String coverImage;
+    private String bio;
+    private String location;
+    private String website;
+    private String birthday;
+    private String mood;
     private String role;
+    private String createdAt;
 }

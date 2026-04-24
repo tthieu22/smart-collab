@@ -14,12 +14,16 @@ import {
 import { useState, useCallback, useEffect } from "react";
 import { useUserStore } from "@smart/store/user";
 import { useBoardStore } from "@smart/store/setting";
+import UserAvatar from "@smart/components/ui/UserAvatar";
 
 export function AvatarMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { currentUser, clearUserStore } = useUserStore();
   const isUserAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
+
+  // FeedStore userId
+  const meId = currentUser?.id || "";
 
   const theme = useBoardStore((s) => s.theme);
   const setTheme = useBoardStore((s) => s.setTheme);
@@ -79,11 +83,9 @@ export function AvatarMenu() {
     {
       key: "card",
       label: (
-        <Card bordered={false} bodyStyle={{ padding: "8px 4px" }} className="dark:bg-neutral-900 border-none">
+        <Card variant="borderless" styles={{ body: { padding: "8px 4px" } }} className="dark:bg-neutral-900 border-none">
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 240 }}>
-            <Avatar size={48} src={currentUser?.avatar} icon={!currentUser?.avatar && <UserOutlined />}>
-              {!currentUser?.avatar && (currentUser?.email?.charAt(0).toUpperCase() || null)}
-            </Avatar>
+            <UserAvatar userId={meId} size="md" allowChangeMood={false} />
             <div style={{ overflow: "hidden" }}>
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }} className="truncate">
                 {currentUser?.email?.split("@")[0] || "Khách"}
@@ -170,21 +172,16 @@ export function AvatarMenu() {
       overlayClassName="avatar-menu-dropdown"
     >
       <div
-        className={`i-box ${open ? "active" : ""} hover:bg-gray-50 dark:hover:bg-neutral-800`}
+        className={`i-box ${open ? "active" : ""} hover:bg-gray-50 dark:hover:bg-neutral-800 flex items-center justify-center`}
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 32,
-          height: 32,
-          borderRadius: 8,
+          width: 40,
+          height: 40,
+          borderRadius: 12,
           cursor: "pointer",
           transition: "all 0.2s ease",
         }}
       >
-        <Avatar size="small" src={currentUser?.avatar} icon={!currentUser?.avatar && <UserOutlined />}>
-          {!currentUser?.avatar && (currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : null)}
-        </Avatar>
+        <UserAvatar userId={meId} size="sm" allowChangeMood={true} />
       </div>
     </Dropdown>
   );

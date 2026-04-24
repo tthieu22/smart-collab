@@ -15,6 +15,11 @@ model User {
   firstName                    String?
   lastName                     String?
   avatar                       String?
+  coverImage                   String?
+  bio                          String?
+  location                     String?
+  website                      String?
+  birthday                     DateTime?
   googleId                     String?
   role                         String   @default("USER")  // bỏ enum, dùng string
   isVerified                   Boolean  @default(false)
@@ -22,8 +27,8 @@ model User {
   emailVerificationCodeExpires DateTime?
   emailNotifications           Boolean  @default(true)
   pushNotifications            Boolean  @default(true)
-  createdAt                    DateTime @default(now())
-  updatedAt                    DateTime @updatedAt
+  createdAt                    DateTime? @default(now())
+  updatedAt                    DateTime? @updatedAt
 
   refreshTokens                RefreshToken[]
   posts                        Post[]

@@ -208,7 +208,7 @@ const DashboardView: React.FC<Props> = ({ board }) => {
               exit={{ opacity: 0, height: 0, marginBottom: 0 }}
               className="overflow-hidden"
             >
-              <Card style={aiCardStyle} bodyStyle={{ padding: '32px' }}>
+              <Card style={aiCardStyle} styles={{ body: { padding: '32px' } }}>
                 {isAiLoading ? (
                   <div className="py-4">
                     <Skeleton active avatar paragraph={{ rows: 4 }} title />
@@ -279,7 +279,7 @@ const DashboardView: React.FC<Props> = ({ board }) => {
             { title: 'Công việc quá hạn', value: stats.overdue, icon: <AlertOutlined />, color: '#fa8c16' },
           ].map((item, idx) => (
             <Col xs={24} sm={12} lg={6} key={idx}>
-              <Card style={cardStyle} bodyStyle={{ padding: '24px' }}>
+              <Card style={cardStyle} styles={{ body: { padding: '24px' } }}>
                 <Statistic
                   title={<Text type="secondary" className="text-[10px] uppercase font-bold tracking-widest">{item.title}</Text>}
                   value={item.value}

@@ -5,17 +5,15 @@ import { projectStore } from '@smart/store/project';
 import { projectService } from '@smart/services/project.service';
 import type { Project } from '@smart/types/project';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
-import LeftWidgets from '@smart/components/home/widgets/LeftWidgets';
 import { useHomeFeedBootstrap } from '@smart/hooks/useHomeFeed';
-import { Button, Tour, type TourProps, Typography } from 'antd';
+import { Button, Tour, type TourProps } from 'antd';
 import { Card } from '@smart/components/ui/card';
 import ProjectCard from '@smart/components/project/ProjectCard';
 import CreateBoardButton from '@smart/components/layouts/header/CreateBoardButton';
 import { PlusOutlined, RocketOutlined, InfoCircleOutlined, LayoutOutlined } from '@ant-design/icons';
-import { LayoutGrid, Columns, Square } from 'lucide-react';
+import { LayoutGrid, Columns, Square, Info, Plus } from 'lucide-react';
 import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
-
-const { Title, Paragraph } = Typography;
+import { PageHeader } from '@smart/components/ui/PageHeader';
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -35,7 +33,6 @@ export default function ProjectListPage() {
 
   const handleTourClose = () => {
     setTourOpen(false);
-    // Trigger AI modal after tour ends
     setForceAiOpen(true);
   };
 
@@ -43,8 +40,6 @@ export default function ProjectListPage() {
 
   useEffect(() => {
     projectStore.getState().setActiveProjectId(null);
-
-    // Check if first time visiting
     const hasSeenTour = localStorage.getItem('hasSeenProjectsTour');
     if (!hasSeenTour) {
       setTourOpen(true);
@@ -96,76 +91,66 @@ export default function ProjectListPage() {
     },
   ];
 
+  const extra = (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
+        <button
+          onClick={() => setGridCols(1)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="1 Column"
+        >
+          <Square size={18} />
+        </button>
+        <button
+          onClick={() => setGridCols(2)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="2 Columns"
+        >
+          <Columns size={18} />
+        </button>
+        <button
+          onClick={() => setGridCols(3)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="3 Columns"
+        >
+          <LayoutGrid size={18} />
+        </button>
+      </div>
+
+      <Button
+        icon={<Info size={18} />}
+        onClick={() => setTourOpen(true)}
+        className="dark:bg-neutral-900 dark:border-neutral-800 h-10 rounded-xl flex items-center hover:text-blue-500 border-none shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+      >
+        Hướng dẫn
+      </Button>
+
+      <div ref={createBtnRef}>
+        <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
+          <Button
+            type="primary"
+            icon={<Plus size={20} strokeWidth={3} />}
+            className="rounded-xl shadow-lg shadow-blue-500/20 h-10 px-4 font-bold flex items-center gap-2 border-none"
+          >
+            Tạo dự án mới
+          </Button>
+        </CreateBoardButton>
+      </div>
+    </div>
+  );
+
   return (
-    <SiteLayout leftSidebar={<LeftWidgets />} hideRightSidebar hideFooter>
+    <SiteLayout hideFooter>
       <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500 pt-4">
-        {/* HEADER CARD - STYLED LIKE NEWS */}
-        <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/10 shadow-lg shadow-black/5" ref={headerRef}>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <LayoutOutlined className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Dự án của bạn</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Quản lý và theo dõi tiến độ công việc trong các không gian cộng tác.
-                </p>
-              </div>
-            </div>
+        <div ref={headerRef}>
+          <PageHeader
+            icon={<LayoutGrid />}
+            title="Dự án của bạn"
+            description="Quản lý và theo dõi tiến độ công việc trong các không gian cộng tác."
+            extra={extra}
+          />
+        </div>
 
-            <div className="flex items-center gap-2">
-              {/* View Mode Toggle */}
-              <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
-                <button
-                  onClick={() => setGridCols(1)}
-                  className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                  title="1 Column"
-                >
-                  <Square size={18} />
-                </button>
-                <button
-                  onClick={() => setGridCols(2)}
-                  className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                  title="2 Columns"
-                >
-                  <Columns size={18} />
-                </button>
-                <button
-                  onClick={() => setGridCols(3)}
-                  className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-                  title="3 Columns"
-                >
-                  <LayoutGrid size={18} />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  icon={<InfoCircleOutlined />}
-                  onClick={() => setTourOpen(true)}
-                  className="dark:bg-neutral-900 dark:border-neutral-800 h-10 rounded-xl flex items-center hover:text-blue-500"
-                >
-                  Hướng dẫn
-                </Button>
-
-                <div ref={createBtnRef}>
-                  <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      className="rounded-xl shadow-lg shadow-blue-500/20 h-10 px-4 font-bold flex items-center gap-2"
-                    >
-                      Tạo dự án mới
-                    </Button>
-                  </CreateBoardButton>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* CONTENT AREA */}
         {loading ? (
           <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
             }`}>
@@ -175,7 +160,6 @@ export default function ProjectListPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* GRID LIST */}
             {projects.length > 0 ? (
               <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
                 }`}>

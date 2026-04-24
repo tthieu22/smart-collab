@@ -5,6 +5,7 @@ import { AntdRegistry } from '@smart/providers/AntdRegistry';
 import { NotificationProvider } from '@smart/providers/NotificationProvider';
 import { AuthProvider } from '@smart/providers/AuthProvider';
 import GlobalPostDetailModal from '@smart/components/home/feed/GlobalPostDetailModal';
+import AppWrapper from '@smart/components/layouts/AppWrapper';
 import { Spin } from 'antd';
 import { Inter } from 'next/font/google';
 import React from 'react';
@@ -35,10 +36,12 @@ export default function RootLayout({
           <AntdRegistry>
             <NotificationProvider>
               <AuthProvider>
-                <React.Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-neutral-950"><Spin size="large" /></div>}>
-                  {children}
-                  <GlobalPostDetailModal />
-                </React.Suspense>
+                <AppWrapper>
+                  <React.Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-neutral-950"><Spin size="large" /></div>}>
+                    {children}
+                    <GlobalPostDetailModal />
+                  </React.Suspense>
+                </AppWrapper>
               </AuthProvider>
             </NotificationProvider>
           </AntdRegistry>

@@ -19,4 +19,6 @@ public interface PostRepository extends MongoRepository<Post, String> {
     List<Post> findByTitleRegex(String regex);
     @org.springframework.data.mongodb.repository.Query("{ '$or': [ { 'title': { '$regex': ?0, '$options': 'i' } }, { 'content': { '$regex': ?1, '$options': 'i' } } ] }")
     List<Post> findByTitleRegexOrContentRegex(String titleRegex, String contentRegex);
+
+    List<Post> findAllByAuthorIdOrderByCreatedAtDesc(String authorId);
 }

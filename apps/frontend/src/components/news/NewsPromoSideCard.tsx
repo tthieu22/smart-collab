@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@smart/components/ui/card';
 import { newsService } from '@smart/services/news.service';
+import { Newspaper, ChevronRight } from 'lucide-react';
 
 export function NewsPromoSideCard() {
-  const [previews, setPreviews] = useState<{ id: string; excerpt: string }[]>([]);
+  const [previews, setPreviews] = useState<{ id: string; excerpt: string; title: string }[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -15,11 +16,12 @@ export function NewsPromoSideCard() {
       .then((list) => {
         if (cancelled) return;
         setPreviews(
-          list.slice(0, 3).map((a) => {
+          list.data.slice(0, 3).map((a) => {
             const oneLine = a.content.replace(/\s+/g, ' ').trim();
             return {
               id: a.id,
-              excerpt: oneLine.length > 100 ? `${oneLine.slice(0, 100)}…` : oneLine,
+              title: a.title || 'Tin tức',
+              excerpt: oneLine.length > 80 ? `${oneLine.slice(0, 80)}…` : oneLine,
             };
           }),
         );
@@ -31,33 +33,42 @@ export function NewsPromoSideCard() {
   }, []);
 
   return (
-    <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800">
-      <div className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Tin tức</div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
-        Bản tin AI / quản trị — tách khỏi bài đăng trên Home Feed.
-      </p>
-      <Link
-        href="/news"
-        className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
-      >
-        Xem tất cả tin →
-      </Link>
-      {previews.length ? (
-        <ul className="mt-3 space-y-2 border-t border-gray-100 pt-3 dark:border-neutral-800">
-          {previews.map((p) => (
-            <li key={p.id}>
-              <Link
-                href={`/news/${p.id}`}
-                className="line-clamp-2 text-xs text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
+    <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/10 shadow-sm">
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div className="flex items-center gap-2">
+          <Newspaper className="w-4 h-4 text-emerald-500" />
+          <div className="text-sm font-bold text-gray-900 dark:text-gray-100">Tin tức mới</div>
+        </div>
+        <Link
+          href="/news"
+          className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-0.5 transition-colors"
+        >
+          Tất cả <ChevronRight size={12} />
+        </Link>
+      </div>
+
+      <div className="space-y-3">
+        {previews.length ? (
+          previews.map((p) => (
+            <Link
+              href={`/news/${p.id}`}
+              key={p.id}
+              className="block p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-neutral-900 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-neutral-800"
+            >
+              <div className="text-xs font-bold text-gray-800 dark:text-gray-200 line-clamp-1 mb-1 italic">
+                {p.title}
+              </div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
                 {p.excerpt}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-xs text-gray-400">Chưa có tin hoặc chưa tải được.</p>
-      )}
+              </div>
+            </Link>
+          ))
+        ) : (
+          <div className="py-4 text-center text-xs text-gray-400 border border-dashed rounded-xl border-gray-200 dark:border-neutral-800">
+            Đang cập nhật tin tức...
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

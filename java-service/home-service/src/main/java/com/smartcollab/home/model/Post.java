@@ -17,6 +17,9 @@ public class Post {
     private String content;
     private String linkUrl;
     private List<Map<String, Object>> media;
+    private String visibility; // public, friends, private
+    private String mood;
+    private String backgroundStyle;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

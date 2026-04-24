@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -7,12 +7,14 @@ import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import dayjs from 'dayjs';
 import { syncCreateUser, syncDeleteUser, syncUpdateUser } from '../../message-handlers/common/sync.helper';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
+    @Inject('HOME_SERVICE') private readonly homeClient: ClientProxy,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -43,10 +45,8 @@ export class UserService {
       },
     });
 
-    await syncCreateUser({
-      id: createdUser.id,
-      email: createdUser.email,
-    });
+    await syncCreateUser(createdUser);
+    this.homeClient.emit({ cmd: 'home.user.sync' }, createdUser);
 
     // Send verification email
     await this.mailerService.sendMail({
@@ -94,6 +94,11 @@ export class UserService {
         firstName: true,
         lastName: true,
         avatar: true,
+        coverImage: true,
+        bio: true,
+        location: true,
+        website: true,
+        birthday: true,
         role: true,
         isVerified: true,
         emailNotifications: true,
@@ -117,6 +122,11 @@ export class UserService {
         firstName: true,
         lastName: true,
         avatar: true,
+        coverImage: true,
+        bio: true,
+        location: true,
+        website: true,
+        birthday: true,
         role: true,
         isVerified: true,
         emailNotifications: true,
@@ -176,6 +186,11 @@ export class UserService {
         firstName: true,
         lastName: true,
         avatar: true,
+        coverImage: true,
+        bio: true,
+        location: true,
+        website: true,
+        birthday: true,
         role: true,
         isVerified: true,
         emailNotifications: true,
@@ -185,10 +200,8 @@ export class UserService {
         updatedAt: true,
       },
     });
-    await syncUpdateUser({
-      id: updatedUser.id,
-      email: updatedUser.email
-    });
+    await syncUpdateUser(updatedUser);
+    this.homeClient.emit({ cmd: 'home.user.sync' }, updatedUser);
 
     await this.createLog(id, 'UPDATE_PROFILE', 'Updated profile information');
 
@@ -271,6 +284,11 @@ export class UserService {
         firstName: true,
         lastName: true,
         avatar: true,
+        coverImage: true,
+        bio: true,
+        location: true,
+        website: true,
+        birthday: true,
       },
       take: 20,
     });

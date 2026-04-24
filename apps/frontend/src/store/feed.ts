@@ -53,12 +53,23 @@ interface FeedState {
   draftText: string;
   draftLinkUrl: string;
   draftImages: DraftImage[];
+  draftVisibility: 'public' | 'friends' | 'private';
+  draftMood: string | null;
+  draftBackgroundStyle: string | null;
 
   bootstrap: (dataset: FeedDataset) => void;
   setLoading: (value: boolean) => void;
   setError: (value: string | null) => void;
 
-  createPost: (input: { title?: string; content: string; linkUrl?: string; media?: FeedPost['media'] }) => Promise<void>;
+  createPost: (input: { 
+    title?: string; 
+    content: string; 
+    linkUrl?: string; 
+    media?: FeedPost['media'];
+    visibility?: FeedPost['visibility'];
+    mood?: FeedPost['mood'];
+    backgroundStyle?: FeedPost['backgroundStyle'];
+  }) => Promise<void>;
   toggleReaction: (postId: FeedID, reaction: FeedReactionType) => Promise<void>;
   sharePost: (postId: FeedID) => void;
   toggleBookmark: (postId: FeedID) => void;
@@ -72,6 +83,9 @@ interface FeedState {
   setDraftLinkUrl: (url: string) => void;
   addDraftImages: (images: DraftImage[]) => void;
   removeDraftImage: (index: number) => void;
+  setDraftVisibility: (v: 'public' | 'friends' | 'private') => void;
+  setDraftMood: (m: string | null) => void;
+  setDraftBackgroundStyle: (s: string | null) => void;
   clearDraft: () => void;
   publishDraft: () => Promise<void>;
   fetchPostDetails: (postId: FeedID) => Promise<void>;
@@ -79,6 +93,11 @@ interface FeedState {
   refreshPostData: (postId: FeedID) => Promise<void>;
   reloadFeed: () => Promise<void>;
   fetchNextPage: () => Promise<void>;
+  updateUserMood: (mood: string | null) => Promise<void>;
+  updateProfile: (data: Partial<FeedUser>) => Promise<void>;
+  fetchUser: (userId: string) => Promise<void>;
+  fetchUserProfileData: (targetUserId: string) => Promise<{ followersCount: number; followingCount: number; isFollowing: boolean }>;
+  fetchUserMedia: (targetUserId: string) => Promise<any[]>;
 }
 
 export const useFeedStore = create<FeedState>((set, get) => ({
@@ -102,6 +121,9 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   draftText: '',
   draftLinkUrl: '',
   draftImages: [],
+  draftVisibility: 'public',
+  draftMood: null,
+  draftBackgroundStyle: null,
 
   bootstrap: (dataset) => {
     const users: Entities<FeedUser> = {};
@@ -161,11 +183,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   setLoading: (value) => set({ isLoading: value }),
   setError: (value) => set({ error: value }),
 
-  createPost: async ({ title, content, linkUrl, media }) => {
+  createPost: async ({ title, content, linkUrl, media, visibility, mood, backgroundStyle }) => {
     try {
       const res = await autoRequest<FeedPost>('/home/post', {
         method: 'POST',
-        body: JSON.stringify({ title, content, linkUrl, media }),
+        body: JSON.stringify({ title, content, linkUrl, media, visibility, mood, backgroundStyle }),
       });
       
       set((s) => ({
@@ -324,7 +346,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     set((s) => ({
       draftImages: s.draftImages.filter((_, i) => i !== index),
     })),
-  clearDraft: () => set({ draftTitle: '', draftText: '', draftLinkUrl: '', draftImages: [] }),
+  clearDraft: () => set({ draftTitle: '', draftText: '', draftLinkUrl: '', draftImages: [], draftMood: null, draftBackgroundStyle: null, draftVisibility: 'public' }),
+  
+  setDraftVisibility: (v: 'public' | 'friends' | 'private') => set({ draftVisibility: v }),
+  setDraftMood: (m: string | null) => set({ draftMood: m }),
+  setDraftBackgroundStyle: (s: string | null) => set({ draftBackgroundStyle: s }),
   
   publishDraft: async () => {
     const s = get();
@@ -366,7 +392,10 @@ export const useFeedStore = create<FeedState>((set, get) => ({
         title: title || undefined, 
         content: content || 'Ảnh mới', 
         linkUrl: linkUrl || undefined, 
-        media: mediaUrls 
+        media: mediaUrls,
+        visibility: s.draftVisibility,
+        mood: s.draftMood,
+        backgroundStyle: s.draftBackgroundStyle
       });
       s.clearDraft();
     } catch (err: any) {
@@ -551,6 +580,88 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       });
     } catch (err: any) {
       set({ error: err.message, isLoading: false });
+    }
+  },
+  updateUserMood: async (mood) => {
+    const s = get();
+    const userId = s.currentUserId;
+    if (!userId) return;
+
+    // Optimistic update
+    set((state) => ({
+      users: {
+        ...state.users,
+        [userId]: { ...state.users[userId], mood },
+      },
+    }));
+
+    try {
+      await autoRequest('/home/user/mood', {
+        method: 'PATCH',
+        body: JSON.stringify({ mood }),
+      });
+    } catch (err: any) {
+      set({ error: err.message });
+      // In a real app, you might want to rollback here
+    }
+  },
+  updateProfile: async (data) => {
+    const s = get();
+    const userId = s.currentUserId;
+    if (!userId) return;
+
+    // Optimistic update
+    set((state) => ({
+      users: {
+        ...state.users,
+        [userId]: { ...state.users[userId], ...data },
+      },
+    }));
+
+    try {
+      await autoRequest('/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
+  fetchUser: async (userId: string) => {
+    try {
+      const res = await autoRequest<FeedUser>(`/users/${userId}`);
+      set((s) => ({
+        users: {
+          ...s.users,
+          [res.id]: res,
+        },
+      }));
+    } catch (err: any) {
+      console.error('Fetch user failed:', err);
+    }
+  },
+  fetchUserProfileData: async (targetUserId) => {
+    try {
+      const res = await autoRequest<any>(`/home/user/profile-data`, {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId }),
+      });
+      return res;
+    } catch (err: any) {
+      console.error(err);
+      return { followersCount: 0, followingCount: 0, isFollowing: false };
+    }
+  },
+  fetchUserMedia: async (targetUserId) => {
+    try {
+      const res = await autoRequest<any[]>(`/home/user/media`, {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId }),
+      });
+      return res;
+    } catch (err: any) {
+      console.error(err);
+      return [];
     }
   },
 }));

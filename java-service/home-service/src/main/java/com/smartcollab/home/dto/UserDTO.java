@@ -10,5 +10,12 @@ public class UserDTO {
     private String name;
     private String username;
     private String avatarUrl;
+    private String coverImage;
+    private String bio;
+    private String location;
+    private String website;
+    private String birthday;
+    private String mood;
     private boolean verified;
+    private String createdAt;
 }

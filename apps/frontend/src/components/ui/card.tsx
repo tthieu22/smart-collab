@@ -28,9 +28,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
 
   const paddingClasses = {
     none: 'p-0',
-    small: 'p-4',
-    medium: 'p-6',
-    large: 'p-8',
+    small: 'p-3',
+    medium: 'p-4',
+    large: 'p-6',
   };
 
   return (

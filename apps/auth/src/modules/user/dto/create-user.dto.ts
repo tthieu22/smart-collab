@@ -30,10 +30,27 @@ export class CreateUserDto {
   @IsOptional()
   avatar?: string | null;
 
-  @IsBoolean()
+  @IsString()
   @IsOptional()
-  isVerified?: boolean;
+  coverImage?: string | null;
 
+  @IsString()
+  @IsOptional()
+  bio?: string | null;
+
+  @IsString()
+  @IsOptional()
+  location?: string | null;
+
+  @IsString()
+  @IsOptional()
+  website?: string | null;
+
+  @IsString()
+  @IsOptional()
+  birthday?: string | null;
+
+  @IsString()
   @IsOptional()
   role?: string;
 

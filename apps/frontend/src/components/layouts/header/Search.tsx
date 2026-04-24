@@ -66,7 +66,7 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
   const hasResults = results.projects.length > 0 || results.news.length > 0 || results.posts.length > 0;
 
   return (
-    <div ref={containerRef} style={{ position: "relative", width: 500 }}>
+    <div ref={containerRef} className="relative w-full max-w-[700px]">
       <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}

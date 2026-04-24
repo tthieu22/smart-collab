@@ -81,6 +81,17 @@ export class HomeController {
     );
   }
 
+  @Patch('user/mood')
+  @UseGuards(JwtAuthGuard)
+  async updateUserMood(@Body('mood') mood: string, @Req() req: any) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.user.mood.update' }, { 
+        userId: req.user.userId,
+        payload: { mood } 
+      })
+    );
+  }
+
   @Get('notifications')
   @UseGuards(JwtAuthGuard)
   async getNotifications(@Req() req: any) {
@@ -203,6 +214,28 @@ export class HomeController {
         userId: req.user.userId,
         payload: { id },
       }),
+    );
+  }
+
+  @Post('user/profile-data')
+  @UseGuards(JwtAuthGuard)
+  async getProfileData(@Body() body: any, @Req() req: any) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.user.profile.data' }, {
+        userId: req.user.userId,
+        payload: body,
+      })
+    );
+  }
+
+  @Post('user/media')
+  @UseGuards(JwtAuthGuard)
+  async getUserMedia(@Body() body: any, @Req() req: any) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.user.media.get' }, {
+        userId: req.user.userId,
+        payload: body,
+      })
     );
   }
 }

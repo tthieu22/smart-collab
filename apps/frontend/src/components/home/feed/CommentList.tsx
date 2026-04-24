@@ -5,6 +5,7 @@ import { useFeedStore } from '@smart/store/feed';
 import { useShallow } from 'zustand/react/shallow';
 import { Button } from '@smart/components/ui/button';
 import { Heart } from 'lucide-react';
+import UserAvatar from '@smart/components/ui/UserAvatar';
 
 const EMPTY_ARRAY: string[] = [];
 
@@ -33,16 +34,7 @@ export default function CommentList({ postId }: { postId: string }) {
     <div className="mt-3 space-y-3">
       {items.map((c) => (
         <div key={c.id} className="flex gap-3">
-          <div className="h-8 w-8 overflow-hidden rounded-full bg-gray-200 dark:bg-neutral-800 shrink-0">
-            {c.author?.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={c.author.avatarUrl}
-                alt={c.author.name}
-                className="h-full w-full object-cover"
-              />
-            ) : null}
-          </div>
+          <UserAvatar userId={c.authorId} size="sm" />
 
           <div className="flex-1 min-w-0">
             <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900 px-3 py-2 border border-gray-100 dark:border-neutral-800">
