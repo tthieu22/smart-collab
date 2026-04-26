@@ -58,6 +58,11 @@ export interface Card {
   priority?: number | null;
   position: number;
 
+  // Location for Map View
+  locationName?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+
   // Người tạo / sửa (denormalized)
   createdById?: string | null;
   createdByName?: string | null;

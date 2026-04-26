@@ -14,12 +14,23 @@ import { useDragContext } from '../dnd/DragContext';
 import { useBoardStore } from '@smart/store/setting';
 import InviteMemberModal from '../member/InviteMemberModal';
 import { useState } from 'react';
-import { Tooltip, Segmented } from 'antd';
-import { LayoutOutlined, CalendarOutlined, TableOutlined, LineChartOutlined, PieChartOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
+import {
+  LayoutOutlined,
+  CalendarOutlined,
+  TableOutlined,
+  LineChartOutlined,
+  PieChartOutlined,
+  EnvironmentOutlined,
+  DownOutlined,
+  CheckOutlined
+} from '@ant-design/icons';
 import CalendarView from '@smart/components/project/calendar/CalendarView';
 import TableView from '@smart/components/project/table/TableView';
 import TimelineView from '@smart/components/project/timeline/TimelineView';
 import DashboardView from '@smart/components/project/dashboard/DashboardView';
+import MapView from '@smart/components/project/map/MapView';
+import { Dropdown, Button, MenuProps } from 'antd';
 
 interface Props {
   board: BoardType;
@@ -30,7 +41,7 @@ export default function Board({ board }: Props) {
   const { boardColumns, columns, currentProject } = projectStore();
   const theme = useBoardStore((s) => s.theme);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'board' | 'calendar' | 'table' | 'timeline' | 'dashboard'>('board');
+  const [viewMode, setViewMode] = useState<'board' | 'calendar' | 'table' | 'timeline' | 'dashboard' | 'map'>('board');
 
   const columnIds = boardColumns[board.id] || [];
 
@@ -71,10 +82,35 @@ export default function Board({ board }: Props) {
   const isDraggingCard = activeItem?.type === 'CARD';
   const canAddColumn = board.type === 'board';
 
+  const viewOptions = [
+    { label: 'Board', value: 'board', icon: <LayoutOutlined /> },
+    { label: 'Calendar', value: 'calendar', icon: <CalendarOutlined /> },
+    { label: 'Table', value: 'table', icon: <TableOutlined /> },
+    { label: 'Timeline', value: 'timeline', icon: <LineChartOutlined /> },
+    { label: 'Dashboard', value: 'dashboard', icon: <PieChartOutlined /> },
+    { label: 'Map', value: 'map', icon: <EnvironmentOutlined /> },
+  ];
+
+  const currentView = viewOptions.find(opt => opt.value === viewMode) || viewOptions[0];
+
+  const menuItems: MenuProps['items'] = viewOptions.map(opt => ({
+    key: opt.value,
+    label: (
+      <div className="flex items-center justify-between w-40 py-1">
+        <div className="flex items-center gap-3">
+          <span className="text-lg opacity-80">{opt.icon}</span>
+          <span className="font-medium text-sm">{opt.label}</span>
+        </div>
+        {viewMode === opt.value && <CheckOutlined className="text-blue-500" />}
+      </div>
+    ),
+    onClick: () => setViewMode(opt.value as any)
+  }));
+
   return (
     <div
-      className={`relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 h-full font-sans ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-        }`}
+      className={`relative flex flex-col overflow-hidden transition-all duration-300 h-full font-sans ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+        } ${viewMode === 'map' ? 'rounded-none' : 'rounded-2xl'}`}
       style={{
         backgroundColor:
           (board as any).color ||
@@ -102,6 +138,24 @@ export default function Board({ board }: Props) {
             {currentProject?.name}
           </h1>
           <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'}`} />
+
+          {/* View Mode Dropdown */}
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomLeft">
+            <Button
+              type="text"
+              className={`
+                flex items-center gap-2 px-3 h-8 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors
+                ${theme === 'dark' ? 'text-white' : 'text-gray-800'}
+              `}
+            >
+              <span className="text-base opacity-90 flex items-center">{currentView.icon}</span>
+              <span className="font-semibold text-sm">{currentView.label}</span>
+              <DownOutlined className="text-[10px] opacity-50 ml-1" />
+            </Button>
+          </Dropdown>
+
+          <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'}`} />
+
           <div className="flex -space-x-2 overflow-hidden">
             {currentProject?.members?.slice(0, 5).map((member) => {
               const name = (member.user?.firstName && member.user.firstName !== 'User')
@@ -135,21 +189,6 @@ export default function Board({ board }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Segmented
-            value={viewMode}
-            onChange={(val) => setViewMode(val as 'board' | 'calendar' | 'table' | 'timeline' | 'dashboard')}
-            options={[
-              { label: 'Board', value: 'board', icon: <LayoutOutlined /> },
-              { label: 'Calendar', value: 'calendar', icon: <CalendarOutlined /> },
-              { label: 'Table', value: 'table', icon: <TableOutlined /> },
-              { label: 'Timeline', value: 'timeline', icon: <LineChartOutlined /> },
-              { label: 'Dashboard', value: 'dashboard', icon: <PieChartOutlined /> },
-            ]}
-            className={`
-              ${theme === 'dark' ? 'bg-white/5 text-white' : 'bg-gray-100'} 
-              rounded-md overflow-hidden
-            `}
-          />
           <button
             onClick={() => setIsInviteModalOpen(true)}
             className="
@@ -176,46 +215,50 @@ export default function Board({ board }: Props) {
       </div>
 
       {/* Board Content */}
-      {viewMode === 'board' ? (
-        <div
-          ref={setBoardRef}
-          id="board"
-          className="
-            flex flex-1 gap-4 p-4 pt-4
-            overflow-x-auto overflow-y-hidden
-          "
-        >
-          <SortableContext
-            items={sortedColumnIds}
-            strategy={horizontalListSortingStrategy}
+      <div className="flex-1 min-h-0 relative">
+        {viewMode === 'board' ? (
+          <div
+            ref={setBoardRef}
+            id="board"
+            className="
+              flex h-full gap-4 p-4 pt-4
+              overflow-x-auto overflow-y-hidden
+            "
           >
-            {sortedColumns.map((col, index) => (
-              <Column
-                key={col.id}
-                column={col}
-                boardId={board.id}
-                boardType={board.type}
-                index={index}
+            <SortableContext
+              items={sortedColumnIds}
+              strategy={horizontalListSortingStrategy}
+            >
+              {sortedColumns.map((col, index) => (
+                <Column
+                  key={col.id}
+                  column={col}
+                  boardId={board.id}
+                  boardType={board.type}
+                  index={index}
+                />
+              ))}
+
+              {canAddColumn && <AddColumn boardId={board.id} />}
+
+              <div
+                className="w-4 flex-shrink-0 pointer-events-none"
+                aria-hidden="true"
               />
-            ))}
-
-            {canAddColumn && <AddColumn boardId={board.id} />}
-
-            <div
-              className="w-4 flex-shrink-0 pointer-events-none"
-              aria-hidden="true"
-            />
-          </SortableContext>
-        </div>
-      ) : viewMode === 'calendar' ? (
-        <CalendarView board={board} />
-      ) : viewMode === 'table' ? (
-        <TableView board={board} />
-      ) : viewMode === 'timeline' ? (
-        <TimelineView board={board} />
-      ) : (
-        <DashboardView board={board} />
-      )}
+            </SortableContext>
+          </div>
+        ) : viewMode === 'calendar' ? (
+          <CalendarView board={board} />
+        ) : viewMode === 'table' ? (
+          <TableView board={board} />
+        ) : viewMode === 'timeline' ? (
+          <TimelineView board={board} />
+        ) : viewMode === 'map' ? (
+          <MapView board={board} />
+        ) : (
+          <DashboardView board={board} />
+        )}
+      </div>
 
       <InviteMemberModal
         isOpen={isInviteModalOpen}

@@ -28,8 +28,8 @@ export default function SiteLayout({
     )}>
       <div
         className={cn(
-          'flex w-full flex-1 gap-4 px-6 lg:px-8 py-4 transition-all duration-300',
-          fullWidth ? 'max-w-none' : 'max-w-7xl mx-auto',
+          'flex w-full flex-1 transition-all duration-300',
+          fullWidth ? 'max-w-none p-0 gap-0' : 'max-w-7xl mx-auto gap-4 px-6 lg:px-8 py-4',
           noScroll && 'h-full overflow-hidden'
         )}
       >

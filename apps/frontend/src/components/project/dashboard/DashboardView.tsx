@@ -417,7 +417,7 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                       </div>
                       <Text strong className="block mb-2 text-sm truncate">{item.title}</Text>
                       <div className="flex justify-between items-center">
-                        <Avatar.Group size="small" maxCount={2}>
+                        <Avatar.Group size="small" max={{ count: 2 }}>
                           {item.members?.map(m => (
                             <Tooltip title={m.userName} key={m.userId}>
                               <Avatar src={m.userAvatar} icon={<UserOutlined />} />

@@ -13,6 +13,7 @@ import ActivitySection from './components/ActivitySection';
 import DatesSection from './components/DatesSection';
 import PrioritySection from './components/PrioritySection';
 import CoverSection from './components/CoverSection';
+import LocationSection from './components/LocationSection';
 
 const { Text } = Typography;
 
@@ -285,6 +286,13 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
                     <PrioritySection
                       priority={card?.priority}
                       onChange={(priority) => updateBasic({ priority })}
+                    />
+                    <Divider style={{ margin: '8px 0' }} />
+                    <LocationSection
+                      locationName={card?.locationName}
+                      latitude={card?.latitude}
+                      longitude={card?.longitude}
+                      onChange={(data) => updateBasic(data)}
                     />
                   </div>
                 </div>

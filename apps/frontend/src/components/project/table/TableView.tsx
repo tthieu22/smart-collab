@@ -137,7 +137,7 @@ const TableView: React.FC<Props> = ({ board }) => {
         key: 'members',
         width: 150,
         render: (members: any[]) => (
-          <Avatar.Group maxCount={3} size="small">
+          <Avatar.Group max={{ count: 3 }} size="small">
             {members?.map(m => (
               <Tooltip title={m.userName || 'Thành viên'} key={m.id || m.userId}>
                 <Avatar src={m.userAvatar} icon={<UserOutlined />} />

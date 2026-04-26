@@ -214,7 +214,7 @@ export default function ProjectDetailPage({ params }: Props) {
 
   /** ===== Style dùng chung ===== */
   const basePanel =
-    'flex flex-col overflow-hidden border rounded-lg bg-white dark:bg-neutral-900';
+    `flex flex-col overflow-hidden bg-white dark:bg-neutral-900 ${isSingle ? 'border-none rounded-none' : 'border rounded-lg'}`;
 
   const inboxClass = isSingle
     ? `${basePanel} flex-1`
@@ -226,7 +226,7 @@ export default function ProjectDetailPage({ params }: Props) {
 
   const boardClass = isSingle
     ? `${basePanel} flex-1`
-    : `${basePanel} min-w-[700px]`;
+    : `${basePanel} min-w-[700px] flex-1`;
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter noScroll>
       <div className="bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
@@ -244,7 +244,7 @@ export default function ProjectDetailPage({ params }: Props) {
               ...(calendarBoard ? { [calendarBoard.id]: 'calendar' } : {}),
             }}
           >
-            <div className="flex h-full min-h-0 gap-3 px-4 pb-4">
+            <div className={`flex h-full min-h-0 ${isSingle ? 'gap-0 p-0' : 'gap-3 px-4 pb-4'}`}>
               {activeComponents.includes('inbox') && inboxBoard && (
                 <div className={inboxClass}>
                   <Inbox board={inboxBoard} />

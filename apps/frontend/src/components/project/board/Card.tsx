@@ -255,9 +255,8 @@ export const Card = React.memo(function Card({
                   {card.members && card.members.length > 0 && (
                     <div className="flex justify-end pt-1">
                       <Avatar.Group
-                        maxCount={3}
+                        max={{ count: 3 }}
                         size="small"
-                        maxStyle={{ color: '#f56a00', backgroundColor: '#fde3cf', fontSize: '10px' }}
                       >
                         {card.members.map((m) => (
                           <Tooltip key={m.userId} title={m.userName}>

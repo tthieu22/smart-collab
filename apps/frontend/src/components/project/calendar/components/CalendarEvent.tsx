@@ -74,7 +74,7 @@ export const CalendarEvent: React.FC<CalendarEventProps> = ({
             {card.members && card.members.length > 0 && (
                 <div className="flex justify-end pt-1 border-t border-gray-100/10">
                     <Avatar.Group
-                        maxCount={2}
+                        max={{ count: 2 }}
                         size="small"
                         className="scale-90 origin-right"
                     >

@@ -134,6 +134,11 @@ model Card {
   coverResourceType String?
   coverFilename     String?
 
+  // === LOCATION (cho Map View) ===
+  locationName      String?
+  latitude          Float?
+  longitude         Float?
+
   // === RELATIONS ===
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   column  Column?  @relation(fields: [columnId], references: [id], onDelete: SetNull)

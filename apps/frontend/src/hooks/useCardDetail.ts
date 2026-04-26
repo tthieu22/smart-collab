@@ -208,6 +208,9 @@ export const useCardDetail = (
       startDate?: string | null;
       deadline?: string | null;
       priority?: number | null;
+      locationName?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
     }) => {
       if (!card) return;
 
@@ -218,6 +221,9 @@ export const useCardDetail = (
         startDate: fields.startDate ?? card.startDate,
         deadline: fields.deadline ?? card.deadline,
         priority: fields.priority,
+        locationName: fields.locationName ?? card.locationName,
+        latitude: fields.latitude ?? card.latitude,
+        longitude: fields.longitude ?? card.longitude,
       };
 
       await updateCardOnServer({
