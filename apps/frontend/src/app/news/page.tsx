@@ -71,7 +71,7 @@ export default function NewsPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500 pt-4">
+      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500">
         <PageHeader
           icon={<Newspaper className="w-5 h-5" />}
           title="Tin tức mới nhất"

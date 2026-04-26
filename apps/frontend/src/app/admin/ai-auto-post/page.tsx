@@ -11,17 +11,17 @@ import { useNewsAdminStore } from '@smart/store/news-admin';
 import { uploadService } from '@smart/services/upload.service';
 import { normalizeNewsMedia } from '@smart/lib/news-media';
 import Link from 'next/link';
-import { 
-  Settings, 
-  Send, 
-  Trash2, 
-  Edit3, 
-  Plus, 
-  Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  Zap, 
+import {
+  Settings,
+  Send,
+  Trash2,
+  Edit3,
+  Plus,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Zap,
   Image as ImageIcon,
   ExternalLink,
   MessageSquare,
@@ -62,7 +62,7 @@ function AutoPostSection({ settings, setSettings, onSave, onRunNow, isSaving }: 
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">AI Auto Post Settings</h2>
         </div>
       </div>
-      
+
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -165,14 +165,14 @@ export default function AdminAiAutoPostPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [message, setMessage] = useState('');
   const [settings, setSettings] = useState<AutoPostSettings>(defaultSettings);
-  
+
   // Manual Post State
   const [draftContent, setDraftContent] = useState('');
   const [draftCategory, setDraftCategory] = useState<NewsArticleCategory>('NEWS');
   const [draftLinkUrl, setDraftLinkUrl] = useState('');
   const [draftMedia, setDraftMedia] = useState<FeedMedia[]>([]);
   const [uploadingNews, setUploadingNews] = useState(false);
-  
+
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
@@ -350,10 +350,10 @@ export default function AdminAiAutoPostPage() {
 
   return (
     <SiteLayout>
-      <div className={`mx-auto w-full space-y-6 pt-4 pb-20 px-4 md:px-0 transition-all duration-500 ${viewMode === 'grid' ? 'max-w-7xl' : 'max-w-5xl'}`}>
-        
+      <div className={`mx-auto w-full space-y-6 pb-20 px-4 md:px-0 transition-all duration-500 ${viewMode === 'grid' ? 'max-w-7xl' : 'max-w-5xl'}`}>
+
         {/* Header Section */}
-        <PageHeader 
+        <PageHeader
           icon={<Sparkles />}
           title="Trung tâm Nội dung AI"
           description="Quản lý tin tức, mẹo vặt và các bài viết tự động từ hệ thống AI của bạn."
@@ -377,7 +377,7 @@ export default function AdminAiAutoPostPage() {
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Create New Content</h2>
           </div>
-          
+
           <div className="p-6 space-y-4">
             <textarea
               className="min-h-[100px] w-full rounded-2xl border-none bg-gray-100 dark:bg-neutral-950 px-5 py-4 text-base focus:ring-2 focus:ring-emerald-500 transition-all dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none font-medium"
@@ -385,7 +385,7 @@ export default function AdminAiAutoPostPage() {
               value={draftContent}
               onChange={(e) => setDraftContent(e.target.value)}
             />
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 ml-1">External Link (Optional)</label>
@@ -399,7 +399,7 @@ export default function AdminAiAutoPostPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 ml-1">Category</label>
                 <select
@@ -430,7 +430,7 @@ export default function AdminAiAutoPostPage() {
                   </span>
                 </label>
               </div>
-              
+
               <button
                 type="button"
                 onClick={createNews}
@@ -466,12 +466,12 @@ export default function AdminAiAutoPostPage() {
         </Card>
 
         {/* 2. Auto Post Settings (Componentized) */}
-        <AutoPostSection 
-          settings={settings} 
-          setSettings={setSettings} 
-          onSave={saveSettings} 
-          onRunNow={runNow} 
-          isSaving={isSaving} 
+        <AutoPostSection
+          settings={settings}
+          setSettings={setSettings}
+          onSave={saveSettings}
+          onRunNow={runNow}
+          isSaving={isSaving}
         />
 
         {/* 3. Search & Article List Section */}
@@ -482,15 +482,15 @@ export default function AdminAiAutoPostPage() {
                 <MessageSquare className="w-6 h-6 text-blue-500" />
                 Published Feed
               </h2>
-              
+
               <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
-                <button 
+                <button
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   <ListIcon size={18} />
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
                 >
@@ -498,7 +498,7 @@ export default function AdminAiAutoPostPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:w-64">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
@@ -511,7 +511,7 @@ export default function AdminAiAutoPostPage() {
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
-              <button 
+              <button
                 onClick={handleSearch}
                 className="h-10 px-4 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-bold hover:opacity-80 transition-all"
               >
@@ -535,9 +535,9 @@ export default function AdminAiAutoPostPage() {
             ) : (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {articles.map((article) => (
-                  <NewsCard 
-                    key={article.id} 
-                    article={article} 
+                  <NewsCard
+                    key={article.id}
+                    article={article}
                     variant={viewMode}
                     actions={
                       <div className="flex items-center gap-1">
@@ -584,7 +584,7 @@ export default function AdminAiAutoPostPage() {
                 >
                   <ChevronLeft className="w-5 h-5 dark:text-white" />
                 </button>
-                
+
                 <div className="flex items-center px-4 gap-2">
                   <span className="text-sm font-black text-gray-900 dark:text-white">Page {page + 1}</span>
                   <span className="text-sm font-bold text-gray-400">of {totalPages}</span>
@@ -610,7 +610,7 @@ export default function AdminAiAutoPostPage() {
                     value={goToPageInput}
                     onChange={(e) => setGoToPageInput(e.target.value)}
                   />
-                  <button 
+                  <button
                     type="submit"
                     className="h-10 px-4 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-black hover:opacity-80 transition-all uppercase"
                   >

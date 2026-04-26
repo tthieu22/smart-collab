@@ -14,11 +14,10 @@ export default function FooterLink({ href, children, className, external }: Foot
 
   const content = (
     <span className={cn(
-      "relative group py-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 ease-in-out cursor-pointer",
+      "relative group py-1.5 text-[14px] font-medium text-gray-500 dark:text-neutral-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 ease-out cursor-pointer",
       className
     )}>
       {children}
-      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 dark:bg-blue-400 transition-all duration-300 ease-in-out group-hover:w-full" />
     </span>
   );
 

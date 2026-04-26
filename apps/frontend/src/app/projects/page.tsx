@@ -6,7 +6,7 @@ import { projectService } from '@smart/services/project.service';
 import type { Project } from '@smart/types/project';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { useHomeFeedBootstrap } from '@smart/hooks/useHomeFeed';
-import { Button, Tour, type TourProps } from 'antd';
+import { Button, Tooltip, Tour, type TourProps } from 'antd';
 import { Card } from '@smart/components/ui/card';
 import ProjectCard from '@smart/components/project/ProjectCard';
 import CreateBoardButton from '@smart/components/layouts/header/CreateBoardButton';
@@ -129,22 +129,22 @@ export default function ProjectListPage() {
         </button>
       </div>
 
-      <Button
-        icon={<Info size={18} />}
-        onClick={() => setTourOpen(true)}
-        className="dark:bg-neutral-900 dark:border-neutral-800 h-10 rounded-xl flex items-center hover:text-blue-500 border-none shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-      >
-        Hướng dẫn
-      </Button>
+      <Tooltip title="Xem hướng dẫn">
+        <Button
+          icon={<Info size={18} />}
+          onClick={() => setTourOpen(true)}
+          className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-neutral-900 border-none shadow-sm ring-1 ring-black/5 dark:ring-white/10 hover:text-blue-500 transition-all"
+        />
+      </Tooltip>
 
       <div ref={createBtnRef}>
         <CreateBoardButton forceAiOpen={forceAiOpen} onAiClose={() => setForceAiOpen(false)}>
           <Button
             type="primary"
-            icon={<Plus size={20} strokeWidth={3} />}
-            className="rounded-xl shadow-lg shadow-blue-500/20 h-10 px-4 font-bold flex items-center gap-2 border-none"
+            icon={<Plus size={18} strokeWidth={3} />}
+            className="rounded-xl shadow-md shadow-blue-500/20 h-9 px-3 font-bold flex items-center gap-1.5 border-none bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-[13px]"
           >
-            Tạo dự án mới
+            Dự án mới
           </Button>
         </CreateBoardButton>
       </div>
@@ -153,7 +153,7 @@ export default function ProjectListPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500 pt-4">
+      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500">
         <div ref={headerRef}>
           <PageHeader
             icon={<LayoutGrid />}

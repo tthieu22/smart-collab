@@ -7,11 +7,11 @@ import { Button } from '@smart/components/ui/button';
 import { useFeedStore } from '@smart/store/feed';
 import UserAvatar from '@smart/components/ui/UserAvatar';
 import type { FeedPost, FeedReactionType, FeedMedia } from '@smart/types/feed';
-import { 
-  MessageSquare, 
-  Share2, 
-  Bookmark, 
-  Heart, 
+import {
+  MessageSquare,
+  Share2,
+  Bookmark,
+  Heart,
   MoreHorizontal,
   ExternalLink,
   Clock,
@@ -104,18 +104,18 @@ export default function FeedPostCard({ postId }: { postId: string }) {
   );
 
   return (
-    <Card 
-      padding="none" 
+    <Card
+      padding="none"
       className="group overflow-hidden dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/5 shadow-sm hover:shadow-md transition-all duration-300 rounded-[24px]"
     >
-      <div className="p-4 sm:p-5">
+      <div className="p-3 sm:p-3">
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <UserAvatar 
-              userId={post.authorId} 
-              size="md" 
-              showMood={true} 
+            <UserAvatar
+              userId={post.authorId}
+              size="md"
+              showMood={true}
               mood={post.mood}
             />
 
@@ -163,7 +163,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
         </div>
 
         {/* CONTENT */}
-        <div 
+        <div
           onClick={() => setActivePostId(post.id)}
           className={cn(
             "cursor-pointer space-y-3",
@@ -187,7 +187,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
 
           {post.linkUrl && !post.backgroundStyle && (
             <div className="pt-1">
-              <a 
+              <a
                 href={post.linkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -204,10 +204,10 @@ export default function FeedPostCard({ postId }: { postId: string }) {
 
       {/* MEDIA */}
       {media.length > 0 && !post.backgroundStyle && (
-        <div 
+        <div
           onClick={() => setActivePostId(post.id)}
           className={cn(
-            "relative w-full cursor-pointer px-4 sm:px-5 pb-2",
+            "relative w-full cursor-pointer px-3 pb-2",
             media.length === 1 ? "" : "grid gap-2 grid-cols-2"
           )}
         >
@@ -240,11 +240,11 @@ export default function FeedPostCard({ postId }: { postId: string }) {
       )}
 
       {/* FOOTER ACTIONS */}
-      <div className="px-4 sm:p-5 pt-2 pb-4">
+      <div className="px-3 pt-1.5 pb-2.5">
         {/* STATS */}
-        <div className="flex items-center justify-between mb-4 px-1 text-[12px] text-gray-500 font-medium border-t border-gray-50 dark:border-neutral-900 pt-3">
+        <div className="flex items-center justify-between mb-2 px-1 text-[12px] text-gray-500 font-medium border-t border-gray-50 dark:border-neutral-900 pt-2">
           <div className="flex items-center gap-3">
-            <Popover 
+            <Popover
               content={
                 <div className="flex flex-col gap-2 p-1">
                   {(Object.entries(post.reactionSummary) as [FeedReactionType, number][]).map(([type, count]) => (
@@ -276,9 +276,9 @@ export default function FeedPostCard({ postId }: { postId: string }) {
 
         {/* BUTTONS */}
         <div className="flex items-center gap-1 sm:gap-2">
-          <Popover 
-            content={reactionPicker} 
-            trigger="hover" 
+          <Popover
+            content={reactionPicker}
+            trigger="hover"
             mouseEnterDelay={0.5}
             overlayClassName="reaction-popover"
             color="transparent"

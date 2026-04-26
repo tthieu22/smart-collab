@@ -239,18 +239,49 @@ svg {
 /* =========================================
    GLOBAL THIN SCROLLBAR (Utility)
    ========================================= */
+/* =========================================
+   GLOBAL PREMIUM SCROLLBAR
+   ========================================= */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  transition: all 0.3s;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Scrollbar thin utility */
 .scrollbar-thin {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-button {
-  display: none !important;
+  width: 3px;
+  height: 3px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
@@ -258,14 +289,12 @@ svg {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.4);
-  border-radius: 2px;
-  border: 1px solid transparent;
-  background-clip: content-box;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.5);
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Hide scrollbar utility */
@@ -273,9 +302,10 @@ svg {
   display: none;
 }
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
+
 
 /* =========================================
    COLUMN GLASS NEON

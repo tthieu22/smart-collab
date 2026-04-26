@@ -31,6 +31,16 @@ export default function Header() {
   const { currentUser, allUsers } = useUserStore();
   const { articles: newsArticles } = useNewsAdminStore();
 
+  const [currentTime, setCurrentTime] = React.useState<string>('');
+
+  React.useEffect(() => {
+    setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Breadcrumbs logic
   const pathSegments = pathname.split('/').filter(Boolean);
   const breadcrumbs = pathSegments.map((segment, index) => {
@@ -79,7 +89,7 @@ export default function Header() {
   });
 
   return (
-    <header className="sticky top-0 z-[100] h-16 border-b border-gray-200/50 dark:border-white/5 bg-white dark:bg-[#030303] backdrop-blur-xl">
+    <header className="sticky top-0 z-[100] h-16 border-b border-gray-200 dark:border-neutral-800 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.03)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.02)]">
       <div className="relative flex h-full items-center justify-between w-full px-6 lg:px-8 max-w-none">
 
         {/* LEFT: Branding & Dynamic Navigation */}
@@ -87,7 +97,7 @@ export default function Header() {
           <Logo />
 
           <div className="hidden lg:flex items-center gap-4">
-            <div className="h-6 w-px bg-gray-200 dark:bg-white/10" />
+            <div className="h-6 w-px bg-gray-200 dark:bg-neutral-800" />
             <Navbar />
           </div>
 
@@ -103,7 +113,7 @@ export default function Header() {
         <div className="hidden md:flex flex-1 max-w-xl mx-8 items-center gap-3">
           <div className="relative w-full group">
             <Search />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 pointer-events-none opacity-40 group-focus-within:opacity-100 transition-opacity">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900 pointer-events-none opacity-40 group-focus-within:opacity-100 transition-opacity">
               <Command size={10} />
               <span className="text-[10px] font-bold">K</span>
             </div>
@@ -116,6 +126,13 @@ export default function Header() {
 
         {/* RIGHT: Intelligence & User Controls */}
         <div className="flex items-center gap-3">
+          {/* Clock & Date (Moved from RightWidgets) */}
+          <div className="hidden xl:flex flex-col items-end mr-2 leading-none">
+            <span className="text-sm font-black tracking-tighter text-gray-900 dark:text-white">{currentTime}</span>
+            <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">Chủ nhật, 26 tháng 4</span>
+          </div>
+
+          <div className="h-6 w-px bg-gray-200 dark:bg-neutral-800 mx-1" />
           {/* Smart AI Indicator */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -126,7 +143,7 @@ export default function Header() {
             <Sparkles size={18} className="relative z-10 animate-pulse" />
           </motion.button>
 
-          <div className="h-6 w-px bg-gray-200 dark:bg-white/10 mx-1" />
+          <div className="h-6 w-px bg-gray-200 dark:bg-neutral-800 mx-1" />
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
@@ -138,5 +155,6 @@ export default function Header() {
     </header>
   );
 }
+
 
 export { Logo, Navbar, UserMenu };

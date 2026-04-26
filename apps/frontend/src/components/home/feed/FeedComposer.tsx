@@ -6,16 +6,16 @@ import { Button } from '@smart/components/ui/button';
 import { useFeedStore, type DraftImage } from '@smart/store/feed';
 import { useShallow } from 'zustand/react/shallow';
 import UserAvatar from '@smart/components/ui/UserAvatar';
-import { 
-  Camera, 
-  ImagePlus, 
-  Send, 
-  X, 
-  Link as LinkIcon, 
-  Type, 
-  Sparkles, 
-  Globe, 
-  Users, 
+import {
+  Camera,
+  ImagePlus,
+  Send,
+  X,
+  Link as LinkIcon,
+  Type,
+  Sparkles,
+  Globe,
+  Users,
   Lock,
   ChevronDown,
   Smile,
@@ -161,21 +161,21 @@ export default function FeedComposer() {
   }));
 
   return (
-    <Card 
-      padding="none" 
+    <Card
+      padding="none"
       className={cn(
         "dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/5 shadow-sm rounded-[24px] overflow-hidden transition-all duration-500",
         isExpanded ? "ring-2 ring-blue-500/20 shadow-xl" : ""
       )}
     >
-      <div className="p-4 sm:p-5 space-y-4">
+      <div className="p-3 space-y-3">
         {/* COMPACT VIEW (Avatar + Input) */}
         <div className="flex items-start gap-4">
           <div className="relative group">
-            <UserAvatar 
-              userId={me?.id || ''} 
-              size="md" 
-              allowChangeMood={true} 
+            <UserAvatar
+              userId={me?.id || ''}
+              size="md"
+              allowChangeMood={true}
             />
             {/* MOOD BADGE ON AVATAR (Draft Post Mood) */}
             {draftMood && (
@@ -187,47 +187,47 @@ export default function FeedComposer() {
 
           <div className="flex-1 space-y-3">
             {!isExpanded ? (
-               <div 
-                 onClick={() => setIsExpanded(true)}
-                 className="w-full h-10 rounded-full bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 px-4 flex items-center text-gray-400 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all"
-               >
-                 Bạn đang nghĩ gì thế, {me?.name || 'người dùng'}?
-               </div>
+              <div
+                onClick={() => setIsExpanded(true)}
+                className="w-full h-10 rounded-full bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 px-4 flex items-center text-gray-400 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all"
+              >
+                Bạn đang nghĩ gì thế, {me?.name || 'người dùng'}?
+              </div>
             ) : (
               <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-3">
                 <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-2">
-                     <Dropdown menu={{ items: visibilityItems, onClick: (e) => setDraftVisibility(e.key as Visibility) }} trigger={['click']}>
-                        <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-neutral-900 text-[11px] font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors">
-                          {currentVisibility?.icon}
-                          {currentVisibility?.label}
-                          <ChevronDown size={12} />
-                        </button>
-                     </Dropdown>
+                  <div className="flex items-center gap-2">
+                    <Dropdown menu={{ items: visibilityItems, onClick: (e) => setDraftVisibility(e.key as Visibility) }} trigger={['click']}>
+                      <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-neutral-900 text-[11px] font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors">
+                        {currentVisibility?.icon}
+                        {currentVisibility?.label}
+                        <ChevronDown size={12} />
+                      </button>
+                    </Dropdown>
 
-                     <Dropdown menu={{ items: moodMenu }} trigger={['click']}>
-                        <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors">
-                          {draftMood ? `${currentMood?.emoji} ${currentMood?.label}` : 'Cảm xúc?'}
-                          <ChevronDown size={12} />
-                        </button>
-                     </Dropdown>
-                     
-                     {draftMood && (
-                       <button 
+                    <Dropdown menu={{ items: moodMenu }} trigger={['click']}>
+                      <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors">
+                        {draftMood ? `${currentMood?.emoji} ${currentMood?.label}` : 'Cảm xúc?'}
+                        <ChevronDown size={12} />
+                      </button>
+                    </Dropdown>
+
+                    {draftMood && (
+                      <button
                         onClick={() => setDraftMood(null)}
                         className="text-gray-400 hover:text-red-500"
-                       >
-                         <X size={12} />
-                       </button>
-                     )}
-                   </div>
-                   
-                   <button 
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+
+                  <button
                     onClick={() => setIsExpanded(false)}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-900 rounded-full text-gray-400"
-                   >
-                     <X size={16} />
-                   </button>
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
 
                 <div className="relative group">
@@ -256,7 +256,7 @@ export default function FeedComposer() {
                       draftBackgroundStyle ? "text-center font-bold flex items-center justify-center placeholder:text-white/60" : "dark:text-gray-100"
                     )}
                   />
-                  
+
                   {/* BACKGROUND STYLE PICKER */}
                   <div className="absolute left-3 bottom-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     {BACKGROUNDS.map((bg) => (
@@ -350,14 +350,14 @@ export default function FeedComposer() {
               </button>
             </Tooltip>
 
-            <Popover 
+            <Popover
               content={
-                <EmojiPicker 
-                  theme={theme === 'dark' ? EmojiTheme.DARK : EmojiTheme.LIGHT} 
+                <EmojiPicker
+                  theme={theme === 'dark' ? EmojiTheme.DARK : EmojiTheme.LIGHT}
                   onEmojiClick={onEmojiClick}
                 />
-              } 
-              trigger="click" 
+              }
+              trigger="click"
               placement="top"
               overlayClassName="emoji-popover"
             >
@@ -370,7 +370,7 @@ export default function FeedComposer() {
               content={
                 <div className="p-1 grid grid-cols-2 gap-2">
                   {QUICK_HASHTAGS.map(h => (
-                    <button 
+                    <button
                       key={h}
                       onClick={() => setDraftText(draftText + ' ' + h)}
                       className="px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-blue-50 text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors"
@@ -396,8 +396,8 @@ export default function FeedComposer() {
                 disabled={isLoading || isAiProcessing}
                 className={cn(
                   "flex items-center gap-2 px-3 h-10 rounded-xl font-bold text-xs transition-all",
-                  isAiProcessing 
-                    ? "bg-purple-50 text-purple-600 animate-pulse" 
+                  isAiProcessing
+                    ? "bg-purple-50 text-purple-600 animate-pulse"
                     : "bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/40"
                 )}
               >

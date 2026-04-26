@@ -43,6 +43,13 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
         'font-sans',
         className
       )}
+      styles={{
+        ...props.styles,
+        body: {
+          padding: padding === 'none' ? 0 : undefined,
+          ...props.styles?.body
+        }
+      }}
       {...props}
     >
       {children}

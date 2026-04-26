@@ -26,10 +26,10 @@ export function PageHeader({
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={cn(
         "relative overflow-hidden group",
-        "bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl",
-        "border border-gray-200/50 dark:border-white/5",
-        "shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]",
-        "rounded-[24px] p-4 md:p-5 mb-6",
+        "bg-white/50 dark:bg-neutral-950/30 backdrop-blur-xl",
+        "border border-gray-200 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/5",
+        "shadow-sm",
+        "rounded-[24px] p-3 mb-4",
         className
       )}
     >
@@ -37,7 +37,7 @@ export function PageHeader({
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 dark:bg-blue-400/5 blur-[80px] rounded-full pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500/10 dark:bg-indigo-400/5 blur-[80px] rounded-full pointer-events-none" />
 
-      <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4 md:gap-5">
           {/* Icon Container with Gradient Glow */}
           <div className="relative shrink-0">
@@ -48,7 +48,7 @@ export function PageHeader({
               "text-white shadow-lg shadow-blue-500/20",
               "rounded-2xl transform group-hover:scale-105 transition-transform duration-500"
             )}>
-              {React.isValidElement(icon) 
+              {React.isValidElement(icon)
                 ? React.cloneElement(icon as React.ReactElement, { size: 22, strokeWidth: 2.5 })
                 : icon
               }

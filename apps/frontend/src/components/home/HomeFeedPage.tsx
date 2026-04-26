@@ -10,7 +10,7 @@ export default function HomeFeedPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-5xl space-y-4 pt-4 pb-10">
+      <div className="mx-auto w-full max-w-5xl space-y-3 pb-10">
         <FeedComposer />
         <FeedList />
       </div>
