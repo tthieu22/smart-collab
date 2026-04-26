@@ -141,7 +141,7 @@ export default function Footer() {
 
           <div className="flex items-center gap-6">
             <span className="text-[10px] font-bold text-gray-400 dark:text-neutral-500 tracking-tight">
-              © {currentYear} SMART COLLAB. Built with <Heart size={10} className="inline text-red-500 mx-0.5 fill-red-500 animate-pulse" /> by <Link href="https://github.com/tthieu22" className="text-blue-500 hover:text-blue-600 transition-colors">tthieu22</Link>.
+              © {currentYear} SMART COLLAB. Built with <Heart size={10} className="inline text-red-500 mx-0.5 fill-red-500 animate-pulse" /> by <Link target="_blank" href="https://github.com/tthieu22" className="text-blue-500 hover:text-blue-600 transition-colors">tthieu22</Link>.
             </span>
           </div>
         </div>
