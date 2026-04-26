@@ -11,10 +11,14 @@ import CardDetailModal from '../cardDetailModal/CardDetailModalById';
 
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-
+import listPlugin from '@fullcalendar/list';
 import { useDroppable } from '@dnd-kit/core';
 import { Card as BoardCard } from '../board/Card';
+import { CalendarHeader } from './components/CalendarHeader';
+import { CalendarEvent } from './components/CalendarEvent';
+import { CSS } from '@dnd-kit/utilities';
 
 interface CardDroppedPayload {
   cardId: string;
@@ -57,14 +61,14 @@ export default function Calendar({
     overData,
     overId,
   } = useDragContext();
-  const theme = useBoardStore((s) => s.theme);
+  const theme = useBoardStore((s) => s.resolvedTheme);
   const calendarRef = useRef<FullCalendar | null>(null);
-  const [viewTitle, setViewTitle] = useState('Calendar');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState('timeGridDay');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const userId = useUserStore((s) => s.currentUser?.id);
   const socket = useMemo(() => getProjectSocketManager(), []);
 
-  /** 🔴 QUAN TRỌNG: ref này CHỈ trỏ vào phần scroll của lịch */
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const draggingCalendarEventRef = useRef<{
@@ -82,31 +86,15 @@ export default function Calendar({
   const calendarColumn: ColumnType | undefined =
     columnIds.length > 0 ? columns[columnIds[0]] : undefined;
 
-  if (!calendarColumn) {
-    return (
-      <div className="p-4 text-center text-red-600">
-        Không tìm thấy cột cho calendar
-      </div>
-    );
-  }
-
   const [dragPointer, setDragPointer] = useState<{
     clientX: number;
     clientY: number;
   } | null>(null);
 
-  /**
-   * =====================================================
-   * Đăng ký scroll container cho DragContext
-   * Calendar cần đăng ký cả column (vertical scroll) và board (horizontal scroll)
-   * =====================================================
-   */
   useEffect(() => {
-    // Đăng ký column container cho vertical scroll (ưu tiên)
     if (calendarColumn?.id) {
       registerScrollContainer?.(calendarColumn.id, scrollContainerRef.current);
     }
-    // Đăng ký board container cho horizontal scroll (fallback)
     registerBoardScrollContainer?.(board.id, scrollContainerRef.current);
 
     return () => {
@@ -115,32 +103,17 @@ export default function Calendar({
       }
       registerBoardScrollContainer?.(board.id, null);
     };
-  }, [
-    board.id,
-    calendarColumn?.id,
-    registerScrollContainer,
-    registerBoardScrollContainer,
-  ]);
+  }, [board.id, calendarColumn?.id, registerScrollContainer, registerBoardScrollContainer]);
 
-  /**
-   * =====================================================
-   * dnd-kit DROPPABLE – chỉ gắn vào phần scroll grid
-   * =====================================================
-   */
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: `calendar-${board.id}-${calendarColumn.id}`,
+    id: `calendar-${board.id}-${calendarColumn?.id || 'unknown'}`,
     data: {
       type: 'CALENDAR',
       boardId: board.id,
-      columnId: calendarColumn.id,
+      columnId: calendarColumn?.id,
     },
   });
 
-  /**
-   * =====================================================
-   * Theo dõi pointer toàn cục (phục vụ auto-scroll + drop)
-   * =====================================================
-   */
   useEffect(() => {
     if (!activeItem && !draggingCalendarCardId) {
       setDragPointer(null);
@@ -162,12 +135,6 @@ export default function Calendar({
     };
   }, [activeItem, draggingCalendarCardId]);
 
-  /**
-   * =====================================================
-   * TÍNH GIỜ DROP – SỬ DỤNG VỊ TRÍ CHÍNH XÁC TỪ POINTER
-   * Sử dụng FullCalendar's coordinate system để tính chính xác
-   * =====================================================
-   */
   const getDateFromPoint = useCallback((x: number, y: number): Date | null => {
     const container = scrollContainerRef.current;
     const api = calendarRef.current?.getApi();
@@ -210,48 +177,31 @@ export default function Calendar({
     }
   }, []);
 
-  /**
-   * =====================================================
-   * DRAG CARD → CALENDAR PREVIEW
-   * Cập nhật vị trí drop chính xác khi kéo card vào calendar
-   * =====================================================
-   */
   useEffect(() => {
     if (
       !activeItem ||
       activeItem.type !== 'CARD' ||
-      overId !== `calendar-${board.id}-${calendarColumn.id}` ||
+      overId !== `calendar-${board.id}-${calendarColumn?.id}` ||
       !dragPointer
     )
       return;
 
-    // Tính toán vị trí drop chính xác từ pointer
     const start = getDateFromPoint(dragPointer.clientX, dragPointer.clientY);
     if (!start) {
-      // Nếu pointer ngoài container, clear preview
       setOverData?.(null);
       return;
     }
 
-    // Tạo event 1 giờ (mặc định)
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
     setOverData?.({
       type: 'CALENDAR',
       boardId: board.id,
-      columnId: calendarColumn.id,
+      columnId: calendarColumn?.id,
       start: start.getTime(),
       end: end.getTime(),
     });
-  }, [
-    activeItem,
-    overId,
-    dragPointer,
-    getDateFromPoint,
-    setOverData,
-    board.id,
-    calendarColumn.id,
-  ]);
+  }, [activeItem, overId, dragPointer, getDateFromPoint, setOverData, board.id, calendarColumn?.id]);
 
   const cards = projectStore((s) => s.cards);
   const columnCards = projectStore((s) => s.columnCards);
@@ -266,13 +216,33 @@ export default function Calendar({
       .map((id) => cards[id])
       .filter(Boolean)
       .map((card) => {
-        const start = card.deadline ? new Date(card.deadline) : null;
+        const start = card.startDate ? new Date(card.startDate) : (card.deadline ? new Date(card.deadline) : null);
         if (!start || Number.isNaN(start.getTime())) return null;
-        const end = new Date(start.getTime() + 60 * 60 * 1000);
-        return { id: card.id, title: card.title, start, end };
+
+        let end = card.deadline ? new Date(card.deadline) : null;
+        if (!end || Number.isNaN(end.getTime()) || end <= start) {
+          end = new Date(start.getTime() + 60 * 60 * 1000); // Default 1 hour
+        }
+
+        return {
+          id: card.id,
+          title: card.title,
+          start,
+          end,
+          extendedProps: {
+            card,
+            priority: card.priority,
+            labels: card.labels,
+            members: card.members,
+            description: card.description,
+          },
+          backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
+          borderColor: card.priority === 3 ? '#ef4444' : (card.priority === 2 ? '#f59e0b' : '#3b82f6'),
+          textColor: theme === 'dark' ? '#f3f4f6' : '#111827',
+        };
       })
-      .filter(Boolean) as Array<{ id: string; title: string; start: Date; end: Date }>;
-  }, [cards, columnCards, columnIds]);
+      .filter(Boolean) as any[];
+  }, [cards, columnCards, columnIds, theme]);
 
   const handleNativeDrop = useCallback(
     (info: any) => {
@@ -288,20 +258,43 @@ export default function Calendar({
 
   const handleEventChange = useCallback((info: any) => {
     const { id, start, end } = info.event;
-    if (!id || !start || !end) return;
-    const iso = start.toISOString();
-    const mutationKey = `${id}:${iso}`;
+    if (!id || !start) return;
+
+    const startIso = start.toISOString();
+    const endIso = end ? end.toISOString() : null;
+
+    const mutationKey = `${id}:${startIso}:${endIso}`;
     if (lastCalendarMutationRef.current === mutationKey) return;
     lastCalendarMutationRef.current = mutationKey;
 
     // optimistic local update
-    const existing = projectStore.getState().cards[id];
+    const existing = cards[id];
     if (existing) {
-      projectStore.getState().updateCard({ ...existing, deadline: iso });
+      projectStore.getState().updateCard({
+        ...existing,
+        startDate: startIso,
+        deadline: endIso
+      });
     }
-    socket.updateCard(undefined, id, 'update-basic', { deadline: iso }, userId);
-    onCardDropped?.({ cardId: id, start, end });
-  }, [onCardDropped, socket, userId]);
+
+    // Call socket for realtime update - MUST pass projectId
+    socket.updateCard(
+      currentProjectId ?? undefined,
+      id,
+      'update-basic',
+      {
+        startDate: startIso,
+        deadline: endIso
+      },
+      userId
+    );
+
+    onCardDropped?.({
+      cardId: id,
+      start,
+      end: end || new Date(start.getTime() + 3600000)
+    });
+  }, [cards, currentProjectId, onCardDropped, socket, userId]);
 
   const handleEventClick = useCallback((info: any) => {
     const id = info?.event?.id;
@@ -331,10 +324,7 @@ export default function Calendar({
       setOverData?.(null);
 
       const nativePointer = info?.jsEvent
-        ? {
-            clientX: info.jsEvent.clientX,
-            clientY: info.jsEvent.clientY,
-          }
+        ? { clientX: info.jsEvent.clientX, clientY: info.jsEvent.clientY }
         : null;
       const pointer = nativePointer ?? (window as any).__dragPointerPosition;
       const rect = scrollContainerRef.current?.getBoundingClientRect();
@@ -346,92 +336,78 @@ export default function Calendar({
         pointer.clientY >= (rect?.top ?? 0) &&
         pointer.clientY <= (rect?.bottom ?? 0);
 
-      if (!inside && dragging) {
-        if (pointer) {
-          const sourceColumnId = cards[dragging.id]?.columnId;
-          const sourceBoardId = sourceColumnId ? columnsMap[sourceColumnId]?.boardId : undefined;
-          const sourceBoardType = sourceBoardId ? boards[sourceBoardId]?.type : undefined;
+      if (!inside && dragging && pointer) {
+        const sourceColumnId = cards[dragging.id]?.columnId;
+        const sourceBoardId = sourceColumnId ? columnsMap[sourceColumnId]?.boardId : undefined;
+        const sourceBoardType = sourceBoardId ? boards[sourceBoardId]?.type : undefined;
 
-          const allColumnIds = Object.keys(columnsMap).filter(
-            (cid) => cid !== sourceColumnId
-          );
-          const el = document.elementFromPoint(pointer.clientX, pointer.clientY) as HTMLElement | null;
+        const allColumnIds = Object.keys(columnsMap).filter(cid => cid !== sourceColumnId);
+        const el = document.elementFromPoint(pointer.clientX, pointer.clientY) as HTMLElement | null;
 
-          let destColumnId: string | undefined;
-          if (el) {
-            for (const cid of allColumnIds) {
-              const target = document.getElementById(cid);
-              if (target && (target === el || target.contains(el) || el.closest(`#${CSS.escape(cid)}`))) {
-                destColumnId = cid;
-                break;
-              }
+        let destColumnId: string | undefined;
+        if (el) {
+          for (const cid of allColumnIds) {
+            const target = document.getElementById(cid);
+            if (target && (target === el || target.contains(el) || el.closest(`#${CSS.escape(cid)}`))) {
+              destColumnId = cid;
+              break;
             }
           }
+        }
 
-          if (!destColumnId && allColumnIds.length) {
-            let best: { id: string; score: number } | null = null;
-            for (const cid of allColumnIds) {
-              const target = document.getElementById(cid);
-              if (!target) continue;
-              const r = target.getBoundingClientRect();
-              const dx = pointer.clientX - Math.max(r.left, Math.min(pointer.clientX, r.right));
-              const dy = pointer.clientY - Math.max(r.top, Math.min(pointer.clientY, r.bottom));
-              const score = dx * dx + dy * dy;
-              if (!best || score < best.score) best = { id: cid, score };
-            }
-            destColumnId = best?.id;
+        if (!destColumnId && allColumnIds.length) {
+          let best: { id: string; score: number } | null = null;
+          for (const cid of allColumnIds) {
+            const target = document.getElementById(cid);
+            if (!target) continue;
+            const r = target.getBoundingClientRect();
+            const dx = pointer.clientX - Math.max(r.left, Math.min(pointer.clientX, r.right));
+            const dy = pointer.clientY - Math.max(r.top, Math.min(pointer.clientY, r.bottom));
+            const score = dx * dx + dy * dy;
+            if (!best || score < best.score) best = { id: cid, score };
           }
+          destColumnId = best?.id;
+        }
 
-          if (sourceColumnId && destColumnId) {
-            const destBoardId = columnsMap[destColumnId]?.boardId ?? undefined;
-            const safeSourceBoardId = sourceBoardId ?? undefined;
-            const destBoardType = destBoardId ? boards[destBoardId]?.type : undefined;
-            const scopeProjectId =
-              sourceBoardType === 'board' && destBoardType === 'board'
-                ? currentProjectId
-                : undefined;
-            const targetColumnElement = document.getElementById(destColumnId);
-            const currentDestCardIds = (columnCards[destColumnId] || []).filter(
-              (id) => id !== dragging.id
-            );
-            let destIndex = currentDestCardIds.length;
+        if (sourceColumnId && destColumnId) {
+          const destBoardId = columnsMap[destColumnId]?.boardId ?? undefined;
+          const safeSourceBoardId = sourceBoardId ?? undefined;
+          const destBoardType = destBoardId ? boards[destBoardId]?.type : undefined;
+          const scopeProjectId = sourceBoardType === 'board' && destBoardType === 'board' ? currentProjectId : undefined;
+          const targetColumnElement = document.getElementById(destColumnId);
+          const currentDestCardIds = (columnCards[destColumnId] || []).filter(id => id !== dragging.id);
+          let destIndex = currentDestCardIds.length;
 
-            if (targetColumnElement) {
-              const cardElements = Array.from(
-                targetColumnElement.querySelectorAll<HTMLElement>('[data-card-id]')
-              ).filter((node) => {
-                const id = node.dataset.cardId;
-                return Boolean(id && id !== dragging.id);
-              });
+          if (targetColumnElement) {
+            const cardElements = Array.from(targetColumnElement.querySelectorAll<HTMLElement>('[data-card-id]'))
+              .filter(node => node.dataset.cardId && node.dataset.cardId !== dragging.id);
 
-              for (const node of cardElements) {
-                const cardId = node.dataset.cardId;
-                if (!cardId) continue;
-                const rect = node.getBoundingClientRect();
-                const insertBefore = pointer.clientY < rect.top + rect.height / 2;
-                if (insertBefore) {
-                  const idx = currentDestCardIds.indexOf(cardId);
-                  if (idx !== -1) {
-                    destIndex = idx;
-                    break;
-                  }
+            for (const node of cardElements) {
+              const cardId = node.dataset.cardId;
+              if (!cardId) continue;
+              const rect = node.getBoundingClientRect();
+              if (pointer.clientY < rect.top + rect.height / 2) {
+                const idx = currentDestCardIds.indexOf(cardId);
+                if (idx !== -1) {
+                  destIndex = idx;
+                  break;
                 }
               }
             }
-
-            socket.moveCard(
-              { projectId: scopeProjectId, userId },
-              {
-                cardId: dragging.id,
-                srcBoardId: safeSourceBoardId,
-                destBoardId,
-                srcColumnId: sourceColumnId,
-                destColumnId,
-                destIndex,
-                userId,
-              }
-            );
           }
+
+          socket.moveCard(
+            { projectId: scopeProjectId, userId },
+            {
+              cardId: dragging.id,
+              srcBoardId: safeSourceBoardId,
+              destBoardId,
+              srcColumnId: sourceColumnId,
+              destColumnId,
+              destIndex,
+              userId,
+            }
+          );
         }
 
         onEventDraggedOut?.({
@@ -442,17 +418,7 @@ export default function Calendar({
         });
       }
     },
-    [
-      boards,
-      cards,
-      columnCards,
-      columnsMap,
-      currentProjectId,
-      onEventDraggedOut,
-      setOverData,
-      socket,
-      userId,
-    ]
+    [boards, cards, columnCards, columnsMap, currentProjectId, onEventDraggedOut, setOverData, socket, userId]
   );
 
   const draggingEventPreview = React.useMemo(() => {
@@ -471,18 +437,23 @@ export default function Calendar({
     if (!draggingEventPreview) return calendarEvents;
     return [
       ...calendarEvents.filter((e) => e.id !== 'dragging-preview'),
-      draggingEventPreview,
+      {
+        ...draggingEventPreview,
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: '#3b82f6',
+        className: 'dragging-preview-event'
+      },
     ];
   }, [calendarEvents, draggingEventPreview]);
 
+  const renderEventContent = useCallback((eventInfo: any) => {
+    return <CalendarEvent eventInfo={eventInfo} draggingCalendarCardId={draggingCalendarCardId} />;
+  }, [draggingCalendarCardId]);
+
   const draggingCardOverlay = useMemo(() => {
     if (!draggingCalendarCardId || !dragPointer) return null;
-    
-    // Chỉ hiện overlay BoardCard khi kéo thả trỏ chuột ra NGOÀI khu vực lịch
-    // Bên trong lịch sẽ hiển thị component ghost mặc định của FullCalendar
     const rect = scrollContainerRef.current?.getBoundingClientRect();
-    const isInside =
-      Boolean(rect && dragPointer) &&
+    const isInside = Boolean(rect && dragPointer) &&
       dragPointer.clientX >= (rect?.left ?? 0) &&
       dragPointer.clientX <= (rect?.right ?? 0) &&
       dragPointer.clientY >= (rect?.top ?? 0) &&
@@ -500,11 +471,7 @@ export default function Calendar({
     return (
       <div
         className="pointer-events-none fixed z-[9999] -translate-x-1/2 -translate-y-1/2 origin-top-left"
-        style={{
-          left: dragPointer.clientX,
-          top: dragPointer.clientY,
-          width: 284, // Trùng với width của Column (max-w-[300px] - p-2*2)
-        }}
+        style={{ left: dragPointer.clientX, top: dragPointer.clientY, width: 284 }}
       >
         <BoardCard
           card={draggingCard}
@@ -518,11 +485,10 @@ export default function Calendar({
     );
   }, [boards, cards, columnsMap, dragPointer, draggingCalendarCardId]);
 
-  /**
-   * =====================================================
-   * RENDER
-   * =====================================================
-   */
+  if (!calendarColumn) {
+    return <div className="p-4 text-center text-red-600">Không tìm thấy cột cho calendar</div>;
+  }
+
   return (
     <>
       <CardDetailModal
@@ -531,75 +497,148 @@ export default function Calendar({
         onClose={() => setSelectedCardId(null)}
       />
       <div
-        className={`
-        relative flex-1 rounded-xl border shadow-lg
-        ${
-          theme === 'dark'
-            ? 'bg-gray-900 border-gray-700'
-            : 'bg-white border-gray-200'
-        }
-        ${isOver ? 'ring-4 ring-blue-400/30' : ''}
-        ${className ?? ''}
-      `}
-      style={{ minHeight: 750 }}
-    >
-      {/* ================= HEADER (FIXED – NO SCROLL) ================= */}
-      <div className="h-14 px-4 flex items-center justify-between border-b dark:border-gray-700">
-        <div className="font-semibold text-sm">{viewTitle}</div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => calendarRef.current?.getApi().prev()}
-            className="btn-cal"
-          >
-            Prev
-          </button>
-          <button
-            onClick={() => calendarRef.current?.getApi().today()}
-            className="btn-cal"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => calendarRef.current?.getApi().next()}
-            className="btn-cal"
-          >
-            Next
-          </button>
-        </div>
-      </div>
-
-      {/* ================= SCROLL BODY ================= */}
-      <div
-        ref={(node) => {
-          scrollContainerRef.current = node;
-          setDroppableRef(node);
-        }}
-        className="h-[calc(100%-3.5rem)] overflow-auto"
+        className={`relative flex-1 flex flex-col rounded-xl border shadow-2xl overflow-hidden max-w-full transition-colors duration-200 ${theme === 'dark' ? 'bg-[#141517] border-white/5' : 'bg-white border-gray-200'} ${isOver ? 'ring-4 ring-blue-500/20' : ''} ${className ?? ''}`}
+        style={{ minHeight: 750 }}
       >
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[timeGridPlugin, interactionPlugin]}
-          initialView="timeGridDay"
-          headerToolbar={false}
-          height="100%"
-          expandRows
-          editable
-          droppable
-          events={displayedEvents}
-          drop={handleNativeDrop}
-          eventDrop={handleEventChange}
-          eventChange={handleEventChange}
-          eventDragStart={handleEventDragStart}
-          eventDragStop={handleEventDragStop}
-          eventClick={handleEventClick}
-          datesSet={(arg) => setViewTitle(arg.view.title)}
-          allDaySlot={false}
-          nowIndicator
-          slotMinTime="05:00:00"
-          slotMaxTime="23:00:00"
-          slotDuration="00:30:00"
+        <CalendarHeader
+          currentDate={currentDate}
+          viewMode={viewMode}
+          onPrev={() => {
+            calendarRef.current?.getApi().prev();
+            setCurrentDate(calendarRef.current?.getApi().getDate() || new Date());
+          }}
+          onNext={() => {
+            calendarRef.current?.getApi().next();
+            setCurrentDate(calendarRef.current?.getApi().getDate() || new Date());
+          }}
+          onToday={() => {
+            calendarRef.current?.getApi().today();
+            setCurrentDate(new Date());
+          }}
+          onDateChange={(date) => {
+            setCurrentDate(date);
+            calendarRef.current?.getApi().gotoDate(date);
+          }}
+          onViewModeChange={(mode) => {
+            setViewMode(mode);
+            calendarRef.current?.getApi().changeView(mode);
+          }}
+          theme={theme}
         />
-      </div>
+
+        <div
+          ref={(node) => {
+            scrollContainerRef.current = node;
+            setDroppableRef(node);
+          }}
+          className="flex-1 overflow-auto bg-gray-50/30 dark:bg-black/10"
+        >
+          <style jsx global>{`
+            .fc {
+              --fc-border-color: ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};
+              --fc-page-bg-color: transparent;
+              --fc-today-bg-color: ${theme === 'dark' ? 'rgba(59, 130, 246, 0.05)' : 'rgba(59, 130, 246, 0.03)'};
+              --fc-now-indicator-color: #ef4444;
+              font-family: inherit;
+              max-width: 100%;
+            }
+            .fc .fc-timegrid-slot {
+              height: 4em !important;
+              border-bottom: 1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'} !important;
+            }
+            .fc .fc-timegrid-slot-label {
+              font-size: 0.65rem;
+              font-weight: 500;
+              color: ${theme === 'dark' ? '#9aa0a6' : '#5f6368'};
+              text-transform: lowercase;
+              padding: 0 12px;
+              vertical-align: top !important;
+            }
+            .fc .fc-col-header-cell {
+              padding: 16px 0;
+              background: ${theme === 'dark' ? '#141517' : '#ffffff'};
+              border: none !important;
+              border-bottom: 1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} !important;
+            }
+            .fc .fc-col-header-cell-cushion {
+              font-size: 0.9rem;
+              font-weight: 700;
+              color: ${theme === 'dark' ? '#e8eaed' : '#202124'};
+              text-decoration: none !important;
+              text-transform: capitalize;
+            }
+            .fc .fc-timegrid-axis-cushion {
+               font-size: 0.65rem;
+               color: ${theme === 'dark' ? '#9aa0a0' : '#5f6368'};
+            }
+            .fc .fc-scrollgrid {
+              border: none !important;
+            }
+            .fc-theme-standard td, .fc-theme-standard th {
+                border-color: ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
+            }
+            .fc .fc-event {
+              border-radius: 8px;
+              border: 1px solid rgba(59, 130, 246, 0.2);
+              overflow: hidden;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+              transition: transform 0.2s, box-shadow 0.2s;
+              cursor: pointer;
+            }
+            .fc .fc-timegrid-event-harness:hover {
+              z-index: 100 !important;
+            }
+            .fc .fc-event:hover {
+              transform: translateY(-2px) scale(1.01);
+              box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+              transition: all 0.2s ease;
+            }
+            .fc-v-event .fc-event-main { color: inherit; }
+            .fc-timegrid-now-indicator-arrow { border-width: 5px 0 5px 6px; border-top-color: transparent; border-bottom-color: transparent; }
+            .fc .fc-list-event:hover td { background-color: ${theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'}; }
+          `}</style>
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, listPlugin]}
+            initialView="timeGridDay"
+            views={{
+              timeGridThreeDay: { type: 'timeGrid', duration: { days: 3 }, buttonText: '3 ngày' },
+              timeGridFiveDay: { type: 'timeGrid', duration: { days: 5 }, buttonText: '5 ngày' }
+            }}
+            headerToolbar={false}
+            height="100%"
+            expandRows
+            editable
+            droppable
+            events={displayedEvents}
+            eventContent={renderEventContent}
+            drop={handleNativeDrop}
+            eventDrop={handleEventChange}
+            eventResize={handleEventChange}
+            eventChange={handleEventChange}
+            eventDragStart={handleEventDragStart}
+            eventDragStop={handleEventDragStop}
+            eventClick={handleEventClick}
+            datesSet={(arg) => setCurrentDate(arg.view.currentStart)}
+            allDaySlot={true}
+            nowIndicator
+            slotMinTime="00:00:00"
+            slotMaxTime="24:00:00"
+            slotDuration="00:30:00"
+            dayMaxEvents={true}
+            stickyHeaderDates={true}
+            slotLabelFormat={{
+              hour: 'numeric',
+              minute: '2-digit',
+              omitZeroMinute: true,
+              meridiem: 'short'
+            }}
+            dayHeaderFormat={{
+              weekday: 'long',
+              day: 'numeric'
+            }}
+          />
+        </div>
       </div>
       {draggingCardOverlay}
     </>

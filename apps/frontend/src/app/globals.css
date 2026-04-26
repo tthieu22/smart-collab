@@ -354,18 +354,7 @@ svg {
 
 /* Calendar */
 
-.btn-cal {
-  padding: 4px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: white;
-}
-.dark .btn-cal {
-  background: #1f2937;
-  border-color: #374151;
-  color: #d1d5db;
-}
+/* Calendar Modern Overrides */
 .fc .fc-timegrid-slot-label {
   font-size: 11px;
   color: #6b7280;
@@ -374,9 +363,14 @@ svg {
 .fc .fc-event {
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.fc .fc-event.dragging-preview {
-  border: 2px dashed #3b82f6;
-  opacity: 0.6;
-  font-style: italic;
+.fc .fc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px -5px rgba(0,0,0,0.15);
+}
+.fc .fc-event.dragging-preview-event {
+  border: 2px dashed #3b82f6 !important;
+  background-color: rgba(59, 130, 246, 0.05) !important;
+  opacity: 0.8;
 }

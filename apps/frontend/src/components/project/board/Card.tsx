@@ -27,7 +27,7 @@ export const Card = React.memo(function Card({
   index,
   isOverlay,
 }: Props) {
-  const { activeId } = useDragContext();
+  const { activeId, activeItem } = useDragContext();
 
   const {
     attributes,
@@ -153,9 +153,9 @@ export const Card = React.memo(function Card({
         {/* Nội dung card - giữ nguyên để lấy chiều cao tự nhiên nhưng ẩn đi khi đang kéo */}
         <div className={`relative transition-opacity duration-200 ${isBeingDragged ? 'opacity-0 invisible' : 'opacity-100'}`}>
           {!isBeingDragged && (
-            <>
+            <div className="relative opacity-100">
               {/* Radio-style Complete Button (Left) - Slide in animation */}
-              {!isOverlay && (
+              {!isOverlay && !activeItem && (
                 <div
                   onClick={handleArchive}
                   className="absolute -left-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-gray-300 dark:border-neutral-600 opacity-0 translate-x-4 group-hover/card:translate-x-8 group-hover/card:opacity-100 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-500/20 transition-all duration-300 flex items-center justify-center cursor-pointer z-20 bg-white dark:bg-neutral-800 shadow-sm"
@@ -165,7 +165,7 @@ export const Card = React.memo(function Card({
               )}
 
               {/* More Actions Menu (Right) - Fade and slide in animation */}
-              {!isOverlay && (
+              {!isOverlay && !activeItem && (
                 <div className="absolute -right-2 -top-1 opacity-0 translate-x-2 group-hover/card:translate-x-0 group-hover/card:opacity-100 z-20 transition-all duration-300">
                   <Dropdown
                     trigger={['click']}
@@ -209,7 +209,7 @@ export const Card = React.memo(function Card({
               )}
 
               {/* Content Wrapper with padding transition */}
-              <div className="transition-all duration-300 group-hover/card:pl-8 pl-0 pr-4">
+              <div className={`transition-all duration-300 ${!activeItem ? 'group-hover/card:pl-8' : ''} pl-0 pr-4`}>
                 {priorityInfo && (
                   <div className="flex items-center gap-1.5 mb-2">
                     <div
@@ -266,7 +266,7 @@ export const Card = React.memo(function Card({
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
 
