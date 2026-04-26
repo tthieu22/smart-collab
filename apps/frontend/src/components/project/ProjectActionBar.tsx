@@ -44,8 +44,8 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
             }}
             className={`
               flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-150
-              ${isActive 
-                ? "bg-white/60 dark:bg-black/60 text-blue-600 dark:text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.3)]" 
+              ${isActive
+                ? "bg-white/60 dark:bg-black/60 text-blue-600 dark:text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
                 : "text-black/90 dark:text-white/80 hover:bg-white/40 dark:hover:bg-black/20"
               }
             `}
@@ -56,9 +56,9 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
         );
       })}
 
-      <ProjectSwitchModal 
-        isOpen={isSwitchModalOpen} 
-        onClose={() => setIsSwitchModalOpen(false)} 
+      <ProjectSwitchModal
+        isOpen={isSwitchModalOpen}
+        onClose={() => setIsSwitchModalOpen(false)}
       />
     </div>
   );

@@ -111,62 +111,63 @@ const DescriptionSection: React.FC<Props> = ({
   };
 
   return (
-    <AIBorderWrapper active={isGenerating}>
-      <Card
-        title={
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Text strong>Description</Text>
-            <Dropdown menu={aiMenu}>
-              <Button
-                icon={<AIIcon />}
-                loading={isGenerating}
-                style={{
-                  background: 'linear-gradient(135deg,#ea4335,#fbbc05)',
-                  color: '#fff',
-                  border: 'none',
-                }}
-              >
-                AI Magic <Sparkles className="w-4 h-4 ml-1" />
-              </Button>
-            </Dropdown>
-          </div>
-        }
-        variant="borderless"
-        styles={{ body: { padding: 16 }, header: { padding: '12px 16px' } }}
-      >
-        {isGenerating ? (
-          <>
-            <Skeleton active paragraph={{ rows: 10 }} />
-            <Progress percent={aiProgress} style={{ marginTop: 16 }} />
-          </>
-        ) : (
-          <MDXEditor
-            markdown={localDescription || ''}
-            onChange={handleChange}
-            placeholder="Viết nội dung kiểu Zalo, hỗ trợ markdown, paste list, emoji..."
-            className={isDark ? 'dark-theme' : ''}
-            plugins={[
-              headingsPlugin(),
-              listsPlugin(),
-              quotePlugin(),
-              thematicBreakPlugin(),
-              markdownShortcutPlugin(),
-              linkPlugin(),
-              linkDialogPlugin(),
-              tablePlugin(),
-              codeBlockPlugin(),
-              codeMirrorPlugin(),
-            ]}
-            contentEditableClassName="prose prose-sm max-w-none focus:outline-none min-h-96 pt-2 dark:prose-invert"
-          />
-        )}
-      </Card>
+    <AIBorderWrapper active={isGenerating} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 16,
+          }}
+        >
+          <Text strong>Description</Text>
+          <Dropdown menu={aiMenu}>
+            <Button
+              icon={<AIIcon />}
+              loading={isGenerating}
+              style={{
+                background: 'linear-gradient(135deg,#ea4335,#fbbc05)',
+                color: '#fff',
+                border: 'none',
+              }}
+            >
+              AI Magic <Sparkles className="w-4 h-4 ml-1" />
+            </Button>
+          </Dropdown>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          {isGenerating ? (
+            <>
+              <Skeleton active paragraph={{ rows: 10 }} />
+              <Progress percent={aiProgress} style={{ marginTop: 16 }} />
+            </>
+          ) : (
+            <div onKeyDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
+              <MDXEditor
+                markdown={localDescription || ''}
+                onChange={handleChange}
+                placeholder="Viết nội dung kiểu Zalo, hỗ trợ markdown, paste list, emoji..."
+                className={isDark ? 'dark-theme' : ''}
+                plugins={[
+                  headingsPlugin(),
+                  listsPlugin(),
+                  quotePlugin(),
+                  thematicBreakPlugin(),
+                  markdownShortcutPlugin(),
+                  linkPlugin(),
+                  linkDialogPlugin(),
+                  tablePlugin(),
+                  codeBlockPlugin(),
+                  codeMirrorPlugin(),
+                ]}
+                contentEditableClassName="prose prose-sm max-w-none focus:outline-none min-h-[300px] pt-2 dark:prose-invert"
+              />
+            </div>
+          )}
+        </div>
+      </div>
     </AIBorderWrapper>
   );
 };

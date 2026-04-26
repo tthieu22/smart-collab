@@ -22,7 +22,7 @@ const PrioritySection: React.FC<Props> = ({ priority, onChange }) => {
   const { token } = theme.useToken();
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div>
       <Space align="center" style={{ marginBottom: 8 }}>
         <FlagOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
         <Text strong style={{ color: token.colorText }}>Mức độ ưu tiên</Text>

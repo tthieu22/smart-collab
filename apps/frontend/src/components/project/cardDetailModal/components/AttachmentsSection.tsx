@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Space, Button, Upload, Typography, theme, message } from 'antd';
-import { PaperClipOutlined, PlusOutlined } from '@ant-design/icons';
+import { Space, Button, Upload, Typography, theme, message, Tooltip } from 'antd';
+import { PaperClipOutlined, PlusOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { Attachment } from '@smart/types/project';
 
 const { Text } = Typography;
@@ -66,26 +66,35 @@ const AttachmentsSection: React.FC<Props> = ({
                 </Text>
               </div>
             </div>
-            <Space>
-              <Button type="link" size="small" href={file.url} target="_blank">
-                Download
-              </Button>
-              <Button
-                danger
-                type="link"
-                size="small"
-                onClick={async () => {
-                  try {
-                    await onRemoveAttachment(file.id);
-                    message.success('Đã xóa file');
-                  } catch (e: any) {
-                    message.error(e?.message || 'Xóa file thất bại');
-                  }
-                }}
-              >
-                Delete
-              </Button>
-            </Space>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <Tooltip title="Tải xuống">
+                <Button
+                  type="text"
+                  size="small"
+                  href={file.url}
+                  target="_blank"
+                  icon={<DownloadOutlined style={{ fontSize: 16 }} />}
+                  className="flex items-center justify-center hover:bg-blue-50 text-blue-500"
+                />
+              </Tooltip>
+              <Tooltip title="Xóa">
+                <Button
+                  danger
+                  type="text"
+                  size="small"
+                  icon={<DeleteOutlined style={{ fontSize: 16 }} />}
+                  className="flex items-center justify-center hover:bg-red-50"
+                  onClick={async () => {
+                    try {
+                      await onRemoveAttachment(file.id);
+                      message.success('Đã xóa file');
+                    } catch (e: any) {
+                      message.error(e?.message || 'Xóa file thất bại');
+                    }
+                  }}
+                />
+              </Tooltip>
+            </div>
           </div>
         ))}
 

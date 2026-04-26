@@ -36,6 +36,8 @@ const CommentInput: React.FC<Props> = ({ newComment, setNewComment, addComment }
         placeholder="Viết bình luận..."
         value={localComment}
         onChange={handleChange}
+        onKeyDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         rows={3}
         style={{ marginBottom: 8 }}
       />

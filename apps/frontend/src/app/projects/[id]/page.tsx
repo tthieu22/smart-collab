@@ -229,14 +229,14 @@ export default function ProjectDetailPage({ params }: Props) {
     : `${basePanel} min-w-[700px]`;
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter noScroll>
-      <div className="bg-gray-50 dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
+      <div className="bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
         <ProjectActionBar
           activeComponents={activeComponents}
           onToggle={toggleComponent}
         />
 
         {/* ===== MAIN CONTENT ===== */}
-        <div className="fixed inset-x-0 bottom-0 top-[104px]">
+        <div className="fixed inset-x-0 bottom-14 top-[74px]">
           <DragDropContextProvider
             boardTypes={{
               ...(mainBoard ? { [mainBoard.id]: 'board' } : {}),

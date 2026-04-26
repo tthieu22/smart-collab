@@ -122,10 +122,10 @@ const CoverSection: React.FC<Props> = ({ coverUrl, onUpdate }) => {
       </div>
 
       {coverUrl && (
-        <Button 
-          danger 
-          icon={<DeleteOutlined />} 
-          block 
+        <Button
+          danger
+          icon={<DeleteOutlined />}
+          block
           className="mt-4"
           onClick={handleRemove}
         >
@@ -140,9 +140,9 @@ const CoverSection: React.FC<Props> = ({ coverUrl, onUpdate }) => {
   return (
     <div className="relative w-full group">
       {coverUrl ? (
-        <div 
+        <div
           className="w-full h-[160px] relative transition-all duration-300 overflow-hidden"
-          style={{ 
+          style={{
             backgroundColor: isColor ? coverUrl : 'transparent',
             backgroundImage: !isColor ? `url(${coverUrl})` : 'none',
             backgroundSize: 'cover',
@@ -151,9 +151,9 @@ const CoverSection: React.FC<Props> = ({ coverUrl, onUpdate }) => {
         >
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
             <Popover content={content} title="Ảnh bìa" trigger="click" placement="bottom">
-              <Button 
-                ghost 
-                icon={<PictureOutlined />} 
+              <Button
+                ghost
+                icon={<PictureOutlined />}
                 className="opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 Thay đổi ảnh bìa
@@ -163,9 +163,9 @@ const CoverSection: React.FC<Props> = ({ coverUrl, onUpdate }) => {
         </div>
       ) : (
         <Popover content={content} title="Ảnh bìa" trigger="click" placement="bottom">
-          <Button 
-            type="text" 
-            icon={<PictureOutlined />} 
+          <Button
+            type="text"
+            icon={<PictureOutlined />}
             className="mt-2 text-gray-500 hover:text-blue-500"
           >
             Thêm ảnh bìa

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { DatePicker, Space, Typography, theme } from 'antd';
+import { DatePicker, Space, Typography, theme, Button } from 'antd';
 import dayjs from 'dayjs';
-import { CalendarOutlined } from '@ant-design/icons';
+import { CalendarOutlined, ClockCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -16,6 +16,7 @@ interface Props {
 
 const DatesSection: React.FC<Props> = ({ startDate, deadline, onChange }) => {
   const { token } = theme.useToken();
+  const [useTime, setUseTime] = React.useState(!!(startDate?.includes('T') || deadline?.includes('T')));
 
   const handleRangeChange = (dates: any) => {
     if (!dates) {
@@ -33,24 +34,47 @@ const DatesSection: React.FC<Props> = ({ startDate, deadline, onChange }) => {
     deadline ? dayjs(deadline) : null,
   ];
 
+  const presets = [
+    { label: 'Hôm nay', value: [dayjs().startOf('day'), dayjs().endOf('day')] },
+    { label: 'Tuần này', value: [dayjs().startOf('week'), dayjs().endOf('week')] },
+    { label: 'Tháng này', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
+  ];
+
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Space align="center" style={{ marginBottom: 8 }}>
-        <CalendarOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-        <Text strong style={{ color: token.colorText }}>Thời gian thực hiện</Text>
-      </Space>
-      
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <Space align="center">
+          <CalendarOutlined style={{ fontSize: 16, color: token.colorPrimary }} />
+          <Text strong style={{ color: token.colorText }}>Thời gian</Text>
+        </Space>
+
+        {startDate && (
+          <Button
+            type="text"
+            size="small"
+            icon={<ClockCircleOutlined style={{ fontSize: 12, color: useTime ? token.colorPrimary : token.colorTextDisabled }} />}
+            onClick={() => setUseTime(!useTime)}
+            style={{ fontSize: 11, padding: '0 4px', height: 22, background: useTime ? `${token.colorPrimary}10` : 'transparent' }}
+          >
+            {useTime ? 'Đang bật giờ' : 'Thêm giờ'}
+          </Button>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-4">
         <RangePicker
-          showTime
+          showTime={useTime}
+          presets={presets as any}
           value={initialValues}
           onChange={handleRangeChange}
-          placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
-          className="w-full md:w-auto"
+          placeholder={useTime ? ['Chọn ngày & giờ...', 'Chọn ngày & giờ...'] : ['Từ ngày...', 'Đến ngày...']}
+          format={useTime ? 'HH:mm DD/MM/YYYY' : 'DD/MM/YYYY'}
+          className="w-full"
           style={{
-            borderRadius: 8,
-            backgroundColor: 'transparent',
-            borderColor: token.colorBorder,
+            borderRadius: 12,
+            backgroundColor: (token as any).mode === 'dark' ? 'rgba(255,255,255,0.03)' : token.colorFillAlter,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            padding: '8px 12px',
           }}
         />
       </div>

@@ -79,7 +79,7 @@ export default function Board({ board }: Props) {
         backgroundColor:
           (board as any).color ||
           currentProject?.color ||
-          (theme === 'dark' ? '#1e1f22' : '#f4f5f7'),
+          (theme === 'dark' ? '#141517' : '#ffffff'),
         backgroundImage:
           (board as any).fileUrl || (board as any).background || currentProject?.fileUrl || currentProject?.background
             ? `url(${(board as any).fileUrl || (board as any).background || currentProject?.fileUrl || currentProject?.background})`
@@ -93,7 +93,10 @@ export default function Board({ board }: Props) {
       }}
     >
       {/* ===== TRELLO STYLE PROJECT HEADER (Inside Board) ===== */}
-      <div className="flex-none px-4 py-3 flex items-center justify-between z-10 relative">
+      <div className={`
+        flex-none px-4 h-12 flex items-center justify-between z-10 relative border-b
+        ${theme === 'dark' ? 'bg-[#1e1f22] border-white/5' : 'bg-white border-gray-100'}
+      `}>
         <div className="flex items-center gap-4">
           <h1 className={`text-lg font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             {currentProject?.name}
@@ -178,7 +181,7 @@ export default function Board({ board }: Props) {
           ref={setBoardRef}
           id="board"
           className="
-            flex flex-1 gap-4 p-4 pt-0
+            flex flex-1 gap-4 p-4 pt-4
             overflow-x-auto overflow-y-hidden
           "
         >

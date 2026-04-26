@@ -1,26 +1,28 @@
 import React from 'react';
 import { theme } from 'antd';
 
-const AIBorderWrapper: React.FC<{ children: React.ReactNode; active?: boolean }> = ({
+const AIBorderWrapper: React.FC<{ children: React.ReactNode; active?: boolean; style?: React.CSSProperties }> = ({
   children,
   active,
+  style,
 }) => {
   const { token } = theme.useToken();
 
   return (
     <>
-      <div className={active ? 'active' : 'inactive'}>
+      <div className={active ? 'active' : 'inactive'} style={style}>
         <div className="content">{children}</div>
       </div>
       <style jsx>{`
         div {
           position: relative;
-          border-radius: 12px;
-          padding: 2px;
-          transition: all 0.3s ease;
+          border-radius: 24px;
+          padding: 1px;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          height: 100%;
         }
         .active {
-          padding: 3px;
+          padding: 2px;
           background-image: linear-gradient(
             90deg,
             ${token.colorPrimary},
@@ -33,25 +35,19 @@ const AIBorderWrapper: React.FC<{ children: React.ReactNode; active?: boolean }>
           background-position: 0% 50%;
           background-size: 200% 200%;
           animation: gradient 2.5s ease infinite;
-          box-shadow: 0 0 20px ${token.colorPrimary}66;
+          box-shadow: 0 0 30px ${token.colorPrimary}44;
         }
         .inactive {
-          background-image: linear-gradient(
-            90deg,
-            ${token.colorBorderSecondary},
-            ${token.colorBorder},
-            ${token.colorBorderSecondary}
-          );
-          background-repeat: no-repeat;
-          background-position: 0% 50%;
-          background-size: 200% 200%;
-          animation: none;
-          box-shadow: none;
+          background-color: ${(token as any).mode === 'dark' ? '#222' : token.colorBorderSecondary};
+        }
+        div.inactive:hover {
+          background-color: ${token.colorPrimary}66;
+          box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
         }
         .content {
-          background: ${token.colorBgContainer};
-          border-radius: 10px;
-          padding: 16px;
+          background: ${(token as any).mode === 'dark' ? '#0a0a0a' : token.colorBgElevated};
+          border-radius: 23px;
+          padding: 24px;
           height: 100%;
         }
         @keyframes gradient {

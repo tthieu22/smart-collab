@@ -83,12 +83,13 @@ const CalendarView: React.FC<Props> = ({ board }) => {
     >
       <div className={`flex-1 overflow-hidden flex flex-col h-full`}>
         <div className={`
-          rounded-xl overflow-hidden border shadow-sm flex-1 flex flex-col
-          ${theme === 'dark' ? 'bg-[#1e1f22]/80 backdrop-blur-xl border-white/10' : 'bg-white border-gray-200'}
+          overflow-hidden flex-1 flex flex-col
+          ${theme === 'dark' ? 'bg-[#1e1f22]/80 backdrop-blur-xl' : 'bg-white'}
         `}>
           <Calendar
             fullscreen={true}
             cellRender={dateCellRender}
+            style={{ border: 'none' }}
             className="h-full overflow-auto"
             headerRender={({ value, onChange }) => {
               return (

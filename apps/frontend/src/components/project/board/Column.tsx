@@ -116,7 +116,7 @@ export default function Column({
   const ColumnPlaceholder = useMemo(
     () => (
       <div
-        className="w-[280px] h-full rounded-2xl border-2 border-dashed border-blue-400/50 bg-blue-500/5 dark:bg-blue-400/5 animate-pulse flex flex-col p-4 shadow-inner"
+        className="w-[320px] h-full rounded-2xl border-2 border-dashed border-blue-400/50 bg-blue-500/5 dark:bg-blue-400/5 animate-pulse flex flex-col p-4 shadow-inner"
       >
         <div className="h-6 bg-blue-300/30 dark:bg-blue-300/20 rounded w-1/2 mb-6" />
         <div className="space-y-3">
@@ -236,7 +236,7 @@ export default function Column({
       {...(!isEditingTitle ? listeners : {})}
       className={`
         flex flex-col min-h-0 flex-shrink-0 transition-all duration-300 ease-in-out
-        ${collapsed ? 'w-10 overflow-hidden' : 'w-[280px]'}
+        ${collapsed ? 'w-10 overflow-hidden' : 'w-[320px]'}
         ${isOverlay ? 'h-auto max-h-[80vh] shadow-2xl ring-4 ring-blue-500/30 rotate-[2deg] scale-[1.02] z-[9999]' : 'h-full'}
         will-change-transform column-glass-neon p-2 font-sans
         ${!isEditingTitle ? 'cursor-grab active:cursor-grabbing' : ''}

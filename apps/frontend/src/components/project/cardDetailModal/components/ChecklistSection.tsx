@@ -95,6 +95,8 @@ const ChecklistSection: React.FC<Props> = ({
           value={localNewItem}
           onChange={handleChange}
           onPressEnter={handleAdd}
+          onKeyDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
           suffix={<PlusOutlined style={{ color: token.colorTextDisabled }} />}
           style={{
             borderRadius: token.borderRadiusLG,

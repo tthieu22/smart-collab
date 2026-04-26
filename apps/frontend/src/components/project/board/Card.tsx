@@ -154,117 +154,124 @@ export const Card = React.memo(function Card({
         <div className={`relative transition-opacity duration-200 ${isBeingDragged ? 'opacity-0 invisible' : 'opacity-100'}`}>
           {!isBeingDragged && (
             <div className="relative opacity-100">
-              {/* Radio-style Complete Button (Left) - Slide in animation */}
-              {!isOverlay && !activeItem && (
-                <div
-                  onClick={handleArchive}
-                  className="absolute -left-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-gray-300 dark:border-neutral-600 opacity-0 translate-x-4 group-hover/card:translate-x-8 group-hover/card:opacity-100 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-500/20 transition-all duration-300 flex items-center justify-center cursor-pointer z-20 bg-white dark:bg-neutral-800 shadow-sm"
-                >
-                  <CheckOutlined className="text-[10px] text-green-500 dark:text-green-400" />
-                </div>
-              )}
-
-              {/* More Actions Menu (Right) - Fade and slide in animation */}
-              {!isOverlay && !activeItem && (
-                <div className="absolute -right-2 -top-1 opacity-0 translate-x-2 group-hover/card:translate-x-0 group-hover/card:opacity-100 z-20 transition-all duration-300">
-                  <Dropdown
-                    trigger={['click']}
-                    placement="bottomRight"
-                    popupRender={() => (
-                      <div className="bg-white dark:bg-neutral-800 shadow-2xl border border-gray-100 dark:border-neutral-700 rounded-lg overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
-                        <div
-                          className="px-3 py-2.5 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer text-sm dark:text-neutral-200 transition-colors"
-                          onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); }}
-                        >
-                          <EditOutlined className="text-xs text-blue-500" />
-                          <span>Chỉnh sửa</span>
-                        </div>
-                        <Popconfirm
-                          title="Xóa thẻ"
-                          description="Bạn có chắc chắn muốn xóa?"
-                          onConfirm={handleDelete}
-                          okText="Xóa"
-                          cancelText="Hủy"
-                          okButtonProps={{ danger: true }}
-                        >
-                          <div
-                            className="px-3 py-2.5 flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer text-sm text-red-500 dark:text-red-400 transition-colors border-t border-gray-50 dark:border-neutral-700"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <DeleteOutlined className="text-xs" />
-                            <span>Xóa thẻ</span>
-                          </div>
-                        </Popconfirm>
-                      </div>
-                    )}
-                  >
+              {/* Content Wrapper */}
+              <div className="pl-0 pr-4">
+                {/* Top Section: Checkbox, Priority, Title - Only this part shifts on hover */}
+                <div className={`relative transition-all duration-300 ${!activeItem ? 'group-hover/card:pl-7' : 'pl-0'}`}>
+                  {/* Radio-style Complete Button (Left) - Aligned with text */}
+                  {!isOverlay && !activeItem && (
                     <div
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-md transition-colors"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={handleArchive}
+                      className="absolute -left-7 top-0 w-5 h-5 rounded-full border-2 border-gray-300 dark:border-neutral-600 opacity-0 translate-x-2 group-hover/card:translate-x-7 group-hover/card:opacity-100 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-500/20 transition-all duration-300 flex items-center justify-center cursor-pointer z-20 bg-white dark:bg-neutral-800 shadow-sm"
                     >
-                      <MoreOutlined className="text-gray-400 dark:text-neutral-500" />
+                      <CheckOutlined className="text-[10px] text-green-500 dark:text-green-400" />
                     </div>
-                  </Dropdown>
-                </div>
-              )}
+                  )}
 
-              {/* Content Wrapper with padding transition */}
-              <div className={`transition-all duration-300 ${!activeItem ? 'group-hover/card:pl-8' : ''} pl-0 pr-4`}>
-                {priorityInfo && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <div
-                      className="w-2 h-2 rounded-full shadow-sm"
-                      style={{ backgroundColor: priorityInfo.color }}
-                    />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                      {priorityInfo.label}
-                    </span>
-                  </div>
-                )}
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 leading-snug mb-2">
-                  {card.title}
-                </h4>
+                  {priorityInfo && (
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div
+                        className="w-2 h-2 rounded-full shadow-sm"
+                        style={{ backgroundColor: priorityInfo.color }}
+                      />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                        {priorityInfo.label}
+                      </span>
+                    </div>
+                  )}
 
-                {/* Labels display */}
-                {card.labels && card.labels.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {card.labels.map((l) => (
-                      <Tooltip key={l.id} title={l.label}>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 leading-snug mb-2">
+                    {card.title}
+                  </h4>
+
+                  {/* More Actions Menu (Right) - Restored */}
+                  {!isOverlay && !activeItem && (
+                    <div className="absolute -right-2 -top-1 opacity-0 translate-x-2 group-hover/card:translate-x-0 group-hover/card:opacity-100 z-20 transition-all duration-300">
+                      <Dropdown
+                        trigger={['click']}
+                        placement="bottomRight"
+                        popupRender={() => (
+                          <div className="bg-white dark:bg-neutral-800 shadow-2xl border border-gray-100 dark:border-neutral-700 rounded-lg overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
+                            <div
+                              className="px-3 py-2.5 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer text-sm dark:text-neutral-200 transition-colors"
+                              onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); }}
+                            >
+                              <EditOutlined className="text-xs text-blue-500" />
+                              <span>Chỉnh sửa</span>
+                            </div>
+                            <Popconfirm
+                              title="Xóa thẻ"
+                              description="Bạn có chắc chắn muốn xóa?"
+                              onConfirm={handleDelete}
+                              okText="Xóa"
+                              cancelText="Hủy"
+                              okButtonProps={{ danger: true }}
+                            >
+                              <div
+                                className="px-3 py-2.5 flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer text-sm text-red-500 dark:text-red-400 transition-colors border-t border-gray-50 dark:border-neutral-700"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <DeleteOutlined className="text-xs" />
+                                <span>Xóa thẻ</span>
+                              </div>
+                            </Popconfirm>
+                          </div>
+                        )}
+                      >
                         <div
-                          className="h-1.5 min-w-[32px] rounded-full shadow-sm"
-                          style={{ backgroundColor: l.color || '#94A3B8' }}
-                        />
-                      </Tooltip>
-                    ))}
-                  </div>
-                )}
+                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-md transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreOutlined className="text-gray-400 dark:text-neutral-500" />
+                        </div>
+                      </Dropdown>
+                    </div>
+                  )}
+                </div>
 
-                {card.description && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
-                    {card.description}
-                  </p>
-                )}
-
-                {/* Members display */}
-                {card.members && card.members.length > 0 && (
-                  <div className="flex justify-end mt-3">
-                    <Avatar.Group
-                      maxCount={3}
-                      size="small"
-                      maxStyle={{ color: '#f56a00', backgroundColor: '#fde3cf', fontSize: '10px' }}
-                    >
-                      {card.members.map((m) => (
-                        <Tooltip key={m.userId} title={m.userName}>
-                          <Avatar
-                            src={m.userAvatar}
-                            icon={<UserOutlined />}
-                            className="border-2 border-white dark:border-neutral-800"
+                {/* Sub-content - Stays put */}
+                <div className="space-y-3">
+                  {/* Labels display */}
+                  {card.labels && card.labels.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {card.labels.map((l) => (
+                        <Tooltip key={l.id} title={l.label}>
+                          <div
+                            className="h-1.5 min-w-[32px] rounded-full shadow-sm"
+                            style={{ backgroundColor: l.color || '#94A3B8' }}
                           />
                         </Tooltip>
                       ))}
-                    </Avatar.Group>
-                  </div>
-                )}
+                    </div>
+                  )}
+
+                  {card.description && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                      {card.description}
+                    </p>
+                  )}
+
+                  {/* Members display */}
+                  {card.members && card.members.length > 0 && (
+                    <div className="flex justify-end pt-1">
+                      <Avatar.Group
+                        maxCount={3}
+                        size="small"
+                        maxStyle={{ color: '#f56a00', backgroundColor: '#fde3cf', fontSize: '10px' }}
+                      >
+                        {card.members.map((m) => (
+                          <Tooltip key={m.userId} title={m.userName}>
+                            <Avatar
+                              src={m.userAvatar}
+                              icon={<UserOutlined />}
+                              className="border-2 border-white dark:border-neutral-800"
+                            />
+                          </Tooltip>
+                        ))}
+                      </Avatar.Group>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

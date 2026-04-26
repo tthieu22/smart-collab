@@ -37,41 +37,43 @@ const TitleSection: React.FC<Props> = ({
   };
 
   return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {editingTitle ? (
-          <Input
-            value={localTitle}
-            onChange={e => setLocalTitle(e.target.value)}
-            onBlur={handleBlur}
-            onPressEnter={e => e.currentTarget.blur()}
-            autoFocus
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {editingTitle ? (
+        <Input
+          value={localTitle}
+          onChange={e => setLocalTitle(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
+          onPressEnter={e => e.currentTarget.blur()}
+          autoFocus
+          style={{
+            fontSize: 24,
+            fontWeight: 'bold',
+            border: 'none',
+            padding: 0,
+            color: token.colorText,
+            backgroundColor: token.colorBgContainer,
+            borderRadius: token.borderRadius,
+          }}
+        />
+      ) : (
+        <>
+          <Title
+            level={3}
             style={{
-              fontSize: 24,
-              fontWeight: 'bold',
-              border: 'none',
-              padding: 0,
+              margin: 0,
+              flex: 1,
+              cursor: 'pointer',
               color: token.colorText,
-              backgroundColor: token.colorBgContainer,
-              borderRadius: token.borderRadius,
             }}
-          />
-        ) : (
-          <>
-            <Title
-              level={3}
-              style={{
-                margin: 0,
-                flex: 1,
-                cursor: 'pointer',
-                color: token.colorText,
-              }}
-              onClick={() => setEditingTitle(true)}
-            >
-              {title || 'Untitled Card'}
-            </Title>
-          </>
-        )}
-      </div>
+            onClick={() => setEditingTitle(true)}
+          >
+            {title || 'Untitled Card'}
+          </Title>
+        </>
+      )}
+    </div>
   );
 };
 

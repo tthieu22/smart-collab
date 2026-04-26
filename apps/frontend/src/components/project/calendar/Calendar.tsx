@@ -58,8 +58,8 @@ export default function Calendar({
     registerBoardScrollContainer,
     setOverData,
     activeItem,
-    overData,
-    overId,
+    overData: contextOverData, // Rename to avoid confusion
+    overId
   } = useDragContext();
   const theme = useBoardStore((s) => s.resolvedTheme);
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -188,20 +188,35 @@ export default function Calendar({
 
     const start = getDateFromPoint(dragPointer.clientX, dragPointer.clientY);
     if (!start) {
-      setOverData?.(null);
+      if (contextOverData !== null) {
+        setOverData?.(null);
+      }
       return;
     }
 
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const startTime = start.getTime();
+    const endTime = startTime + 60 * 60 * 1000;
+
+    // IMPORTANT: Prevent infinite loop by checking if values actually changed
+    const current = contextOverData;
+    if (
+      current?.type === 'CALENDAR' &&
+      current?.boardId === board.id &&
+      current?.columnId === calendarColumn?.id &&
+      current?.start === startTime &&
+      current?.end === endTime
+    ) {
+      return;
+    }
 
     setOverData?.({
       type: 'CALENDAR',
       boardId: board.id,
       columnId: calendarColumn?.id,
-      start: start.getTime(),
-      end: end.getTime(),
+      start: startTime,
+      end: endTime,
     });
-  }, [activeItem, overId, dragPointer, getDateFromPoint, setOverData, board.id, calendarColumn?.id]);
+  }, [activeItem, overId, dragPointer, getDateFromPoint, setOverData, board.id, calendarColumn?.id, contextOverData]);
 
   const cards = projectStore((s) => s.cards);
   const columnCards = projectStore((s) => s.columnCards);
@@ -348,7 +363,7 @@ export default function Calendar({
         if (el) {
           for (const cid of allColumnIds) {
             const target = document.getElementById(cid);
-            if (target && (target === el || target.contains(el) || el.closest(`#${CSS.escape(cid)}`))) {
+            if (target && target.contains(el)) {
               destColumnId = cid;
               break;
             }
@@ -422,16 +437,16 @@ export default function Calendar({
   );
 
   const draggingEventPreview = React.useMemo(() => {
-    if (!overData || overData.type !== 'CALENDAR') return null;
+    if (!contextOverData || contextOverData.type !== 'CALENDAR') return null;
     return {
       id: 'dragging-preview',
       title: 'Kéo thả tại đây',
-      start: new Date(overData.start),
-      end: new Date(overData.end),
+      start: new Date(contextOverData.start),
+      end: new Date(contextOverData.end),
       editable: false,
       display: 'auto',
     };
-  }, [overData]);
+  }, [contextOverData]);
 
   const displayedEvents = React.useMemo(() => {
     if (!draggingEventPreview) return calendarEvents;
@@ -489,6 +504,31 @@ export default function Calendar({
     return <div className="p-4 text-center text-red-600">Không tìm thấy cột cho calendar</div>;
   }
 
+  const calendarPlugins = useMemo(() => [timeGridPlugin, dayGridPlugin, interactionPlugin, listPlugin], []);
+  const calendarViews = useMemo(() => ({
+    timeGridThreeDay: { type: 'timeGrid', duration: { days: 3 }, buttonText: '3 ngày' },
+    timeGridFiveDay: { type: 'timeGrid', duration: { days: 5 }, buttonText: '5 ngày' }
+  }), []);
+
+  const slotLabelFormat = useMemo(() => ({
+    hour: 'numeric' as const,
+    minute: '2-digit' as const,
+    omitZeroMinute: true,
+    meridiem: 'short' as const
+  }), []);
+
+  const dayHeaderFormat = useMemo(() => ({
+    weekday: 'long' as const,
+    day: 'numeric' as const
+  }), []);
+
+  const handleDatesSet = useCallback((arg: any) => {
+    const newDate = arg.view.currentStart;
+    if (newDate.getTime() !== currentDate.getTime()) {
+      setCurrentDate(newDate);
+    }
+  }, [currentDate]);
+
   return (
     <>
       <CardDetailModal
@@ -497,7 +537,7 @@ export default function Calendar({
         onClose={() => setSelectedCardId(null)}
       />
       <div
-        className={`relative flex-1 flex flex-col rounded-xl border shadow-2xl overflow-hidden max-w-full transition-colors duration-200 ${theme === 'dark' ? 'bg-[#141517] border-white/5' : 'bg-white border-gray-200'} ${isOver ? 'ring-4 ring-blue-500/20' : ''} ${className ?? ''}`}
+        className={`relative flex-1 flex flex-col overflow-hidden max-w-full transition-colors duration-200 ${theme === 'dark' ? 'bg-[#141517]' : 'bg-white'} ${isOver ? 'ring-4 ring-blue-500/20' : ''} ${className ?? ''}`}
         style={{ minHeight: 750 }}
       >
         <CalendarHeader
@@ -505,18 +545,14 @@ export default function Calendar({
           viewMode={viewMode}
           onPrev={() => {
             calendarRef.current?.getApi().prev();
-            setCurrentDate(calendarRef.current?.getApi().getDate() || new Date());
           }}
           onNext={() => {
             calendarRef.current?.getApi().next();
-            setCurrentDate(calendarRef.current?.getApi().getDate() || new Date());
           }}
           onToday={() => {
             calendarRef.current?.getApi().today();
-            setCurrentDate(new Date());
           }}
           onDateChange={(date) => {
-            setCurrentDate(date);
             calendarRef.current?.getApi().gotoDate(date);
           }}
           onViewModeChange={(mode) => {
@@ -599,12 +635,9 @@ export default function Calendar({
           `}</style>
           <FullCalendar
             ref={calendarRef}
-            plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, listPlugin]}
+            plugins={calendarPlugins}
             initialView="timeGridDay"
-            views={{
-              timeGridThreeDay: { type: 'timeGrid', duration: { days: 3 }, buttonText: '3 ngày' },
-              timeGridFiveDay: { type: 'timeGrid', duration: { days: 5 }, buttonText: '5 ngày' }
-            }}
+            views={calendarViews}
             headerToolbar={false}
             height="100%"
             expandRows
@@ -619,7 +652,7 @@ export default function Calendar({
             eventDragStart={handleEventDragStart}
             eventDragStop={handleEventDragStop}
             eventClick={handleEventClick}
-            datesSet={(arg) => setCurrentDate(arg.view.currentStart)}
+            datesSet={handleDatesSet}
             allDaySlot={true}
             nowIndicator
             slotMinTime="00:00:00"
@@ -627,16 +660,8 @@ export default function Calendar({
             slotDuration="00:30:00"
             dayMaxEvents={true}
             stickyHeaderDates={true}
-            slotLabelFormat={{
-              hour: 'numeric',
-              minute: '2-digit',
-              omitZeroMinute: true,
-              meridiem: 'short'
-            }}
-            dayHeaderFormat={{
-              weekday: 'long',
-              day: 'numeric'
-            }}
+            slotLabelFormat={slotLabelFormat}
+            dayHeaderFormat={dayHeaderFormat}
           />
         </div>
       </div>

@@ -20,15 +20,7 @@ const ActivitySection: React.FC<Props> = ({ comments, newComment, setNewComment,
   const { token } = theme.useToken();
 
   return (
-    <div
-      style={{
-        flex: 1,
-        background: token.colorBgContainer,
-        padding: 16,
-        borderRadius: token.borderRadiusLG,
-        boxShadow: token.boxShadowSecondary,
-      }}
-    >
+    <div style={{ flex: 1 }}>
       <div
         style={{
           display: 'flex',

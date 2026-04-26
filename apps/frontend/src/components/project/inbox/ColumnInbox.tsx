@@ -64,7 +64,7 @@ export default function Column({
   const currentProject = projectStore((state) => state.currentProject);
 
   const cardIds = useMemo(
-    () => columnCards[column.id] || [],
+    () => Array.from(new Set(columnCards[column.id] || [])),
     [columnCards, column.id]
   );
 
@@ -170,16 +170,24 @@ export default function Column({
       `}
     >
       {/* Header */}
-      <div className="shrink-0 p-3 pt-0">
-        <h3 className="text-sm font-semibold">Inbox</h3>
+      <div className="shrink-0 p-3 pt-3">
         <AddCard projectId={projectId} columnId={column.id} />
       </div>
 
       {/* Scroll */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 relative">
+        <style jsx>{`
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}</style>
         <div
           ref={scrollContainerRef}
-          className="h-full overflow-y-auto px-2 pb-6"
+          className="h-full overflow-y-auto px-2 pb-6 scrollbar-hide"
         >
           <SortableContext
             items={cardIds}

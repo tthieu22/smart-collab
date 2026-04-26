@@ -45,14 +45,14 @@ function rgbToHex(rgb: string): string {
   );
 }
 
-const LabelsAndMembers: React.FC<Props> = ({ 
-  labels, 
+const LabelsAndMembers: React.FC<Props> = ({
+  labels,
   cardMembers,
-  onAddLabel, 
+  onAddLabel,
   onRemoveLabel,
-  onAddMember, 
+  onAddMember,
   onRemoveMember,
-  onInviteMember 
+  onInviteMember
 }) => {
   const { token } = theme.useToken();
 
@@ -81,7 +81,7 @@ const LabelsAndMembers: React.FC<Props> = ({
   const filteredProjectMembers = useMemo(() => {
     const keyword = memberSearch.trim().toLowerCase();
     const existingUserIds = cardMembers.map(m => m.userId);
-    
+
     let list = projectMembers.filter(m => !existingUserIds.includes(m.userId));
 
     if (!keyword) return list;
@@ -142,24 +142,24 @@ const LabelsAndMembers: React.FC<Props> = ({
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size="large">
+    <Space direction="vertical" style={{ width: '100%' }} size="large">
       <div>
         <Text strong style={{ color: token.colorText, display: 'block', marginBottom: 8 }}>Labels:</Text>
         <div className="flex flex-wrap gap-2 items-center">
           {labels.map(l => (
-            <Tag 
-              key={l.id} 
-              color={l.color} 
-              closable 
+            <Tag
+              key={l.id}
+              color={l.color}
+              closable
               onClose={() => onRemoveLabel?.(l.id)}
               className="px-3 py-0.5 rounded-full border-none flex items-center gap-1"
             >
               {l.name}
             </Tag>
           ))}
-          <Button 
-            size="small" 
-            icon={<PlusOutlined />} 
+          <Button
+            size="small"
+            icon={<PlusOutlined />}
             onClick={showLabelModal}
             className="rounded-full border-dashed"
           >
@@ -175,12 +175,12 @@ const LabelsAndMembers: React.FC<Props> = ({
             <Tooltip title={m.userName} key={m.userId}>
               <div className="relative group">
                 <Avatar
-                  size="medium"
+                  size="default"
                   src={m.userAvatar ?? undefined}
                   icon={!m.userAvatar && <UserOutlined />}
                   className="border-2 border-white dark:border-neutral-800 shadow-sm"
                 />
-                <div 
+                <div
                   className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity z-10"
                   onClick={() => onRemoveMember?.(m.userId)}
                 >
@@ -189,9 +189,9 @@ const LabelsAndMembers: React.FC<Props> = ({
               </div>
             </Tooltip>
           ))}
-          <Button 
-            size="small" 
-            icon={<PlusOutlined />} 
+          <Button
+            size="small"
+            icon={<PlusOutlined />}
             onClick={showMemberModal}
             shape="circle"
             className="flex items-center justify-center border-dashed"
