@@ -30,6 +30,7 @@ export interface DragContextType {
   registerBoardScrollContainer?: (boardId: string, node: HTMLElement | null) => void;
   overData?: any;
   setOverData?: (data: any) => void;
+  overIndex: number;
 }
 
 // ------------------ PROJECT MEMBER ------------------

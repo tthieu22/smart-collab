@@ -35,10 +35,10 @@ interface ScrollConfig {
 }
 
 const DEFAULT_CONFIG: ScrollConfig = {
-  verticalThreshold: 80,
+  verticalThreshold: 100,
   horizontalThreshold: 120,
   minSpeed: 2,
-  maxSpeed: 20,
+  maxSpeed: 30,
   speedZone: 100, // Speed increases over this distance
 };
 

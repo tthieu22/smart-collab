@@ -27,7 +27,7 @@ const PrioritySection: React.FC<Props> = ({ priority, onChange }) => {
         <FlagOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
         <Text strong style={{ color: token.colorText }}>Mức độ ưu tiên</Text>
       </Space>
-      
+
       <div>
         <Select
           value={priority ?? 0}
@@ -42,7 +42,7 @@ const PrioritySection: React.FC<Props> = ({ priority, onChange }) => {
               </Space>
             )
           }))}
-          dropdownStyle={{ borderRadius: 8 }}
+          styles={{ popup: { root: { borderRadius: 8 } } }}
           placeholder="Chọn mức độ ưu tiên"
         />
       </div>

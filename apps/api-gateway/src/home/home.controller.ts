@@ -37,6 +37,26 @@ export class HomeController {
     );
   }
 
+  @Get('post/:id')
+  @UseGuards(JwtAuthGuard)
+  async getPost(@Param('id') postId: string) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.post.get' }, { 
+        payload: { postId } 
+      })
+    );
+  }
+
+  @Get('post/:id/comments')
+  @UseGuards(JwtAuthGuard)
+  async getComments(@Param('id') postId: string) {
+    return firstValueFrom(
+      this.homeClient.send({ cmd: 'home.post.comments.get' }, { 
+        payload: { postId } 
+      })
+    );
+  }
+
   @Post('post/:id/like')
   @UseGuards(JwtAuthGuard)
   async likePost(@Param('id') postId: string, @Body('type') type: string, @Req() req: any) {

@@ -11,6 +11,7 @@ export const DragContext = createContext<DragContextType>({
   registerBoardScrollContainer: () => undefined,
   overData: null,
   setOverData: () => undefined,
+  overIndex: -1,
 });
 
 export const useDragContext = () => useContext(DragContext);

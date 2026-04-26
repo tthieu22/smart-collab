@@ -20,7 +20,6 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
   const author = useFeedStore((s) => post ? s.users[post.authorId] : null);
   const fetchPostDetails = useFeedStore((s) => s.fetchPostDetails);
   const fetchComments = useFeedStore((s) => s.fetchComments);
-  const refreshPostData = useFeedStore((s) => s.refreshPostData);
   const toggleReaction = useFeedStore((s) => s.toggleReaction);
   const sharePost = useFeedStore((s) => s.sharePost);
   const toggleBookmark = useFeedStore((s) => s.toggleBookmark);
@@ -33,21 +32,13 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
     if (postId) {
       fetchPostDetails(postId);
       fetchComments(postId);
-      refreshPostData(postId);
     }
-  }, [postId, fetchPostDetails, fetchComments, refreshPostData]);
+  }, [postId, fetchPostDetails, fetchComments]);
 
   useEffect(() => {
     setMediaIndex(0);
   }, [postId]);
 
-  useEffect(() => {
-    if (!postId) return;
-    const timer = setInterval(() => {
-      refreshPostData(postId);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [postId, refreshPostData]);
 
   useEffect(() => {
     if (!media.length) {

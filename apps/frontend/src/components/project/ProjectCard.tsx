@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import type { Project } from '@smart/types/project';
 
+import { projectStore } from '@smart/store/project';
+
 interface ProjectCardProps {
   project: Project;
   onClick?: () => void;
@@ -19,6 +21,8 @@ export default function ProjectCard({
   showMembers = true,
   gridCols = 3
 }: ProjectCardProps) {
+  const prefetchProject = projectStore((s) => s.prefetchProject);
+
   const bgStyle: React.CSSProperties = project.fileUrl
     ? { backgroundImage: `url(${project.fileUrl})` }
     : project.background
@@ -30,8 +34,11 @@ export default function ProjectCard({
   const isList = gridCols === 1;
 
   const content = (
-    <div className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isList ? 'flex-row h-56' : 'flex-col'
-      } ${className}`}>
+    <div
+      onMouseEnter={() => prefetchProject(project.id)}
+      className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isList ? 'flex-row h-56' : 'flex-col'
+        } ${className}`}
+    >
       {/* BACKGROUND IMAGE / COLOR CONTAINER */}
       <div
         className={`relative overflow-hidden z-0 ${isList ? 'w-1/3 h-full shrink-0 rounded-l-[24px]' : 'h-40 w-full rounded-t-[24px]'
@@ -92,7 +99,7 @@ export default function ProjectCard({
 
   if (onClick) {
     return (
-      <div onClick={onClick} className="cursor-pointer">
+      <div onClick={onClick} onMouseEnter={() => prefetchProject(project.id)} className="cursor-pointer">
         {content}
       </div>
     );

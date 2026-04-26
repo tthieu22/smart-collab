@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { newsService } from '@smart/services/news.service';
-import type { NewsArticle, CreateNewsPayload, UpdateNewsPayload } from '@smart/types/ai-autopost';
+import type { NewsArticle, CreateNewsPayload, UpdateNewsPayload, NewsArticleCategory } from '@smart/types/ai-autopost';
 
 interface NewsAdminState {
   articles: NewsArticle[];
@@ -10,12 +10,14 @@ interface NewsAdminState {
   q: string;
   category?: NewsArticleCategory;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
   fetchNews: (params?: {
     page?: number;
     limit?: number;
     q?: string;
     category?: NewsArticleCategory;
+    force?: boolean;
   }) => Promise<void>;
   createNews: (payload: CreateNewsPayload) => Promise<void>;
   updateNews: (payload: UpdateNewsPayload) => Promise<void>;
@@ -30,6 +32,7 @@ export const useNewsAdminStore = create<NewsAdminState>((set, get) => ({
   q: '',
   category: undefined,
   isLoading: false,
+  isInitialized: false,
   error: null,
   fetchNews: async (params = {}) => {
     const state = get();
@@ -40,6 +43,11 @@ export const useNewsAdminStore = create<NewsAdminState>((set, get) => ({
       category: params.category !== undefined ? params.category : state.category,
     };
 
+    // Optimization: Skip if already initialized and no specific changes requested
+    if (state.isInitialized && !params.force && params.page === undefined && params.q === undefined && params.category === undefined) {
+      return;
+    }
+
     set({ isLoading: true, error: null, ...newParams });
     try {
       const res = await newsService.listAdmin(newParams);
@@ -48,6 +56,7 @@ export const useNewsAdminStore = create<NewsAdminState>((set, get) => ({
         total: res.total,
         page: res.page,
         limit: res.limit,
+        isInitialized: true,
       });
     } catch {
       set({ error: 'Khong the tai danh sach tin tuc' });

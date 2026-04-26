@@ -2,15 +2,8 @@
 
 import { create } from 'zustand';
 import { arrayMove } from '@dnd-kit/sortable';
-import {
-  Project,
-  ProjectMember,
-  Card,
-  Column,
-  CardView,
-  CardLabel,
-  Board,
-} from '@smart/types/project';
+import { Board, Card, CardLabel, CardView, Column, Project, ProjectMember } from '@smart/types/project';
+import { autoRequest } from '../services/auto.request';
 
 interface ProjectState {
   activeProjectId: string | null;
@@ -68,17 +61,23 @@ interface ProjectState {
   updateMember: (member: ProjectMember) => void;
   removeMember: (memberId: string) => void;
 
+  prefetchProject: (projectId: string) => Promise<void>;
+  fetchProjectById: (projectId: string, force?: boolean) => Promise<Project | null>;
+  prefetchedIds: Record<string, number>;
   addView: (view: CardView) => void;
   updateView: (view: CardView) => void;
   removeView: (viewId: string) => void;
   setHasJoinedCurrentProject: (value: boolean) => void;
 }
 
+const fetchPromises = new Map<string, Promise<Project | null>>();
+
 export const projectStore = create<ProjectState>((set, get) => ({
   activeProjectId: null,
   currentProject: null,
   hasJoinedCurrentProject: false,
   allProjects: [],
+  prefetchedIds: {},
   boards: {},
   columns: {},
   cards: {},
@@ -87,6 +86,64 @@ export const projectStore = create<ProjectState>((set, get) => ({
   views: {},
   boardColumns: {},
   columnCards: {},
+
+  fetchProjectById: async (projectId, force = false) => {
+    const { currentProject } = get();
+    // Cache check
+    if (!force && currentProject?.id === projectId && currentProject.boards?.length) {
+      return currentProject;
+    }
+
+    // Deduplication check
+    if (fetchPromises.has(projectId)) {
+      return fetchPromises.get(projectId)!;
+    }
+
+    const fetchTask = (async () => {
+      try {
+        const res = await autoRequest<any>('/projects/get', {
+          method: 'POST',
+          body: JSON.stringify({ projectId }),
+        });
+        const p: Project | undefined = res?.data || res?.dto?.project || res?.project || res?.dto;
+        if (p) {
+          get().setCurrentProject(p);
+          return p;
+        }
+        return null;
+      } catch (err) {
+        console.error('Fetch project failed:', projectId, err);
+        return null;
+      } finally {
+        fetchPromises.delete(projectId);
+      }
+    })();
+
+    fetchPromises.set(projectId, fetchTask);
+    return fetchTask;
+  },
+
+  prefetchProject: async (projectId) => {
+    const { currentProject, prefetchedIds } = get();
+    const now = Date.now();
+    
+    // 1. Skip if already current and has boards
+    if (currentProject?.id === projectId && currentProject.boards?.length) return;
+    
+    // 2. Skip if prefetched in the last 30 seconds
+    const lastFetch = prefetchedIds[projectId] || 0;
+    if (now - lastFetch < 30000) return;
+
+    // Set immediate lock to prevent rapid fires
+    set((s) => ({ prefetchedIds: { ...s.prefetchedIds, [projectId]: now } }));
+
+    try {
+      await get().fetchProjectById(projectId);
+      set((s) => ({ prefetchedIds: { ...s.prefetchedIds, [projectId]: Date.now() } }));
+    } catch (err) {
+      console.warn('Prefetch failed for project:', projectId);
+    }
+  },
 
   setActiveProjectId: (projectId) => set({ activeProjectId: projectId }),
 

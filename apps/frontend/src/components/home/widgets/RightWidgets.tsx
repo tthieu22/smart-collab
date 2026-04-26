@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { Card } from '@smart/components/ui/card';
 import { useFeedStore } from '@smart/store/feed';
@@ -12,7 +13,7 @@ export default function RightWidgets() {
   const users = useFeedStore((s) => s.users);
   const posts = useFeedStore((s) => s.posts);
 
-  const topAuthors = (() => {
+  const topAuthors = useMemo(() => {
     const score: Record<string, number> = {};
     postIds.forEach((pid) => {
       const p = posts[pid];
@@ -31,7 +32,7 @@ export default function RightWidgets() {
       .slice(0, 5)
       .map(([uid]) => users[uid])
       .filter(Boolean);
-  })();
+  }, [postIds, users, posts]);
 
   return (
     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -43,7 +44,7 @@ export default function RightWidgets() {
           <Users className="w-4 h-4 text-blue-500" />
           <div className="text-sm font-bold text-gray-900 dark:text-gray-100">Gợi ý theo dõi</div>
         </div>
-        
+
         <div className="space-y-1">
           {topAuthors.length ? (
             topAuthors.map((u) => (
@@ -62,7 +63,7 @@ export default function RightWidgets() {
                     />
                   ) : (
                     <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-500 font-bold">
-                       {u.name.charAt(0)}
+                      {u.name.charAt(0)}
                     </div>
                   )}
                 </div>
@@ -90,7 +91,7 @@ export default function RightWidgets() {
       <NewsPromoSideCard />
 
       <TipsGuideSideCard />
-      
+
     </div>
   );
 }

@@ -100,6 +100,8 @@ interface FeedState {
   fetchUserMedia: (targetUserId: string) => Promise<any[]>;
 }
 
+const feedFetchPromises = new Map<string, Promise<any>>();
+
 export const useFeedStore = create<FeedState>((set, get) => ({
   currentUserId: null,
   isBootstrapped: false,
@@ -211,11 +213,15 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
 
   toggleReaction: async (postId, reaction) => {
+    const previousPosts = get().posts;
+    const post = previousPosts[postId];
+    if (!post) return;
+
+    // Snapshot for rollback
+    const previousPostState = { ...post };
+
     // Optimistic update
     set((s) => {
-      const post = s.posts[postId];
-      if (!post) return s;
-
       const prev = post.myReaction ?? null;
       const next = prev === reaction ? null : reaction;
       const summary: FeedReactionSummary = { ...emptyReactions, ...post.reactionSummary };
@@ -237,8 +243,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
         body: JSON.stringify({ type: reaction.toUpperCase() }),
       });
     } catch (err: any) {
-      set({ error: err.message });
-      // Rollback logic could be added here
+      // Rollback on failure
+      set((s) => ({
+        posts: { ...s.posts, [postId]: previousPostState },
+        error: `Không thể cập nhật cảm xúc: ${err.message}`
+      }));
     }
   },
 
@@ -261,17 +270,30 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     })();
   },
 
-  toggleBookmark: (postId) =>
-    set((s) => {
-      const post = s.posts[postId];
-      if (!post) return s;
-      return {
-        posts: {
-          ...s.posts,
-          [postId]: { ...post, bookmarkedByMe: !Boolean(post.bookmarkedByMe) },
-        },
-      };
-    }),
+  toggleBookmark: async (postId) => {
+    const previousPosts = get().posts;
+    const post = previousPosts[postId];
+    if (!post) return;
+
+    const previousState = { ...post };
+
+    set((s) => ({
+      posts: {
+        ...s.posts,
+        [postId]: { ...post, bookmarkedByMe: !post.bookmarkedByMe },
+      },
+    }));
+
+    try {
+      // In a real app, this would be an API call
+      // await autoRequest(`/home/post/${postId}/bookmark`, { method: 'POST' });
+    } catch (err: any) {
+      set((s) => ({
+        posts: { ...s.posts, [postId]: previousState },
+        error: `Không thể lưu bài viết: ${err.message}`
+      }));
+    }
+  },
 
   addComment: async (postId, content) => {
     try {
@@ -304,22 +326,35 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     }
   },
 
-  toggleCommentLike: (commentId) =>
-    set((s) => {
-      const c = s.comments[commentId];
-      if (!c) return s;
-      const liked = !Boolean(c.likedByMe);
-      return {
-        comments: {
-          ...s.comments,
-          [commentId]: {
-            ...c,
-            likedByMe: liked,
-            likeCount: liked ? (c.likeCount || 0) + 1 : safeDec(c.likeCount || 0),
-          },
+  toggleCommentLike: async (commentId) => {
+    const previousComments = get().comments;
+    const c = previousComments[commentId];
+    if (!c) return;
+
+    const previousState = { ...c };
+    const liked = !c.likedByMe;
+
+    set((s) => ({
+      comments: {
+        ...s.comments,
+        [commentId]: {
+          ...c,
+          likedByMe: liked,
+          likeCount: liked ? (c.likeCount || 0) + 1 : safeDec(c.likeCount || 0),
         },
-      };
-    }),
+      },
+    }));
+
+    try {
+      // In a real app, this would be an API call
+      // await autoRequest(`/home/comment/${commentId}/like`, { method: 'POST' });
+    } catch (err: any) {
+      set((s) => ({
+        comments: { ...s.comments, [commentId]: previousState },
+        error: `Không thể thích bình luận: ${err.message}`
+      }));
+    }
+  },
 
   followUser: async (targetId: FeedID) => {
     try {
@@ -406,55 +441,74 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
 
   fetchPostDetails: async (postId) => {
-    try {
-      const res = await autoRequest<FeedPost>(`/home/post/${postId}`);
-      set((s) => ({
-        posts: {
-          ...s.posts,
-          [res.id]: {
-            ...res,
-            reactionSummary: { ...emptyReactions, ...(res.reactionSummary || {}) },
-            media: res.media || [],
-            myReaction: res.myReaction ?? null,
-            bookmarkedByMe: Boolean(res.bookmarkedByMe),
+    const key = `post:${postId}`;
+    if (feedFetchPromises.has(key)) return feedFetchPromises.get(key);
+
+    const promise = (async () => {
+      try {
+        const res = await autoRequest<FeedPost>(`/home/post/${postId}`);
+        set((s) => ({
+          posts: {
+            ...s.posts,
+            [res.id]: {
+              ...res,
+              reactionSummary: { ...emptyReactions, ...(res.reactionSummary || {}) },
+              media: res.media || [],
+              myReaction: res.myReaction ?? null,
+              bookmarkedByMe: Boolean(res.bookmarkedByMe),
+            },
           },
-        },
-      }));
-    } catch (err: any) {
-      set({ error: err.message });
-    }
+        }));
+      } catch (err: any) {
+        set({ error: err.message });
+      } finally {
+        feedFetchPromises.delete(key);
+      }
+    })();
+
+    feedFetchPromises.set(key, promise);
+    return promise;
   },
 
   fetchComments: async (postId) => {
-    try {
-      const res = await autoRequest<FeedComment[]>(`/home/post/${postId}/comments`);
-      set((s) => {
-        const newComments = { ...s.comments };
-        const commentIds: FeedID[] = [];
+    const key = `comments:${postId}`;
+    if (feedFetchPromises.has(key)) return feedFetchPromises.get(key);
 
-        res.forEach((c) => {
-          newComments[c.id] = { ...c, likedByMe: Boolean(c.likedByMe) };
-          commentIds.push(c.id);
+    const promise = (async () => {
+      try {
+        const res = await autoRequest<FeedComment[]>(`/home/post/${postId}/comments`);
+        set((s) => {
+          const newComments = { ...s.comments };
+          const commentIds: FeedID[] = [];
+
+          res.forEach((c) => {
+            newComments[c.id] = { ...c, likedByMe: Boolean(c.likedByMe) };
+            commentIds.push(c.id);
+          });
+
+          commentIds.sort((a, b) => {
+            const ca = newComments[a];
+            const cb = newComments[b];
+            return new Date(ca?.createdAt || 0).getTime() - new Date(cb?.createdAt || 0).getTime();
+          });
+
+          return {
+            comments: newComments,
+            commentsByPostId: {
+              ...s.commentsByPostId,
+              [postId]: commentIds,
+            },
+          };
         });
+      } catch (err: any) {
+        set({ error: err.message });
+      } finally {
+        feedFetchPromises.delete(key);
+      }
+    })();
 
-        // Ensure order is correct (usually newest first on feed, but here maybe oldest first? bootstrap sorted them by createdAt)
-        commentIds.sort((a, b) => {
-          const ca = newComments[a];
-          const cb = newComments[b];
-          return new Date(ca?.createdAt || 0).getTime() - new Date(cb?.createdAt || 0).getTime();
-        });
-
-        return {
-          comments: newComments,
-          commentsByPostId: {
-            ...s.commentsByPostId,
-            [postId]: commentIds,
-          },
-        };
-      });
-    } catch (err: any) {
-      set({ error: err.message });
-    }
+    feedFetchPromises.set(key, promise);
+    return promise;
   },
 
   refreshPostData: async (postId) => {

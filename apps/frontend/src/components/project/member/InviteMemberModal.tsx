@@ -28,7 +28,7 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
 
     const timer = setTimeout(() => {
       handleSearch(searchText);
-    }, 3000); 
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [searchText]);
@@ -47,7 +47,7 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
       const res: any = await autoRequest(`/users/search?q=${value}`);
       if (res?.data) {
         // Lọc bỏ những người đã có trong dự án
-        const filtered = res.data.filter((u: any) => 
+        const filtered = res.data.filter((u: any) =>
           !project.members?.some((m: any) => m.userId === u.id)
         );
         setSearchResults(filtered);
@@ -87,9 +87,9 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
   const handleSendEmailInvite = async () => {
     try {
       // Gọi API gửi email mời
-      await autoRequest(`/projects/invite-email`, { 
-        method: 'POST', 
-        body: JSON.stringify({ 
+      await autoRequest(`/projects/invite-email`, {
+        method: 'POST',
+        body: JSON.stringify({
           email: searchText,
           projectId: project.id,
           projectName: project.name
@@ -109,7 +109,7 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
       open={isOpen}
       onCancel={onClose}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       className="dark:text-white"
     >
       <div className="space-y-4 pt-4">
@@ -139,9 +139,9 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
                   renderItem={(item) => (
                     <List.Item
                       actions={[
-                        <Button 
-                          type="primary" 
-                          icon={<UserAddOutlined />} 
+                        <Button
+                          type="primary"
+                          icon={<UserAddOutlined />}
                           onClick={() => handleInvite(item)}
                           key="invite"
                         >
@@ -169,8 +169,8 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
                     itemLayout="horizontal"
                     dataSource={project.members}
                     renderItem={(member) => {
-                      const name = (member.user?.firstName && member.user.firstName !== 'User') 
-                        ? member.user.firstName 
+                      const name = (member.user?.firstName && member.user.firstName !== 'User')
+                        ? member.user.firstName
                         : member.user?.email || 'User';
                       const email = member.user?.email;
                       return (
@@ -204,8 +204,8 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
                   <div className="text-gray-500 dark:text-gray-400">
                     Không tìm thấy người dùng với email <b>{searchText}</b> trong hệ thống.
                   </div>
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     icon={<MailOutlined />}
                     onClick={handleSendEmailInvite}
                     className="bg-blue-600 hover:bg-blue-700"
@@ -214,7 +214,7 @@ export default function InviteMemberModal({ isOpen, onClose, project }: Props) {
                   </Button>
                 </div>
               )}
-              
+
               {searched && searchResults.length === 0 && !isEmail(searchText) && (
                 <div className="text-center py-8 text-gray-500">
                   Không tìm thấy kết quả phù hợp. Vui lòng thử tìm bằng địa chỉ email chính xác.

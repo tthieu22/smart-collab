@@ -10,14 +10,15 @@ import { Button, Tour, type TourProps } from 'antd';
 import { Card } from '@smart/components/ui/card';
 import ProjectCard from '@smart/components/project/ProjectCard';
 import CreateBoardButton from '@smart/components/layouts/header/CreateBoardButton';
-import { PlusOutlined, RocketOutlined, InfoCircleOutlined, LayoutOutlined } from '@ant-design/icons';
+import { PlusOutlined, RocketOutlined } from '@ant-design/icons';
 import { LayoutGrid, Columns, Square, Info, Plus } from 'lucide-react';
 import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
 import { PageHeader } from '@smart/components/ui/PageHeader';
 
 export default function ProjectListPage() {
+  const allProjects = projectStore((s) => s.allProjects);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
@@ -40,6 +41,12 @@ export default function ProjectListPage() {
 
   useEffect(() => {
     projectStore.getState().setActiveProjectId(null);
+
+    // Sync initial state from store if available for fast load
+    if (allProjects.length > 0 && currentPage === 1) {
+      setProjects(allProjects.slice(0, pageSize));
+    }
+
     const hasSeenTour = localStorage.getItem('hasSeenProjectsTour');
     if (!hasSeenTour) {
       setTourOpen(true);
@@ -48,7 +55,9 @@ export default function ProjectListPage() {
   }, []);
 
   const load = async (page: number) => {
-    setLoading(true);
+    // Only show loading if we don't have data yet to avoid flickering
+    if (projects.length === 0) setLoading(true);
+
     try {
       const res: any = await projectService.getAllProjects({
         page,
@@ -58,7 +67,10 @@ export default function ProjectListPage() {
       if (res.success && res.data && Array.isArray(res.data.items)) {
         const list: Project[] = res.data.items;
         const st = projectStore.getState();
+
+        // Add each project to store (internal logic handles duplicates)
         list.forEach((p) => st.addProject(p));
+
         setProjects(list);
         setTotal(res.data.total || 0);
       }
@@ -140,7 +152,7 @@ export default function ProjectListPage() {
   );
 
   return (
-    <SiteLayout hideFooter>
+    <SiteLayout>
       <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500 pt-4">
         <div ref={headerRef}>
           <PageHeader
@@ -151,7 +163,7 @@ export default function ProjectListPage() {
           />
         </div>
 
-        {loading ? (
+        {loading && projects.length === 0 ? (
           <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
             }`}>
             {[...Array(9)].map((_, i) => (

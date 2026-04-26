@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { Loading } from '@smart/components/ui/loading';
 import { newsService } from '@smart/services/news.service';
+import { useNewsStore } from '@smart/store/news';
 import type { NewsArticle } from '@smart/types/ai-autopost';
 import { Newspaper, LayoutGrid, Columns, Square } from 'lucide-react';
 import { NewsCard } from '@smart/components/news/NewsCard';
@@ -12,37 +13,29 @@ import { PageHeader } from '@smart/components/ui/PageHeader';
 import { Card } from '@smart/components/ui/card';
 
 export default function NewsPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [error, setError] = useState('');
+  const {
+    articles,
+    total,
+    isLoading,
+    error,
+    fetchPublished
+  } = useNewsStore();
+
   const [gridCols, setGridCols] = useState<1 | 2 | 3>(3);
 
   // Pagination states
   const [q] = useState('');
   const [page, setPage] = useState(0); // 0-indexed for API
-  const [total, setTotal] = useState(0);
   const [limit] = useState(12);
 
-  const fetchArticles = useCallback(async (p = 0, query = q) => {
-    setIsLoading(true);
-    try {
-      const res = await newsService.listPublished({ page: p, limit, q: query });
-      setArticles(res.data);
-      setTotal(res.total);
-      setPage(res.page);
-    } catch (err) {
-      setError('Không thể tải danh sách tin tức');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [limit, q]);
-
   useEffect(() => {
-    fetchArticles(0);
-  }, [fetchArticles]);
+    fetchPublished({ page: 0, limit });
+  }, [fetchPublished, limit]);
 
   const handlePageChange = (p: number) => {
-    fetchArticles(p - 1);
+    const newPage = p - 1;
+    setPage(newPage);
+    fetchPublished({ page: newPage, limit });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -89,10 +82,10 @@ export default function NewsPage() {
         {error && <Card className="bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20 py-3 px-4 text-sm text-red-600 dark:text-red-400">{error}</Card>}
 
         <div className={`min-h-[500px] ${gridCols === 1
-            ? 'space-y-4'
-            : gridCols === 2
-              ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
-              : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+          ? 'space-y-4'
+          : gridCols === 2
+            ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
+            : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
           }`}>
           {isLoading ? (
             <div className={`flex flex-col items-center justify-center py-20 gap-4 opacity-50 ${gridCols !== 1 ? 'col-span-full' : ''}`}>

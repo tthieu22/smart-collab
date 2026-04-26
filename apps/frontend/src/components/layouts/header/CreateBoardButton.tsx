@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  PlusOutlined, 
-  BgColorsOutlined, 
-  UploadOutlined, 
+import {
+  PlusOutlined,
+  BgColorsOutlined,
+  UploadOutlined,
   CheckOutlined,
-  RocketOutlined 
+  RocketOutlined
 } from "@ant-design/icons";
-import { 
+import {
   Button,
   Popover,
   Input,
@@ -33,15 +33,17 @@ import { projectStore } from "@smart/store/project";
 import type { Project } from "@smart/types/project";
 import { getProjectSocketManager } from "@smart/store/realtime";
 import { useRouter } from "next/navigation";
+import { cn } from "@smart/lib/utils";
 
 const { Option } = Select;
 const { Text } = Typography;
+const { TextArea } = Input;
 
-export default function CreateBoardButton({ 
-  children, 
+export default function CreateBoardButton({
+  children,
   forceAiOpen = false,
   onAiClose
-}: { 
+}: {
   children?: React.ReactNode;
   forceAiOpen?: boolean;
   onAiClose?: () => void;
@@ -51,6 +53,7 @@ export default function CreateBoardButton({
   const { addNotification } = useNotificationStore();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState("workspace");
   const [background, setBackground] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export default function CreateBoardButton({
 
   // Singleton socket manager
   const projectSocketManager = getProjectSocketManager();
-  
+
   useEffect(() => {
     if (forceAiOpen) {
       setAiOpen(true);
@@ -77,7 +80,7 @@ export default function CreateBoardButton({
       else if (colors.length > 0) setBackground(colors[0]);
     }
   }, [open, background, images, colors]);
-  
+
   const handleCreate = async () => {
     if (!title) {
       addNotification("Vui lòng nhập tiêu đề bảng", "error");
@@ -94,6 +97,7 @@ export default function CreateBoardButton({
     const correlationId = crypto.randomUUID();
     const body: any = {
       name: title,
+      description,
       visibility,
       correlationId,
     };
@@ -160,6 +164,7 @@ export default function CreateBoardButton({
       addNotification(err.message || "Tạo bảng thất bại", "error");
     } finally {
       setTitle("");
+      setDescription("");
       setVisibility("workspace");
       setBackground(null);
       setColor(null);
@@ -274,91 +279,161 @@ export default function CreateBoardButton({
   );
 
   const content = (
-    <div className="w-[280px]">
-      <Space direction="vertical" size={16} className="w-full">
-        <Card size="small" className="shadow-sm overflow-hidden"
-          style={{
-            backgroundImage: background?.startsWith("/background") || background?.startsWith("data:image") ? `url(${background})` : undefined,
-            backgroundColor: background && !background.startsWith("http") && !background.startsWith("data:image") ? background : undefined,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            height: 100,
-            borderRadius: 12,
-            border: 'none'
-          }}
-        />
-        <div>
-          <Text strong className="text-xs uppercase tracking-wider text-gray-400 mb-2 block">Hình nền</Text>
-          <Row gutter={[8, 8]}>
-            {images.slice(0, 3).map(img => <Col span={6} key={img}>{renderImageBox(img)}</Col>)}
-            <Col span={6}>{renderUploadBox()}</Col>
-          </Row>
-        </div>
-        <div>
-          <Text strong className="text-xs uppercase tracking-wider text-gray-400 mb-2 block">Màu sắc</Text>
-          <Row gutter={8}>
-            {colors.slice(0, 5).map(c => <Col span={4} key={c}>{renderColorBox(c)}</Col>)}
-            <Col span={4}>
-              <ColorPicker value={color || "#1677ff"} onChange={clr => { setBackground(clr.toHexString()); setColor(clr.toHexString()); setFileObjs([]); }} trigger="click">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", height: 34, borderRadius: 6, border: "1px dashed #ccc", cursor: "pointer" }}>
-                  <BgColorsOutlined style={{ fontSize: 18, color: "#555" }} />
+    <div className="w-[640px] p-1">
+      <Row gutter={24} align="stretch">
+        {/* Left Side: Live Preview */}
+        <Col span={12} className="flex flex-col">
+          <Text strong className="text-[10px] uppercase tracking-widest text-gray-400 mb-3 block">Bảng của bạn</Text>
+          <div className="flex-1 flex flex-col items-center justify-center bg-gray-100 dark:bg-neutral-900 rounded-2xl p-3 border border-gray-100 dark:border-neutral-800 relative overflow-hidden group">
+            {/* Realistic Board Mockup */}
+            <div
+              className="w-full h-full rounded-xl shadow-2xl shadow-black/20 transition-all duration-500 bg-cover bg-center flex flex-col overflow-hidden relative border border-white/10"
+              style={{
+                backgroundImage: background?.startsWith("/background") || background?.startsWith("data:image") ? `url(${background})` : undefined,
+                backgroundColor: background && !background.startsWith("http") && !background.startsWith("data:image") ? background : undefined,
+              }}
+            >
+              {/* Mock Header */}
+              <div className="h-6 w-full bg-black/20 backdrop-blur-md flex items-center justify-between px-2 gap-2 border-b border-white/5">
+                <div className="flex items-center gap-1.5 truncate">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-[7px] font-black uppercase tracking-tight truncate text-white drop-shadow-sm">
+                    {title || "Dự án mới"}
+                  </span>
                 </div>
-              </ColorPicker>
-            </Col>
-          </Row>
-        </div>
-        <div className="space-y-3">
-          <Input placeholder="Tiêu đề bảng..." value={title} onChange={e => setTitle(e.target.value)} className="h-10 rounded-lg" />
-          <Select value={visibility} onChange={setVisibility} className="w-full h-10 rounded-lg">
-            <Option value="private">Cá nhân</Option>
-            <Option value="workspace">Workspace</Option>
-            <Option value="public">Công khai</Option>
-          </Select>
-        </div>
-        
-        <Button type="primary" block onClick={handleCreate} className="h-10 rounded-lg font-bold shadow-md shadow-blue-500/20">
-          Tạo bảng mới
-        </Button>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3].map(i => <div key={i} className="w-2.5 h-2.5 rounded-full bg-white/20 border border-white/10" />)}
+                </div>
+              </div>
 
-        <div className="flex items-center gap-2 py-1">
-          <div className="h-[1px] flex-1 bg-gray-100" />
-          <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Hoặc</span>
-          <div className="h-[1px] flex-1 bg-gray-100" />
-        </div>
+              {/* Mock Sidebar & Content Area */}
+              <div className="flex-1 p-2 flex gap-2">
+                {/* Mock Columns */}
+                {[1, 2, 3].map(col => (
+                  <div key={col} className="w-16 h-full flex flex-col gap-1.5">
+                    <div className="h-2 w-8 bg-white/30 rounded-sm" />
+                    {[1, 2, 3].map(card => (
+                      <div key={card} className="bg-white/10 backdrop-blur-sm p-1 rounded-md border border-white/5 shadow-sm">
+                        <div className="h-1 w-full bg-white/40 rounded flex mb-1" />
+                        <div className="h-1 w-2/3 bg-white/20 rounded flex" />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
 
-        <Button
-          block
-          onClick={() => {
-            setOpen(false);
-            setAiOpen(true);
-          }}
-          className="h-11 rounded-xl border-none text-white font-bold flex items-center justify-center gap-2 overflow-hidden relative group"
-          style={{
-            background: 'linear-gradient(135deg, #4285F4 0%, #34A853 25%, #FBBC05 50%, #EA4335 100%)',
-            boxShadow: '0 4px 15px rgba(66, 133, 244, 0.3)'
-          }}
-        >
-          <span className="relative z-10 flex items-center gap-2">
-            <PlusOutlined />
-            Tạo bằng AI (Gemini)
-          </span>
-          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        </Button>
-      </Space>
+              <div className="absolute bottom-2 left-2 flex items-center gap-1 opacity-60 text-[6px] font-black uppercase text-white tracking-widest bg-black/20 px-1.5 py-0.5 rounded-full">
+                <div className={cn("w-1 h-1 rounded-full", visibility === 'public' ? 'bg-green-400' : 'bg-blue-400')} />
+                {visibility}
+              </div>
+            </div>
+            {/* <div className="mt-2 text-center">
+              <Text className="text-[9px] text-gray-400 italic">Mô phỏng giao diện Board</Text>
+            </div> */}
+          </div>
+        </Col>
+
+        {/* Right Side: Configuration */}
+        <Col span={12} className="border-l border-gray-100 dark:border-neutral-800 pl-4">
+          <Space direction="vertical" size={20} className="w-full">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Text strong className="text-[10px] uppercase tracking-widest text-gray-400 ml-1 block">Tiêu đề</Text>
+                <Input
+                  placeholder="Tên bảng..."
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  className="h-10 rounded-xl bg-gray-50 border-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 px-4 font-medium"
+                />
+              </div>
+              <div className="space-y-2">
+                <Text strong className="text-[10px] uppercase tracking-widest text-gray-400 ml-1 block">Mô tả</Text>
+                <TextArea
+                  placeholder="Thêm mô tả cho bảng này..."
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  autoSize={{ minRows: 2, maxRows: 4 }}
+                  className="rounded-xl bg-gray-50 border-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 px-4 py-3"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Text strong className="text-[10px] uppercase tracking-widest text-gray-400 mb-2 block">Giao diện</Text>
+              <Row gutter={[6, 6]} className="mb-3">
+                {images.slice(0, 3).map(img => <Col span={6} key={img}>{renderImageBox(img)}</Col>)}
+                <Col span={6}>{renderUploadBox()}</Col>
+              </Row>
+              <Row gutter={6} align="middle">
+                {colors.slice(0, 4).map(c => <Col span={5} key={c}>{renderColorBox(c)}</Col>)}
+                <Col span={4}>
+                  <ColorPicker value={color || "#1677ff"} onChange={clr => { setBackground(clr.toHexString()); setColor(clr.toHexString()); setFileObjs([]); }} trigger="click">
+                    <div className="flex items-center justify-center bg-white h-[34px] rounded-lg border border-dashed border-gray-300 cursor-pointer hover:border-blue-500 hover:text-blue-500 transition-all">
+                      <BgColorsOutlined />
+                    </div>
+                  </ColorPicker>
+                </Col>
+              </Row>
+            </div>
+
+            <div>
+              <Text strong className="text-[10px] uppercase tracking-widest text-gray-400 mb-2 block">Quyền truy cập</Text>
+              <Select value={visibility} onChange={setVisibility} className="w-full premium-select-compact">
+                <Option value="private">🔒 Only me</Option>
+                <Option value="workspace">👥 Workspace</Option>
+                <Option value="public">🌐 Public</Option>
+              </Select>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-neutral-800">
+              <Button
+                type="primary"
+                block
+                onClick={handleCreate}
+                className="h-11 rounded-xl bg-neutral-900 border-none font-bold text-xs tracking-widest hover:opacity-90 shadow-xl shadow-black/10"
+              >
+                XÁC NHẬN TẠO
+              </Button>
+              <Button
+                className="h-11 w-11 rounded-xl flex items-center justify-center p-0 border-none relative group overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                  boxShadow: '0 8px 16px -4px rgba(168, 85, 247, 0.4)'
+                }}
+                onClick={() => { setOpen(false); setAiOpen(true); }}
+              >
+                <RocketOutlined className="text-white text-lg group-hover:scale-110 transition-transform" />
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Button>
+            </div>
+          </Space>
+        </Col>
+      </Row>
     </div>
   );
 
   return (
     <>
-      <Popover content={content} trigger="click" open={open} onOpenChange={setOpen} placement="bottomLeft" overlayClassName="premium-popover">
-        {children || <Button type="primary" icon={<PlusOutlined />} className="rounded-lg shadow">Create Board</Button>}
+      <Popover
+        content={content}
+        trigger="click"
+        open={open}
+        onOpenChange={setOpen}
+        placement="bottomLeft"
+        overlayClassName="modern-popover-wide"
+      >
+        {children || (
+          <Button type="primary" icon={<RocketOutlined />} className="h-9 rounded-full px-5 bg-gradient-to-r from-blue-600 to-indigo-600 border-none shadow-lg shadow-blue-500/20 font-bold">
+            Create
+          </Button>
+        )}
       </Popover>
 
       <Modal
         title={
           <div className="flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 font-black text-xl">
-             <RocketOutlined className="text-blue-600" />
-             Xây dựng dự án với AI
+            <RocketOutlined className="text-blue-600" />
+            Xây dựng dự án với AI
           </div>
         }
         open={aiOpen}
@@ -372,9 +447,9 @@ export default function CreateBoardButton({
         onOk={handleCreateWithAI}
         okText={aiLoading ? "Đang xử lý..." : "Bắt đầu tạo"}
         cancelText="Hủy bỏ"
-        okButtonProps={{ 
+        okButtonProps={{
           className: "h-10 rounded-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 border-none shadow-lg shadow-blue-500/30",
-          disabled: aiLoading 
+          disabled: aiLoading
         }}
         cancelButtonProps={{ disabled: aiLoading, className: "h-10 rounded-lg" }}
         destroyOnHidden
@@ -383,9 +458,9 @@ export default function CreateBoardButton({
       >
         <Space direction="vertical" size={20} style={{ width: "100%" }} className="py-4">
           <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-800">
-             <Text className="text-blue-700 dark:text-blue-300 text-sm font-medium">
-                💡 Mẹo: Mô tả chi tiết dự án của bạn (ví dụ: "Tạo một bảng quản lý dự án xây dựng website thương mại điện tử với các giai đoạn thiết kế, phát triển và test").
-             </Text>
+            <Text className="text-blue-700 dark:text-blue-300 text-sm font-medium">
+              💡 Mẹo: Mô tả chi tiết dự án của bạn (ví dụ: "Tạo một bảng quản lý dự án xây dựng website thương mại điện tử với các giai đoạn thiết kế, phát triển và test").
+            </Text>
           </div>
 
           <Steps

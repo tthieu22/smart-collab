@@ -40,7 +40,7 @@ export default function Column({
   index,
   isOverlay,
 }: Props) {
-  const { activeItem, registerScrollContainer, overData, overId } =
+  const { activeItem, registerScrollContainer, overData, overId, overIndex } =
     useDragContext();
 
   // Lấy dữ liệu cần thiết từ store với useMemo
@@ -67,6 +67,7 @@ export default function Column({
     setNodeRef: setSortableRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({
     id: column.id,
     data: { type: 'COLUMN', boardId, boardType, columnId: column.id, index },
@@ -112,31 +113,17 @@ export default function Column({
 
   const isDraggingCard = activeItem?.type === 'CARD';
 
-  const showPlaceholder = useMemo(() => {
-    if (!isDraggingCard || isOverlay) return false;
-
-    return (
-      (isOver && overData?.type !== 'CARD') ||
-      (overData?.type === 'COLUMN' && overData.columnId === column.id) ||
-      (overData?.type === 'BOARD' && overData.boardId === boardId && cardIds.length === 0)
-    );
-  }, [isDraggingCard, isOverlay, isOver, overData, boardId, cardIds.length, column.id]);
-
-  const shouldShowBeforeCard = useCallback(
-    (cardId: string) => {
-      if (!isDraggingCard || isOverlay) return false;
-      if (!overData || overData?.type !== 'CARD') return false;
-      if (overData.columnId !== column.id) return false;
-      return String(overId) === String(cardId);
-    },
-    [isDraggingCard, isOverlay, overData, overId, column.id]
-  );
-
-  const DropIndicator = useMemo(
+  const ColumnPlaceholder = useMemo(
     () => (
-      <div className="h-28 rounded-xl border-2 border-dashed border-blue-400/80 bg-blue-500/15 dark:bg-blue-400/10 animate-pulse pointer-events-none backdrop-blur-sm ring-1 ring-blue-400/50">
-        <div className="h-4 bg-blue-300/60 dark:bg-blue-300/50 rounded w-3/4 mt-3 mx-3" />
-        <div className="h-3 bg-blue-200/50 dark:bg-blue-200/40 rounded w-1/2 mt-2 mx-3" />
+      <div
+        className="w-[280px] h-full rounded-2xl border-2 border-dashed border-blue-400/50 bg-blue-500/5 dark:bg-blue-400/5 animate-pulse flex flex-col p-4 shadow-inner"
+      >
+        <div className="h-6 bg-blue-300/30 dark:bg-blue-300/20 rounded w-1/2 mb-6" />
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 bg-blue-200/20 dark:bg-blue-200/10 rounded-xl border border-blue-300/20" />
+          ))}
+        </div>
       </div>
     ),
     []
@@ -222,25 +209,43 @@ export default function Column({
 
 
 
+  if (isDragging && !isOverlay) {
+    return (
+      <div
+        ref={setSortableRef}
+        id={column.id}
+        style={style}
+        className="flex-shrink-0"
+      >
+        {ColumnPlaceholder}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setRef}
       id={column.id}
       data-column-id={column.id}
-      style={style}
+      style={{
+        ...style,
+        touchAction: 'none',
+        ...(isOverlay ? { cursor: 'grabbing' } : {})
+      }}
+      {...(!isEditingTitle ? attributes : {})}
+      {...(!isEditingTitle ? listeners : {})}
       className={`
-        flex flex-col h-full min-h-0 flex-shrink-0 transition-all duration-300 ease-in-out
+        flex flex-col min-h-0 flex-shrink-0 transition-all duration-300 ease-in-out
         ${collapsed ? 'w-10 overflow-hidden' : 'w-[280px]'}
+        ${isOverlay ? 'h-auto max-h-[80vh] shadow-2xl ring-4 ring-blue-500/30 rotate-[2deg] scale-[1.02] z-[9999]' : 'h-full'}
         will-change-transform column-glass-neon p-2 font-sans
+        ${!isEditingTitle ? 'cursor-grab active:cursor-grabbing' : ''}
       `}
     >
       {/* ================= HEADER ================= */}
       {!collapsed ? (
         <div
           className="shrink-0 active:cursor-grabbing select-none mb-3"
-          {...(!isEditingTitle ? attributes : {})}
-          {...(!isEditingTitle ? listeners : {})}
-          style={{ touchAction: 'none' }}
         >
           <div className="flex items-center justify-between group/header">
             {isEditingTitle ? (
@@ -317,37 +322,32 @@ export default function Column({
 
       {/* ================= BODY (SCROLL) ================= */}
       {!collapsed && (
-        <div className="min-h-0">
+        <div className="flex-1 min-h-0 flex flex-col">
           <div
             ref={scrollContainerRef}
-            className="h-full overflow-y-auto overflow-x-hidden"
+            className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-1"
           >
             <SortableContext
               items={cardIds}
               strategy={verticalListSortingStrategy}
               disabled={isDraggingColumn}
             >
-              <div className="min-h-[60px]">
+              <div className="min-h-[100px] flex flex-col pb-20">
                 {cardIds.map((cardId, idx) => {
                   const card = cards[cardId];
                   if (!card || card.status === 'ARCHIVED') return null;
 
-                  const insertBefore = shouldShowBeforeCard(cardId);
-
                   return (
-                    <Fragment key={cardId}>
-                      {insertBefore && DropIndicator}
-                      <Card
-                        card={card}
-                        columnId={column.id}
-                        boardId={boardId}
-                        boardType={boardType}
-                        index={idx}
-                      />
-                    </Fragment>
+                    <Card
+                      key={cardId}
+                      card={card}
+                      columnId={column.id}
+                      boardId={boardId}
+                      boardType={boardType}
+                      index={idx}
+                    />
                   );
                 })}
-                {showPlaceholder && DropIndicator}
               </div>
             </SortableContext>
           </div>

@@ -121,6 +121,16 @@ public class HomeMessageHandler {
                     userRepository.save(u);
                     return Map.of("success", true, "mood", mood != null ? mood : "");
 
+                case "home.post.get": {
+                    String gPid = (String) payload.get("postId");
+                    return feedService.getPostById(gPid, userId);
+                }
+
+                case "home.post.comments.get": {
+                    String cPid = (String) payload.get("postId");
+                    return feedService.getCommentsByPostId(cPid);
+                }
+
                 case "home.user.sync":
                     String sId = (String) payload.get("id");
                     User sUser = userRepository.findById(sId).orElse(new User());

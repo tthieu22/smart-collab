@@ -1,7 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BellOutlined, LikeOutlined, CommentOutlined } from "@ant-design/icons";
+import {
+  Bell,
+  ThumbsUp,
+  MessageSquare,
+  UserPlus,
+  Check,
+  X,
+  Clock,
+  ExternalLink
+} from "lucide-react";
 import { Dropdown, Card, Switch, Tabs, List, Avatar, Badge, Button } from "antd";
 import { useUserNotificationStore } from "@smart/store/user-notifications";
 import { useFeedStore } from "@smart/store/feed";
@@ -9,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { autoRequest } from "@smart/services/auto.request";
 import { useTheme } from "next-themes";
+import { cn } from "@smart/lib/utils";
 
 export function NotificationMenu() {
   const formatNotificationTime = useCallback((createdAt?: string) => {
@@ -61,7 +71,7 @@ export function NotificationMenu() {
   const handleNotificationClick = useCallback(
     (n: any) => {
       markAsRead(n.id);
-      autoRequest(`/home/notifications/${n.id}/read`, { method: "PATCH" }).catch(() => {});
+      autoRequest(`/home/notifications/${n.id}/read`, { method: "PATCH" }).catch(() => { });
       if (n.postId) {
         setActivePostId(n.postId);
       }
@@ -78,9 +88,8 @@ export function NotificationMenu() {
       });
       if (res?.success) {
         markAsRead(notificationId);
-        autoRequest(`/home/notifications/${notificationId}/read`, { method: "PATCH" }).catch(() => {});
+        autoRequest(`/home/notifications/${notificationId}/read`, { method: "PATCH" }).catch(() => { });
         setOpen(false);
-        // Maybe redirect to project if accepted
         if (accept) {
           window.location.href = `/projects/${projectId}`;
         }
@@ -94,165 +103,157 @@ export function NotificationMenu() {
     const isUnread = !n.isRead;
     const isInvite = n.type === "PROJECT_INVITE";
 
+    const getIcon = () => {
+      if (isInvite) return <UserPlus size={14} />;
+      if (n.type === "LIKE") return <ThumbsUp size={14} />;
+      return <MessageSquare size={14} />;
+    };
+
+    const getIconColor = () => {
+      if (isInvite) return "bg-amber-500";
+      if (n.type === "LIKE") return "bg-blue-500";
+      return "bg-green-500";
+    };
+
     return (
-      <List.Item
+      <div
         key={n.id}
         onClick={() => !isInvite && handleNotificationClick(n)}
-        style={{
-          cursor: isInvite ? "default" : "pointer",
-          backgroundColor: isUnread
-            ? isDark
-              ? "rgba(0, 113, 227, 0.14)"
-              : "#f0f5ff"
-            : "transparent",
-          padding: "12px",
-          borderRadius: 12,
-          marginBottom: 8,
-          border: `1px solid ${isUnread ? (isDark ? "rgba(0, 113, 227, 0.3)" : "#d6e4ff") : "transparent"}`,
-          transition: "all 0.2s ease",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch"
-        }}
-        className="notification-item"
+        className={cn(
+          "relative p-4 mb-2 rounded-2xl transition-all duration-300 border cursor-pointer",
+          isUnread
+            ? "bg-blue-50/50 dark:bg-blue-500/5 border-blue-100 dark:border-blue-400/20"
+            : "bg-white dark:bg-white/[0.02] border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5"
+        )}
       >
-        <div style={{ display: "flex", width: "100%", gap: 12 }}>
-          <Avatar
-            icon={isInvite ? <BellOutlined /> : n.type === "LIKE" ? <LikeOutlined /> : <CommentOutlined />}
-            style={{ 
-              backgroundColor: isInvite ? "#faad14" : n.type === "LIKE" ? "#1890ff" : "#52c41a",
-              flexShrink: 0
-            }}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-              <div style={{ 
-                fontSize: 13, 
-                fontWeight: isUnread ? 600 : 400,
-                color: isDark ? "#fff" : "#1d1d1f",
-                lineHeight: "1.4",
-                marginBottom: 4
-              }}>
-                {isInvite 
-                  ? `Bạn được mời tham gia dự án: ${n.projectName || 'Dự án mới'}` 
-                  : n.type === "LIKE" 
-                    ? "Một người đã thích bài viết của bạn" 
-                    : "Một người đã bình luận về bài viết của bạn"}
-              </div>
+        <div className="flex gap-4">
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm",
+            getIconColor()
+          )}>
+            {getIcon()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-bold text-gray-900 dark:text-white leading-snug mb-1">
+              {isInvite
+                ? `Lời mời dự án: ${n.projectName || 'Dự án mới'}`
+                : n.type === "LIKE"
+                  ? "Một người đã thích bài viết của bạn"
+                  : "Một người đã bình luận bài viết"}
             </div>
-            <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.45)" : "#8c8c8c" }}>
+            <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 font-medium">
+              <Clock size={10} />
               {formatNotificationTime(n.createdAt)}
             </div>
           </div>
+          {isUnread && <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" />}
         </div>
 
         {isInvite && isUnread && (
-          <div style={{ 
-            display: "flex", 
-            gap: 8, 
-            marginTop: 12, 
-            paddingTop: 12,
-            borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#f0f0f0"}`,
-            width: "100%", 
-            justifyContent: "flex-end" 
-          }}>
-            <Button 
-              size="small" 
-              style={{ borderRadius: 6, fontSize: 12 }}
+          <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
+            <Button
+              size="small"
+              className="flex-1 rounded-lg text-[11px] font-bold h-8"
               onClick={() => handleRespondInvite(n.projectId, false, n.id)}
             >
               Từ chối
             </Button>
-            <Button 
-              size="small" 
-              type="primary" 
-              style={{ borderRadius: 6, fontSize: 12 }}
+            <Button
+              size="small"
+              type="primary"
+              className="flex-1 rounded-lg text-[11px] font-bold h-8"
               onClick={() => handleRespondInvite(n.projectId, true, n.id)}
             >
               Chấp nhận
             </Button>
           </div>
         )}
-      </List.Item>
+      </div>
     );
-  }, [formatNotificationTime, handleNotificationClick, handleRespondInvite, isDark]);
+  }, [formatNotificationTime, handleNotificationClick, handleRespondInvite]);
 
   const content = (
     <div
       onClick={(e) => e.stopPropagation()}
-      style={{
-        padding: 0,
-        width: 400,
-        borderRadius: 10,
-        overflow: "hidden",
-        background: isDark ? "#1d1d1f" : "#ffffff",
-      }}
+      className="w-[400px] bg-white dark:bg-[#0a0a0a] rounded-[24px] overflow-hidden border border-gray-100 dark:border-white/10 shadow-2xl"
     >
-      <Card
-        title={<span style={{ color: isDark ? "#fff" : "#1d1d1f" }}>Thông báo</span>}
-        styles={{
-          body: { padding: 0 },
-          header: {
-            background: isDark ? "#1d1d1f" : "#ffffff",
-            borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#f0f0f0"}`,
-            color: isDark ? "#fff" : "#1d1d1f",
-          },
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "8px 16px",
-            borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#f0f0f0"}`,
-            background: isDark ? "#1d1d1f" : "#ffffff",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Switch size="small" checked={onlyRead} onChange={(v) => setOnlyRead(v)} />
-            <span style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.85)" : "#1d1d1f" }}>
-              Chỉ hiện thông báo đã đọc
-            </span>
-          </div>
+      <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
+        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Thông báo</h3>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold text-gray-400">Chỉ hiện đã đọc</span>
+          <Switch size="small" checked={onlyRead} onChange={setOnlyRead} />
         </div>
+      </div>
 
+      <div className="p-2">
         <Tabs
           activeKey={activeTab}
-          onChange={(key) => setActiveTab(key)}
+          onChange={setActiveTab}
           centered
+          className="custom-notification-tabs"
           items={[
             {
               key: "live",
-              label: `Tất cả (${notifications.length})`,
+              label: (
+                <span className="text-xs font-bold px-4">
+                  Tất cả ({notifications.length})
+                </span>
+              ),
               children: (
-                <div style={{ maxHeight: 400, overflowY: "auto", padding: 8, background: isDark ? "#1d1d1f" : "#fff" }}>
-                  <List
-                    loading={loading}
-                    dataSource={filteredNotifications}
-                    renderItem={renderNotification}
-                    locale={{ emptyText: "Không có thông báo nào" }}
-                  />
+                <div className="max-h-[450px] overflow-y-auto px-2 py-2">
+                  {filteredNotifications.length > 0 ? (
+                    filteredNotifications.map(n => renderNotification(n))
+                  ) : (
+                    <div className="py-12 flex flex-col items-center justify-center opacity-50">
+                      <Bell className="mb-2 text-gray-400" />
+                      <span className="text-xs font-bold">Không có thông báo nào</span>
+                    </div>
+                  )}
                 </div>
               ),
             },
             {
               key: "unread",
-              label: `Chưa đọc (${unreadCount})`,
+              label: (
+                <span className="text-xs font-bold px-4 flex items-center gap-2">
+                  Chưa đọc <Badge count={unreadCount} size="small" className="notification-badge" />
+                </span>
+              ),
               children: (
-                <div style={{ maxHeight: 400, overflowY: "auto", padding: 8, background: isDark ? "#1d1d1f" : "#fff" }}>
-                  <List
-                    loading={loading}
-                    dataSource={unreadNotifications}
-                    renderItem={renderNotification}
-                    locale={{ emptyText: "Không có thông báo chưa đọc" }}
-                  />
+                <div className="max-h-[450px] overflow-y-auto px-2 py-2">
+                  {unreadNotifications.length > 0 ? (
+                    unreadNotifications.map(n => renderNotification(n))
+                  ) : (
+                    <div className="py-12 flex flex-col items-center justify-center opacity-50">
+                      <Check className="mb-2 text-gray-400" />
+                      <span className="text-xs font-bold">Bạn đã đọc hết thông báo!</span>
+                    </div>
+                  )}
                 </div>
               ),
             },
           ]}
         />
-      </Card>
+      </div>
+
+      <div className="p-3 bg-gray-50/50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/5 text-center">
+        <button className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mx-auto">
+          Xem tất cả lịch sử <ExternalLink size={10} />
+        </button>
+      </div>
+
+      <style jsx global>{`
+        .custom-notification-tabs .ant-tabs-nav::before {
+            border-bottom: none !important;
+        }
+        .custom-notification-tabs .ant-tabs-tab-btn {
+            font-size: 11px !important;
+        }
+        .notification-badge .ant-badge-count {
+            background: #3b82f6 !important;
+            box-shadow: none !important;
+        }
+      `}</style>
     </div>
   );
 
@@ -263,23 +264,18 @@ export function NotificationMenu() {
       open={open}
       onOpenChange={setOpen}
       popupRender={() => content}
+      overlayClassName="rounded-3xl"
     >
       <div
-        className={`i-box ${open ? "active" : ""} hover:bg-gray-50 dark:hover:bg-neutral-800`}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 32,
-          height: 32,
-          borderRadius: 8,
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          position: "relative",
-        }}
+        className={cn(
+          "relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 cursor-pointer",
+          open
+            ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
+            : "bg-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
+        )}
       >
-        <Badge count={unreadCount} size="small" offset={[2, -2]}>
-          <BellOutlined style={{ fontSize: 20 }} />
+        <Badge count={unreadCount} size="small" offset={[2, -2]} className="notification-badge-main">
+          <Bell size={18} />
         </Badge>
       </div>
     </Dropdown>

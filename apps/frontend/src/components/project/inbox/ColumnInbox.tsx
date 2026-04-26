@@ -38,26 +38,26 @@ export default function Column({
 }: Props) {
   const { activeItem, registerScrollContainer, overData, overId } =
     useDragContext();
-    const loadedRef = useRef(false);
+  const loadedRef = useRef(false);
 
-    useEffect(() => {
-      // ❌ Không fetch ở overlay column
-      if (isOverlay) return;
+  useEffect(() => {
+    // ❌ Không fetch ở overlay column
+    if (isOverlay) return;
 
-      // ❌ Không fetch khi đang kéo card
-      if (activeItem?.type === 'CARD') return;
+    // ❌ Không fetch khi đang kéo card
+    if (activeItem?.type === 'CARD') return;
 
-      // ❌ Đã load rồi thì thôi
-      if (loadedRef.current) return;
+    // ❌ Đã load rồi thì thôi
+    if (loadedRef.current) return;
 
-      loadedRef.current = true;
+    loadedRef.current = true;
 
-      projectService.getCardByColumn(column.id).then((res: any) => {
-        if (res.success && Array.isArray(res.data)) {
-          projectStore.getState().addCard(column.id, res.data);
-        }
-      });
-    }, [column.id, isOverlay, activeItem?.type]);
+    projectService.getCardByColumn(column.id).then((res: any) => {
+      if (res.success && Array.isArray(res.data)) {
+        projectStore.getState().addCard(column.id, res.data);
+      }
+    });
+  }, [column.id, isOverlay, activeItem?.type]);
 
   const cards = projectStore((state) => state.cards);
   const columnCards = projectStore((state) => state.columnCards);
@@ -72,13 +72,17 @@ export default function Column({
   if (!projectId) return null;
 
   const isDraggingColumn = activeItem?.type === 'COLUMN';
-  const isDraggingCard = activeItem?.type === 'CARD';
 
   /* ===================== */
   /* Sortable + Droppable */
   /* ===================== */
 
-  const { setNodeRef: setSortableRef, transform, transition } = useSortable({
+  const {
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: column.id,
     data: { type: 'COLUMN', boardId, boardType, columnId: column.id, index },
     disabled: boardType !== 'board',
@@ -118,64 +122,52 @@ export default function Column({
   /* Trello-style overlay */
   /* ===================== */
 
-  // ✅ Luôn lấy height ban đầu → không bị giật
-  const overlayHeight =
-    activeItem?.type === 'CARD'
-      ? activeItem.rect?.current?.initial?.height ?? 96
-      : 96;
-
-  /**
-   * overlayIndex CHỈ tính khi:
-   * - đang kéo CARD
-   * - over CARD cùng column
-   * - dựa vào vị trí chuột (trên / dưới card)
-   */
-  const overlayIndex = useMemo(() => {
-    if (!isDraggingCard || isOverlay) return null;
-    if (!overData || overData.type !== 'CARD') return null;
-    if (overData.columnId !== column.id) return null;
-
-    const idx = cardIds.indexOf(String(overId));
-    if (idx === -1) return null;
-
-    const pointerY =
-      (activeItem?.activatorEvent as MouseEvent | null)?.clientY ?? 0;
-
-    const overRect = activeItem?.over?.rect;
-    if (!overRect) return idx;
-
-    const middleY = overRect.top + overRect.height / 2;
-
-    // ✅ Trello logic
-    return pointerY > middleY ? idx + 1 : idx;
-  }, [
-    isDraggingCard,
-    isOverlay,
-    overData,
-    overId,
-    cardIds,
-    column.id,
-    activeItem,
-  ]);
-
-  const InsertOverlay = ({ height }: { height: number }) => (
-    <li
-      className="rounded-xl border-2 border-dashed border-blue-400/80 bg-blue-500/15 animate-pulse pointer-events-none"
-      style={{ height }}
-    />
+  const ColumnPlaceholder = useMemo(
+    () => (
+      <div
+        className="w-full h-full rounded-2xl border-2 border-dashed border-blue-400/50 bg-blue-500/5 dark:bg-blue-400/5 animate-pulse flex flex-col p-4 shadow-inner min-h-[200px]"
+      >
+        <div className="h-6 bg-blue-300/30 dark:bg-blue-300/20 rounded w-1/2 mb-6" />
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 bg-blue-200/20 dark:bg-blue-200/10 rounded-xl border border-blue-300/20" />
+          ))}
+        </div>
+      </div>
+    ),
+    []
   );
 
   /* ===================== */
   /* Render */
   /* ===================== */
 
+  if (isDragging && !isOverlay) {
+    return (
+      <div
+        ref={setSortableRef}
+        id={column.id}
+        style={style}
+        className="flex-shrink-0 w-full px-2"
+      >
+        {ColumnPlaceholder}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setRef}
       id={column.id}
       data-column-id={column.id}
-      style={style}
-      className="flex flex-col h-full min-h-0 flex-shrink-0"
+      style={{
+        ...style,
+        ...(isOverlay ? { cursor: 'grabbing' } : {})
+      }}
+      className={`
+        flex flex-col h-full min-h-0 flex-shrink-0 transition-opacity duration-300
+        ${isOverlay ? 'shadow-2xl ring-4 ring-blue-500/30 rotate-[2deg] scale-[1.05] z-[9999] opacity-90' : 'opacity-100'}
+      `}
     >
       {/* Header */}
       <div className="shrink-0 p-3 pt-0">
@@ -200,26 +192,16 @@ export default function Column({
                 if (!card) return null;
 
                 return (
-                  <Fragment key={cardId}>
-                    {overlayIndex === idx && (
-                      <InsertOverlay height={overlayHeight} />
-                    )}
-
-                    <Card
-                      card={card}
-                      columnId={column.id}
-                      boardId={boardId}
-                      boardType={boardType}
-                      index={idx}
-                    />
-                  </Fragment>
+                  <Card
+                    key={cardId}
+                    card={card}
+                    columnId={column.id}
+                    boardId={boardId}
+                    boardType={boardType}
+                    index={idx}
+                  />
                 );
               })}
-
-              {/* Overlay ở CUỐI */}
-              {overlayIndex === cardIds.length && (
-                <InsertOverlay height={overlayHeight} />
-              )}
             </ol>
           </SortableContext>
         </div>

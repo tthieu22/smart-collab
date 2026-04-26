@@ -3,34 +3,26 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@smart/components/ui/card';
-import { newsService } from '@smart/services/news.service';
+import { useNewsStore } from '@smart/store/news';
 import { Newspaper, ChevronRight } from 'lucide-react';
 
 export function NewsPromoSideCard() {
-  const [previews, setPreviews] = useState<{ id: string; excerpt: string; title: string }[]>([]);
+  const { articles, fetchPublished, isInitialized } = useNewsStore();
 
   useEffect(() => {
-    let cancelled = false;
-    newsService
-      .listPublished()
-      .then((list) => {
-        if (cancelled) return;
-        setPreviews(
-          list.data.slice(0, 3).map((a) => {
-            const oneLine = a.content.replace(/\s+/g, ' ').trim();
-            return {
-              id: a.id,
-              title: a.title || 'Tin tức',
-              excerpt: oneLine.length > 80 ? `${oneLine.slice(0, 80)}…` : oneLine,
-            };
-          }),
-        );
-      })
-      .catch(() => { });
-    return () => {
-      cancelled = true;
+    if (!isInitialized) {
+      fetchPublished({ limit: 3 });
+    }
+  }, [fetchPublished, isInitialized]);
+
+  const previews = articles.slice(0, 3).map((a) => {
+    const oneLine = a.content.replace(/\s+/g, ' ').trim();
+    return {
+      id: a.id,
+      title: a.title || 'Tin tức',
+      excerpt: oneLine.length > 80 ? `${oneLine.slice(0, 80)}…` : oneLine,
     };
-  }, []);
+  });
 
   return (
     <Card padding="small" className="dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/10 shadow-sm">

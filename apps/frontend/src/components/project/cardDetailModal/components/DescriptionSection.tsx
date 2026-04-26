@@ -137,7 +137,7 @@ const DescriptionSection: React.FC<Props> = ({
             </Dropdown>
           </div>
         }
-        bordered={false}
+        variant="borderless"
         styles={{ body: { padding: 16 }, header: { padding: '12px 16px' } }}
       >
         {isGenerating ? (

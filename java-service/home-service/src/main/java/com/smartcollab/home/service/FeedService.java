@@ -127,4 +127,45 @@ public class FeedService {
                 .comments(commentDTOs)
                 .build();
     }
+    public PostDTO getPostById(String postId, String currentUserId) {
+        return postRepository.findById(postId).map(post -> {
+            Map<String, Long> summary = new HashMap<>();
+            String[] types = {"LIKE", "LOVE", "HAHA", "WOW", "SAD", "ANGRY"};
+            for (String type : types) {
+                summary.put(type.toLowerCase(), reactionRepository.countByPostIdAndType(post.getId(), type));
+            }
+            Optional<Reaction> myReaction = reactionRepository.findByPostIdAndAuthorId(post.getId(), currentUserId);
+            
+            return PostDTO.builder()
+                .id(post.getId())
+                .authorId(post.getAuthorId())
+                .content(post.getContent())
+                .media(post.getMedia())
+                .createdAt(post.getCreatedAt())
+                .commentCount(commentRepository.countByPostId(post.getId()))
+                .reactionSummary(summary)
+                .myReaction(myReaction.map(r -> r.getType().toLowerCase()).orElse(null))
+                .bookmarkedByMe(false)
+                .visibility(post.getVisibility())
+                .mood(post.getMood())
+                .backgroundStyle(post.getBackgroundStyle())
+                .title(post.getTitle())
+                .linkUrl(post.getLinkUrl())
+                .build();
+        }).orElse(null);
+    }
+
+    public List<CommentDTO> getCommentsByPostId(String postId) {
+        return commentRepository.findAllByPostId(postId).stream().map(c -> 
+            CommentDTO.builder()
+                .id(c.getId())
+                .postId(c.getPostId())
+                .authorId(c.getAuthorId())
+                .content(c.getContent())
+                .createdAt(c.getCreatedAt())
+                .likeCount(0)
+                .likedByMe(false)
+                .build()
+        ).collect(Collectors.toList());
+    }
 }

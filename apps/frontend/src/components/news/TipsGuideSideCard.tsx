@@ -8,22 +8,17 @@ import { pickRandomNewsTips } from '@smart/lib/news-tips';
 import type { NewsArticle } from '@smart/types/ai-autopost';
 import { Lightbulb, Info } from 'lucide-react';
 
+import { useNewsStore } from '@smart/store/news';
+
 export function TipsGuideSideCard() {
-  const [tipArticles, setTipArticles] = useState<NewsArticle[]>([]);
+  const { tipArticles, fetchTips, isTipsInitialized } = useNewsStore();
   const [staticTips, setStaticTips] = useState<string[]>([]);
 
   useEffect(() => {
-    let cancelled = false;
-    newsService
-      .listTips()
-      .then((list) => {
-        if (!cancelled) setTipArticles(list.slice(0, 3));
-      })
-      .catch(() => { });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!isTipsInitialized) {
+      fetchTips();
+    }
+  }, [fetchTips, isTipsInitialized]);
 
   useEffect(() => {
     setStaticTips(pickRandomNewsTips(1));
@@ -49,7 +44,7 @@ export function TipsGuideSideCard() {
                 className="flex gap-2 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-neutral-900 transition-colors group border border-transparent hover:border-amber-100/50 dark:hover:border-amber-900/20"
               >
                 <div className="mt-1">
-                   <Info size={12} className="text-blue-500" />
+                  <Info size={12} className="text-blue-500" />
                 </div>
                 <div className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                   {a.content.replace(/\s+/g, ' ').trim()}

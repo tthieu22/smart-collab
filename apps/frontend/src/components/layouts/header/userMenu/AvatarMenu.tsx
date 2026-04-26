@@ -1,20 +1,22 @@
 import { useRouter } from "next/navigation";
 import { Dropdown, Avatar, Card, Divider } from "antd";
 import {
-  UserOutlined,
-  LogoutOutlined,
-  SettingOutlined,
-  RobotOutlined,
-  BgColorsOutlined,
-  BulbOutlined,
-  MoonOutlined,
-  DesktopOutlined,
-  CheckOutlined,
-} from "@ant-design/icons";
+  User,
+  LogOut,
+  Settings,
+  Bot,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
+  Check,
+  ChevronRight
+} from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useUserStore } from "@smart/store/user";
 import { useBoardStore } from "@smart/store/setting";
 import UserAvatar from "@smart/components/ui/UserAvatar";
+import { cn } from "@smart/lib/utils";
 
 export function AvatarMenu() {
   const router = useRouter();
@@ -22,7 +24,6 @@ export function AvatarMenu() {
   const { currentUser, clearUserStore } = useUserStore();
   const isUserAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
 
-  // FeedStore userId
   const meId = currentUser?.id || "";
 
   const theme = useBoardStore((s) => s.theme);
@@ -38,7 +39,7 @@ export function AvatarMenu() {
     setCurrentTheme(val);
     try {
       localStorage.setItem("theme", val);
-    } catch {}
+    } catch { }
 
     if (val === "dark") {
       document.documentElement.classList.add("dark");
@@ -83,14 +84,14 @@ export function AvatarMenu() {
     {
       key: "card",
       label: (
-        <Card variant="borderless" styles={{ body: { padding: "8px 4px" } }} className="dark:bg-neutral-900 border-none">
-          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 240 }}>
+        <Card variant="borderless" styles={{ body: { padding: "8px 4px" } }} className="dark:bg-neutral-900 border-none bg-transparent">
+          <div className="flex items-center gap-4 min-w-[240px]">
             <UserAvatar userId={meId} size="md" allowChangeMood={false} />
-            <div style={{ overflow: "hidden" }}>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }} className="truncate">
+            <div className="overflow-hidden">
+              <div className="font-black text-sm text-gray-900 dark:text-white truncate">
                 {currentUser?.email?.split("@")[0] || "Khách"}
               </div>
-              <div style={{ color: "#888", fontSize: 12 }} className="truncate">
+              <div className="text-[11px] font-bold text-gray-500 truncate">
                 {currentUser?.email || "user@example.com"}
               </div>
             </div>
@@ -101,46 +102,46 @@ export function AvatarMenu() {
     { type: 'divider' },
     {
       key: "profile",
-      icon: <UserOutlined />,
-      label: "Thông tin cá nhân",
+      icon: <User size={16} />,
+      label: <span className="text-xs font-bold">Thông tin cá nhân</span>,
     },
     {
       key: "user-setting",
-      icon: <SettingOutlined />,
-      label: "Cài đặt người dùng",
+      icon: <Settings size={16} />,
+      label: <span className="text-xs font-bold">Cài đặt người dùng</span>,
     },
     {
       key: "theme",
-      icon: <BgColorsOutlined />,
-      label: "Giao diện",
+      icon: <Palette size={16} />,
+      label: <span className="text-xs font-bold">Giao diện</span>,
       children: [
         {
           key: "theme-light",
-          icon: <BulbOutlined />,
+          icon: <Sun size={14} />,
           label: (
-            <div className="flex items-center justify-between min-w-[120px]">
+            <div className="flex items-center justify-between min-w-[120px] text-xs font-bold">
               <span>Sáng</span>
-              {currentTheme === "light" && <CheckOutlined className="text-blue-500" />}
+              {currentTheme === "light" && <Check size={14} className="text-blue-500" />}
             </div>
           )
         },
         {
           key: "theme-dark",
-          icon: <MoonOutlined />,
+          icon: <Moon size={14} />,
           label: (
-            <div className="flex items-center justify-between min-w-[120px]">
+            <div className="flex items-center justify-between min-w-[120px] text-xs font-bold">
               <span>Tối</span>
-              {currentTheme === "dark" && <CheckOutlined className="text-blue-500" />}
+              {currentTheme === "dark" && <Check size={14} className="text-blue-500" />}
             </div>
           )
         },
         {
           key: "theme-system",
-          icon: <DesktopOutlined />,
+          icon: <Monitor size={14} />,
           label: (
-            <div className="flex items-center justify-between min-w-[120px]">
+            <div className="flex items-center justify-between min-w-[120px] text-xs font-bold">
               <span>Hệ thống</span>
-              {currentTheme === "system" && <CheckOutlined className="text-blue-500" />}
+              {currentTheme === "system" && <Check size={14} className="text-blue-500" />}
             </div>
           )
         }
@@ -149,15 +150,15 @@ export function AvatarMenu() {
     ...(isUserAdmin ? [
       {
         key: "ai-auto-post",
-        icon: <RobotOutlined />,
-        label: "AI Auto Post",
+        icon: <Bot size={16} />,
+        label: <span className="text-xs font-bold">AI Auto Post</span>,
       }
     ] : []),
     { type: 'divider' },
     {
       key: "logout",
-      icon: <LogoutOutlined />,
-      label: "Đăng xuất",
+      icon: <LogOut size={16} />,
+      label: <span className="text-xs font-bold">Đăng xuất</span>,
       danger: true,
     },
   ];
@@ -172,14 +173,10 @@ export function AvatarMenu() {
       overlayClassName="avatar-menu-dropdown"
     >
       <div
-        className={`i-box ${open ? "active" : ""} hover:bg-gray-50 dark:hover:bg-neutral-800 flex items-center justify-center`}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-        }}
+        className={cn(
+          "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5",
+          open && "bg-gray-100 dark:bg-white/5"
+        )}
       >
         <UserAvatar userId={meId} size="sm" allowChangeMood={true} />
       </div>
