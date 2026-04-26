@@ -146,6 +146,13 @@ class ProjectService {
       method: 'POST',
     });
   }
+
+  askBoard(boardId: string, query: string) {
+    return autoRequest<any>(`/projects/${boardId}/ai-ask-board`, {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    });
+  }
 }
 
 export const projectService = new ProjectService();

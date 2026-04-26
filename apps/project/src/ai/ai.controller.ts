@@ -48,4 +48,10 @@ export class AiController {
     this.logger.log('[ai.analyze-board]');
     return this.aiService.analyzeBoard(payload);
   }
+
+  @MessagePattern({ cmd: 'ai.ask-board' })
+  async askBoard(@Payload() payload: any) {
+    this.logger.log('[ai.ask-board]');
+    return this.aiService.askBoard(payload);
+  }
 }

@@ -247,9 +247,6 @@ export class AiService {
       return { success: false, message: 'Project not found' };
     }
 
-    // 2. Find the target board in the project structure
-    // If payload.boardId is a project ID, take the first board. 
-    // If it's a board ID, find it.
     let targetBoard = project.boards?.find((b: any) => b.id === payload.boardId);
     if (!targetBoard && project.boards?.length > 0) {
       targetBoard = project.boards[0];
@@ -288,6 +285,106 @@ export class AiService {
       this.logger.error('Parse board analysis failed', aiRes.content);
       return { success: false, message: 'AI analysis failed to parse' };
     }
+  }
+
+  async askBoard(payload: { boardId: string; query: string; userId?: string; locale?: string }) {
+    const locale = payload?.locale ?? 'vi';
+    const query = payload.query.toLowerCase();
+
+    // 1. Get project data
+    const boardRes = await this.rpc<any>('project.get', { 
+      projectId: payload.boardId,
+      userId: payload.userId 
+    });
+    const project = this.unwrap(boardRes);
+    if (!project) return { success: false, message: 'Project not found' };
+
+    let targetBoard = project.boards?.find((b: any) => b.id === payload.boardId);
+    if (!targetBoard && project.boards?.length > 0) targetBoard = project.boards[0];
+    if (!targetBoard) return { success: false, message: 'No board found' };
+
+    // 2. Intelligent Filtering based on query
+    // If project is huge, we don't send everything.
+    // We pick cards that seem relevant to the query.
+    const isMemberQuery = query.includes('thành viên') || query.includes('member') || query.includes('ai') || query.includes('người');
+    const isDeadlineQuery = query.includes('hạn') || query.includes('ngày') || query.includes('deadline') || query.includes('khi nào');
+    const isPriorityQuery = query.includes('ưu tiên') || query.includes('quan trọng') || query.includes('gấp');
+    const isStatQuery = query.includes('thống kê') || query.includes('bao nhiêu') || query.includes('tổng');
+
+    const filteredColumns = targetBoard.columns?.map((col: any) => {
+      let cards = col.cards || [];
+      
+      // If query is specific, we can filter or just summarize cards
+      if (cards.length > 20) {
+        if (isMemberQuery) {
+          // Keep cards with members or relevant titles
+          cards = cards.filter((c: any) => c.members?.length > 0 || query.split(' ').some(q => c.title.toLowerCase().includes(q)));
+        } else if (isDeadlineQuery) {
+          cards = cards.filter((c: any) => c.deadline || c.startDate);
+        } else if (isPriorityQuery) {
+          cards = cards.filter((c: any) => c.priority >= 2);
+        }
+        
+        // If still too many, just take top 15 and summarize the rest
+        if (cards.length > 15) cards = cards.slice(0, 15);
+      }
+
+      return {
+        title: col.title,
+        cardCount: col.cards?.length || 0,
+        cards: cards.map((card: any) => ({
+          title: card.title,
+          status: card.status,
+          priority: card.priority,
+          deadline: card.deadline,
+          assignees: card.members?.length > 0 
+            ? card.members.map((m: any) => m.userName) 
+            : (card.createdByName ? [card.createdByName] : []),
+          progress: card.checklist?.length ? Math.round((card.checklist.filter((i: any) => i.done).length / card.checklist.length) * 100) : 0
+        }))
+      };
+    });
+
+    // 3. Pre-calculate some stats to help AI
+    const workload: Record<string, number> = {};
+    const overdueTasks: string[] = [];
+    const now = new Date();
+
+    targetBoard.columns?.forEach((col: any) => {
+      col.cards?.forEach((card: any) => {
+        card.members?.forEach((m: any) => {
+          workload[m.userName] = (workload[m.userName] || 0) + 1;
+        });
+        if (card.deadline && new Date(card.deadline) < now) {
+          overdueTasks.push(card.title);
+        }
+      });
+    });
+
+    const context = {
+      project: { name: project.name, description: project.description },
+      boardTitle: targetBoard.title,
+      query: payload.query,
+      data: filteredColumns,
+      insights: {
+        memberWorkload: workload,
+        overdueTasks: overdueTasks.slice(0, 10),
+        totalCards: targetBoard.columns?.reduce((acc: number, c: any) => acc + (c.cards?.length || 0), 0)
+      }
+    };
+
+    const prompt = this.promptFactory.askBoard(context, locale);
+    const aiRes = await this.llm.complete(prompt);
+
+    return { 
+      success: true, 
+      answer: aiRes.content,
+      suggestedQueries: [
+        "Những việc nào đang bị quá hạn?",
+        "Ai đang phụ trách nhiều việc nhất?",
+        "Tóm tắt tiến độ toàn bộ board"
+      ]
+    };
   }
 
   async generateNewsPost(payload: {

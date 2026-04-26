@@ -105,4 +105,26 @@ export class AiController {
 
     return result;
   }
+
+  /**
+   * POST /projects/:id/ai-ask-board
+   */
+  @Post(':id/ai-ask-board')
+  async askBoard(@Param('id') boardId: string, @Body('query') query: string, @Req() req: any) {
+    const result = await firstValueFrom(
+      this.aiClient
+        .send(
+          { cmd: 'ai.ask-board' },
+          {
+            boardId,
+            query,
+            userId: req.user.userId,
+            locale: 'vi',
+          },
+        )
+        .pipe(timeout(200000)),
+    );
+
+    return result;
+  }
 }
