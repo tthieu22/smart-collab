@@ -17,6 +17,8 @@ public class AutoPostSettings {
     private int intervalMinutes;
     private String contentTemplate;
     private String locale;
+    private java.util.List<String> rssSources;
+    private int topicTrackingDays;
     private LocalDateTime lastRunAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

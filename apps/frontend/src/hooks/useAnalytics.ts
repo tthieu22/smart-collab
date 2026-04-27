@@ -2,25 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { autoRequest } from '../services/auto.request';
+import { projectStore } from '../store/project';
 
-interface AnalyticsData {
-  boost: number;
-  completed: number;
-  target: number;
-  isTeamMode: boolean;
-  trend: 'up' | 'down' | 'neutral';
-  topPerformer?: { name: string; avatar: string; count: number } | null;
-  streak?: number;
-  dailyStats: Array<{ date: string; completed: number; created: number }>;
-}
+import { AnalyticsData } from '@smart/types/project';
 
 export function useAnalytics({ teamId }: { teamId?: string | null }) {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const storeData = projectStore((s) => s.analyticsData);
+  const setStoreData = projectStore((s) => s.setAnalyticsData);
+
+  const [data, setData] = useState<AnalyticsData | null>(storeData);
+  const [isLoading, setIsLoading] = useState(!storeData);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchAnalytics() {
+      // If we already have data in the store, don't fetch unless we want to force refresh
+      // or if the data is stale (optionally).
+      // Here we check if data exists.
+      if (storeData) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
         const res = await autoRequest<any>('/projects/analytics', {
@@ -30,6 +33,7 @@ export function useAnalytics({ teamId }: { teamId?: string | null }) {
 
         if (res.success) {
           setData(res.data);
+          setStoreData(res.data);
         } else {
           setError(res.message || 'Failed to fetch analytics');
         }
@@ -41,7 +45,7 @@ export function useAnalytics({ teamId }: { teamId?: string | null }) {
     }
 
     fetchAnalytics();
-  }, [teamId]);
+  }, [teamId, storeData, setStoreData]);
 
-  return { data, isLoading, error };
+  return { data: data || storeData, isLoading, error };
 }

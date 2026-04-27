@@ -229,36 +229,38 @@ Rules:
   }
 
   generateNewsPost(processedTemplate: string, context: Record<string, unknown>, locale = 'vi') {
-    return `
-You are a creative social news editor. 
-Search your knowledge and use the PROVIDED web data to find real, specific details about this topic: "${processedTemplate}"
+  const angle = context.angle || 'tin tức tổng hợp';
+  return `
+You are a high-end creative news editor for a premium tech platform.
+Topic: "${processedTemplate}"
+Angle: ${angle}
 
-PROVIDED WEB DATA (use as primary source):
-${context.scraped_web_data || 'No direct web data found. Use your general knowledge.'}
+STRATEGY:
+- Combine data from RSS/Web sources with your deep knowledge.
+- Do NOT just summarize; rewrite with a unique "angle" (e.g., deep analysis, beginner guide, perspective 2026).
+- Make it sound human-written, professional, and SEO-friendly.
 
-IMAGE CANDIDATES (Pick one for imageUrl if it matches the topic):
+PROVIDED WEB DATA (primary source):
+${context.scraped_web_data || 'Use your general knowledge and real-world tech trends.'}
+
+IMAGE CANDIDATES:
 ${context.scraped_images && (context.scraped_images as string[]).length > 0 
-  ? (context.scraped_images as string[]).join('\n') 
-  : 'No direct image links found.'}
+? (context.scraped_images as string[]).join('\n') 
+: 'No direct image links found.'}
 
-Write an engaging news post with a catchy title. 
-Rules:
-1. Language: ${locale}
-2. DO NOT repeat the instruction. Write the ACTUAL post content.
-3. Include a real link to a news source (Google News, Reuters, etc.) if possible. NEVER use Google Search links (google.com/search).
-4. For "imageUrl": provide a DIRECT image link (ending in .jpg, .png, etc.). 
-   - PRIORITIZE one of the IMAGE CANDIDATES above if they are relevant.
-   - DO NOT use text descriptions like "An image of...".
-   - If you cannot find a direct link or the candidates are irrelevant, use this high-quality placeholder: https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1080
-5. Return ONLY valid JSON: { 
-      "title": "A catchy title",
-      "content": "...", 
-      "imageUrl": "A DIRECT IMAGE URL ONLY (no text descriptions)",
-      "linkUrl": "A real news article URL (no search links)",
-      "imageKeywords": "3-5 English keywords for image search (e.g., artificial intelligence, robot, tech)"
-   }
+Rules for Vietnamese (if locale=vi):
+- Use natural, professional yet engaging vocabulary (e.g., "Đột phá", "Tầm nhìn", "Thực hư chuyện", "Góc nhìn chuyên gia").
+- Structure: Clear intro, 2-3 body paragraphs with insights, engaging conclusion.
+
+Return ONLY valid JSON: { 
+    "title": "Stunning catchy title",
+    "content": "Professional unique article content. Must be DETAILED and at least 300-400 words. IMPORTANT: Use \\n for newlines inside this string. Do NOT use actual line breaks.", 
+    "imageUrl": "Pick ONE best DIRECT image link from candidates OR leave empty for search",
+    "linkUrl": "Source link",
+    "imageKeywords": "3 search keywords in English specifically related to the ARTICLE TOPIC (e.g. if topic is 'food', use 'vietnamese cuisine, street food'). DO NOT use generic 'technology' keywords unless relevant."
+ }
 `;
-  }
+}
 
   // ================= BOARD ANALYSIS / SUMMARY =================
   analyzeBoard(boardInfo: any, locale = 'vi') {

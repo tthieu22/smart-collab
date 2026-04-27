@@ -54,4 +54,22 @@ export class AiController {
     this.logger.log('[ai.ask-board]');
     return this.aiService.askBoard(payload);
   }
+
+  @MessagePattern({ cmd: 'ai.discover-content' })
+  async discoverContent(@Payload() payload: any) {
+    this.logger.log('[ai.discover-content]');
+    return this.aiService.discoverContent(payload);
+  }
+
+  @MessagePattern({ cmd: 'ai.search-images' })
+  async searchImages(@Payload() payload: any) {
+    this.logger.log('[ai.search-images]');
+    return this.aiService.searchImages(payload);
+  }
+
+  @MessagePattern({ cmd: 'ai.get-embeddings' })
+  async getEmbeddings(@Payload() payload: any) {
+    this.logger.log('[ai.get-embeddings]');
+    return this.aiService.getEmbeddings(payload);
+  }
 }

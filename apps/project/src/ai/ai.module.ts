@@ -5,6 +5,8 @@ import { DomainService } from './domain.service';
 import { PromptFactory } from './prompt.factory';
 import { EventsPublisher } from './events.publisher';
 import { ScraperService } from './scraper.service';
+import { DiscoveryService } from './discovery.service';
+import { ImageService } from './image.service';
 
 import {
   ProjectGenerator,
@@ -48,7 +50,9 @@ import { ModelRegistryService } from '../llm/model-registry.service';
     CardViewGenerator,
     CardDetailGenerator,
     ModelRegistryService,
-    ScraperService
+    ScraperService,
+    DiscoveryService,
+    ImageService
   ],
 })
 export class AiModule {}

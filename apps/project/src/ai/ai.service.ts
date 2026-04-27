@@ -6,6 +6,8 @@ import { DomainService } from './domain.service';
 import { EventsPublisher } from './events.publisher';
 import { PromptFactory } from './prompt.factory';
 import { ScraperService } from './scraper.service';
+import { DiscoveryService } from './discovery.service';
+import { ImageService } from './image.service';
 import { LlmService } from '../llm/llm.service';
 
 import type { BuildProjectOutput } from './contracts';
@@ -34,6 +36,8 @@ export class AiService {
     private readonly events: EventsPublisher,
     private readonly promptFactory: PromptFactory,
     private readonly scraperService: ScraperService,
+    private readonly discoveryService: DiscoveryService,
+    private readonly imageService: ImageService,
     private readonly llm: LlmService,
 
     private readonly projectGen: ProjectGenerator,
@@ -387,7 +391,7 @@ export class AiService {
     };
   }
 
-  async generateNewsPost(payload: {
+   async generateNewsPost(payload: {
     template: string;
     context?: Record<string, unknown>;
     locale?: string;
@@ -430,36 +434,131 @@ export class AiService {
       locale,
     );
     const aiRes = await this.llm.complete(prompt);
-    let content = '';
+    let rawContent = (aiRes.content || '').trim();
+    this.logger.debug(`RAW AI RESPONSE: ${rawContent}`);
+    
     let contentObj: any = {};
-    try {
-      contentObj = JSON.parse(aiRes.content);
-      content = String(contentObj?.content ?? '').trim();
-    } catch {
-      content = String(aiRes.content ?? '').trim();
+    
+    // Defensive check: if it looks like JSON but has unescaped newlines, 
+    // try to find the block and sanitize it roughly.
+    const jsonStart = rawContent.indexOf('{');
+    const jsonEnd = rawContent.lastIndexOf('}');
+    
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+       let potentialJson = rawContent.substring(jsonStart, jsonEnd + 1);
+       try {
+         contentObj = JSON.parse(potentialJson);
+         this.logger.log('Successfully parsed JSON directly');
+       } catch (err) {
+         this.logger.warn(`Direct JSON parse failed: ${(err as any).message}. Attempting cleanup...`);
+         // Attempt cleanup: Replace actual newlines inside what appears to be the JSON block
+         try {
+           const cleanedJson = potentialJson
+             .replace(/\r?\n/g, '\\n') // Escape all newlines
+             .replace(/\\n\s*"/g, '"') // Unescape if it was just before a property
+             .replace(/"\s*\\n/g, '"'); // Unescape if it was just after a property
+           
+           // Actually, a safer way to clean "real" newlines in strings:
+           const superCleaned = potentialJson.replace(/(?<=:.*")(\r?\n)(?=.*")/g, "\\n");
+           
+           contentObj = JSON.parse(superCleaned);
+           this.logger.log('Successfully parsed JSON after string newline cleanup');
+         } catch {
+            // Last resort: extract fields via regex if JSON.parse keeps failing
+            this.logger.error('Final JSON parse failed. Extracting fields via regex...');
+            const titleMatch = potentialJson.match(/"title"\s*:\s*"([^"]+)"/);
+            const contentMatch = potentialJson.match(/"content"\s*:\s*"([\s\S]+?)"(?=\s*(?:,|\}))/);
+            const imageMatch = potentialJson.match(/"imageUrl"\s*:\s*"([^"]+)"/);
+            const kwMatch = potentialJson.match(/"imageKeywords"\s*:\s*"([^"]+)"/);
+            
+            if (titleMatch) contentObj.title = titleMatch[1];
+            if (contentMatch) contentObj.content = contentMatch[1].replace(/\\n/g, '\n').replace(/\n/g, ' ');
+            if (imageMatch) contentObj.imageUrl = imageMatch[1];
+            if (kwMatch) contentObj.imageKeywords = kwMatch[1];
+         }
+       }
+    }
+
+    this.logger.debug(`Parsed Content Object: ${JSON.stringify(contentObj)}`);
+
+    if (!contentObj.content && rawContent.length > 200 && !rawContent.startsWith('{')) {
+       this.logger.warn('AI did not return valid JSON content, using raw text as fallback');
+       contentObj.content = rawContent; 
     }
 
     const looksLikeTemplate =
-      !content || 
-      content.length < 20 || 
-      content.toLowerCase().includes(processedTemplate.toLowerCase().substring(0, 20)) ||
-      /\{\{\s*\w+\s*\}\}/i.test(content);
+      !contentObj.content || 
+      contentObj.content.length < 50 || 
+      contentObj.content.toLowerCase().includes(processedTemplate.toLowerCase().substring(0, 20)) ||
+      /\{\{\s*\w+\s*\}\}/i.test(contentObj.content);
 
-    if (looksLikeTemplate) {
-      return {
-        success: false,
-        message: 'LLM did not return usable news body (empty or template-like)',
+    const result = {
+      success: true,
+      title: contentObj.title || 'Tin tức mới',
+      content: typeof contentObj.content === 'string' ? contentObj.content : rawContent,
+      imageUrl: contentObj.imageUrl || null,
+      linkUrl: contentObj.linkUrl || (payload.context?.link as string) || null,
+      imageKeywords: contentObj.imageKeywords || null
+    };
+
+    // --- RELEVANT IMAGE REFINEMENT ---
+    if (!result.imageUrl || result.imageUrl.length < 5) {
+       this.logger.log(`No direct image from AI, performing semantic search for: ${result.title}`);
+       const relevantUrl = await this.imageService.searchRelevantImage({
+          title: result.title,
+          content: result.content,
+          keywords: result.imageKeywords
+       });
+       if (relevantUrl) result.imageUrl = relevantUrl;
+    }
+
+    this.logger.log(`Returning generated news: ${result.title}`);
+    return result;
+  }
+
+  async discoverContent(payload: { sources: string[]; strategy?: string; topic?: string }) {
+    this.logger.log(`Discover content using strategy: ${payload.strategy || 'RSS'}`);
+    
+    // If MANUAL with specific topic, just return that topic and skip RSS
+    if (payload.strategy === 'MANUAL' && payload.topic) {
+      return { 
+        success: true, 
+        items: [{
+          title: payload.topic,
+          content: `Manual topic: ${payload.topic}`,
+          link: '',
+          source: 'MANUAL'
+        }]
       };
     }
 
-    return {
-      success: true,
-      title: contentObj.title || 'Tin tức mới',
-      content: contentObj.content || content,
-      imageUrl: contentObj.imageUrl || null,
-      linkUrl: contentObj.linkUrl || null,
-      imageKeywords: contentObj.imageKeywords || null
-    };
+    const items = await this.discoveryService.discover(payload.sources);
+    
+    // Add trending topics if strategy is AI or MIXED
+    if (payload.strategy === 'AI' || payload.strategy === 'MIXED') {
+      const trends = await this.discoveryService.getTrendingTopics();
+      trends.forEach(topic => {
+        items.push({
+          title: topic,
+          content: `AI generated topic about ${topic}`,
+          link: '',
+          source: 'AI_TRENDS'
+        });
+      });
+    }
+
+    return { success: true, items };
+  }
+
+  async searchImages(payload: { query: string }) {
+    this.logger.log(`Searching images for: ${payload.query}`);
+    const urls = await this.imageService.searchImages(payload.query);
+    return { success: true, urls };
+  }
+
+  async getEmbeddings(payload: { text: string }) {
+    const vector = await this.llm.getEmbeddings(payload.text);
+    return { success: true, vector };
   }
 
   private async generateBackground(
@@ -589,7 +688,7 @@ export class AiService {
           } catch (err) {
             this.logger.error(
               `Card generation failed in column ${column.title}`,
-              err,
+              err as any,
             );
           }
         }

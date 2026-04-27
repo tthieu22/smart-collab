@@ -18,9 +18,17 @@ public class NewsArticle {
     private String category;
     private String title;
     private String content;
+    
+    // Deduplication fields
+    private String hash;
+    private String sourceUrl;
+    private List<Double> embedding;
+    
     /** Liên kết ngoài tùy chọn (ví dụ “Đọc thêm”). */
     private String linkUrl;
     private List<Map<String, Object>> media;
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 }

@@ -20,62 +20,81 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
     ? `${excerpt.slice(0, isGrid ? 100 : 180)}…`
     : excerpt;
 
+  const formatDate = (dateInput: any) => {
+    if (!dateInput) return 'Mới';
+    let date: Date;
+    if (Array.isArray(dateInput)) {
+      date = new Date(dateInput[0], (dateInput[1] || 1) - 1, dateInput[2] || 1, dateInput[3] || 0, dateInput[4] || 0);
+    } else {
+      date = new Date(dateInput);
+    }
+    return isNaN(date.getTime()) ? 'Mới' : date.toLocaleDateString('vi-VN');
+  };
+
   const content = (
-    <div className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isGrid ? 'flex-col h-full' : 'flex-row min-h-[240px]'
+    <div className={`group relative flex overflow-hidden rounded-[32px] border border-gray-100 bg-white/40 backdrop-blur-xl transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] dark:border-neutral-800 dark:bg-neutral-900/40 ring-1 ring-black/5 dark:ring-white/5 ${isGrid ? 'flex-col h-full' : 'flex-row min-h-[280px]'
       }`}>
       {/* Media Section */}
-      <div className={`relative overflow-hidden z-0 ${isGrid ? 'h-40 w-full' : 'w-1/3 h-full shrink-0'
+      <div className={`relative overflow-hidden z-0 ${isGrid ? 'h-56 w-full' : 'w-2/5 h-full shrink-0'
         }`}>
         {thumb?.url ? (
-          thumb.type?.toLowerCase() === 'image' ? (
-            <img
-              src={thumb.url}
-              alt=""
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-          ) : (
-            <video src={thumb.url} className="h-full w-full object-cover" muted />
-          )
+          <img
+            src={thumb.url}
+            alt={article.title}
+            className="h-full w-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
+          />
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-neutral-800">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No Image</span>
+          <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-neutral-800 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 animate-pulse" />
+            <span className="relative text-[10px] font-black text-gray-400 uppercase tracking-widest">Smart Discovery</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-        <span className={`absolute left-4 top-4 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border backdrop-blur-md shadow-sm ${article.category === 'TIP'
-          ? 'bg-amber-500/20 text-amber-100 border-amber-500/20'
-          : 'bg-blue-500/20 text-blue-100 border-blue-500/20'
-          }`}>
-          {article.category || 'News'}
-        </span>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-700" />
+
+        <div className="absolute left-4 top-4 flex flex-col gap-2">
+          <span className={`rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] border backdrop-blur-md shadow-lg ${article.category === 'TIP'
+            ? 'bg-amber-500/20 text-amber-100 border-amber-500/20'
+            : 'bg-indigo-500/20 text-indigo-100 border-indigo-500/20'
+            }`}>
+            {article.category || 'Discovery'}
+          </span>
+        </div>
       </div>
 
       {/* Content Section */}
-      <div className={`flex flex-1 flex-col justify-between ${isGrid ? 'p-4' : 'p-6'}`}>
+      <div className={`flex flex-1 flex-col justify-between ${isGrid ? 'p-6' : 'p-8'}`}>
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            <Calendar size={12} />
-            <span>{article.createdAt ? new Date(article.createdAt).toLocaleDateString('vi-VN') : 'Mới'}</span>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-1.5 text-[10px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-widest bg-blue-500/5 px-2 py-1 rounded-lg">
+              <Calendar size={10} strokeWidth={3} />
+              <span>{formatDate(article.createdAt)}</span>
+            </div>
+            <div className="h-1 w-1 rounded-full bg-gray-300 dark:bg-neutral-700" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">5 min read</span>
           </div>
 
-          <h3 className={`font-bold leading-tight text-gray-900 dark:text-gray-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ${isGrid ? 'text-lg line-clamp-2' : 'text-xl line-clamp-1'
+          <h3 className={`font-black leading-tight text-gray-900 dark:text-gray-100 mb-4 transition-all duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 ${isGrid ? 'text-xl line-clamp-2' : 'text-3xl line-clamp-2'
             }`}>
-            {article.title || 'Tin tức mới'}
+            {article.title || 'Untitled Discovery'}
           </h3>
-          <p className={`text-gray-500 dark:text-neutral-400 font-medium ${isGrid ? 'text-sm' : 'text-base leading-relaxed'
+          <p className={`text-gray-500 dark:text-neutral-400 font-medium leading-relaxed mb-6 ${isGrid ? 'text-sm line-clamp-3' : 'text-base line-clamp-3'
             }`}>
-            {excerptShort || 'Bài không có nội dung'}
+            {excerptShort || 'No summary available for this item.'}
           </p>
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-            Đọc tiếp
-            <ChevronRight size={14} className="stroke-[3]" />
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 group/btn">
+            <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] transition-all group-hover/btn:mr-1">
+              Explore Story
+            </span>
+            <div className="h-8 w-8 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 transition-all group-hover/btn:bg-blue-600 group-hover/btn:text-white">
+              <ChevronRight size={16} strokeWidth={3} />
+            </div>
+          </div>
 
           {actions && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               {actions}
             </div>
           )}

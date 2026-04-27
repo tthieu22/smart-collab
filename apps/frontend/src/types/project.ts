@@ -184,6 +184,18 @@ export interface Column {
   views?: CardView[];
 }
 
+// ------------------ ANALYTICS ------------------
+export interface AnalyticsData {
+  boost: number;
+  completed: number;
+  target: number;
+  isTeamMode: boolean;
+  trend: 'up' | 'down' | 'neutral';
+  topPerformer?: { name: string; avatar: string; count: number } | null;
+  streak?: number;
+  dailyStats: Array<{ date: string; completed: number; created: number }>;
+}
+
 // ------------------ BOARD ------------------
 export interface Board {
   id: string;

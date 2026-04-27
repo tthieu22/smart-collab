@@ -11,4 +11,7 @@ public interface NewsArticleRepository extends MongoRepository<NewsArticle, Stri
     List<NewsArticle> findByTitleRegex(String regex);
     @org.springframework.data.mongodb.repository.Query("{ '$or': [ { 'title': { '$regex': ?0, '$options': 'i' } }, { 'content': { '$regex': ?1, '$options': 'i' } } ] }")
     List<NewsArticle> findByTitleRegexOrContentRegex(String titleRegex, String contentRegex);
+    
+    boolean existsBySourceUrl(String sourceUrl);
+    boolean existsByHash(String hash);
 }

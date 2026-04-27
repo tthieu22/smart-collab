@@ -137,6 +137,21 @@ export class LlmService {
     };
   }
 
+  async getEmbeddings(text: string): Promise<number[]> {
+    try {
+      // Use OpenAI or HuggingFace or Ollama for embeddings
+      // Fallback to Ollama if locally available
+      const res = await axios.post('http://localhost:11434/api/embeddings', {
+        model: 'mxbai-embed-large',
+        prompt: text.substring(0, 512)
+      });
+      return res.data.embedding;
+    } catch (err) {
+      this.logger.warn('Embedding failed, returning empty vector');
+      return [];
+    }
+  }
+
   private async withRetry(
     fn: () => Promise<LlmResponse>,
     retries = 3,

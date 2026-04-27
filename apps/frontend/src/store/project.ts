@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { arrayMove } from '@dnd-kit/sortable';
-import { Board, Card, CardLabel, CardView, Column, Project, ProjectMember } from '@smart/types/project';
+import { AnalyticsData, Board, Card, CardLabel, CardView, Column, Project, ProjectMember } from '@smart/types/project';
 import { autoRequest } from '../services/auto.request';
 
 interface ProjectState {
@@ -20,9 +20,11 @@ interface ProjectState {
   boardColumns: Record<string, string[]>;
   columnCards: Record<string, string[]>;
   hasJoinedCurrentProject: boolean;
+  analyticsData: AnalyticsData | null;
 
   setActiveProjectId: (projectId: string | null) => void;
   setCurrentProject: (project: Project | null) => void;
+  setAnalyticsData: (data: AnalyticsData) => void;
   clearProjectStore: () => void;
 
   addProject: (project: Project) => void;
@@ -76,6 +78,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
   activeProjectId: null,
   currentProject: null,
   hasJoinedCurrentProject: false,
+  analyticsData: null,
   allProjects: [],
   prefetchedIds: {},
   boards: {},
@@ -145,7 +148,14 @@ export const projectStore = create<ProjectState>((set, get) => ({
     }
   },
 
-  setActiveProjectId: (projectId) => set({ activeProjectId: projectId }),
+  setActiveProjectId: (projectId) => {
+    const currentActiveId = get().activeProjectId;
+    if (currentActiveId !== projectId) {
+      set({ activeProjectId: projectId, analyticsData: null });
+    }
+  },
+
+  setAnalyticsData: (data) => set({ analyticsData: data }),
 
   setCurrentProject: (project) => {
     if (project === null) {
@@ -263,6 +273,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
     set({
       activeProjectId: null,
       currentProject: null,
+      analyticsData: null,
       allProjects: [],
       boards: {},
       columns: {},
