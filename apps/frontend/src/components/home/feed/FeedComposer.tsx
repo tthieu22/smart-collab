@@ -27,6 +27,8 @@ import { cn } from '@smart/lib/utils';
 import { Dropdown, MenuProps, Tooltip, message, Popover } from 'antd';
 import EmojiPicker, { Theme as EmojiTheme } from 'emoji-picker-react';
 import { useTheme } from 'next-themes';
+import { CameraModal } from '@smart/components/ui/CameraModal';
+
 
 type Visibility = 'public' | 'friends' | 'private';
 
@@ -57,7 +59,8 @@ const QUICK_HASHTAGS = ['#SmartCollab', '#AI', '#Innovation', '#Success', '#Tech
 
 export default function FeedComposer() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
   const [isExpanded, setIsExpanded] = useState(false);
   const { theme } = useTheme();
 
@@ -154,6 +157,11 @@ export default function FeedComposer() {
     setDraftText(draftText + emojiData.emoji);
   };
 
+  const handleCameraCapture = (file: File) => {
+    handleFiles([file] as any);
+  };
+
+
   const moodMenu: MenuProps['items'] = MOODS.map(m => ({
     key: m.value,
     label: `${m.emoji} ${m.label}`,
@@ -243,7 +251,7 @@ export default function FeedComposer() {
                 </div>
 
                 <div className={cn(
-                  "relative rounded-2xl transition-all duration-500 overflow-hidden",
+                  "relative rounded-2xl transition-all duration-500 overflow-hidden group",
                   draftBackgroundStyle || "bg-gray-50/50 border border-gray-100 dark:border-neutral-800 dark:bg-neutral-900"
                 )}>
                   <textarea
@@ -258,7 +266,7 @@ export default function FeedComposer() {
                   />
 
                   {/* BACKGROUND STYLE PICKER */}
-                  <div className="absolute left-3 bottom-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute left-3 bottom-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     {BACKGROUNDS.map((bg) => (
                       <button
                         key={bg.name}
@@ -320,15 +328,6 @@ export default function FeedComposer() {
               disabled={isLoading}
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              disabled={isLoading}
-              onChange={(e) => handleFiles(e.target.files)}
-            />
 
             <Tooltip title="Thêm ảnh">
               <button
@@ -342,10 +341,11 @@ export default function FeedComposer() {
 
             <Tooltip title="Chụp ảnh">
               <button
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={() => setIsCameraOpen(true)}
                 disabled={isLoading}
                 className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 dark:bg-neutral-900 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
               >
+
                 <Camera size={18} />
               </button>
             </Tooltip>
@@ -427,6 +427,13 @@ export default function FeedComposer() {
           </Button>
         </div>
       </div>
+
+      <CameraModal
+        open={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCameraCapture}
+      />
     </Card>
+
   );
 }

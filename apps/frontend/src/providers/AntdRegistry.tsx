@@ -3,7 +3,7 @@
 import { createCache, extractStyle, StyleProvider } from '@ant-design/cssinjs';
 import { useServerInsertedHTML } from 'next/navigation';
 import React, { useEffect, useState, useMemo } from 'react';
-import { ConfigProvider, theme as antdTheme } from 'antd';
+import { ConfigProvider, theme as antdTheme, App } from 'antd';
 import { useBoardStore } from '@smart/store/setting';
 
 export const AntdRegistry = ({ children }: { children: React.ReactNode }) => {
@@ -65,7 +65,9 @@ export const AntdRegistry = ({ children }: { children: React.ReactNode }) => {
           },
         }}
       >
-        {children}
+        <App>
+          {children}
+        </App>
       </ConfigProvider>
     </StyleProvider>
   );

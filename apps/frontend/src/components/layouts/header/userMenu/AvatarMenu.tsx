@@ -178,7 +178,7 @@ export function AvatarMenu() {
           open && "bg-gray-100 dark:bg-white/5"
         )}
       >
-        <UserAvatar userId={meId} size="sm" allowChangeMood={true} />
+        <UserAvatar userId={meId} size="sm" allowChangeMood={false} />
       </div>
     </Dropdown>
   );
