@@ -439,4 +439,163 @@ export class ProjectService {
     }
   }
 
+  async getAnalytics(userId: string, projectId?: string) {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const baseWhere: any = {};
+    if (projectId) {
+      baseWhere.projectId = projectId;
+    } else {
+      baseWhere.OR = [
+        { createdById: userId },
+        { members: { some: { userId } } }
+      ];
+    }
+
+    // Heuristic for 'DONE' tasks: status is 'DONE' OR column title contains 'done'/'hoàn thành'
+    const doneFilter = {
+      OR: [
+        { status: 'DONE' },
+        { 
+          column: { 
+            title: { 
+              contains: 'done', 
+              mode: 'insensitive' as const 
+            } 
+          } 
+        },
+        { 
+          column: { 
+            title: { 
+              contains: 'hoàn thành', 
+              mode: 'insensitive' as const 
+            } 
+          } 
+        }
+      ]
+    };
+
+    const [completedThisWeek, completedLastWeek, createdThisWeek] = await Promise.all([
+      this.prisma.card.count({
+        where: { ...baseWhere, ...doneFilter, updatedAt: { gte: sevenDaysAgo } }
+      }),
+      this.prisma.card.count({
+          where: { ...baseWhere, ...doneFilter, updatedAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } }
+      }),
+      this.prisma.card.count({
+          where: { ...baseWhere, createdAt: { gte: sevenDaysAgo } }
+      })
+    ]);
+
+    // Boost with NaN fix
+    let boost = 0;
+    if (completedLastWeek === 0) {
+      boost = completedThisWeek > 0 ? 100 : 0;
+    } else {
+      boost = ((completedThisWeek - completedLastWeek) / completedLastWeek) * 100;
+    }
+
+    const trend = boost > 0 ? 'up' : boost < 0 ? 'down' : 'neutral';
+
+    let topPerformer = null;
+    let streak = 0;
+
+    if (projectId) {
+      // Calculate Top Performer for team
+      const performers = await this.prisma.card.groupBy({
+        by: ['updatedById', 'updatedByName', 'updatedByAvatar'],
+        where: { ...baseWhere, ...doneFilter, updatedAt: { gte: sevenDaysAgo } },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 1
+      });
+      if (performers.length > 0 && performers[0].updatedById) {
+        topPerformer = {
+          name: performers[0].updatedByName || 'User',
+          avatar: performers[0].updatedByAvatar,
+          count: performers[0]._count.id
+        };
+      }
+    } else {
+      // Calculate Streak for personal (days in a row with at least 1 card done)
+      // Simple heuristic: check last 30 days
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const completions = await this.prisma.card.findMany({
+        where: {
+          ...baseWhere,
+          ...doneFilter,
+          updatedAt: { gte: thirtyDaysAgo }
+        },
+        select: { updatedAt: true },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      const doneDays = new Set(completions.map(c => 
+        new Date(c.updatedAt).toISOString().split('T')[0]
+      ));
+
+      let current = new Date(startOfToday);
+      while (doneDays.has(current.toISOString().split('T')[0])) {
+        streak++;
+        current.setDate(current.getDate() - 1);
+      }
+      // If none done today, check if yesterday was done to continue the streak count (standard practice)
+      if (streak === 0) {
+          let yesterday = new Date(startOfToday);
+          yesterday.setDate(yesterday.getDate() - 1);
+          while (doneDays.has(yesterday.toISOString().split('T')[0])) {
+              streak++;
+              yesterday.setDate(yesterday.getDate() - 1);
+          }
+      }
+    }
+
+    const dailyStats = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      
+      const startOfDay = new Date(d);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(d);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const completedCount = await this.prisma.card.count({
+        where: { 
+          ...baseWhere, 
+          ...doneFilter, 
+          updatedAt: { gte: startOfDay, lte: endOfDay } 
+        }
+      });
+
+      const createdCount = await this.prisma.card.count({
+        where: { 
+          ...baseWhere, 
+          createdAt: { gte: startOfDay, lte: endOfDay } 
+        }
+      });
+
+      dailyStats.push({
+        date: startOfDay.toLocaleDateString('vi-VN', { weekday: 'short' }),
+        completed: completedCount,
+        created: createdCount
+      });
+    }
+
+    return {
+      boost: Math.round(boost * 10) / 10,
+      completed: completedThisWeek,
+      target: Math.max(createdThisWeek, 5),
+      isTeamMode: !!projectId,
+      trend,
+      topPerformer,
+      streak,
+      dailyStats
+    };
+  }
+
 }

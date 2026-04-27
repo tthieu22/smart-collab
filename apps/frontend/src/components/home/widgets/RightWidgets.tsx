@@ -9,12 +9,23 @@ import { TipsGuideSideCard } from '@smart/components/news/TipsGuideSideCard';
 import { Users, Search, Activity, Zap, ArrowRight, UserPlus } from 'lucide-react';
 import { cn } from '@smart/lib/utils';
 import { Button } from 'antd';
+import { useAnalytics } from '@smart/hooks/useAnalytics';
+import { projectStore } from '@smart/store/project';
 
 export default function RightWidgets() {
   const postIds = useFeedStore((s) => s.postIds);
   const users = useFeedStore((s) => s.users);
   const posts = useFeedStore((s) => s.posts);
   const currentUserId = useFeedStore((s) => s.currentUserId);
+
+  const activeProjectId = projectStore((s) => s.activeProjectId);
+  const { data: stats, isLoading: statsLoading } = useAnalytics({ teamId: activeProjectId });
+
+  const isTeamMode = stats?.isTeamMode ?? false;
+  const boost = stats?.boost ?? 0;
+  const completed = stats?.completed ?? 0;
+  const target = stats?.target ?? 1; // avoid div by zero
+  const progress = Math.min((completed / target) * 100, 100);
 
   const topAuthors = useMemo(() => {
     const score: Record<string, number> = {};
@@ -106,42 +117,125 @@ export default function RightWidgets() {
 
       <NewsPromoSideCard />
 
-      {/* Project Status Widget */}
+      {/* Project Status Widget (Dynamic) */}
       <Card
         padding="none"
-        className="overflow-hidden border-none bg-slate-900 text-white relative group ring-1 ring-black/5 dark:ring-white/5 shadow-sm rounded-[24px]"
+        className={cn(
+          "overflow-hidden border-none text-white relative group ring-1 ring-black/5 dark:ring-white/5 shadow-sm rounded-[24px] transition-all duration-500",
+          isTeamMode ? "bg-slate-900" : "bg-neutral-900"
+        )}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20 opacity-50 group-hover:opacity-80 transition-opacity" />
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-br opacity-50 group-hover:opacity-80 transition-opacity duration-700",
+          isTeamMode
+            ? "from-blue-600/20 via-transparent to-purple-600/20"
+            : "from-emerald-600/20 via-transparent to-teal-600/20"
+        )} />
         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
           <Zap size={100} strokeWidth={1} />
         </div>
+
         <div className="p-5 relative z-10">
           <div className="flex items-center gap-2 mb-4">
-            <div className="h-5 w-5 rounded-lg bg-white/10 flex items-center justify-center">
-              <Activity size={12} className="text-blue-300" />
+            <div className={cn(
+              "h-5 w-5 rounded-lg flex items-center justify-center transition-colors",
+              isTeamMode ? "bg-blue-500/20" : "bg-emerald-500/20"
+            )}>
+              {isTeamMode ? (
+                <Users size={12} className="text-blue-300" />
+              ) : (
+                <Activity size={12} className="text-emerald-300" />
+              )}
             </div>
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-300">Team Velocity</span>
+            <span className={cn(
+              "text-[9px] font-black uppercase tracking-[0.2em] transition-colors",
+              isTeamMode ? "text-blue-300" : "text-emerald-300"
+            )}>
+              {isTeamMode ? "Team Velocity" : "My Productivity"}
+            </span>
           </div>
 
-          <div className="text-xl font-black tracking-tighter mb-1">94.2% Boost</div>
-          <p className="text-[11px] text-slate-400 font-medium leading-relaxed mb-5">
-            Năng suất làm việc của team đã tăng vọt trong 7 ngày qua.
-          </p>
-
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-wider">
-                <span className="text-slate-400">Target Reached</span>
-                <span className="text-blue-400">12 / 15</span>
-              </div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full w-[80%] shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-              </div>
+          {statsLoading ? (
+            <div className="animate-pulse space-y-3">
+              <div className="h-7 w-32 bg-white/10 rounded-lg" />
+              <div className="h-4 w-full bg-white/10 rounded-md" />
             </div>
-            <Link href="/projects" className="flex items-center justify-center w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all gap-2 border border-white/5">
-              Detailed Metrics <ArrowRight size={12} />
-            </Link>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-end gap-2 mb-1">
+                <div className="text-xl font-black tracking-tighter">
+                  {boost.toFixed(1)}% {boost >= 0 ? "Boost" : "Drop"}
+                </div>
+                {stats?.trend === 'up' && <ArrowRight size={14} className="text-emerald-400 rotate-[-45deg] mb-1" />}
+                {stats?.trend === 'down' && <ArrowRight size={14} className="text-rose-400 rotate-[45deg] mb-1" />}
+              </div>
+
+              <p className="text-[11px] text-slate-400 font-medium leading-relaxed mb-5">
+                {isTeamMode
+                  ? "Hiệu suất làm việc của team đã thay đổi trong 7 ngày qua."
+                  : "Hiệu suất làm việc cá nhân của bạn trong 7 ngày qua."}
+              </p>
+
+              <div className="space-y-5">
+                {/* Streak or Top Performer Row */}
+                {isTeamMode && stats?.topPerformer ? (
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5">
+                    <div className="h-8 w-8 rounded-lg overflow-hidden border border-white/10">
+                      <img
+                        src={stats.topPerformer.avatar || "https://ui-avatars.com/api/?name=" + stats.topPerformer.name}
+                        alt={stats.topPerformer.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider leading-none mb-1">Top Performer</div>
+                      <div className="text-[11px] font-bold truncate">{stats.topPerformer.name}</div>
+                    </div>
+                    <div className="text-blue-400 font-black text-xs">
+                      {stats.topPerformer.count} done
+                    </div>
+                  </div>
+                ) : !isTeamMode && (stats?.streak ?? 0) > 0 ? (
+                  <div className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/10">
+                    <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                      <Zap size={12} fill="currentColor" />
+                    </div>
+                    <div className="text-[11px] font-bold text-emerald-400">
+                      {stats?.streak} day streak! Keep it up 🔥
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-wider">
+                    <span className="text-slate-400">Target Reached</span>
+                    <span className={isTeamMode ? "text-blue-400" : "text-emerald-400"}>
+                      {completed} / {target}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]",
+                        isTeamMode ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gradient-to-r from-emerald-500 to-teal-500"
+                      )}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                <Link
+                  href="/productivity"
+                  className="flex items-center justify-center w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all gap-2 border border-white/5 group/btn"
+                >
+                  <span className="group-hover/btn:translate-x-0.5 transition-transform">
+                    {isTeamMode ? "Detailed Analytics" : "View My Report"}
+                  </span>
+                  <ArrowRight size={12} className="opacity-50 group-hover/btn:opacity-100" />
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </Card>
 

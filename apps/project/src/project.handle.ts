@@ -118,4 +118,16 @@ export class ProjectHandler {
       return { success: false, message: error.message };
     }
   }
+
+  @MessagePattern({ cmd: 'project.analytics' })
+  async handleGetAnalytics(@Payload() payload: { userId: string; projectId?: string }) {
+    this.logger.log(`[project.analytics] Received payload: ${JSON.stringify(payload)}`);
+    try {
+      const result = await this.projectService.getAnalytics(payload.userId, payload.projectId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      this.logger.error(`Error handling project.analytics: ${error.message}`, error.stack);
+      return { success: false, message: error.message };
+    }
+  }
 }

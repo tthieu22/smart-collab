@@ -240,4 +240,18 @@ export class ProjectController {
     );
     return result;
   }
+
+  @Post('analytics')
+  async getAnalytics(@Body() body: { projectId?: string }, @Req() req: any) {
+    const userId = req.user.userId;
+    this.logger.log(`Fetching analytics for user ${userId}, project ${body.projectId}`);
+    
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.analytics' }, { 
+        userId, 
+        projectId: body.projectId 
+      }),
+    );
+    return result;
+  }
 }

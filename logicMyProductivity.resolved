@@ -1,0 +1,27 @@
+# Tài liệu Logic: Hệ thống Analytics & Năng suất
+
+Tài liệu tóm tắt cách thức hoạt động của Widget Analytics (Cá nhân & Nhóm).
+
+## 1. Logic nhận diện "Task Done"
+Task được tính là hoàn thành nếu thỏa mãn **MỘT TRONG HAI** điều kiện:
+- `status` là `'DONE'`.
+- Nằm trong cột có tiêu đề chứa: `"Done"` hoặc `"Hoàn thành"`.
+
+## 2. Các chỉ số quan trọng
+- **Boost %:** [((Tuần này - Tuần trước) / Tuần trước) * 100](file:///c:/Users/hieut/Desktop/smart-collab/apps/api-gateway/src/project/project.controller.ts#33-52). Nếu tuần trước = 0, mặc định 100% nếu tuần này có task.
+- **Target:** Tính bằng **tổng số task mới được tạo** trong tuần hiện tại (tối thiểu 5).
+- **Streak (Cá nhân):** Số ngày liên tiếp có ít nhất 1 task hoàn thành trong 30 ngày qua.
+- **Top Performer (Nhóm):** Thành viên có nhiều task hoàn thành nhất trong tuần.
+
+## 3. Chế độ hiển thị
+- **Cá nhân:** Màu Xanh lá (Emerald). Hiển thị **Chuỗi ngày (Streak)**.
+- **Nhóm:** Màu Xanh dương (Slate). Hiển thị **Thành viên xuất sắc (Top Performer)**.
+
+## 4. Danh sách file code
+- **Logic Backend:** [apps/project/src/project.service.ts](file:///c:/Users/hieut/Desktop/smart-collab/apps/project/src/project.service.ts)
+- **API Gateway:** [apps/api-gateway/src/project/project.controller.ts](file:///c:/Users/hieut/Desktop/smart-collab/apps/api-gateway/src/project/project.controller.ts)
+- **Frontend Hook:** [apps/frontend/src/hooks/useAnalytics.ts](file:///c:/Users/hieut/Desktop/smart-collab/apps/frontend/src/hooks/useAnalytics.ts)
+- **Giao diện:** [apps/frontend/src/components/home/widgets/RightWidgets.tsx](file:///c:/Users/hieut/Desktop/smart-collab/apps/frontend/src/components/home/widgets/RightWidgets.tsx)
+
+---
+*Cập nhật: 27/04/2026*
