@@ -47,6 +47,11 @@ export class AuthMessageHandler {
     private readonly otcService: OtcService,
   ) {}
 
+  @MessagePattern({ cmd: 'health.ping' })
+  async handlePing() {
+    return { success: true, message: 'Auth Service is UP' };
+  }
+
   @MessagePattern({cmd:'auth.login'})
   async handleLogin(
     @Payload() loginDto: LoginMessageDto,

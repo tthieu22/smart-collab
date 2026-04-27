@@ -51,15 +51,33 @@ public class HomeMessageHandler {
         Map<String, Object> data = (Map<String, Object>) message.get("data");
         log.info("Data Object: {}", data);
         
-        String userId = data != null ? (String) data.get("userId") : null;
+        String userId = null;
+        if (data != null) {
+            userId = extractUserId(data);
+        }
+
         Map<String, Object> payload = (data != null && data.get("payload") != null) 
             ? (Map<String, Object>) data.get("payload") 
             : data;
         
-        log.info("UserId: {}, Payload: {}", userId, payload);
+        // Final fallback: check payload for userId if still null
+        if (userId == null && payload != null) {
+            userId = extractUserId(payload);
+        }
+
+        if (userId == null && !"health.ping".equals(cmd) && !isPublicCommand(cmd)) {
+            log.warn("UserId is NULL for command '{}'. Source: {}", cmd, data);
+        }
+        
+        if (!"health.ping".equals(cmd)) {
+            log.info("Cmd: '{}', UserId: {}, Payload: {}", cmd, userId, payload);
+        }
 
         try {
             switch (cmd) {
+                case "health.ping":
+                    return Map.of("success", true, "message", "Home Service is UP");
+
                 case "home.feed.get":
                     int page = payload != null && payload.get("page") != null ? Integer.parseInt(String.valueOf(payload.get("page"))) : 0;
                     int limit = payload != null && payload.get("limit") != null ? Integer.parseInt(String.valueOf(payload.get("limit"))) : 10;
@@ -116,7 +134,9 @@ public class HomeMessageHandler {
 
                 case "home.user.mood.update":
                     String mood = (String) payload.get("mood");
-                    User u = userRepository.findById(userId).orElseThrow();
+                    if (userId == null) return Map.of("success", false, "message", "User ID required");
+                    User u = userRepository.findById(userId).orElse(null);
+                    if (u == null) return Map.of("success", false, "message", "User not found");
                     u.setMood(mood);
                     userRepository.save(u);
                     return Map.of("success", true, "mood", mood != null ? mood : "");
@@ -154,12 +174,15 @@ public class HomeMessageHandler {
                 case "home.post.like":
                     String postId = (String) payload.get("postId");
                     String type = (String) payload.get("type");
-                    Post p = postRepository.findById(postId).orElseThrow();
+                    if (userId == null) return Map.of("success", false, "message", "Login required");
+                    Post p = postRepository.findById(postId).orElse(null);
+                    if (p == null) return Map.of("success", false, "message", "Post not found");
+                    
                     Reaction reaction = reactionRepository.findByPostIdAndAuthorId(postId, userId)
                             .orElse(new Reaction());
                     reaction.setPostId(postId);
                     reaction.setAuthorId(userId);
-                    reaction.setType(type.toUpperCase());
+                    reaction.setType(type != null ? type.toUpperCase() : "LIKE");
                     reaction.setCreatedAt(LocalDateTime.now());
                     Reaction savedReaction = reactionRepository.save(reaction);
                     notificationService.createNotification(p.getAuthorId(), userId, "LIKE", postId, null);
@@ -168,7 +191,10 @@ public class HomeMessageHandler {
                 case "home.post.comment":
                     String pid = (String) payload.get("postId");
                     String content = (String) payload.get("content");
-                    Post po = postRepository.findById(pid).orElseThrow();
+                    if (userId == null) return Map.of("success", false, "message", "Login required");
+                    Post po = postRepository.findById(pid).orElse(null);
+                    if (po == null) return Map.of("success", false, "message", "Post not found");
+                    
                     Comment comment = new Comment();
                     comment.setPostId(pid);
                     comment.setAuthorId(userId);
@@ -445,5 +471,28 @@ public class HomeMessageHandler {
     @RabbitListener(queues = RabbitMQConfig.AI_EVENTS_QUEUE)
     public void handleAiProjectEvents(Map<String, Object> event) {
         autoPostService.onAiProjectBuilt(event);
+    }
+
+    private String extractUserId(Map<String, Object> source) {
+        if (source == null) return null;
+        Object id = source.get("userId");
+        if (id == null) id = source.get("user_id");
+        if (id == null) id = source.get("sub"); // Common in JWT payloads
+        if (id == null) id = source.get("ownerId");
+        if (id == null) id = source.get("owner_id");
+        if (id == null && source.containsKey("id") && String.valueOf(source.get("id")).length() > 20) {
+            // Likely a MongoDB ObjectId or UUID if it's long
+            id = source.get("id");
+        }
+        
+        return id != null ? String.valueOf(id) : null;
+    }
+
+    private boolean isPublicCommand(String cmd) {
+        if (cmd == null) return false;
+        return cmd.contains(".get") || 
+               cmd.contains(".list") || 
+               cmd.equals("health.ping") || 
+               cmd.contains(".sync");
     }
 }

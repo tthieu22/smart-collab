@@ -12,6 +12,7 @@ import { AiModule } from './ai/ai.module';
 import { HomeModule } from './home/home.module';
 import { UserModule } from './user/user.module';
 import { SearchModule } from './search/search.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { SearchModule } from './search/search.module';
     // Upload moudle
     UploadModule,
     SearchModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

@@ -16,12 +16,12 @@ export function NewsArticleDetail({
   const media = article.media ?? [];
   const dateLabel = article.createdAt
     ? new Date(article.createdAt).toLocaleDateString('vi-VN', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
     : '';
 
   return (
@@ -34,7 +34,7 @@ export function NewsArticleDetail({
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
           Danh sách tin
         </Link>
-        
+
         <div className="flex items-center gap-2">
           {article.category === 'TIP' ? (
             <span className="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30">
@@ -52,11 +52,11 @@ export function NewsArticleDetail({
         <h1 className="text-4xl md:text-5xl font-black leading-tight text-gray-900 dark:text-white tracking-tight">
           {article.title || 'Tin tức mới'}
         </h1>
-        
+
         <div className="flex items-center gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-2">
-             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">A</div>
-             <span>Ban biên tập Autonexus</span>
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">A</div>
+            <span>Đệ tthieu22</span>
           </div>
           <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-neutral-800" />
           <time dateTime={article.createdAt}>{dateLabel}</time>
@@ -102,14 +102,14 @@ export function NewsArticleDetail({
       {article.linkUrl?.trim() && (
         <div className="pt-8 border-t border-gray-100 dark:border-neutral-900">
           <div className="p-8 rounded-3xl bg-gray-50 dark:bg-neutral-900/50 border border-gray-100 dark:border-neutral-800 flex flex-col items-center text-center gap-4">
-             <div className="p-3 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm">
-                <ExternalLink size={24} className="text-blue-600 dark:text-blue-400" />
-             </div>
-             <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tìm hiểu thêm chi tiết</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Xem nguồn tin gốc hoặc tài liệu đính kèm bên dưới.</p>
-             </div>
-             <a
+            <div className="p-3 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm">
+              <ExternalLink size={24} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Tìm hiểu thêm chi tiết</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Xem nguồn tin gốc hoặc tài liệu đính kèm bên dưới.</p>
+            </div>
+            <a
               href={article.linkUrl.trim()}
               target="_blank"
               rel="noopener noreferrer"

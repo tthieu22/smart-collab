@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { cn } from '@smart/lib/utils';
 import {
   Zap,
   Globe,
@@ -19,6 +20,67 @@ import SocialLinks from './SocialLinks';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const [systemStatus, setSystemStatus] = React.useState({
+    status: 'stable',
+    upCount: 6,
+    totalCount: 6,
+  });
+
+  const lastFetch = React.useRef(0);
+  const isFetching = React.useRef(false);
+
+  React.useEffect(() => {
+    async function fetchHealth() {
+      if (isFetching.current) return;
+
+      const now = Date.now();
+      if (now - lastFetch.current < 30000) return;
+
+      try {
+        isFetching.current = true;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+        const healthUrl = baseUrl.endsWith('/api') ? baseUrl.slice(0, -4) + '/health' : baseUrl + '/health';
+
+        const res = await fetch(healthUrl);
+        const data = await res.json();
+        if (data && typeof data.upCount === 'number') {
+          setSystemStatus({
+            status: data.status,
+            upCount: data.upCount,
+            totalCount: data.totalCount
+          });
+          lastFetch.current = Date.now();
+        }
+      } catch (err) {
+        console.error('Failed to fetch system status', err);
+        setSystemStatus(prev => ({ ...prev, status: 'down' }));
+      } finally {
+        isFetching.current = false;
+      }
+    }
+
+    fetchHealth();
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchHealth();
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const getStatusConfig = () => {
+    switch (systemStatus.status) {
+      case 'stable':
+        return { label: 'Ổn định', color: 'text-green-500', bg: 'bg-green-500/10', dot: 'bg-green-500' };
+      case 'degraded':
+        return { label: 'Sự cố nhẹ', color: 'text-amber-500', bg: 'bg-amber-500/10', dot: 'bg-amber-500' };
+      default:
+        return { label: 'Bảo trì', color: 'text-red-500', bg: 'bg-red-500/10', dot: 'bg-red-500' };
+    }
+  };
+
+  const statusConfig = getStatusConfig();
 
   return (
     <footer className="relative bg-white/80 dark:bg-[#050505] border-t border-gray-200 dark:border-neutral-800 backdrop-blur-xl overflow-hidden shadow-[inset_0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
@@ -50,21 +112,26 @@ export default function Footer() {
             <div className="p-3 rounded-[24px] bg-white/50 dark:bg-neutral-950/20 border border-gray-200 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/5 space-y-2 shadow-sm">
               <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-neutral-500">
                 <span>Trạng thái hệ thống</span>
-                <span className="flex items-center gap-1.5 text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-                  Ổn định
+                <span className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-full", statusConfig.color, statusConfig.bg)}>
+                  <span className={cn("w-1 h-1 rounded-full animate-pulse", statusConfig.dot)} />
+                  {statusConfig.label}
                 </span>
               </div>
               <div className="flex items-center gap-3 pt-0.5">
                 <div className="flex -space-x-1.5">
-                  {[1, 2, 3].map((i) => (
+                  {Array.from({ length: Math.min(systemStatus.upCount, 5) }).map((_, i) => (
                     <div key={i} className="w-5 h-5 rounded-full border border-white dark:border-[#030303] bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400">
                       <Cpu size={10} />
                     </div>
                   ))}
+                  {systemStatus.upCount > 5 && (
+                    <div className="w-5 h-5 rounded-full border border-white dark:border-[#030303] bg-gray-200 dark:bg-neutral-700 flex items-center justify-center text-[8px] font-bold text-gray-500">
+                      +{systemStatus.upCount - 5}
+                    </div>
+                  )}
                 </div>
                 <span className="text-[10px] font-bold text-gray-600 dark:text-neutral-400">
-                  3 AI Nodes đang hoạt động
+                  {systemStatus.upCount} AI Nodes đang hoạt động
                 </span>
               </div>
             </div>

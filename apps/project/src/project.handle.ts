@@ -9,6 +9,11 @@ export class ProjectHandler {
 
   constructor(private readonly projectService: ProjectService) {}
 
+  @MessagePattern({ cmd: 'health.ping' })
+  async handlePing() {
+    return { success: true, message: 'Project Service is UP' };
+  }
+
   @MessagePattern({ cmd: 'project.create' })
   async handleCreateProject(@Payload() payload: ProjectMessage) {
     this.logger.log(`[project.create] Received payload: ${JSON.stringify(payload)}`);
