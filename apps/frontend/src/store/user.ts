@@ -8,6 +8,15 @@ interface UserState {
   error: string | null;
   isInitialized: boolean; // ✅ auth init
   isUserInitialized: boolean; // ✅ user init riêng
+  suggestedUsers: any[];
+  suggestedUsersData: {
+    items: any[];
+    total: number;
+    page: number;
+    limit: number;
+  } | null;
+  setSuggestedUsers: (users: any[]) => void;
+  setSuggestedUsersData: (data: { items: any[]; total: number; page: number; limit: number }) => void;
   
   query: string;
   setQuery: (q: string) => void;
@@ -20,6 +29,7 @@ interface UserState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
+  
   setInitialized: (initialized: boolean) => void;
   setUserInitialized: (initialized: boolean) => void;
   clearUserStore: () => void;
@@ -29,12 +39,16 @@ interface UserState {
 export const useUserStore = create<UserState>((set, get) => ({
   currentUser: null,
   allUsers: [],
+  suggestedUsers: [],
+  suggestedUsersData: null,
   isLoading: false,
   error: null,
   isInitialized: false,
   isUserInitialized: false,
   query: "",
 
+  setSuggestedUsers: (users) => set({ suggestedUsers: users }),
+  setSuggestedUsersData: (data) => set({ suggestedUsersData: data, suggestedUsers: data.items }),
   setQuery: (q) => set({ query: q }),
   setCurrentUser: (user) => set({ currentUser: user }),
   setAllUsers: (users) => set({ allUsers: users }),

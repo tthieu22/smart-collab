@@ -276,6 +276,9 @@ public class HomeMessageHandler {
                     return null; // Return null to avoid "ReplyTo" error for async events
 
                 case "home.user.media.get": {
+                    if (payload == null || payload.get("targetUserId") == null) {
+                        return new ArrayList<>();
+                    }
                     String mUserId = (String) payload.get("targetUserId");
                     List<Post> userPosts = postRepository.findAllByAuthorIdOrderByCreatedAtDesc(mUserId);
                     List<Map<String, Object>> allMedia = new ArrayList<>();
@@ -288,9 +291,16 @@ public class HomeMessageHandler {
                 }
 
                 case "home.user.profile.data": {
+                    if (payload == null || payload.get("targetUserId") == null) {
+                        return Map.of(
+                            "followersCount", 0L,
+                            "followingCount", 0L,
+                            "isFollowing", false
+                        );
+                    }
                     String pUserId = (String) payload.get("targetUserId");
-                    List<Follower> profileFollowers = followerRepository.findAllByFollowingId(pUserId);
-                    List<Follower> profileFollowing = followerRepository.findAllByFollowerId(pUserId);
+                    long followersCount = followerRepository.countByFollowingId(pUserId);
+                    long followingCount = followerRepository.countByFollowerId(pUserId);
                     
                     boolean isFollowing = false;
                     if (userId != null) {
@@ -298,8 +308,8 @@ public class HomeMessageHandler {
                     }
 
                     return Map.of(
-                        "followersCount", profileFollowers.size(),
-                        "followingCount", profileFollowing.size(),
+                        "followersCount", followersCount,
+                        "followingCount", followingCount,
                         "isFollowing", isFollowing
                     );
                 }

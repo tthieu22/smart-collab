@@ -598,4 +598,20 @@ export class ProjectService {
     };
   }
 
+  async getTopCollaborators() {
+    const topMembers = await this.prisma.projectMember.groupBy({
+      by: ['userId'],
+      _count: {
+        projectId: true,
+      },
+      orderBy: {
+        _count: {
+          projectId: 'desc',
+        },
+      },
+      take: 20,
+    });
+
+    return topMembers.map((m) => m.userId);
+  }
 }

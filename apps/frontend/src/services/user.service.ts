@@ -88,6 +88,13 @@ export class UserService {
       body: JSON.stringify(request),
     });
   }
+
+  // Get suggested collaborators
+  getSuggestions(page: number = 1, limit: number = 5) {
+    return this.request<any>(`/users/suggestions?page=${page}&limit=${limit}`, {
+      method: 'GET',
+    });
+  }
 }
 
 export const userService = new UserService();

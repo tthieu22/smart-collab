@@ -15,7 +15,8 @@ export class UserController {
 
   @Get('me')
   async getMe(@Req() req: Request) {
-    const userId = (req.user as any).sub || (req.user as any).id;
+    const user = req.user as any;
+    const userId = user.userId || user.sub || user.id;
     return firstValueFrom(
       this.authClient.send({ cmd: 'auth.me' }, { userId })
     );
@@ -23,7 +24,8 @@ export class UserController {
 
   @Patch('me')
   async updateMe(@Req() req: Request, @Body() data: any) {
-    const userId = (req.user as any).sub || (req.user as any).id;
+    const user = req.user as any;
+    const userId = user.userId || user.sub || user.id;
     return firstValueFrom(
       this.authClient.send({ cmd: 'auth.updateProfile' }, { userId, data })
     );
@@ -36,6 +38,19 @@ export class UserController {
       this.authClient.send({ cmd: 'auth.searchUsers' }, { query }),
     );
     return result;
+  }
+
+  @Get('suggestions')
+  async getSuggestions(
+    @Req() req: Request,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const user = req.user as any;
+    const userId = user.userId || user.sub || user.id;
+    return firstValueFrom(
+      this.authClient.send({ cmd: 'auth.getSuggestions' }, { userId, page, limit })
+    );
   }
 
   @Get(':id')

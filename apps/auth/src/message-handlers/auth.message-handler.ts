@@ -535,4 +535,29 @@ export class AuthMessageHandler {
       return { success: false, message: err.message };
     }
   }
+
+  @MessagePattern({ cmd: 'auth.getSuggestions' })
+  async handleGetSuggestions(@Payload() payload: { userId: string; page?: number; limit?: number }) {
+    try {
+      const page = payload.page || 1;
+      const limit = payload.limit || 5;
+      const result = await this.userService.getSuggestions(payload.userId, page, limit);
+      
+      const mappedItems = result.items.map((u: any) => ({
+        ...u,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+        username: u.email.split('@')[0],
+      }));
+
+      return { 
+        success: true, 
+        data: mappedItems,
+        total: result.total,
+        page,
+        limit
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
 }

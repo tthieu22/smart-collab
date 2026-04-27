@@ -11,12 +11,16 @@ import { cn } from '@smart/lib/utils';
 import { Button } from 'antd';
 import { useAnalytics } from '@smart/hooks/useAnalytics';
 import { projectStore } from '@smart/store/project';
+import { useUserStore } from '@smart/store/user';
 
 export default function RightWidgets() {
   const postIds = useFeedStore((s) => s.postIds);
   const users = useFeedStore((s) => s.users);
   const posts = useFeedStore((s) => s.posts);
   const currentUserId = useFeedStore((s) => s.currentUserId);
+
+  const suggestedUsers = useUserStore((s) => s.suggestedUsers);
+  const setSuggestedUsers = useUserStore((s) => s.setSuggestedUsers);
 
   const activeProjectId = projectStore((s) => s.activeProjectId);
   const { data: stats, isLoading: statsLoading } = useAnalytics({ teamId: activeProjectId });
@@ -27,29 +31,28 @@ export default function RightWidgets() {
   const target = stats?.target ?? 1; // avoid div by zero
   const progress = Math.min((completed / target) * 100, 100);
 
-  const topAuthors = useMemo(() => {
-    const score: Record<string, number> = {};
-    postIds.forEach((pid) => {
-      const p = posts[pid];
-      if (!p) return;
-      if (p.authorId === currentUserId) return; // Không gợi ý chính mình
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
-      const total =
-        (p.reactionSummary?.like || 0) +
-        (p.reactionSummary?.love || 0) +
-        (p.reactionSummary?.haha || 0) +
-        (p.reactionSummary?.wow || 0) +
-        (p.reactionSummary?.sad || 0) +
-        (p.reactionSummary?.angry || 0);
-      score[p.authorId] = (score[p.authorId] || 0) + total + (p.commentCount || 0) * 2;
-    });
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      // Chỉ fetch nếu chưa có dữ liệu trong store
+      if (suggestedUsers.length > 0) return;
 
-    return Object.entries(score)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([uid]) => users[uid])
-      .filter(Boolean);
-  }, [postIds, users, posts, currentUserId]);
+      setSuggestionsLoading(true);
+      try {
+        const { userService } = await import('@smart/services/user.service');
+        const res = await userService.getSuggestions();
+        if (res.success) {
+          setSuggestedUsers(res.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch suggestions', err);
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    };
+    fetchSuggestions();
+  }, [suggestedUsers.length, setSuggestedUsers]);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-1000 pb-10 pr-2">
@@ -71,22 +74,34 @@ export default function RightWidgets() {
         </div>
 
         <div className="divide-y divide-gray-50 dark:divide-neutral-800/20">
-          {topAuthors.length ? (
-            topAuthors.map((u) => (
+          {suggestionsLoading ? (
+            <div className="p-8 space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex gap-3 animate-pulse">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-neutral-800 rounded-xl" />
+                  <div className="flex-1 space-y-2 mt-1">
+                    <div className="h-3 bg-gray-100 dark:bg-neutral-800 rounded w-2/3" />
+                    <div className="h-2 bg-gray-50 dark:bg-neutral-900 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : suggestedUsers.length ? (
+            suggestedUsers.map((u) => (
               <div
                 key={u.id}
                 className="flex items-center gap-3 p-3.5 hover:bg-gray-50/50 dark:hover:bg-neutral-800/20 transition-all group"
               >
                 <Link href={`/profile/${u.id}`} className="relative h-10 w-10 shrink-0">
-                  {u.avatarUrl ? (
+                  {u.avatar ? (
                     <img
-                      src={u.avatarUrl}
+                      src={u.avatar}
                       alt={u.name}
                       className="h-full w-full object-cover rounded-xl border border-white dark:border-neutral-800 shadow-sm transition-transform group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-inner">
-                      {u.name.charAt(0)}
+                      {u.name?.charAt(0)}
                     </div>
                   )}
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white dark:border-neutral-900 rounded-full shadow-sm" />
@@ -96,7 +111,7 @@ export default function RightWidgets() {
                     {u.name}
                   </Link>
                   <div className="text-[10px] text-gray-400 dark:text-neutral-500 truncate mt-0.5 font-medium leading-none">
-                    {u.username} • 24 dự án
+                    @{u.username} • {Math.floor(Math.random() * 20) + 1} dự án
                   </div>
                 </div>
                 <button className="h-8 w-8 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all ring-1 ring-blue-500/10">

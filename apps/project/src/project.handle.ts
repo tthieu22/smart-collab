@@ -130,4 +130,14 @@ export class ProjectHandler {
       return { success: false, message: error.message };
     }
   }
+
+  @MessagePattern({ cmd: 'project.get_top_collaborators' })
+  async handleGetTopCollaborators() {
+    try {
+      const userIds = await this.projectService.getTopCollaborators();
+      return { success: true, data: userIds };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  }
 }

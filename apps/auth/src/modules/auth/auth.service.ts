@@ -176,6 +176,16 @@ export class AuthService {
   }) {
     let user = await this.prisma.user.findUnique({
       where: { email: payload.email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        role: true,
+        googleId: true,
+        isVerified: true
+      }
     });
 
     if (!user) {

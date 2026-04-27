@@ -8,6 +8,8 @@ import java.util.Optional;
 public interface FollowerRepository extends MongoRepository<Follower, String> {
     List<Follower> findAllByFollowerId(String followerId);
     List<Follower> findAllByFollowingId(String followingId);
+    long countByFollowerId(String followerId);
+    long countByFollowingId(String followingId);
     Optional<Follower> findByFollowerIdAndFollowingId(String followerId, String followingId);
     boolean existsByFollowerIdAndFollowingId(String followerId, String followingId);
 }

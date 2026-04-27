@@ -42,6 +42,11 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Ngăn chặn sự kiện nổi lên để tránh trùng với phím tắt của DnD-Kit (Space)
+    if (e.key === " ") {
+      e.stopPropagation();
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
       handleSave();

@@ -13,6 +13,10 @@ import { rabbitmqConfig } from '../../config/rabbitmq.config';
         name: 'HOME_SERVICE',
         ...rabbitmqConfig('home_queue'),
       },
+      {
+        name: 'PROJECT_SERVICE',
+        ...rabbitmqConfig('project_queue'),
+      },
     ]),
   ],
   controllers: [UserController],

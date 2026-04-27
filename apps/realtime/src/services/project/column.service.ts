@@ -27,20 +27,12 @@ export class ColumnService {
   async createColumn(payload: any, userId: string) {
     const dto = { ...payload, createdById: userId };
     const result = await this.request('project.column.create', dto);
-    return {
-      status: 'success',
-      correlationId: payload.correlationId,
-      data: result.data,
-    };
+    return result.data ?? result;
   }
 
   async updateColumn(payload: any) {
     const result = await this.request('project.column.update', payload);
-    return {
-      status: 'success',
-      correlationId: payload.correlationId,
-      data: result.data,
-    };
+    return result.data ?? result;
   }
 
   async deleteColumn(payload: any, userId: string): Promise<LockResult> {

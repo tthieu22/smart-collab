@@ -8,6 +8,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import dayjs from 'dayjs';
 import { syncCreateUser, syncDeleteUser, syncUpdateUser } from '../../message-handlers/common/sync.helper';
 import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -15,6 +16,7 @@ export class UserService {
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
     @Inject('HOME_SERVICE') private readonly homeClient: ClientProxy,
+    @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -104,8 +106,6 @@ export class UserService {
         emailNotifications: true,
         pushNotifications: true,
         loginCount: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
   }
@@ -132,8 +132,6 @@ export class UserService {
         emailNotifications: true,
         pushNotifications: true,
         loginCount: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
@@ -367,5 +365,119 @@ export class UserService {
     return this.prisma.device.delete({
       where: { id: deviceId, userId },
     });
+  }
+
+  async getSuggestions(userId: string, page: number = 1, limit: number = 5) {
+    if (!userId) return { items: [], total: 0 };
+    
+    const skip = (page - 1) * limit;
+
+    try {
+      const totalCount = await this.prisma.user.count();
+      console.log(`[getSuggestions] Total users in system: ${totalCount}`);
+    } catch (e) {
+      console.error('[getSuggestions] Count failed', e);
+    }
+
+    // 1. Chuẩn bị danh sách loại trừ (bản thân + người đã theo dõi)
+    let followingIds: string[] = [];
+    try {
+      const following = await this.prisma.follower.findMany({
+        where: { followerId: userId },
+        select: { followingId: true },
+      });
+      followingIds = following.map((f) => f.followingId).filter(Boolean);
+    } catch (err) {
+      console.error('[getSuggestions] Failed to fetch following list', err);
+    }
+    
+    const excludeIds = [userId, ...followingIds].filter(id => !!id);
+
+    // 2. Lấy danh sách Top Collaborators từ Project Service
+    let topCollaboratorIds: string[] = [];
+    try {
+      const res = await firstValueFrom(
+        this.projectClient.send({ cmd: 'project.get_top_collaborators' }, {})
+      );
+      if (res && res.success) {
+        topCollaboratorIds = (res.data || []).filter((id: string) => !excludeIds.includes(id));
+      }
+    } catch (err) {
+      console.error('[getSuggestions] Failed to fetch project collaborators', err);
+    }
+
+    let suggestions: any[] = [];
+    let total = 0;
+
+    // 3. Ưu tiên 1: Lấy người dùng từ danh sách Top Collaborators
+    if (topCollaboratorIds.length > 0) {
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: topCollaboratorIds } },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          bio: true,
+          loginCount: true,
+        },
+      });
+      suggestions = users;
+    }
+
+    // 4. Ưu tiên 2: Bổ sung những người hoạt động tích cực (global)
+    // Nếu suggestions chưa đủ nhiều (trong trường hợp fetch toàn bộ list cho trang Discovery)
+    // hoặc đơn giản là lấy thêm để đủ limit
+    const currentIds = suggestions.map(s => s.id);
+    const moreActive = await this.prisma.user.findMany({
+      where: {
+        id: { notIn: [...excludeIds, ...currentIds] },
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        bio: true,
+        loginCount: true,
+      },
+      orderBy: { loginCount: 'desc' },
+      // Lấy thêm 1 đống để phục vụ phân trang nếu cần
+      take: 100, 
+    });
+    
+    const combined = [...suggestions, ...moreActive];
+    total = combined.length;
+
+    // 5. Dự phòng: Nếu vẫn quá ít, lấy những người mới tham gia
+    if (combined.length < 2) {
+      const currentCombinedIds = combined.map(s => s.id);
+      const fallbacks = await this.prisma.user.findMany({
+        where: {
+          id: { notIn: [...excludeIds, ...currentCombinedIds] },
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          bio: true,
+          loginCount: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      combined.push(...fallbacks);
+      total = combined.length;
+    }
+
+    // 6. Phân trang trên mảng tổng hợp (vì kết hợp từ nhiều nguồn/ưu tiên)
+    const paginatedItems = combined.slice(skip, skip + limit);
+
+    console.log(`[getSuggestions] Returning ${paginatedItems.length}/${total} items for page ${page}`);
+    return { items: paginatedItems, total };
   }
 }

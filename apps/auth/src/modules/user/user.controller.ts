@@ -10,6 +10,7 @@ import {
   ValidationPipe,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { UserService } from './user.service';
@@ -132,6 +133,35 @@ export class UserController {
       const userId = (req.user as any).sub || (req.user as any).id;
       await this.userService.changePassword(userId, changePasswordDto);
       return { success: true, message: 'Đổi mật khẩu thành công' };
+    } catch (error) {
+      return { success: false, message: error };
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('suggestions')
+  async getSuggestions(
+    @Req() req: Request,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+      const userId = (req.user as any).sub || (req.user as any).id;
+      const result = await this.userService.getSuggestions(userId, page ? Number(page) : 1, limit ? Number(limit) : 5);
+      
+      const mappedItems = result.items.map((u: any) => ({
+        ...u,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+        username: u.email.split('@')[0],
+      }));
+
+      return { 
+        success: true, 
+        data: mappedItems,
+        total: result.total,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 5,
+      };
     } catch (error) {
       return { success: false, message: error };
     }
