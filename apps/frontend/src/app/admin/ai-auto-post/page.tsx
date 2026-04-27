@@ -227,9 +227,6 @@ export default function AdminAiAutoPostPage() {
     }
   };
 
-  if (isLoading) {
-    return <Loading fullScreen text="Loading settings..." />;
-  }
 
   const saveSettings = async () => {
     setIsSaving(true);

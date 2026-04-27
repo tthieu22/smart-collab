@@ -75,12 +75,7 @@ function SearchContent() {
     }, [query]);
 
     if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-32 gap-4">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Đang tìm kiếm dữ liệu thông minh...</p>
-            </div>
-        );
+        return null;
     }
 
     const hasProjects = results.projects.length > 0;

@@ -40,7 +40,7 @@ export default function NewsPage() {
   };
 
   if (isLoading && articles.length === 0) {
-    return <Loading fullScreen text="Đang tải tin tức..." />;
+    return null;
   }
 
   const extra = (

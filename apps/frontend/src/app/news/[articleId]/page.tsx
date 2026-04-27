@@ -43,7 +43,7 @@ export default function NewsArticlePage() {
   }, [articleId]);
 
   if (article === undefined) {
-    return <Loading fullScreen text="Đang tải bài viết..." />;
+    return null;
   }
 
   if (!article) {

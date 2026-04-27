@@ -17,14 +17,7 @@ export function Loading({
   const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
   if (fullScreen) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/75 dark:bg-neutral-950/75">
-        <div className="text-center">
-          <Spin indicator={antIcon} size={size} />
-          {text && <p className="mt-2 text-gray-600 dark:text-gray-300">{text}</p>}
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

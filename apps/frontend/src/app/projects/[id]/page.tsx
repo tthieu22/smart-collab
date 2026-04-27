@@ -209,8 +209,9 @@ export default function ProjectDetailPage({ params }: Props) {
   // for AI generation and updates.
 
 
-  if (loading) return <Loading text="Đang tải dữ liệu" />;
-  if (!project) return <Loading text="Không tìm thấy dự án" />;
+  if (loading && !project) {
+    return null;
+  }
 
   /** ===== Style dùng chung ===== */
   const basePanel =

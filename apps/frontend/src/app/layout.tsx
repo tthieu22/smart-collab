@@ -37,7 +37,7 @@ export default function RootLayout({
             <NotificationProvider>
               <AuthProvider>
                 <AppWrapper>
-                  <React.Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-neutral-950"><Spin size="large" /></div>}>
+                  <React.Suspense fallback={null}>
                     {children}
                     <GlobalPostDetailModal />
                   </React.Suspense>
