@@ -18,5 +18,6 @@ public class Notification {
     private String projectId;
     private String projectName;
     private boolean isRead;
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 }

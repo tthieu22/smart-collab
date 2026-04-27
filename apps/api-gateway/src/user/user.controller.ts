@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Inject, Logger, Patch, Body, Req, Param } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, Inject, Logger, Patch, Body, Req, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -48,8 +48,27 @@ export class UserController {
   ) {
     const user = req.user as any;
     const userId = user.userId || user.sub || user.id;
+    const type = req.query.type as string;
     return firstValueFrom(
-      this.authClient.send({ cmd: 'auth.getSuggestions' }, { userId, page, limit })
+      this.authClient.send({ cmd: 'auth.getSuggestions' }, { userId, page, limit, type })
+    );
+  }
+
+  @Post('follow/:id')
+  async followUser(@Req() req: Request, @Param('id') followingId: string) {
+    const user = req.user as any;
+    const userId = user.userId || user.sub || user.id;
+    return firstValueFrom(
+      this.authClient.send({ cmd: 'auth.toggleFollow' }, { followerId: userId, followingId })
+    );
+  }
+
+  @Get('profile/:id/relation')
+  async getProfileRelation(@Req() req: Request, @Param('id') targetId: string) {
+    const user = req.user as any;
+    const userId = user.userId || user.sub || user.id;
+    return firstValueFrom(
+      this.authClient.send({ cmd: 'auth.getProfileRelation' }, { targetId, observerId: userId })
     );
   }
 

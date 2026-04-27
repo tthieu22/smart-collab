@@ -2,9 +2,13 @@ export type FeedID = string;
 
 export interface FeedUser {
   id: FeedID;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
   name: string;
   username: string;
-  avatarUrl?: string | null;
+  avatar?: string | null;
+  avatarUrl?: string | null; // Compatibility
   coverImage?: string | null;
   bio?: string | null;
   location?: string | null;

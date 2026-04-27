@@ -28,6 +28,7 @@ export default function Header() {
   const isProjectsPage = pathname === '/projects';
   const currentProject = projectStore((state) => state.currentProject);
   const posts = useFeedStore((state) => state.posts);
+  const usersFromFeed = useFeedStore((state) => state.users);
   const { currentUser, allUsers } = useUserStore();
   const { articles: newsArticles } = useNewsAdminStore();
 
@@ -72,10 +73,15 @@ export default function Header() {
           label = posts[segment].title || 'Chi tiết tin tức';
         }
       } else if (parent === 'profile') {
-        const userObj = currentUser?.id === segment ? currentUser : allUsers.find(u => u.id === segment);
-        if (userObj) {
-          const fullName = `${userObj.firstName ?? ''} ${userObj.lastName ?? ''}`.trim();
-          label = fullName || userObj.email;
+        const userFromFeed = usersFromFeed[segment];
+        if (userFromFeed) {
+          label = userFromFeed.name;
+        } else {
+          const userObj = currentUser?.id === segment ? currentUser : allUsers.find(u => u.id === segment);
+          if (userObj) {
+            const fullName = `${userObj.firstName ?? ''} ${userObj.lastName ?? ''}`.trim();
+            label = fullName || userObj.email;
+          }
         }
       }
     }

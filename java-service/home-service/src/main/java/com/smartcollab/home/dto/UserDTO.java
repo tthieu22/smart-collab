@@ -9,6 +9,7 @@ public class UserDTO {
     private String id;
     private String name;
     private String username;
+    private String email;
     private String avatarUrl;
     private String coverImage;
     private String bio;

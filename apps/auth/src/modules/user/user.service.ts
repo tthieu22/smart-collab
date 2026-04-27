@@ -106,6 +106,7 @@ export class UserService {
         emailNotifications: true,
         pushNotifications: true,
         loginCount: true,
+        createdAt: true,
       },
     });
   }
@@ -132,6 +133,7 @@ export class UserService {
         emailNotifications: true,
         pushNotifications: true,
         loginCount: true,
+        createdAt: true,
       },
     });
 
@@ -367,17 +369,10 @@ export class UserService {
     });
   }
 
-  async getSuggestions(userId: string, page: number = 1, limit: number = 5) {
+  async getSuggestions(userId: string, page: number = 1, limit: number = 5, filter?: string) {
     if (!userId) return { items: [], total: 0 };
     
     const skip = (page - 1) * limit;
-
-    try {
-      const totalCount = await this.prisma.user.count();
-      console.log(`[getSuggestions] Total users in system: ${totalCount}`);
-    } catch (e) {
-      console.error('[getSuggestions] Count failed', e);
-    }
 
     // 1. Chuẩn bị danh sách loại trừ (bản thân + người đã theo dõi)
     let followingIds: string[] = [];
@@ -393,91 +388,149 @@ export class UserService {
     
     const excludeIds = [userId, ...followingIds].filter(id => !!id);
 
-    // 2. Lấy danh sách Top Collaborators từ Project Service
-    let topCollaboratorIds: string[] = [];
-    try {
-      const res = await firstValueFrom(
-        this.projectClient.send({ cmd: 'project.get_top_collaborators' }, {})
-      );
-      if (res && res.success) {
-        topCollaboratorIds = (res.data || []).filter((id: string) => !excludeIds.includes(id));
-      }
-    } catch (err) {
-      console.error('[getSuggestions] Failed to fetch project collaborators', err);
-    }
-
     let suggestions: any[] = [];
     let total = 0;
 
-    // 3. Ưu tiên 1: Lấy người dùng từ danh sách Top Collaborators
-    if (topCollaboratorIds.length > 0) {
-      const users = await this.prisma.user.findMany({
-        where: { id: { in: topCollaboratorIds } },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          avatar: true,
-          bio: true,
-          loginCount: true,
-        },
+    // Logic lọc theo tab
+    if (filter === 'ACTIVE') {
+      total = await this.prisma.user.count({ where: { id: { notIn: excludeIds } } });
+      suggestions = await this.prisma.user.findMany({
+        where: { id: { notIn: excludeIds } },
+        orderBy: { loginCount: 'desc' },
+        skip, take: limit,
+        select: { 
+          id: true, email: true, firstName: true, lastName: true, avatar: true, bio: true, loginCount: true, location: true, createdAt: true,
+          _count: { select: { followers: true, following: true } }
+        }
       });
-      suggestions = users;
-    }
-
-    // 4. Ưu tiên 2: Bổ sung những người hoạt động tích cực (global)
-    // Nếu suggestions chưa đủ nhiều (trong trường hợp fetch toàn bộ list cho trang Discovery)
-    // hoặc đơn giản là lấy thêm để đủ limit
-    const currentIds = suggestions.map(s => s.id);
-    const moreActive = await this.prisma.user.findMany({
-      where: {
-        id: { notIn: [...excludeIds, ...currentIds] },
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        avatar: true,
-        bio: true,
-        loginCount: true,
-      },
-      orderBy: { loginCount: 'desc' },
-      // Lấy thêm 1 đống để phục vụ phân trang nếu cần
-      take: 100, 
-    });
-    
-    const combined = [...suggestions, ...moreActive];
-    total = combined.length;
-
-    // 5. Dự phòng: Nếu vẫn quá ít, lấy những người mới tham gia
-    if (combined.length < 2) {
-      const currentCombinedIds = combined.map(s => s.id);
-      const fallbacks = await this.prisma.user.findMany({
-        where: {
-          id: { notIn: [...excludeIds, ...currentCombinedIds] },
-        },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          avatar: true,
-          bio: true,
-          loginCount: true,
-        },
+    } else if (filter === 'NEW') {
+      total = await this.prisma.user.count({ where: { id: { notIn: excludeIds } } });
+      suggestions = await this.prisma.user.findMany({
+        where: { id: { notIn: excludeIds } },
         orderBy: { createdAt: 'desc' },
-        take: 20,
+        skip, take: limit,
+        select: { 
+          id: true, email: true, firstName: true, lastName: true, avatar: true, bio: true, loginCount: true, location: true, createdAt: true,
+          _count: { select: { followers: true, following: true } }
+        }
       });
-      combined.push(...fallbacks);
+    } else {
+      // Mặc định hoặc RECENT: Ưu tiên cộng tác viên
+      let topCollaboratorIds: string[] = [];
+      try {
+        const res = await firstValueFrom(
+          this.projectClient.send({ cmd: 'project.get_top_collaborators' }, {})
+        );
+        if (res && res.success) {
+          topCollaboratorIds = (res.data || []).filter((id: string) => !excludeIds.includes(id));
+        }
+      } catch (err) {
+        console.error('[getSuggestions] Failed to fetch project collaborators', err);
+      }
+
+      const activeUsers = await this.prisma.user.findMany({
+        where: { 
+          id: { 
+            notIn: excludeIds,
+            ...(topCollaboratorIds.length > 0 ? { in: topCollaboratorIds } : {})
+          } 
+        },
+        orderBy: { loginCount: 'desc' },
+        select: { 
+          id: true, email: true, firstName: true, lastName: true, avatar: true, bio: true, loginCount: true, location: true, createdAt: true,
+          _count: { select: { followers: true, following: true } }
+        },
+        take: 100
+      });
+
+      const moreUsers = await this.prisma.user.findMany({
+        where: { id: { notIn: [...excludeIds, ...activeUsers.map(u => u.id)] } },
+        orderBy: { createdAt: 'desc' },
+        select: { 
+          id: true, email: true, firstName: true, lastName: true, avatar: true, bio: true, loginCount: true, location: true, createdAt: true,
+          _count: { select: { followers: true, following: true } }
+        },
+        take: 100
+      });
+
+      const combined = [...activeUsers, ...moreUsers];
       total = combined.length;
+      suggestions = combined.slice(skip, skip + limit);
     }
 
-    // 6. Phân trang trên mảng tổng hợp (vì kết hợp từ nhiều nguồn/ưu tiên)
-    const paginatedItems = combined.slice(skip, skip + limit);
+    const suggestionsWithFollowing = suggestions.map(u => ({
+      ...u,
+      isFollowing: followingIds.includes(u.id)
+    }));
 
-    console.log(`[getSuggestions] Returning ${paginatedItems.length}/${total} items for page ${page}`);
-    return { items: paginatedItems, total };
+    return { items: suggestionsWithFollowing, total };
+  }
+  async toggleFollow(followerId: string, followingId: string) {
+    if (followerId === followingId) throw new Error('Cannot follow yourself');
+
+    const existing = await this.prisma.follower.findUnique({
+      where: {
+        followerId_followingId: { followerId, followingId },
+      },
+    });
+
+    if (existing) {
+      await this.prisma.follower.delete({
+        where: { id: existing.id },
+      });
+      return { followed: false };
+    } else {
+      await this.prisma.follower.create({
+        data: { followerId, followingId },
+      });
+      return { followed: true };
+    }
+  }
+
+  async getFollowRelation(targetId: string, observerId?: string) {
+    // 1. Lấy danh sách những người đang theo dõi targetId (Followers)
+    const followersData = await this.prisma.follower.findMany({
+      where: { followingId: targetId },
+      include: {
+        follower: {
+          select: { id: true, email: true, firstName: true, lastName: true, avatar: true, bio: true }
+        }
+      }
+    });
+
+    // 2. Lấy danh sách những người mà targetId đang theo dõi (Following)
+    const followingData = await this.prisma.follower.findMany({
+      where: { followerId: targetId },
+      include: {
+        following: {
+          select: { id: true, email: true, firstName: true, lastName: true, avatar: true, bio: true }
+        }
+      }
+    });
+
+    const followers = followersData.map(f => ({
+      ...f.follower,
+      name: `${f.follower.firstName || ''} ${f.follower.lastName || ''}`.trim() || f.follower.email,
+      username: f.follower.email.split('@')[0],
+    }));
+
+    const following = followingData.map(f => ({
+      ...f.following,
+      name: `${f.following.firstName || ''} ${f.following.lastName || ''}`.trim() || f.following.email,
+      username: f.following.email.split('@')[0],
+    }));
+
+    // Bạn bè (Mutual) = những người có trong cả 2 danh sách
+    const followingIds = following.map(u => u.id);
+    const friends = followers.filter(u => followingIds.includes(u.id));
+
+    return {
+      followers,
+      following,
+      friends,
+      followersCount: followers.length,
+      followingCount: following.length,
+      isFollowing: observerId ? followers.some(u => u.id === observerId) : false,
+    };
   }
 }

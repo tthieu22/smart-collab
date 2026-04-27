@@ -144,10 +144,11 @@ export class UserController {
     @Req() req: Request,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('type') type?: string,
   ) {
     try {
       const userId = (req.user as any).sub || (req.user as any).id;
-      const result = await this.userService.getSuggestions(userId, page ? Number(page) : 1, limit ? Number(limit) : 5);
+      const result = await this.userService.getSuggestions(userId, page ? Number(page) : 1, limit ? Number(limit) : 5, type);
       
       const mappedItems = result.items.map((u: any) => ({
         ...u,
@@ -162,6 +163,30 @@ export class UserController {
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 5,
       };
+    } catch (error) {
+      return { success: false, message: error };
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('follow/:id')
+  async followUser(@Req() req: any, @Param('id') followingId: string) {
+    const followerId = req.user.sub || req.user.id;
+    return this.userService.toggleFollow(followerId, followingId);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('profile/:id/relation')
+  async getProfileRelation(@Req() req: any, @Param('id') targetId: string) {
+    const observerId = req.user.sub || req.user.id;
+    return this.userService.getFollowRelation(targetId, observerId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    try {
+      const user = await this.userService.findOne(id);
+      return { success: true, data: user };
     } catch (error) {
       return { success: false, message: error };
     }

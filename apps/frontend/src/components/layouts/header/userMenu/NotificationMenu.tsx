@@ -21,9 +21,24 @@ import { useTheme } from "next-themes";
 import { cn } from "@smart/lib/utils";
 
 export function NotificationMenu() {
-  const formatNotificationTime = useCallback((createdAt?: string) => {
+  const formatNotificationTime = useCallback((createdAt?: any) => {
     if (!createdAt) return "Vừa xong";
-    const date = new Date(createdAt);
+
+    let date: Date;
+    if (Array.isArray(createdAt)) {
+      // Handle Spring Boot LocalDateTime array [year, month, day, hour, minute, second]
+      date = new Date(
+        createdAt[0],
+        (createdAt[1] || 1) - 1,
+        createdAt[2] || 1,
+        createdAt[3] || 0,
+        createdAt[4] || 0,
+        createdAt[5] || 0
+      );
+    } else {
+      date = new Date(createdAt);
+    }
+
     if (Number.isNaN(date.getTime())) return "Vừa xong";
     return formatDistanceToNow(date, { addSuffix: true, locale: vi });
   }, []);

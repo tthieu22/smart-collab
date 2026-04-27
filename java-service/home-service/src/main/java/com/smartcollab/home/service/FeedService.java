@@ -69,6 +69,7 @@ public class FeedService {
                 .id(u.getId())
                 .name((firstName + " " + lastName).trim())
                 .username(u.getEmail() != null ? u.getEmail().split("@")[0] : "user")
+                .email(u.getEmail())
                 .avatarUrl(u.getAvatar())
                 .coverImage(u.getCoverImage())
                 .bio(u.getBio())

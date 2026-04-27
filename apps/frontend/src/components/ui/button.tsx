@@ -11,7 +11,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-export function Button({
+import React, { forwardRef } from 'react';
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   variant = 'default',
   size = 'middle',
   active = false,
@@ -20,7 +22,7 @@ export function Button({
   disabled,
   className,
   ...props
-}: ButtonProps) {
+}, ref) => {
   const theme = useBoardStore((s) => s.theme);
 
   // Màu giống nút Create Board
@@ -47,6 +49,7 @@ export function Button({
 
   return (
     <button
+      ref={ref}
       disabled={disabled || loading}
       className={cn(
         'font-medium transition-all duration-150 rounded-lg flex items-center justify-center gap-2',
@@ -65,4 +68,6 @@ export function Button({
       )}
     </button>
   );
-}
+});
+
+Button.displayName = 'Button';

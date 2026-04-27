@@ -537,11 +537,11 @@ export class AuthMessageHandler {
   }
 
   @MessagePattern({ cmd: 'auth.getSuggestions' })
-  async handleGetSuggestions(@Payload() payload: { userId: string; page?: number; limit?: number }) {
+  async handleGetSuggestions(@Payload() payload: { userId: string; page?: number; limit?: number; type?: string }) {
     try {
       const page = payload.page || 1;
       const limit = payload.limit || 5;
-      const result = await this.userService.getSuggestions(payload.userId, page, limit);
+      const result = await this.userService.getSuggestions(payload.userId, page, limit, payload.type);
       
       const mappedItems = result.items.map((u: any) => ({
         ...u,
@@ -558,6 +558,34 @@ export class AuthMessageHandler {
       };
     } catch (err: any) {
       return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.toggleFollow' })
+  async handleToggleFollow(@Payload() payload: { followerId: string; followingId: string }) {
+    try {
+       return await this.userService.toggleFollow(payload.followerId, payload.followingId);
+    } catch (err: any) {
+       return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.getProfileRelation' })
+  async handleGetProfileRelation(@Payload() payload: { targetId: string; observerId?: string }) {
+    try {
+       return await this.userService.getFollowRelation(payload.targetId, payload.observerId);
+    } catch (err: any) {
+       return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.findOneUser' })
+  async handleFindOneUser(@Payload() payload: { userId: string }) {
+    try {
+      const user = await this.userService.findOne(payload.userId);
+      return { success: true, data: user };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'User not found' };
     }
   }
 }

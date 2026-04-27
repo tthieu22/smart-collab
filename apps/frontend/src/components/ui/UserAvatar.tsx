@@ -40,31 +40,33 @@ interface UserAvatarProps {
   previewable?: boolean;
 }
 
-export default function UserAvatar({ 
-  userId, 
-  size = 'md', 
+import React, { forwardRef } from 'react';
+
+export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
+  userId,
+  size = 'md',
   className,
   showMood = true,
   allowChangeMood = false,
   mood,
   previewable = false
-}: UserAvatarProps) {
+}, ref) => {
   const user = useFeedStore((s) => s.users[userId]);
   const currentUserId = useFeedStore((s) => s.currentUserId);
   const updateUserMood = useFeedStore((s) => s.updateUserMood);
 
   // If user not in feed store, they might be in user store (me)
   // We'll fallback to a basic rendering if user is missing but we'll try to get it from store
-  
+
   if (!user) {
     // If it's me but not in feed store yet (unlikely but possible in header)
-    return null; 
+    return null;
   }
 
   const isMe = userId === currentUserId;
   const displayMood = mood || user.mood;
   const currentMood = MOODS.find(m => m.value === displayMood);
-  
+
   const sizeClasses = {
     xs: 'h-6 w-6 text-[10px]',
     sm: 'h-8 w-8 text-xs',
@@ -107,8 +109,41 @@ export default function UserAvatar({
     </div>
   );
 
-  const AvatarContent = (
-    <div className={cn("relative group shrink-0 inline-block rounded-full", sizeClasses[size], className)}>
+  const MoodBadge = (isMe && allowChangeMood) ? (
+    <Popover
+      content={moodPicker}
+      title={<span className="font-bold text-sm">Bạn đang cảm thấy thế nào?</span>}
+      trigger="click"
+      placement="topRight"
+      overlayClassName="mood-popover"
+    >
+      <div className={cn(
+        "absolute -bottom-1 -right-1 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-black/5 transition-all hover:scale-110 cursor-pointer hover:ring-blue-500/50 z-10",
+        badgeSizeClasses[size]
+      )}>
+        {displayMood ? (
+          <span>{currentMood?.emoji || '✨'}</span>
+        ) : (
+          <div className="flex items-center justify-center text-blue-500">
+            <Cloud size={size === 'xs' || size === 'sm' ? 10 : 12} className="relative" />
+            <Plus size={size === 'xs' || size === 'sm' ? 6 : 8} className="absolute" />
+          </div>
+        )}
+      </div>
+    </Popover>
+  ) : (
+    showMood && displayMood && (
+      <div className={cn(
+        "absolute -bottom-1 -right-1 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-black/5",
+        badgeSizeClasses[size]
+      )}>
+        <span>{currentMood?.emoji || '✨'}</span>
+      </div>
+    )
+  );
+
+  return (
+    <div ref={ref} className={cn("relative group shrink-0 inline-block rounded-full", sizeClasses[size], className)}>
       <div className={cn(
         "relative h-full w-full shrink-0 overflow-hidden rounded-full ring-2 ring-white dark:ring-neutral-800 shadow-sm bg-gray-100 dark:bg-neutral-900"
       )}>
@@ -134,45 +169,16 @@ export default function UserAvatar({
             />
           )
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-            {user.name?.charAt(0) || '?'}
+          <div className="h-full w-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold uppercase">
+            {user.name ? user.name.charAt(0) : (user.email ? user.email.charAt(0) : '?')}
           </div>
         )}
       </div>
-
-      {showMood && (displayMood || (isMe && allowChangeMood)) && (
-        <div className={cn(
-          "absolute -bottom-1 -right-1 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center shadow-sm ring-1 ring-black/5 transition-transform hover:scale-110",
-          badgeSizeClasses[size]
-        )}>
-          {displayMood ? (
-            <span>{currentMood?.emoji || '✨'}</span>
-          ) : (
-            <div className="flex items-center justify-center text-blue-500">
-              <Cloud size={size === 'xs' || size === 'sm' ? 10 : 12} className="relative" />
-              <Plus size={size === 'xs' || size === 'sm' ? 6 : 8} className="absolute" />
-            </div>
-          )}
-        </div>
-      )}
+      {MoodBadge}
     </div>
   );
+});
 
-  if (isMe && allowChangeMood) {
-    return (
-      <Popover 
-        content={moodPicker} 
-        title="Bạn đang cảm thấy thế nào?" 
-        trigger="click" 
-        placement="bottomLeft"
-        overlayClassName="mood-popover"
-      >
-        <button className="outline-none focus:outline-none cursor-pointer block border-none bg-transparent p-0 m-0 rounded-full">
-          {AvatarContent}
-        </button>
-      </Popover>
-    );
-  }
+UserAvatar.displayName = 'UserAvatar';
 
-  return AvatarContent;
-}
+export default UserAvatar;

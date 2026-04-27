@@ -127,14 +127,22 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   draftMood: null,
   draftBackgroundStyle: null,
 
-  bootstrap: (dataset) => {
-    const users: Entities<FeedUser> = {};
+  bootstrap: (dataset: FeedDataset) => {
+    const users: Record<FeedID, FeedUser> = { ...get().users };
     const posts: Entities<FeedPost> = {};
     const comments: Entities<FeedComment> = {};
     const postIds: FeedID[] = [];
     const commentsByPostId: Record<FeedID, FeedID[]> = {};
 
-    dataset.users.forEach((u) => (users[u.id] = u));
+    dataset.users.forEach((u) => {
+      const normalizedUser = {
+        ...u,
+        avatarUrl: u.avatarUrl || u.avatar,
+        name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+        username: u.username || u.email.split('@')[0],
+      };
+      users[u.id] = normalizedUser;
+    });
 
     dataset.posts.forEach((p) => {
       posts[p.id] = {
@@ -598,7 +606,15 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       const readPostIds = [...s.readPostIds];
       const commentsByPostId = { ...s.commentsByPostId };
 
-      data.users.forEach((u) => (users[u.id] = u));
+      data.users.forEach((u) => {
+        const normalizedUser = {
+          ...u,
+          avatarUrl: u.avatarUrl || u.avatar,
+          name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+          username: u.username || u.email.split('@')[0],
+        };
+        users[u.id] = normalizedUser;
+      });
       data.posts.forEach((p) => {
         if (!posts[p.id]) {
           posts[p.id] = {
@@ -683,13 +699,22 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
   fetchUser: async (userId: string) => {
     try {
-      const res = await autoRequest<FeedUser>(`/users/${userId}`);
-      set((s) => ({
-        users: {
-          ...s.users,
-          [res.id]: res,
-        },
-      }));
+      const res = await autoRequest<{ success: boolean; data: FeedUser }>(`/users/${userId}`);
+      if (res.success && res.data) {
+        const u = res.data;
+        const normalizedUser = {
+          ...u,
+          avatarUrl: u.avatarUrl || u.avatar,
+          name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+          username: u.username || u.email.split('@')[0],
+        };
+        set((s) => ({
+          users: {
+            ...s.users,
+            [normalizedUser.id]: normalizedUser,
+          },
+        }));
+      }
     } catch (err: any) {
       console.error('Fetch user failed:', err);
     }

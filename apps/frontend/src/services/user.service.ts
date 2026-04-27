@@ -90,8 +90,23 @@ export class UserService {
   }
 
   // Get suggested collaborators
-  getSuggestions(page: number = 1, limit: number = 5) {
-    return this.request<any>(`/users/suggestions?page=${page}&limit=${limit}`, {
+  getSuggestions(page: number = 1, limit: number = 5, type?: string) {
+    const url = `/users/suggestions?page=${page}&limit=${limit}${type ? `&type=${type}` : ''}`;
+    return this.request<any>(url, {
+      method: 'GET',
+    });
+  }
+
+  // Follow/Unfollow user
+  toggleFollow(userId: string) {
+    return this.request<{ followed: boolean }>(`/users/follow/${userId}`, {
+      method: 'POST',
+    });
+  }
+
+  // Get follow relation data
+  getProfileRelation(userId: string) {
+    return this.request<any>(`/users/profile/${userId}/relation`, {
       method: 'GET',
     });
   }
