@@ -49,14 +49,18 @@ export class AiService {
 
     @Inject('PROJECT_SERVICE')
     private readonly projectClient: ClientProxy,
+    @Inject('HOME_SERVICE')
+    private readonly homeClient: ClientProxy,
   ) {}
 
   private async rpc<T = any>(cmd: string, payload: any): Promise<T> {
     this.logger.log(`➡️ RPC -> ${cmd}`);
     this.logger.debug(`Payload: ${JSON.stringify(payload)}`);
 
+    const client = cmd.startsWith('home.') ? this.homeClient : this.projectClient;
+
     return firstValueFrom(
-      this.projectClient
+      client
         .send<T>({ cmd }, payload)
         .pipe(timeout(30000), retry({ count: 3, delay: 1000 })),
     );
@@ -235,6 +239,85 @@ export class AiService {
     }
 
     return { success: true, type: payload.type, content };
+  }
+
+  async chat(payload: { question: string; userId?: string }) {
+    this.logger.log(`AI Chat request: ${payload.question}`);
+
+    // 1. Rewrite queries for better search context
+    const rewritePrompt = `Bạn là chuyên gia về RAG. Hãy phân tích câu hỏi: "${payload.question}" và tạo ra tối đa 2 câu truy vấn tìm kiếm (tiếng Việt) để tìm context phù hợp nhất trong database tin tức của website. Trả về JSON array ["query1", "query2"]. Cần ngắn gọn, tập trung vào keywords. Nếu câu hỏi về website chung chung, hãy dùng các từ như "giới thiệu", "tóm tắt", "hướng dẫn".`;
+    const rewriteRes = await this.llm.complete(rewritePrompt);
+    let queries = [payload.question];
+    try {
+      const cleaned = rewriteRes.content.match(/\[.*\]/s)?.[0] || rewriteRes.content;
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed)) queries = [...new Set([...parsed, payload.question])];
+    } catch {}
+
+    // 2. Retrieval: Search for context from news
+    let searchResults = await Promise.all(
+      queries.map(q => this.rpc<any>('home.news.search', { q, limit: 3 }))
+    );
+
+    let rawArticles = searchResults.flatMap(r => r.data || []);
+
+    // Fallback: If no news found, try a broad search for the platform name
+    if (rawArticles.length === 0) {
+      this.logger.log('No articles found, trying fallback search for "Smart Collab"');
+      const fallbackRes = await this.rpc<any>('home.news.search', { q: 'Smart Collab', limit: 5 });
+      rawArticles = fallbackRes.data || [];
+    }
+
+    // Deduplicate by ID
+    const uniqueArticles = Array.from(new Map(rawArticles.map(a => [a.id, a])).values());
+
+    // 3. Build Context
+    const contextContent = uniqueArticles.length > 0 
+      ? uniqueArticles.map(a => `### [Nguồn: ${a.title}]\n${a.content}`).join('\n\n').substring(0, 4000)
+      : '(Hiện tại không tìm thấy bài viết tin tức cụ thể nào liên quan trực tiếp đến từ khóa này trong kho dữ liệu cục bộ)';
+
+    const platformOverview = `Smart Collab là hệ thống quản lý công việc và cộng tác nhóm hiện đại, tích hợp AI mạnh mẽ để tự động hóa quy trình. 
+Các tính năng chính: Bảng công việc (Board), Dashboard thông minh, Tự động hóa tạo bài viết (AutoPost), Chat AI hỗ trợ 24/7.`;
+
+    // 4. Generation
+    const systemPrompt = `Bạn là Smart AI - Một trợ lý ảo chuyên nghiệp, thân thiện và cực kỳ thông minh của hệ thống Smart Collab.
+
+PHONG CÁCH PHẢN HỒI:
+- Trả lời tự nhiên, trôi chảy như một chuyên gia thực thụ. Tránh cách nói rập khuôn "Tôi không tìm thấy thông tin trong CONTEXT".
+- Nếu có thông tin trong CONTEXT, hãy lồng ghép khéo léo để trả lời.
+- Nếu CONTEXT không đủ, hãy sử dụng kiến thức sâu rộng của bạn để giải đáp một cách linh hoạt, đồng thời kết nối nó với lợi ích mà Smart Collab có thể mang lại (nếu phù hợp).
+- Luôn giữ thái độ sẵn sàng hỗ trợ và chuyên nghiệp.
+
+NGỮ CẢNH HỆ THỐNG (Smart Collab Overview):
+${platformOverview}
+
+NGỮ CẢNH CHI TIẾT (Dựa trên dữ liệu tìm kiếm):
+${contextContent}`;
+
+    const answer = await this.llm.completeCustom(systemPrompt, payload.question);
+
+    return {
+      success: true,
+      answer: answer.content,
+      sources: uniqueArticles.slice(0, 3).map(a => ({ id: a.id, title: a.title })),
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  async optimizePost(payload: { content: string; locale?: string }) {
+    const locale = payload?.locale ?? 'vi';
+    const prompt = `Bạn là một chuyên gia marketing và viết nội dung mạng xã hội. 
+Hãy tối ưu hóa bài viết sau đây để trở nên thu hút, chuyên nghiệp và giàu cảm xúc hơn. 
+Thêm các emoji phù hợp và tối đa 3-5 hashtag liên quan ở cuối.
+Giữ nguyên ý nghĩa gốc và ngôn ngữ của bài viết.
+
+Nội dung gốc:
+"${payload.content}"
+
+Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, không cần lời dẫn.`;
+
+    const aiRes = await this.llm.complete(prompt);
+    return { success: true, content: aiRes.content.trim() };
   }
 
   async analyzeBoard(payload: { boardId: string; userId?: string; locale?: string }) {

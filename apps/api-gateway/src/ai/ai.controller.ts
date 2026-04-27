@@ -127,4 +127,44 @@ export class AiController {
 
     return result;
   }
+
+  /**
+   * POST /projects/ai-chat
+   */
+  @Post('ai-chat')
+  async aiChat(@Body('question') question: string, @Req() req: any) {
+    const result = await firstValueFrom(
+      this.aiClient
+        .send(
+          { cmd: 'ai.chat' },
+          {
+            question,
+            userId: req.user.userId,
+          },
+        )
+        .pipe(timeout(120000), retry(1)),
+    );
+
+    return result;
+  }
+
+  /**
+   * POST /projects/ai-optimize-post
+   */
+  @Post('ai-optimize-post')
+  async aiOptimizePost(@Body('content') content: string) {
+    const result = await firstValueFrom(
+      this.aiClient
+        .send(
+          { cmd: 'ai.optimize-post' },
+          {
+            content,
+            locale: 'vi',
+          },
+        )
+        .pipe(timeout(60000)),
+    );
+
+    return result;
+  }
 }

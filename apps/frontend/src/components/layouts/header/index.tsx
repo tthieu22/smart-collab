@@ -22,6 +22,7 @@ import { projectStore } from '@smart/store/project';
 import { useFeedStore } from '@smart/store/feed';
 import { useUserStore } from '@smart/store/user';
 import { useNewsAdminStore } from '@smart/store/news-admin';
+import { AIChatWindow } from '../../shared/AIChatWindow';
 
 export default function Header() {
   const pathname = usePathname();
@@ -32,13 +33,25 @@ export default function Header() {
   const { currentUser, allUsers } = useUserStore();
   const { articles: newsArticles } = useNewsAdminStore();
 
+  const [isAIChatOpen, setIsAIChatOpen] = React.useState(false);
+
   const [currentTime, setCurrentTime] = React.useState<string>('');
+  const [currentDate, setCurrentDate] = React.useState<string>('');
 
   React.useEffect(() => {
-    setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
-    const timer = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
-    }, 60000);
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+
+      const dayNames = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+      const dayName = dayNames[now.getDay()];
+      const day = now.getDate();
+      const month = now.getMonth() + 1;
+      setCurrentDate(`${dayName}, ${day} tháng ${month}`);
+    };
+
+    updateTime();
+    const timer = setInterval(updateTime, 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -135,7 +148,7 @@ export default function Header() {
           {/* Clock & Date (Moved from RightWidgets) */}
           <div className="hidden xl:flex flex-col items-end mr-2 leading-none">
             <span className="text-sm font-black tracking-tighter text-gray-900 dark:text-white">{currentTime}</span>
-            <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">Chủ nhật, 26 tháng 4</span>
+            <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">{currentDate}</span>
           </div>
 
           <div className="h-6 w-px bg-gray-200 dark:bg-neutral-800 mx-1" />
@@ -143,6 +156,7 @@ export default function Header() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => setIsAIChatOpen(true)}
             className="relative p-2 rounded-xl bg-blue-500/10 text-blue-600 border border-blue-500/20 group overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-10 transition-opacity" />
@@ -156,6 +170,8 @@ export default function Header() {
             <UserMenu />
           </div>
         </div>
+
+        <AIChatWindow isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} />
 
       </div>
     </header>

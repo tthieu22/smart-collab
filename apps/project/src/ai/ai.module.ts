@@ -34,6 +34,13 @@ import { ModelRegistryService } from '../llm/model-registry.service';
         useFactory: (configService: ConfigService) =>
           getNestRabbitMQOptions('project_queue', configService),
       },
+      {
+        name: 'HOME_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) =>
+          getNestRabbitMQOptions('home_requests_queue', configService),
+      },
     ]),
   ],
   controllers: [AiController],

@@ -78,7 +78,31 @@ public class HomeMessageHandler {
                 case "health.ping":
                     return Map.of("success", true, "message", "Home Service is UP");
 
-                case "home.feed.get":
+                case "home.news.search": {
+                    String q = payload != null && payload.get("q") != null ? String.valueOf(payload.get("q")).trim() : "";
+                    int l = payload != null && payload.get("limit") != null ? Integer.parseInt(String.valueOf(payload.get("limit"))) : 5;
+                    log.info("News Search - Query: '{}', Limit: {}", q, l);
+                    
+                    String regex = q;
+                    if (!q.isEmpty()) {
+                        String[] words = q.split("\\s+");
+                        StringBuilder sb = new StringBuilder();
+                        for (String w : words) {
+                            if (w.length() > 1) { // Only use words with > 1 char for regex
+                                sb.append("(?=.*").append(escapeRegex(w)).append(")");
+                            }
+                        }
+                        sb.append(".*");
+                        regex = sb.toString();
+                    }
+                    
+                    List<NewsArticle> articles = newsArticleRepository.findByTitleRegexOrContentRegex(regex, regex);
+                    log.info("News Search - Regex: '{}', Found: {} articles", regex, articles.size());
+                    if (articles.size() > l) articles = articles.subList(0, l);
+                    return Map.of("success", true, "data", articles);
+                }
+
+                case "home.feed.get": {
                     int page = payload != null && payload.get("page") != null ? Integer.parseInt(String.valueOf(payload.get("page"))) : 0;
                     int limit = payload != null && payload.get("limit") != null ? Integer.parseInt(String.valueOf(payload.get("limit"))) : 10;
                     List<String> excludeIds = new ArrayList<>();
@@ -91,6 +115,7 @@ public class HomeMessageHandler {
                         }
                     }
                     return feedService.getFeed(userId, page, limit, excludeIds);
+                }
 
                 case "home.post.create":
                     Post post = new Post();
@@ -340,7 +365,7 @@ public class HomeMessageHandler {
                     );
                 }
                 
-                case "home.search.global":
+                case "home.search.global": {
                     String query = payload != null && payload.get("q") != null ? String.valueOf(payload.get("q")).trim() : "";
                     log.info("Global Search Query: '{}'", query);
                     if (query.isEmpty()) {
@@ -351,7 +376,9 @@ public class HomeMessageHandler {
                     String[] words = query.split("\\s+");
                     StringBuilder sb = new StringBuilder();
                     for (String w : words) {
-                        sb.append("(?=.*").append(java.util.regex.Pattern.quote(w)).append(")");
+                        if (w.length() > 1) {
+                            sb.append("(?=.*").append(escapeRegex(w)).append(")");
+                        }
                     }
                     sb.append(".*");
                     String regex = sb.toString();
@@ -365,6 +392,7 @@ public class HomeMessageHandler {
                         "news", news,
                         "posts", posts
                     );
+                }
 
                 default:
                     log.warn("Unknown command: {}", cmd);
@@ -377,30 +405,38 @@ public class HomeMessageHandler {
     }
 
     private Map<String, Object> listNewsArticlesFiltered(Map<String, Object> payload) {
-        List<NewsArticle> all = newsArticleRepository.findAllByOrderByCreatedAtDesc();
-        
-        // 1. Filter by category
+        String q = (payload != null && payload.get("q") != null) ? String.valueOf(payload.get("q")).trim() : "";
         String cat = (payload != null && payload.get("category") != null) ? String.valueOf(payload.get("category")).trim() : "";
-        List<NewsArticle> filtered = all;
+        
+        List<NewsArticle> filtered;
+        if (!q.isEmpty()) {
+            // Use the same smart regex logic
+            String regex = q;
+            String[] words = q.split("\\s+");
+            StringBuilder sb = new StringBuilder();
+            for (String w : words) {
+                if (w.length() > 1) {
+                    sb.append("(?=.*").append(escapeRegex(w)).append(")");
+                }
+            }
+            sb.append(".*");
+            regex = sb.toString();
+            filtered = newsArticleRepository.findByTitleRegexOrContentRegex(regex, regex);
+        } else {
+            filtered = newsArticleRepository.findAllByOrderByCreatedAtDesc();
+        }
+
+        // Apply category filter if needed (repository search might need a custom query for category + regex)
         if (!cat.isEmpty()) {
             if ("NEWS".equalsIgnoreCase(cat)) {
-                filtered = all.stream()
+                filtered = filtered.stream()
                         .filter(a -> a.getCategory() == null || a.getCategory().isBlank() || "NEWS".equalsIgnoreCase(a.getCategory()))
                         .toList();
             } else {
-                filtered = all.stream()
+                filtered = filtered.stream()
                         .filter(a -> cat.equalsIgnoreCase(a.getCategory()))
                         .toList();
             }
-        }
-
-        // 2. Filter by search query (q)
-        String q = (payload != null && payload.get("q") != null) ? String.valueOf(payload.get("q")).trim().toLowerCase() : "";
-        if (!q.isEmpty()) {
-            filtered = filtered.stream()
-                    .filter(a -> (a.getContent() != null && a.getContent().toLowerCase().contains(q)) ||
-                                (a.getLinkUrl() != null && a.getLinkUrl().toLowerCase().contains(q)))
-                    .toList();
         }
 
         int total = filtered.size();
@@ -494,5 +530,22 @@ public class HomeMessageHandler {
                cmd.contains(".list") || 
                cmd.equals("health.ping") || 
                cmd.contains(".sync");
+    }
+    private String escapeRegex(String input) {
+        if (input == null) return "";
+        return input.replace("\\", "\\\\")
+                    .replace(".", "\\.")
+                    .replace("*", "\\*")
+                    .replace("?", "\\?")
+                    .replace("+", "\\+")
+                    .replace("(", "\\(")
+                    .replace(")", "\\)")
+                    .replace("[", "\\[")
+                    .replace("]", "\\]")
+                    .replace("{", "\\{")
+                    .replace("}", "\\}")
+                    .replace("^", "\\^")
+                    .replace("$", "\\$")
+                    .replace("|", "\\|");
     }
 }

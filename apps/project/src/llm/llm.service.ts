@@ -54,6 +54,27 @@ export class LlmService {
     }
   }
 
+  async completeCustom(system: string, user: string): Promise<LlmResponse> {
+    try {
+      const res = await this.groq.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
+        temperature: 0.7,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      });
+      return { 
+        content: res.choices?.[0]?.message?.content?.trim() || '', 
+        provider: 'groq' 
+      };
+    } catch (err) {
+      this.logger.error('Groq custom chat failed', err);
+      // Basic fallback
+      return { content: 'Xin lỗi, tôi đang gặp sự cố. Bạn có thể hỏi lại sau không?', provider: 'error' };
+    }
+  }
+
   private async completeGroq(prompt: string): Promise<LlmResponse> {
     const res = await this.groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',

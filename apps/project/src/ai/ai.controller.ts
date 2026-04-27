@@ -72,4 +72,16 @@ export class AiController {
     this.logger.log('[ai.get-embeddings]');
     return this.aiService.getEmbeddings(payload);
   }
+
+  @MessagePattern({ cmd: 'ai.chat' })
+  async chat(@Payload() payload: any) {
+    this.logger.log('[ai.chat]');
+    return this.aiService.chat(payload);
+  }
+
+  @MessagePattern({ cmd: 'ai.optimize-post' })
+  async optimizePost(@Payload() payload: any) {
+    this.logger.log('[ai.optimize-post]');
+    return this.aiService.optimizePost(payload);
+  }
 }
