@@ -171,14 +171,25 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Post('follow/:id')
   async followUser(@Req() req: any, @Param('id') followingId: string) {
-    const followerId = req.user.sub || req.user.id;
-    return this.userService.toggleFollow(followerId, followingId);
+    try {
+      const followerId = req.user.sub || req.user.id;
+      const result = await this.userService.toggleFollow(followerId, followingId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { success: false, message: error.message || error };
+    }
   }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile/:id/relation')
   async getProfileRelation(@Req() req: any, @Param('id') targetId: string) {
-    const observerId = req.user.sub || req.user.id;
-    return this.userService.getFollowRelation(targetId, observerId);
+    try {
+      const observerId = req.user.sub || req.user.id;
+      const result = await this.userService.getFollowRelation(targetId, observerId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { success: false, message: error.message || error };
+    }
   }
 
   @UseGuards(JwtAuthGuard)

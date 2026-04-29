@@ -7,4 +7,5 @@ import java.util.List;
 public interface CommentRepository extends MongoRepository<Comment, String> {
     List<Comment> findAllByPostId(String postId);
     long countByPostId(String postId);
+    List<Comment> findByPostIdIn(java.util.Collection<String> postIds);
 }

@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 public class Reaction {
     @Id
     private String id;
+    
+    @org.springframework.data.mongodb.core.index.Indexed
     private String postId;
+    
     private String authorId;
     private String type;
     private LocalDateTime createdAt;

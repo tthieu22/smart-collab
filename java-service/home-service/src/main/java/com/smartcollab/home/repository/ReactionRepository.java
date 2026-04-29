@@ -9,4 +9,5 @@ public interface ReactionRepository extends MongoRepository<Reaction, String> {
     List<Reaction> findAllByPostId(String postId);
     Optional<Reaction> findByPostIdAndAuthorId(String postId, String authorId);
     long countByPostIdAndType(String postId, String type);
+    List<Reaction> findByPostIdIn(java.util.Collection<String> postIds);
 }

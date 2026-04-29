@@ -77,3 +77,12 @@ export interface VerifyEmailResponse {
   success: boolean;
   message: string;
 }
+
+export interface ToggleFollowResponse {
+  success: boolean;
+  message: string;
+  data: {
+    followed: boolean;
+  };
+}
+

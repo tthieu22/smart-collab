@@ -10,7 +10,12 @@ import java.time.LocalDateTime;
 public class Follower {
     @Id
     private String id;
+
+    @org.springframework.data.mongodb.core.index.Indexed
     private String followerId;
+
+    @org.springframework.data.mongodb.core.index.Indexed
     private String followingId;
+
     private LocalDateTime createdAt;
 }

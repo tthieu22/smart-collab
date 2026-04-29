@@ -12,7 +12,9 @@ import {
   ChangePasswordResponse,
   ResendVerificationResponse,
   VerifyEmailResponse,
+  ToggleFollowResponse,
 } from '../types/user';
+import { ApiResponse } from '../types/auth';
 import { autoRequest } from './auto.request';
 
 export class UserService {
@@ -92,21 +94,21 @@ export class UserService {
   // Get suggested collaborators
   getSuggestions(page: number = 1, limit: number = 5, type?: string) {
     const url = `/users/suggestions?page=${page}&limit=${limit}${type ? `&type=${type}` : ''}`;
-    return this.request<any>(url, {
+    return this.request<ApiResponse<any>>(url, {
       method: 'GET',
     });
   }
 
   // Follow/Unfollow user
   toggleFollow(userId: string) {
-    return this.request<{ followed: boolean }>(`/users/follow/${userId}`, {
+    return this.request<{ success: boolean; message: string; data: { followed: boolean } }>(`/users/follow/${userId}`, {
       method: 'POST',
     });
   }
 
   // Get follow relation data
   getProfileRelation(userId: string) {
-    return this.request<any>(`/users/profile/${userId}/relation`, {
+    return this.request<ApiResponse<any>>(`/users/profile/${userId}/relation`, {
       method: 'GET',
     });
   }

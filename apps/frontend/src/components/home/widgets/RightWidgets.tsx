@@ -12,6 +12,9 @@ import { Button } from 'antd';
 import { useAnalytics } from '@smart/hooks/useAnalytics';
 import { projectStore } from '@smart/store/project';
 import { useUserStore } from '@smart/store/user';
+import { userService } from '@smart/services/user.service';
+import { message } from 'antd';
+import { Check } from 'lucide-react';
 
 export default function RightWidgets() {
   const postIds = useFeedStore((s) => s.postIds);
@@ -33,6 +36,32 @@ export default function RightWidgets() {
 
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
+  const handleToggleFollow = async (userId: string) => {
+    try {
+      const res = await userService.toggleFollow(userId);
+      
+      if (res.success) {
+        // Cập nhật state trong store để UI thay đổi ngay lập tức
+        const isFollowedNow = res.data?.followed;
+        
+        if (isFollowedNow !== undefined) {
+          const updatedUsers = suggestedUsers.map(u =>
+            u.id === userId ? { ...u, isFollowing: isFollowedNow } : u
+          );
+          setSuggestedUsers(updatedUsers);
+
+          if (isFollowedNow) {
+            message.success('Đã theo dõi người dùng');
+          } else {
+            message.info('Đã hủy theo dõi');
+          }
+        }
+      }
+    } catch (err) {
+      message.error('Không thể thực hiện yêu cầu lúc này');
+    }
+  };
+
   useEffect(() => {
     const fetchSuggestions = async () => {
       // Chỉ fetch nếu chưa có dữ liệu trong store
@@ -40,7 +69,6 @@ export default function RightWidgets() {
 
       setSuggestionsLoading(true);
       try {
-        const { userService } = await import('@smart/services/user.service');
         const res = await userService.getSuggestions();
         if (res.success) {
           setSuggestedUsers(res.data || []);
@@ -111,11 +139,23 @@ export default function RightWidgets() {
                     {u.name}
                   </Link>
                   <div className="text-[10px] text-gray-400 dark:text-neutral-500 truncate mt-0.5 font-medium leading-none">
-                    @{u.username} • {Math.floor(Math.random() * 20) + 1} dự án
+                    @{u.username} • {u.stats?.projectCount || Math.floor(Math.random() * 20) + 1} dự án
                   </div>
                 </div>
-                <button className="h-8 w-8 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all ring-1 ring-blue-500/10">
-                  <UserPlus size={14} />
+                <button
+                  onClick={() => handleToggleFollow(u.id)}
+                  className={cn(
+                    "h-8 w-8 rounded-lg flex items-center justify-center transition-all ring-1",
+                    u.isFollowing
+                      ? "bg-green-500 text-white ring-green-500/20"
+                      : "bg-blue-50/50 dark:bg-blue-900/10 text-blue-500 hover:bg-blue-500 hover:text-white ring-blue-500/10"
+                  )}
+                >
+                  {u.isFollowing ? (
+                    <Check size={14} className="animate-in zoom-in duration-300" />
+                  ) : (
+                    <UserPlus size={14} />
+                  )}
                 </button>
               </div>
             ))
@@ -257,6 +297,6 @@ export default function RightWidgets() {
       </Card>
 
       <TipsGuideSideCard />
-    </div>
+    </div >
   );
 }

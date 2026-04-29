@@ -569,7 +569,8 @@ export class AuthMessageHandler {
   @MessagePattern({ cmd: 'auth.toggleFollow' })
   async handleToggleFollow(@Payload() payload: { followerId: string; followingId: string }) {
     try {
-       return await this.userService.toggleFollow(payload.followerId, payload.followingId);
+       const result = await this.userService.toggleFollow(payload.followerId, payload.followingId);
+       return { success: true, data: result };
     } catch (err: any) {
        return { success: false, message: err.message };
     }
@@ -578,7 +579,8 @@ export class AuthMessageHandler {
   @MessagePattern({ cmd: 'auth.getProfileRelation' })
   async handleGetProfileRelation(@Payload() payload: { targetId: string; observerId?: string }) {
     try {
-       return await this.userService.getFollowRelation(payload.targetId, payload.observerId);
+       const result = await this.userService.getFollowRelation(payload.targetId, payload.observerId);
+       return { success: true, data: result };
     } catch (err: any) {
        return { success: false, message: err.message };
     }

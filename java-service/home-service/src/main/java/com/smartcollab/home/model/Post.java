@@ -12,7 +12,10 @@ import java.util.Map;
 public class Post {
     @Id
     private String id;
+    
+    @org.springframework.data.mongodb.core.index.Indexed
     private String authorId;
+    
     private String title;
     private String content;
     private String linkUrl;
@@ -20,6 +23,9 @@ public class Post {
     private String visibility; // public, friends, private
     private String mood;
     private String backgroundStyle;
+    
+    @org.springframework.data.mongodb.core.index.Indexed
     private LocalDateTime createdAt;
+    
     private LocalDateTime updatedAt;
 }

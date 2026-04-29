@@ -53,14 +53,24 @@ public class FeedService {
         // Collect all author IDs to fetch users in one batch
         Set<String> userIds = new HashSet<>();
         userIds.add(currentUserId);
+        
+        List<String> postIds = posts.stream().map(Post::getId).collect(Collectors.toList());
         userIds.addAll(posts.stream().map(Post::getAuthorId).collect(Collectors.toSet()));
         
-        List<Comment> allComments = new ArrayList<>();
-        for (Post post : posts) {
-            List<Comment> postComments = commentRepository.findAllByPostId(post.getId());
-            allComments.addAll(postComments);
-            userIds.addAll(postComments.stream().map(Comment::getAuthorId).collect(Collectors.toSet()));
-        }
+        // Bulk fetch comments
+        List<Comment> allComments = postIds.isEmpty() ? new ArrayList<>() : commentRepository.findByPostIdIn(postIds);
+        userIds.addAll(allComments.stream().map(Comment::getAuthorId).collect(Collectors.toSet()));
+        
+        // Group comments by post
+        Map<String, List<Comment>> commentsByPostId = allComments.stream()
+                .collect(Collectors.groupingBy(Comment::getPostId));
+
+        // Bulk fetch reactions
+        List<Reaction> allReactions = postIds.isEmpty() ? new ArrayList<>() : reactionRepository.findByPostIdIn(postIds);
+        
+        // Group reactions by post
+        Map<String, List<Reaction>> reactionsByPostId = allReactions.stream()
+                .collect(Collectors.groupingBy(Reaction::getPostId));
 
         List<UserDTO> userDTOs = userRepository.findAllById(userIds).stream().map(u -> {
             String firstName = u.getFirstName() != null ? u.getFirstName() : "";
@@ -83,13 +93,21 @@ public class FeedService {
         }).collect(Collectors.toList());
 
         List<PostDTO> postDTOs = posts.stream().map(post -> {
-            Map<String, Long> summary = new HashMap<>();
+            List<Reaction> postReactions = reactionsByPostId.getOrDefault(post.getId(), new ArrayList<>());
+            List<Comment> postComments = commentsByPostId.getOrDefault(post.getId(), new ArrayList<>());
+
+            Map<String, Long> summary = postReactions.stream()
+                    .collect(Collectors.groupingBy(r -> r.getType().toLowerCase(), Collectors.counting()));
+            
+            // Fill missing reaction types with 0
             String[] types = {"LIKE", "LOVE", "HAHA", "WOW", "SAD", "ANGRY"};
             for (String type : types) {
-                summary.put(type.toLowerCase(), reactionRepository.countByPostIdAndType(post.getId(), type));
+                summary.putIfAbsent(type.toLowerCase(), 0L);
             }
             
-            Optional<Reaction> myReaction = reactionRepository.findByPostIdAndAuthorId(post.getId(), currentUserId);
+            Optional<Reaction> myReaction = postReactions.stream()
+                    .filter(r -> r.getAuthorId().equals(currentUserId))
+                    .findFirst();
             
             return PostDTO.builder()
                     .id(post.getId())
@@ -97,7 +115,7 @@ public class FeedService {
                     .content(post.getContent())
                     .media(post.getMedia())
                     .createdAt(post.getCreatedAt())
-                    .commentCount(commentRepository.countByPostId(post.getId()))
+                    .commentCount((long) postComments.size())
                     .reactionSummary(summary)
                     .myReaction(myReaction.map(r -> r.getType().toLowerCase()).orElse(null))
                     .bookmarkedByMe(false) // logic not implemented yet

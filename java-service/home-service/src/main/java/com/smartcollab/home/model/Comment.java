@@ -10,9 +10,15 @@ import java.time.LocalDateTime;
 public class Comment {
     @Id
     private String id;
+    
+    @org.springframework.data.mongodb.core.index.Indexed
     private String postId;
+    
     private String authorId;
     private String content;
+    
+    @org.springframework.data.mongodb.core.index.Indexed
     private LocalDateTime createdAt;
+    
     private LocalDateTime updatedAt;
 }
