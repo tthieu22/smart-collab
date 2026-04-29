@@ -11,6 +11,7 @@ import {
   Param,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { Project } from './dto/project.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -52,11 +53,13 @@ export class ProjectController {
 
   /** UPDATE PROJECT */
   @Patch('update')
-  async update(@Body() body: Project) {
-    this.logger.log(`Received update project request: ${JSON.stringify(body)}`);
+  async update(@Body() body: Project, @Req() req: any) {
+    const user = req.user;
+    this.logger.log(`Received update project request from ${user.userId}: ${JSON.stringify(body)}`);
 
+    const dto = { ...body, userId: user.userId };
     const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.update' }, body),
+      this.projectClient.send({ cmd: 'project.update' }, dto),
     );
 
     this.logger.log(`Update project response: ${JSON.stringify(result)}`);
@@ -64,6 +67,7 @@ export class ProjectController {
   }
 
   /** GET PROJECT */
+  @Public()
   @Post('get')
   async getProject(@Body() body: Project,  @Req() req: any) {
     this.logger.log(`Received get project request: ${JSON.stringify(body)}`);
@@ -144,6 +148,32 @@ export class ProjectController {
         userName,
         userAvatar,
         userEmail: userData?.data?.email
+      }),
+    );
+    return result;
+  }
+
+  /** DELETE PROJECT */
+  @Post('delete')
+  async delete(@Body() body: { id: string }, @Req() req: any) {
+    const userId = req.user.userId;
+    this.logger.log(`Received delete project request from ${userId}: ${JSON.stringify(body)}`);
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.delete' }, { projectId: body.id, userId }),
+    );
+    return result;
+  }
+
+  /** REMOVE MEMBER */
+  @Post('remove-member')
+  async removeMember(@Body() body: { projectId: string; userId: string }, @Req() req: any) {
+    const user = req.user;
+    this.logger.log(`Removing member ${body.userId} from project ${body.projectId} by ${user.userId}`);
+    const result = await firstValueFrom(
+      this.projectClient.send({ cmd: 'project.remove_member' }, { 
+        projectId: body.projectId, 
+        userId: body.userId, 
+        removedBy: user.userId 
       }),
     );
     return result;

@@ -24,6 +24,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { AddCard } from '../AddCard';
 import { ColumnMenu } from './ColumnMenu';
 import { SettingOutlined } from '@ant-design/icons';
+import { useUserStore } from '@smart/store/user';
 
 interface Props {
   column: ColumnType;
@@ -47,6 +48,11 @@ export default function Column({
   const cards = projectStore((state) => state.cards);
   const columnCards = projectStore((state) => state.columnCards);
   const currentProject = projectStore((state) => state.currentProject);
+  const { currentUser } = useUserStore();
+
+  const isOwner = currentUser?.id === currentProject?.ownerId;
+  const isMember = currentProject?.members?.some(m => m.userId === currentUser?.id && m.status === 'ACCEPTED');
+  const canEdit = isOwner || isMember;
 
   const cardIds = useMemo(() => columnCards[column.id] || [], [columnCards, column.id]);
   const projectId = currentProject?.id;
@@ -71,7 +77,7 @@ export default function Column({
   } = useSortable({
     id: column.id,
     data: { type: 'COLUMN', boardId, boardType, columnId: column.id, index },
-    disabled: boardType !== 'board',
+    disabled: boardType !== 'board' || !canEdit,
   });
 
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
@@ -248,7 +254,7 @@ export default function Column({
           className="shrink-0 active:cursor-grabbing select-none mb-3"
         >
           <div className="flex items-center justify-between group/header">
-            {isEditingTitle ? (
+            {isEditingTitle && canEdit ? (
               <input
                 autoFocus
                 className="bg-white/10 border border-blue-500 outline-none rounded px-1 w-full text-sm font-bold text-gray-800 dark:text-gray-100"
@@ -267,8 +273,9 @@ export default function Column({
               />
             ) : (
               <h4
-                className="truncate font-bold text-sm tracking-tight text-gray-800 dark:text-gray-100 cursor-text hover:bg-gray-200/50 dark:hover:bg-white/5 px-1 rounded transition-colors"
+                className={`truncate font-bold text-sm tracking-tight text-gray-800 dark:text-gray-100 px-1 rounded transition-colors ${canEdit ? 'cursor-text hover:bg-gray-200/50 dark:hover:bg-white/5' : ''}`}
                 onClick={(e) => {
+                  if (!canEdit) return;
                   e.stopPropagation();
                   setIsEditingTitle(true);
                 }}
@@ -276,27 +283,36 @@ export default function Column({
                 {column.title}
               </h4>
             )}
-            <ColumnMenu
-              collapsed={collapsed}
-              onToggleCollapse={toggleCollapse}
-              onFilter={handleFilter}
-              onRename={() => setIsEditingTitle(true)}
-              onDelete={handleDelete}
-              extraItems={extraItems}
-            />
+            {canEdit && (
+              <ColumnMenu
+                collapsed={collapsed}
+                onToggleCollapse={toggleCollapse}
+                onFilter={handleFilter}
+                onRename={() => setIsEditingTitle(true)}
+                onDelete={handleDelete}
+                extraItems={extraItems}
+              />
+            )}
           </div>
         </div>
       ) : (
         /* ================= COLLAPSED HEADER (Vertical Icon) ================= */
         <div className="flex flex-col items-center gap-4 py-2">
-          <ColumnMenu
-            collapsed={collapsed}
-            onToggleCollapse={toggleCollapse}
-            onFilter={handleFilter}
-            onRename={handleRename}
-            onDelete={handleDelete}
-            extraItems={extraItems}
-          />
+          {canEdit ? (
+            <ColumnMenu
+              collapsed={collapsed}
+              onToggleCollapse={toggleCollapse}
+              onFilter={handleFilter}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              extraItems={extraItems}
+            />
+          ) : (
+            <div className="cursor-pointer" onClick={toggleCollapse}>
+               {/* Icon placeholder for non-edit view or just simple expand */}
+               <SettingOutlined className="opacity-40" />
+            </div>
+          )}
         </div>
       )}
 
@@ -355,7 +371,7 @@ export default function Column({
       )}
 
       {/* ================= FOOTER ================= */}
-      {!collapsed && (
+      {!collapsed && canEdit && (
         <div className="shrink-0">
           <AddCard projectId={projectId} columnId={column.id} />
         </div>

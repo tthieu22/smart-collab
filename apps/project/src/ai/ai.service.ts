@@ -51,13 +51,17 @@ export class AiService {
     private readonly projectClient: ClientProxy,
     @Inject('HOME_SERVICE')
     private readonly homeClient: ClientProxy,
+    @Inject('AUTH_SERVICE')
+    private readonly authClient: ClientProxy,
   ) {}
 
   private async rpc<T = any>(cmd: string, payload: any): Promise<T> {
     this.logger.log(`➡️ RPC -> ${cmd}`);
     this.logger.debug(`Payload: ${JSON.stringify(payload)}`);
 
-    const client = cmd.startsWith('home.') ? this.homeClient : this.projectClient;
+    let client = this.projectClient;
+    if (cmd.startsWith('home.')) client = this.homeClient;
+    if (cmd.startsWith('auth.')) client = this.authClient;
 
     return firstValueFrom(
       client
@@ -74,18 +78,26 @@ export class AiService {
     projectId: string,
     boardId: string,
     title: string,
+    ownerId: string,
   ) {
     const res = await this.rpc('project.column.create', {
       projectId,
+      createdById: ownerId,
       payload: { boardId, title },
     });
 
     return this.unwrap(res);
   }
 
-  private async createCard(projectId: string, columnId: string, title: string) {
+  private async createCard(
+    projectId: string,
+    columnId: string,
+    title: string,
+    ownerId: string,
+  ) {
     const res = await this.rpc('project.card.create', {
       projectId,
+      userId: ownerId,
       payload: { columnId, title },
     });
 
@@ -126,16 +138,28 @@ export class AiService {
     } catch (err) {
       this.logger.warn('Parse project JSON failed → using fallback');
     }
+    // 2.5 FETCH USER INFO
+    let userData: any = null;
+    try {
+      const authRes = await this.rpc('auth.me', { userId: payload.ownerId });
+      userData = this.unwrap(authRes);
+    } catch (err) {
+      this.logger.warn(`Failed to fetch user info for ${payload.ownerId}: ${err}`);
+    }
+
     const projectDto = this.projectGen.generate({
       name: domain.domain || 'Dự án mới',
       description: domain.description || 'Dự án được tạo tự động',
       ownerId: payload.ownerId,
       visibility: 'PRIVATE',
-    });
+      userName: userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email : undefined,
+      userAvatar: userData?.avatar,
+      userEmail: userData?.email,
+    } as any);
 
     const projectRes = await this.rpc<any>('project.create', projectDto);
 
-    const { fullProject, defaultBoard } = projectRes.data;
+    const { fullProject, defaultBoard } = this.unwrap(projectRes);
     const project = fullProject;
 
     const boards: AiBoard[] = [
@@ -152,6 +176,7 @@ export class AiService {
       project,
       boards,
       domain,
+      payload.ownerId,
       payload.locale ?? 'vi',
     ).catch((err) => this.logger.error('Background generation failed', err));
 
@@ -648,6 +673,7 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
     project: any,
     boards: AiBoard[],
     domain: any,
+    ownerId: string,
     locale: string = 'vi',
   ) {
     this.logger.log('Background AI generation started');
@@ -685,7 +711,7 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
 
       for (const title of columnTitles) {
         try {
-          const column = await this.createColumn(project.id, board.id, title);
+          const column = await this.createColumn(project.id, board.id, title, ownerId);
 
           if (column) {
             this.logger.debug(`Column created: ${JSON.stringify(column)}`);
@@ -721,8 +747,8 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
         );
 
         for (const title of cardTitles) {
-          try {
-            const card = await this.createCard(project.id, column.id, title);
+        try {
+            const card = await this.createCard(project.id, column.id, title, ownerId);
 
             // if (!card) continue;
 

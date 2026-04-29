@@ -219,7 +219,7 @@ export interface Project {
   description?: string | null;
   ownerId: string;
   folderPath?: string | null;
-  visibility: "PRIVATE" | "PUBLIC";
+  visibility: "PRIVATE" | "PUBLIC" | "WORKSPACE";
   color?: string | null;
   background?: string | null;
 

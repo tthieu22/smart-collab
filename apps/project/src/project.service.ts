@@ -24,6 +24,44 @@ export class ProjectService {
       .toLowerCase();
   }
 
+  /** 🛡️ HELPER: Check Project Access Control */
+  private async checkProjectAccess(projectId: string, userId: string | undefined, action: 'view' | 'edit' | 'admin' = 'view') {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { members: true },
+    });
+
+    if (!project) throw new NotFoundException('Không tìm thấy dự án');
+
+    const isOwner = userId === project.ownerId;
+    const isMember = userId ? project.members.some(m => m.userId === userId && m.status === 'ACCEPTED') : false;
+
+    // Admin action (e.g., delete, change visibility?)
+    if (action === 'admin') {
+      if (!isOwner) throw new ForbiddenException('Chỉ chủ sở hữu mới có quyền thực hiện hành động này.');
+      return project;
+    }
+
+    // Edit action
+    if (action === 'edit') {
+      if (isOwner) return project;
+      if (project.visibility === 'PRIVATE') throw new ForbiddenException('Dự án riêng tư. Chỉ chủ sở hữu mới có quyền chỉnh sửa.');
+      if (isMember) return project;
+      throw new ForbiddenException('Bạn không có quyền chỉnh sửa dự án này.');
+    }
+
+    // View action
+    if (action === 'view') {
+      if (project.visibility === 'PUBLIC') return project;
+      if (isOwner) return project;
+      if (project.visibility === 'PRIVATE') throw new ForbiddenException('Dự án riêng tư. Chỉ chủ sở hữu mới có quyền xem.');
+      if (isMember) return project;
+      throw new ForbiddenException('Bạn không có quyền xem dự án này.');
+    }
+
+    return project;
+  }
+
   private mapMembers(project: any) {
     if (project && project.members) {
       project.members = project.members.map((m: any) => ({
@@ -86,8 +124,10 @@ export class ProjectService {
   }
 
   async updateProject(msg: ProjectMessage) {
+    await this.checkProjectAccess(msg.projectId!, msg.userId, 'edit');
+
     const file = msg.files?.[0];
-    return this.prisma.project.update({
+    const updated = await this.prisma.project.update({
       where: { id: msg.projectId! },
       data: {
         name: msg.name,
@@ -105,28 +145,22 @@ export class ProjectService {
         visibility: msg.visibility,
       },
     });
+
+    // 📣 Phát tín hiệu realtime cập nhật project
+    this.amqpConnection.publish('smart-collab', 'realtime.project.updated', {
+      project: updated,
+    });
+
+    return updated;
   }
 
-  async deleteProject(projectId: string) {
+  async deleteProject(projectId: string, userId?: string) {
+    await this.checkProjectAccess(projectId, userId, 'admin');
     return this.prisma.project.delete({ where: { id: projectId } });
   }
 
   async getProjectStructure(projectId: string, userId?: string) {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      include: { members: true },
-    });
-
-    if (!project) throw new NotFoundException('Project not found');
-
-    if (project.visibility !== 'PUBLIC') {
-      if (!userId) throw new ForbiddenException('Access denied');
-
-      if (project.ownerId !== userId) {
-        const isMember = project.members.some(m => m.userId === userId);
-        if (!isMember) throw new ForbiddenException('Access denied');
-      }
-    }
+    const project = await this.checkProjectAccess(projectId, userId, 'view');
 
     // Ensure personal boards exist for the current user context.
     if (userId) {
@@ -273,6 +307,8 @@ export class ProjectService {
   }
 
   async addMember(projectId: string, userId: string, role: string = 'MEMBER', userName?: string, userAvatar?: string, addedBy?: string, userEmail?: string) {
+    await this.checkProjectAccess(projectId, addedBy, 'edit');
+
     const existing = await this.prisma.projectMember.findFirst({
       where: { projectId, userId },
     });
@@ -314,7 +350,8 @@ export class ProjectService {
     return { success: true, message: 'Member added successfully', data: member };
   }
 
-  async removeMember(projectId: string, userId: string) {
+  async removeMember(projectId: string, userId: string, removedBy?: string) {
+    await this.checkProjectAccess(projectId, removedBy, 'edit');
     await this.prisma.projectMember.deleteMany({
       where: { projectId, userId },
     });

@@ -8,13 +8,14 @@ import { useDroppable } from '@dnd-kit/core';
 import Column from './Column';
 import AddColumn from '../AddColumn';
 import { projectStore } from '@smart/store/project';
-import { Board as BoardType } from '@smart/types/project';
+import { useUserStore } from '@smart/store/user';
+import { Board as BoardType, Project } from '@smart/types/project';
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useDragContext } from '../dnd/DragContext';
 import { useBoardStore } from '@smart/store/setting';
 import InviteMemberModal from '../member/InviteMemberModal';
 import { useState } from 'react';
-import { Tooltip } from 'antd';
+import { Tooltip, Input, Select, message } from 'antd';
 import {
   LayoutOutlined,
   CalendarOutlined,
@@ -23,8 +24,14 @@ import {
   PieChartOutlined,
   EnvironmentOutlined,
   DownOutlined,
-  CheckOutlined
+  CheckOutlined,
+  LockOutlined,
+  GlobalOutlined,
+  TeamOutlined,
+  EditOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
+import { projectService } from '@smart/services/project.service';
 import CalendarView from '@smart/components/project/calendar/CalendarView';
 import TableView from '@smart/components/project/table/TableView';
 import TimelineView from '@smart/components/project/timeline/TimelineView';
@@ -39,9 +46,54 @@ interface Props {
 export default function Board({ board }: Props) {
   const { activeItem, registerBoardScrollContainer } = useDragContext();
   const { boardColumns, columns, currentProject } = projectStore();
+  const { currentUser } = useUserStore();
   const theme = useBoardStore((s) => s.theme);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'board' | 'calendar' | 'table' | 'timeline' | 'dashboard' | 'map'>('board');
+
+  const isOwner = currentUser?.id === currentProject?.ownerId;
+  const isMember = currentProject?.members?.some(m => m.userId === currentUser?.id && m.status === 'ACCEPTED');
+  const canEdit = isOwner || isMember;
+
+  // Edit states
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [tempName, setTempName] = useState(currentProject?.name || '');
+  const [tempDesc, setTempDesc] = useState(currentProject?.description || '');
+
+  useEffect(() => {
+    if (currentProject) {
+      setTempName(currentProject.name);
+      setTempDesc(currentProject.description || '');
+    }
+  }, [currentProject]);
+
+  const handleUpdateProject = async (updates: Partial<Project>) => {
+    if (!currentProject) return;
+    try {
+      await projectService.updateProject({
+        projectId: currentProject.id,
+        ...updates
+      });
+      // Store will be updated via realtime event
+    } catch (error) {
+      message.error('Cập nhật dự án thất bại');
+    }
+  };
+
+  const onTitleBlur = () => {
+    setIsEditingTitle(false);
+    if (tempName !== currentProject?.name) {
+      handleUpdateProject({ name: tempName });
+    }
+  };
+
+  const onDescBlur = () => {
+    setIsEditingDesc(false);
+    if (tempDesc !== currentProject?.description) {
+      handleUpdateProject({ description: tempDesc });
+    }
+  };
 
   const columnIds = boardColumns[board.id] || [];
 
@@ -134,9 +186,82 @@ export default function Board({ board }: Props) {
         ${theme === 'dark' ? 'bg-[#1e1f22] border-white/5' : 'bg-white border-gray-100'}
       `}>
         <div className="flex items-center gap-4">
-          <h1 className={`text-lg font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {currentProject?.name}
-          </h1>
+          <div className="flex items-center gap-2 group">
+            {isEditingTitle && isOwner ? (
+              <Input
+                size="small"
+                autoFocus
+                className="font-bold text-lg w-auto min-w-[100px]"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={onTitleBlur}
+                onPressEnter={onTitleBlur}
+              />
+            ) : (
+              <h1 
+                className={`text-lg font-bold tracking-tight px-1 rounded transition-colors ${isOwner ? 'cursor-pointer hover:bg-black/5 dark:hover:bg-white/10' : ''} ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                onClick={() => isOwner && setIsEditingTitle(true)}
+              >
+                {currentProject?.name}
+              </h1>
+            )}
+            
+            {isOwner ? (
+              <Dropdown
+                menu={{
+                  items: [
+                    { key: 'PRIVATE', label: 'Riêng tư (Chỉ mình tôi)', icon: <LockOutlined /> },
+                    { key: 'WORKSPACE', label: 'Workspace (Thành viên)', icon: <TeamOutlined /> },
+                    { key: 'PUBLIC', label: 'Công khai (Mọi người)', icon: <GlobalOutlined /> },
+                  ],
+                  onClick: ({ key }) => handleUpdateProject({ visibility: key as any }),
+                }}
+                trigger={['click']}
+              >
+                <Tooltip title={`Quyền: ${currentProject?.visibility} (Nhấp để thay đổi)`}>
+                  <div className="cursor-pointer opacity-60 hover:opacity-100 transition-opacity flex items-center">
+                    {currentProject?.visibility === 'PRIVATE' ? <LockOutlined /> : 
+                    currentProject?.visibility === 'PUBLIC' ? <GlobalOutlined /> : <TeamOutlined />}
+                  </div>
+                </Tooltip>
+              </Dropdown>
+            ) : (
+              <Tooltip title={`Quyền: ${currentProject?.visibility}`}>
+                <div className="opacity-40 flex items-center">
+                  {currentProject?.visibility === 'PRIVATE' ? <LockOutlined /> : 
+                   currentProject?.visibility === 'PUBLIC' ? <GlobalOutlined /> : <TeamOutlined />}
+                </div>
+              </Tooltip>
+            )}
+          </div>
+
+          <Tooltip 
+            trigger={['click']}
+            title={
+              <div className="p-2 min-w-[200px]">
+                <div className="font-bold mb-1 flex items-center gap-2">
+                  Mô tả dự án {isOwner && <EditOutlined onClick={() => setIsEditingDesc(true)} className="cursor-pointer" />}
+                </div>
+                {isEditingDesc && isOwner ? (
+                  <Input.TextArea
+                    autoFocus
+                    placeholder="Nhập mô tả..."
+                    value={tempDesc}
+                    onChange={(e) => setTempDesc(e.target.value)}
+                    onBlur={onDescBlur}
+                    rows={3}
+                  />
+                ) : (
+                  <div className="text-sm opacity-90 italic">
+                    {currentProject?.description || 'Chưa có mô tả...'}
+                  </div>
+                )}
+              </div>
+            }
+          >
+            <InfoCircleOutlined className="opacity-40 hover:opacity-100 transition-opacity cursor-pointer" />
+          </Tooltip>
+
           <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'}`} />
 
           {/* View Mode Dropdown */}
@@ -189,28 +314,30 @@ export default function Board({ board }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsInviteModalOpen(true)}
-            className="
-              flex items-center gap-1.5 px-3 py-1.5 
-              bg-gray-100 hover:bg-gray-200 
-              dark:bg-white/10 dark:hover:bg-white/20 
-              backdrop-blur-md 
-              text-gray-800 dark:text-white 
-              rounded-md text-xs font-semibold 
-              transition-all active:scale-95 
-              border border-gray-200 dark:border-white/10
-            "
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" y1="8" x2="19" y2="14" />
-              <line x1="22" y1="11" x2="16" y2="11" />
-            </svg>
-            Thêm thành viên
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="
+                flex items-center gap-1.5 px-3 py-1.5 
+                bg-gray-100 hover:bg-gray-200 
+                dark:bg-white/10 dark:hover:bg-white/20 
+                backdrop-blur-md 
+                text-gray-800 dark:text-white 
+                rounded-md text-xs font-semibold 
+                transition-all active:scale-95 
+                border border-gray-200 dark:border-white/10
+              "
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+              Thêm thành viên
+            </button>
+          )}
         </div>
       </div>
 
@@ -239,7 +366,7 @@ export default function Board({ board }: Props) {
                 />
               ))}
 
-              {canAddColumn && <AddColumn boardId={board.id} />}
+              {canAddColumn && canEdit && <AddColumn boardId={board.id} />}
 
               <div
                 className="w-4 flex-shrink-0 pointer-events-none"

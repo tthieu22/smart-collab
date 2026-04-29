@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@smart/hooks/useAuth';
 import { Loading } from '@smart/components/ui/loading';
 import { ROUTES } from '@smart/lib/constants';
@@ -10,21 +10,32 @@ import { useAuthStore } from '@smart/store/auth';
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isInitialized } = useAuth();
   const { isUserInitialized } = useUserStore();
   const accessToken = useAuthStore((state) => state.accessToken);
 
   useEffect(() => {
     if (isInitialized) {
+      // Các route luôn cho phép không cần login
+      const isPublicPath = 
+        pathname === ROUTES.LOGIN || 
+        pathname === ROUTES.REGISTER || 
+        pathname === ROUTES.VERIFY ||
+        pathname.startsWith('/projects/') || // Cho phép xem project public
+        pathname.startsWith('/auth/google/callback');
+
       if (!accessToken) {
-        router.replace(ROUTES.LOGIN);
+        if (!isPublicPath) {
+          router.replace(ROUTES.LOGIN);
+        }
       } else if (isUserInitialized) {
-        if (!user) {
+        if (!user && !isPublicPath) {
           router.replace(ROUTES.LOGIN);
         }
       }
     }
-  }, [isInitialized, isUserInitialized, accessToken, user, router]);
+  }, [isInitialized, isUserInitialized, accessToken, user, router, pathname]);
 
   if (!isInitialized) {
     return <Loading text=" " />;

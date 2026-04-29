@@ -30,7 +30,7 @@ export class AiController {
   async buildProject(@Body('prompt') prompt: string, @Req() req: any) {
     const user = req.user;
 
-    this.logger.log(`🚀 AI BUILD PROJECT by user ${user.id}`);
+    this.logger.log(`🚀 AI BUILD PROJECT by user ${user.userId}`);
 
      const result = await firstValueFrom(
       this.aiClient

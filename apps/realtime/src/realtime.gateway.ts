@@ -267,26 +267,30 @@ export class RealtimeGateway
 
   async handleConnection(client: Socket) {
     const token = client.handshake.auth?.token;
-    if (!token) return client.disconnect();
+    
+    if (token && token !== 'null' && token !== 'undefined') {
+      try {
+        const { sub: userId, projectIds = [] } = this.jwt.verify(token);
+        (client as any).userId = userId;
+        (client as any).currentProjectId = undefined;
 
-    try {
-      const { sub: userId, projectIds = [] } = this.jwt.verify(token);
-      (client as any).userId = userId;
-      (client as any).currentProjectId = undefined;
+        this.userSockets.set(client.id, userId);
+        if (!this.userClients.has(userId))
+          this.userClients.set(userId, new Set());
+        this.userClients.get(userId)!.add(client.id);
 
-      this.userSockets.set(client.id, userId);
-      if (!this.userClients.has(userId))
-        this.userClients.set(userId, new Set());
-      this.userClients.get(userId)!.add(client.id);
+        (projectIds as string[]).forEach((pid) => {
+          client.join(this.roomForProject(pid));
+          this.addUserToProject(pid, userId);
+        });
 
-      (projectIds as string[]).forEach((pid) => {
-        client.join(this.roomForProject(pid));
-        this.addUserToProject(pid, userId);
-      });
-
-      this.logger.log(`User ${userId} connected (${client.id})`);
-    } catch {
-      client.disconnect();
+        this.logger.log(`User ${userId} connected (${client.id})`);
+      } catch (err) {
+        this.logger.warn(`Invalid token for connection ${client.id}: ${err}`);
+        this.logger.log(`Connection ${client.id} continuing as guest due to invalid token`);
+      }
+    } else {
+      this.logger.log(`Guest connected (${client.id})`);
     }
   }
 
@@ -340,14 +344,16 @@ export class RealtimeGateway
     projectId: string,
     event: string,
     data: any,
-    excludeClientId?: string,
+    _excludeClientId?: string,
   ) => {
     const room = this.roomForProject(projectId);
-    if (excludeClientId) {
-      this.server.to(room).except(excludeClientId).emit(event, data);
-    } else {
-      this.server.to(room).emit(event, data);
-    }
+    
+    // Diagnostic: Count clients in room
+    const clients = this.server.sockets.adapter.rooms.get(room);
+    const clientCount = clients ? clients.size : 0;
+    
+    this.logger.debug(`[BROADCAST] Room ${room} (${clientCount} clients) → Event: ${event}`);
+    this.server.to(room).emit(event, data);
   };
 
   public emitToUser = (userId: string, event: string, data: any) => {
@@ -357,18 +363,24 @@ export class RealtimeGateway
   };
 
   private emitRealtime(
-    target: RealtimeTarget,
+    target: RealtimeTarget | string,
     event: string,
     data: any,
     excludeClientId?: string,
   ) {
-    if (target.projectId) {
-      this.emitToProject(target.projectId, `realtime.${event}`, data, excludeClientId);
+    // 🎁 Tự động bóc tách dữ liệu nếu là object kết quả { status, data } hoặc { success, data }
+    const actualData = data?.data ?? data;
+
+    const projectId = typeof target === 'string' ? target : target.projectId;
+    const userId = typeof target === 'string' ? undefined : target.userId;
+
+    if (projectId) {
+      this.emitToProject(projectId, `realtime.${event}`, actualData, excludeClientId);
       return;
     }
 
-    if (target.userId) {
-      this.emitToUser(target.userId, `realtime.${event}`, data);
+    if (userId) {
+      this.emitToUser(userId, `realtime.${event}`, actualData);
     }
   }
 
@@ -427,7 +439,7 @@ export class RealtimeGateway
       typeof body === 'object' && body?.switchProject,
     );
 
-    if (!projectId || !userId) {
+    if (!projectId) {
       return false;
     }
 
@@ -440,14 +452,22 @@ export class RealtimeGateway
       const prev = (client as any).currentProjectId as string | undefined;
       if (prev && prev !== projectId) {
         client.leave(this.roomForProject(prev));
+        this.logger.debug(`Socket ${client.id} left previous project: ${prev}`);
       }
       (client as any).currentProjectId = projectId;
     }
 
-    client.join(this.roomForProject(projectId));
-    this.addUserToProject(projectId, userId);
+    const room = this.roomForProject(projectId);
+    client.join(room);
+    
+    // Diagnostic: Verify room membership
+    this.logger.debug(`Socket ${client.id} joined ${room}. Current rooms: ${Array.from(client.rooms).join(', ')}`);
+    
+    if (userId) {
+      this.addUserToProject(projectId, userId);
+    }
 
-    this.logger.log(`User ${userId} joined project: ${projectId}`);
+    this.logger.log(`${userId ? `User ${userId}` : `Guest (${client.id})`} joined project room: ${room}`);
     return true;
   }
 

@@ -86,17 +86,22 @@ export class CardService {
     });
     const newPosition = cards.length;
 
-    // 2. Lấy thông tin người tạo (nếu có)
+    // 2. Lấy thông tin người tạo (nếu có) từ ProjectMember
     let createdByName: string | null = null;
     let createdByAvatar: string | null = null;
-    // if (params.createdById) {
-    //   const user = await this.prisma.user.findUnique({
-    //     where: { id: params.createdById },
-    //     select: { name: true, avatar: true },
-    //   });
-    //   createdByName = user?.name ?? null;
-    //   createdByAvatar = user?.avatar ?? null;
-    // }
+    if (params.createdById) {
+      const member = await this.prisma.projectMember.findUnique({
+        where: { 
+          projectId_userId: {
+            projectId: params.projectId,
+            userId: params.createdById
+          }
+        },
+        select: { userName: true, userAvatar: true },
+      });
+      createdByName = member?.userName ?? null;
+      createdByAvatar = member?.userAvatar ?? null;
+    }
 
     // 3. Tạo card mới đầy đủ thông tin
     const card = await this.prisma.card.create({
@@ -532,13 +537,11 @@ export class CardService {
       newColumnId: result.columnId,
       cardId: result.id,
       newIndex: result.position,
-      ...result,
     };
     // 4. Publish event
     await this.amqpConnection.publish('project-exchange', 'card.moved', {
-      card: result,
+      ...responseData,
       movedById,
-      srcColumnId: isSameColumn ? destColumnId : currentColumnId,
       destColumnId,
       destIndex,
       projectId: result.projectId ?? null,

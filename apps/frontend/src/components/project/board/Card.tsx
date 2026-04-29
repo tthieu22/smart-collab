@@ -9,6 +9,8 @@ import CardDetailModal from '../cardDetailModal/CardDetailModalById';
 import { CheckOutlined, MoreOutlined, DeleteOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import { message, Tooltip, Dropdown, Popconfirm, Avatar } from 'antd';
+import { useUserStore } from '@smart/store/user';
+import { projectStore } from '@smart/store/project';
 
 interface Props {
   card: CardType;
@@ -28,6 +30,12 @@ export const Card = React.memo(function Card({
   isOverlay,
 }: Props) {
   const { activeId, activeItem } = useDragContext();
+  const currentProject = projectStore((state) => state.currentProject);
+  const { currentUser } = useUserStore();
+
+  const isOwner = currentUser?.id === currentProject?.ownerId;
+  const isMember = currentProject?.members?.some(m => m.userId === currentUser?.id && m.status === 'ACCEPTED');
+  const canEdit = isOwner || isMember;
 
   const {
     attributes,
@@ -39,7 +47,7 @@ export const Card = React.memo(function Card({
   } = useSortable({
     id: card.id,
     data: { type: 'CARD', card, columnId, boardId, boardType, index },
-    disabled: isOverlay,
+    disabled: isOverlay || !canEdit,
   });
 
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -159,7 +167,7 @@ export const Card = React.memo(function Card({
                 {/* Top Section: Checkbox, Priority, Title - Only this part shifts on hover */}
                 <div className={`relative transition-all duration-300 ${!activeItem ? 'group-hover/card:pl-7' : 'pl-0'}`}>
                   {/* Radio-style Complete Button (Left) - Aligned with text */}
-                  {!isOverlay && !activeItem && (
+                  {!isOverlay && !activeItem && canEdit && (
                     <div
                       onClick={handleArchive}
                       className="absolute -left-7 top-0 w-5 h-5 rounded-full border-2 border-gray-300 dark:border-neutral-600 opacity-0 translate-x-2 group-hover/card:translate-x-7 group-hover/card:opacity-100 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-500/20 transition-all duration-300 flex items-center justify-center cursor-pointer z-20 bg-white dark:bg-neutral-800 shadow-sm"
@@ -185,7 +193,7 @@ export const Card = React.memo(function Card({
                   </h4>
 
                   {/* More Actions Menu (Right) - Restored */}
-                  {!isOverlay && !activeItem && (
+                  {!isOverlay && !activeItem && canEdit && (
                     <div className="absolute -right-2 -top-1 opacity-0 translate-x-2 group-hover/card:translate-x-0 group-hover/card:opacity-100 z-20 transition-all duration-300">
                       <Dropdown
                         trigger={['click']}

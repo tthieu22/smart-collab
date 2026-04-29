@@ -7,6 +7,9 @@ export interface ProjectGenInput {
   visibility?: 'PRIVATE' | 'PUBLIC';
   color?: string;
   background?: string;
+  userName?: string;
+  userAvatar?: string;
+  userEmail?: string;
 }
 
 @Injectable()
@@ -19,6 +22,9 @@ export class ProjectGenerator {
       visibility: input.visibility ?? 'PRIVATE',
       color: input.color ?? null,
       background: input.background ?? null,
+      userName: input.userName,
+      userAvatar: input.userAvatar,
+      userEmail: input.userEmail,
     };
   }
 }

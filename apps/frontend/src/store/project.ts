@@ -21,10 +21,13 @@ interface ProjectState {
   columnCards: Record<string, string[]>;
   hasJoinedCurrentProject: boolean;
   analyticsData: AnalyticsData | null;
+  onlineCount: number;
+  onlineUsers: string[];
 
   setActiveProjectId: (projectId: string | null) => void;
   setCurrentProject: (project: Project | null) => void;
   setAnalyticsData: (data: AnalyticsData) => void;
+  setOnlineUsers: (projectId: string, count: number, users: string[]) => void;
   clearProjectStore: () => void;
 
   addProject: (project: Project) => void;
@@ -79,6 +82,8 @@ export const projectStore = create<ProjectState>((set, get) => ({
   currentProject: null,
   hasJoinedCurrentProject: false,
   analyticsData: null,
+  onlineCount: 0,
+  onlineUsers: [],
   allProjects: [],
   prefetchedIds: {},
   boards: {},
@@ -156,6 +161,12 @@ export const projectStore = create<ProjectState>((set, get) => ({
   },
 
   setAnalyticsData: (data) => set({ analyticsData: data }),
+
+  setOnlineUsers: (projectId, count, users) => {
+    if (get().activeProjectId === projectId) {
+      set({ onlineCount: count, onlineUsers: users });
+    }
+  },
 
   setCurrentProject: (project) => {
     if (project === null) {
@@ -290,9 +301,9 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
   updateProject: (project) =>
     set((s) => ({
-      allProjects: s.allProjects.map((p) => (p.id === project.id ? project : p)),
+      allProjects: s.allProjects.map((p) => (p.id === project.id ? { ...p, ...project } : p)),
       currentProject:
-        s.currentProject?.id === project.id ? project : s.currentProject,
+        s.currentProject?.id === project.id ? { ...s.currentProject, ...project } as Project : s.currentProject,
     })),
 
   removeProject: (projectId) =>

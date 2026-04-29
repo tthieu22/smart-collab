@@ -43,12 +43,25 @@ export class ProjectSocketManager {
     if (this.activeBound) return;
     this.activeBound = true;
 
-    let prev: string | null = projectStore.getState().activeProjectId ?? null;
-    this.setActiveProject(prev).catch(() => {});
+    const state = projectStore.getState();
+    let prev: string | null = state.activeProjectId ?? null;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔗 Binding active project store. Initial ID:', prev);
+    }
+
+    if (prev) {
+      this.setActiveProject(prev).catch(() => {});
+    }
 
     projectStore.subscribe((state) => {
       const next = state.activeProjectId ?? null;
       if (next === prev) return;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Project ID changed in store:', prev, '->', next);
+      }
+
       prev = next;
       this.setActiveProject(next).catch(() => {});
     });
@@ -61,24 +74,17 @@ export class ProjectSocketManager {
 
     useAuthStore.subscribe((state) => {
       const token = state.accessToken;
-      // Nếu token bị xoá => disconnect
-      if (!token && this.socket) {
-        this.disconnect();
-        return;
-      }
-      // Nếu có token và socket chưa connect hoặc token thay đổi -> reconnect
-      if (token) {
-        const currentAuthToken = (this.socket?.auth as any)?.token;
-        if (
-          !this.socket ||
-          !this.socket.connected ||
-          currentAuthToken !== token
-        ) {
-          if (this.socket) this.disconnect();
-          this.initSocket();
-        }
+      // Nếu token bị xoá => vẫn giữ socket cho guest (không disconnect trừ khi cần thiết)
+      // Nhưng nếu token thay đổi -> reconnect để nhận diện user mới
+      const currentAuthToken = (this.socket?.auth as any)?.token;
+      if (token !== currentAuthToken) {
+        if (this.socket) this.disconnect();
+        this.initSocket();
       }
     });
+
+    // Khởi tạo lần đầu dù có token hay không
+    if (!this.socket) this.initSocket();
   }
 
   /** Khởi tạo socket lazy (idempotent, race-safe) */
@@ -146,6 +152,7 @@ export class ProjectSocketManager {
         'realtime.comment.updated',
         'realtime.comment.deleted',
         'realtime.notification.created',
+        'realtime.project.online',
         'realtime.action.response',
       ];
 
@@ -167,6 +174,12 @@ export class ProjectSocketManager {
             }
           }
         });
+      });
+
+      this.socket.onAny((event, ...args) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SOCKET RAW] ${event}`, args);
+        }
       });
 
       return this.socket;
@@ -258,6 +271,13 @@ export class ProjectSocketManager {
             store.removeCard(payload.columnId, payload.cardId);
           }
           break;
+
+        case 'card.copy':
+          if (msg.status === 'success') {
+            store.addCard(payload.columnId, payload);
+          }
+          break;
+
         case 'card.move':
           if (msg.status === 'success') {
             store.moveCard(
@@ -266,11 +286,6 @@ export class ProjectSocketManager {
               payload.cardId,
               payload.newIndex
             );
-          }
-          break;
-        case 'card.copy':
-          if (msg.status === 'success') {
-            store.addCard(payload.columnId, payload);
           }
           break;
 
@@ -348,14 +363,15 @@ export class ProjectSocketManager {
     // These events come as realtime.<entity>.<verb>
     switch (event) {
       case 'realtime.column.moved': {
-        // try to support common shapes returned by BE service
+        const columnId = msg?.columnId || msg?.id;
         const srcBoardId = msg?.srcBoardId;
-        const destBoardId = msg?.destBoardId ?? msg?.newBoardId;
-        const columnId = msg?.columnId;
-        const destIndex =
-          msg?.destIndex ?? msg?.newPosition ?? msg?.position ?? 0;
-        if (srcBoardId && destBoardId && columnId != null) {
+        const destBoardId = msg?.newBoardId || msg?.destBoardId || msg?.boardId;
+        const destIndex = typeof msg?.newPosition === 'number' ? msg.newPosition : (msg?.position ?? 0);
+
+        if (columnId && srcBoardId && destBoardId) {
           store.moveColumn(srcBoardId, destBoardId, columnId, destIndex);
+        } else {
+          console.warn('[REALTIME] Missing data for column move:', { columnId, srcBoardId, destBoardId, msg });
         }
         break;
       }
@@ -422,7 +438,13 @@ export class ProjectSocketManager {
         break;
       }
       case 'realtime.project.updated': {
-        if (msg?.id) store.setCurrentProject(msg);
+        if (msg?.id) store.updateProject(msg);
+        break;
+      }
+      case 'realtime.project.online': {
+        if (msg?.projectId) {
+          store.setOnlineUsers(msg.projectId, msg.online || 0, msg.users || []);
+        }
         break;
       }
       default:
@@ -479,7 +501,11 @@ export class ProjectSocketManager {
       this.subscribeCorrelation(correlationId, correlationCallback);
     }
 
-    this.socket?.emit('realtime.action', { event, data: msg });
+    if (this.socket) {
+      this.socket.emit('realtime.action', { event, data: msg });
+    } else {
+      console.error('Cannot emit action: socket not initialized');
+    }
     return correlationId;
   }
 
@@ -632,19 +658,33 @@ export class ProjectSocketManager {
   }
 
   /** Queue join room từng project, retry */
-  async joinProject(projectId: string, opts?: { switchProject?: boolean }) {
-    if (this.joinedProjects.has(projectId)) return Promise.resolve();
-    if (!this.socket) this.initSocket();
+  async joinProject(projectId: string, options?: { switchProject?: boolean }) {
+    if (!this.socket) {
+      console.log('🔌 Socket not initialized for join, initializing now...');
+      this.initSocket();
+    }
+
+    console.log(`📡 Attempting to join project room: ${projectId} (Connected: ${this.socket?.connected}, Guest: ${!useAuthStore.getState().accessToken})`);
+    
+    if (this.joinedProjects.has(projectId)) {
+      console.log(`✅ Already joined project: ${projectId}, skipping emit.`);
+      return Promise.resolve();
+    }
 
     return new Promise<void>((resolve, reject) => {
-      (this.joinQueue as any).push({
-        projectId,
-        resolve,
-        reject,
-        attempt: 0,
-        opts,
+      if (!this.socket) return reject('Socket null');
+
+      this.socket.emit('joinProject', { projectId, ...options }, (res: any) => {
+        if (res === true || res?.status === 'success') {
+          console.log(`✅ Joined project ${projectId} successfully`);
+          this.joinedProjects.add(projectId);
+          this.processQueue();
+          resolve();
+        } else {
+          console.error(`❌ Failed to join project ${projectId}:`, res);
+          reject(res);
+        }
       });
-      this.processQueue();
     });
   }
 

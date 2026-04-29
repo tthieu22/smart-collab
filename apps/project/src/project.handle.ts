@@ -43,7 +43,8 @@ export class ProjectHandler {
     this.logger.log(`[project.delete] Received payload: ${JSON.stringify(payload)}`);
     try {
       const projectId = payload?.projectId || payload?.id || payload;
-      const deleted = await this.projectService.deleteProject(projectId);
+      const userId = payload?.userId;
+      const deleted = await this.projectService.deleteProject(projectId, userId);
       return { success: true, data: deleted };
     } catch (error: any) {
       this.logger.error(`Error handling project.delete: ${error.message}`, error.stack);
@@ -104,7 +105,7 @@ export class ProjectHandler {
   async handleRemoveMember(@Payload() payload: { projectId: string; userId: string }) {
     this.logger.log(`[project.remove_member] Received payload: ${JSON.stringify(payload)}`);
     try {
-      const result = await this.projectService.removeMember(payload.projectId, payload.userId);
+      const result = await this.projectService.removeMember(payload.projectId, payload.userId, (payload as any).removedBy || (payload as any).userId);
       return result;
     } catch (error: any) {
       this.logger.error(`Error handling project.remove_member: ${error.message}`, error.stack);
