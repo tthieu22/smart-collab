@@ -322,6 +322,9 @@ importers:
       '@mdxeditor/editor':
         specifier: ^3.52.1
         version: 3.54.0(@codemirror/language@6.12.3)(@lezer/highlight@1.2.3)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(yjs@13.6.30)
+      '@rive-app/react-canvas':
+        specifier: ^4.28.3
+        version: 4.28.3(react@18.3.1)
       '@tinymce/tinymce-react':
         specifier: ^6.3.0
         version: 6.3.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2521,6 +2524,14 @@ packages:
       leaflet: ^1.9.0
       react: ^18.0.0
       react-dom: ^18.0.0
+
+  '@rive-app/canvas@2.37.5':
+    resolution: {integrity: sha512-o0oCrdyxDLTahj60dXxUiB6I/xyi7hKaUJX+hce0jL0qcV1YtI+f+KGb/6EAMMBZMjT1if7OJFzT/6zA2YiNGA==}
+
+  '@rive-app/react-canvas@4.28.3':
+    resolution: {integrity: sha512-ndtoCNUHcsSAmbnc2t8jqAcG/tMocWB3mZo/2m8r8VFvShs8oBlCEmHC6bY4efmPQ2PbGitv0Dupg+nkIJ2KqA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
@@ -10438,6 +10449,13 @@ snapshots:
       leaflet: 1.9.4
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  '@rive-app/canvas@2.37.5': {}
+
+  '@rive-app/react-canvas@4.28.3(react@18.3.1)':
+    dependencies:
+      '@rive-app/canvas': 2.37.5
+      react: 18.3.1
 
   '@rtsao/scc@1.1.0': {}
 

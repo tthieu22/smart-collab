@@ -4,6 +4,8 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import { Board as BoardType, Column as ColumnType } from '@smart/types/project';
 import { projectStore } from '@smart/store/project';
 import { useBoardStore } from '@smart/store/setting';
+import { useUserStore } from '@smart/store/user';
+import LoginOverlay from '../LoginOverlay';
 import ColumnInbox from './ColumnInbox';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
@@ -16,6 +18,8 @@ interface InboxProps {
 export default function Inbox({ board, className }: InboxProps) {
   const { boardColumns, columns, currentProject } = projectStore();
   const theme = useBoardStore((s) => s.theme);
+  const { currentUser } = useUserStore();
+  const isGuest = !currentUser;
 
   if (!board) {
     return (
@@ -47,6 +51,17 @@ export default function Inbox({ board, className }: InboxProps) {
   });
 
   const isDark = theme === 'dark';
+
+  if (isGuest) {
+    return (
+      <div className={`relative h-full ${isDark ? 'bg-[#141517]' : 'bg-white'} ${className ?? ''}`}>
+        <LoginOverlay 
+          title="Hộp thư đến cá nhân" 
+          description="Đăng nhập để quản lý các thông báo và công việc được giao riêng cho bạn một cách hiệu quả nhất."
+        />
+      </div>
+    );
+  }
 
   return (
     <div

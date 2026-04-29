@@ -8,6 +8,7 @@ import { projectStore } from '@smart/store/project';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import { useUserStore } from '@smart/store/user';
 import CardDetailModal from '../cardDetailModal/CardDetailModalById';
+import LoginOverlay from '../LoginOverlay';
 
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -67,6 +68,7 @@ export default function Calendar({
   const [viewMode, setViewMode] = useState('timeGridDay');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const userId = useUserStore((s) => s.currentUser?.id);
+  const isGuest = !userId;
   const socket = useMemo(() => getProjectSocketManager(), []);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -90,6 +92,17 @@ export default function Calendar({
     clientX: number;
     clientY: number;
   } | null>(null);
+
+  if (isGuest) {
+    return (
+      <div className={`relative flex-1 ${theme === 'dark' ? 'bg-[#141517]' : 'bg-white'} ${className ?? ''}`}>
+        <LoginOverlay 
+          title="Lịch trình dự án" 
+          description="Đăng nhập để xem và quản lý thời hạn, sự kiện và tiến độ công việc của bạn trên lịch trình trực quan."
+        />
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (calendarColumn?.id) {

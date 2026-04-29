@@ -7,6 +7,7 @@ import { useUserStore } from '@smart/store/user';
 import { projectService } from '@smart/services/project.service';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import ProjectActionBar from '@smart/components/project/ProjectActionBar';
+import ProjectGuestCursor from '@smart/components/project/ProjectGuestCursor';
 import { Loading } from '@smart/components/ui/loading';
 import { autoRequest } from '@smart/services/auto.request';
 import { message } from 'antd';
@@ -67,9 +68,14 @@ export default function ProjectDetailPage({ params }: Props) {
   const [activeComponents, setActiveComponents] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : ['inbox', 'board'];
+      let components = saved ? JSON.parse(saved) : ['inbox', 'board'];
+      if (!useUserStore.getState().currentUser) {
+        components = components.filter((c: string) => c !== 'inbox' && c !== 'calendar');
+        if (components.length === 0) components = ['board'];
+      }
+      return components;
     }
-    return ['inbox', 'board'];
+    return ['board'];
   });
 
   const isSingle = activeComponents.length === 1;
@@ -170,6 +176,15 @@ export default function ProjectDetailPage({ params }: Props) {
     };
   }, [projectId]);
 
+  // Tự động ẩn inbox/calendar nếu đăng xuất
+  useEffect(() => {
+    if (!currentUser) {
+      setActiveComponents((prev) =>
+        prev.filter((c) => c !== 'inbox' && c !== 'calendar')
+      );
+    }
+  }, [currentUser]);
+
   // Best-effort leave on browser back/refresh/tab close
   useEffect(() => {
     const leave = () => projectStore.getState().setActiveProjectId(null);
@@ -231,6 +246,7 @@ export default function ProjectDetailPage({ params }: Props) {
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter noScroll>
       <div className="bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
+        <ProjectGuestCursor />
         <ProjectActionBar
           activeComponents={activeComponents}
           onToggle={toggleComponent}
