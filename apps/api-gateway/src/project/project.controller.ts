@@ -349,6 +349,20 @@ export class ProjectController {
     );
   }
 
+  /** PROJECT MEETINGS */
+  @Post(':id/meetings')
+  async createMeeting(@Param('id') projectId: string, @Body() body: any, @Req() req: any) {
+    const userId = req.user.userId || req.user.sub; // Hỗ trợ cả 2 định dạng
+    this.logger.log(`Creating meeting for project ${projectId} by user ${userId}`);
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'project.meeting.create' }, { 
+        projectId, 
+        userId, 
+        payload: body 
+      }),
+    );
+  }
+
   @Post('cards/:cardId/ai-subtasks')
   async aiGenerateSubtasks(@Param('cardId') cardId: string, @Req() req: any) {
     const user = req.user;

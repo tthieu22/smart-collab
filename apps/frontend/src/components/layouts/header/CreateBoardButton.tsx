@@ -195,6 +195,18 @@ export default function CreateBoardButton({
         throw new Error("AI đã trả về nhưng không tìm thấy projectId");
       }
 
+      // Ensure AI board has a background (avoid white background)
+      const finalBackground = images[0] || colors[0];
+      if (finalBackground) {
+        const updateData: any = {
+          projectId: projectId,
+        };
+        if (images.includes(finalBackground)) updateData.background = finalBackground;
+        else if (colors.includes(finalBackground)) updateData.color = finalBackground;
+        
+        await projectService.updateProject(updateData);
+      }
+
       addNotification("AI đã tạo project/board xong, đang chuyển hướng…", "success");
       setAiOpen(false);
       setAiPrompt("");

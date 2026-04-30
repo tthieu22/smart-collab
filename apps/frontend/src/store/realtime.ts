@@ -682,6 +682,15 @@ export class ProjectSocketManager {
     );
   }
 
+  // Meeting
+  createMeeting = (projectId: string, participants: string[], title?: string, cb?: (msg: any) => void) => {
+    return this.lockAwareAction(
+      'project.meeting.create',
+      { projectId, payload: { participants, title } },
+      cb
+    );
+  };
+
   /** Queue join room từng project, retry */
   async joinProject(projectId: string, options?: { switchProject?: boolean }) {
     if (!this.socket) {

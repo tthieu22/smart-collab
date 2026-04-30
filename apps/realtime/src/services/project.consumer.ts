@@ -194,4 +194,18 @@ export class ProjectConsumer {
       this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.card.moved', msg);
     }
   }
+
+  @RabbitSubscribe({
+    exchange: 'smart-collab',
+    routingKey: 'realtime.meeting.invite',
+    queue: 'realtime_meeting_invite_queue',
+  })
+  public async handleMeetingInvite(msg: any) {
+    this.logger.log(`[MEETING] Invite for project ${msg?.projectId}, participants: ${msg?.participants?.length}`);
+    if (msg?.participants && Array.isArray(msg.participants)) {
+      msg.participants.forEach((userId: string) => {
+        this.gateway.emitToUser(userId, 'realtime.meeting.invite', msg);
+      });
+    }
+  }
 }

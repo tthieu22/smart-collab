@@ -188,7 +188,13 @@ export default function Board({ board }: Props) {
         ${theme === 'dark' ? 'bg-[#1e1f22] border-white/5' : 'bg-white border-gray-100'}
       `}>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 group">
+          <div className="flex items-center gap-3 group">
+            <div className={`
+              w-8 h-8 rounded-lg flex items-center justify-center
+              ${theme === 'dark' ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-50 text-purple-600'}
+            `}>
+              <LayoutOutlined className="text-base" />
+            </div>
             {isEditingTitle && isOwner ? (
               <Input
                 size="small"

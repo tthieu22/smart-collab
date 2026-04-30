@@ -122,13 +122,18 @@ export default function ProjectRecycleBin({ projectId }: { projectId: string }) 
         ${theme === 'dark' ? 'bg-[#1e1f22] border-white/5' : 'bg-white border-gray-100'}
       `}>
         <div className="flex items-center gap-3">
-          <DeleteOutlined className="text-neutral-500" />
+          <div className={`
+            w-8 h-8 rounded-lg flex items-center justify-center
+            ${theme === 'dark' ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-600'}
+          `}>
+            <DeleteOutlined className="text-base" />
+          </div>
           <h1 className={`text-sm font-bold tracking-tight m-0 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             Thùng rác
           </h1>
-          <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'}`} />
+          <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'} mx-1`} />
           <Tooltip title="Các mục trong thùng rác sẽ tự động bị xóa vĩnh viễn sau 30 ngày">
-            <InfoCircleOutlined className="text-neutral-400 cursor-help ml-1" />
+            <InfoCircleOutlined className="text-neutral-400 cursor-help" />
           </Tooltip>
         </div>
 
@@ -142,12 +147,12 @@ export default function ProjectRecycleBin({ projectId }: { projectId: string }) 
             onChange={e => setSearch(e.target.value)}
           />
           <Tooltip title="Xóa tất cả">
-             <Button 
-                icon={<ClearOutlined />} 
-                type="text" 
-                size="small" 
-                className="text-neutral-400 hover:text-red-500 flex items-center justify-center" 
-             />
+            <Button
+              icon={<ClearOutlined />}
+              type="text"
+              size="small"
+              className="text-neutral-400 hover:text-red-500 flex items-center justify-center"
+            />
           </Tooltip>
         </div>
       </div>
@@ -164,7 +169,7 @@ export default function ProjectRecycleBin({ projectId }: { projectId: string }) 
             {filteredItems.map((item) => {
               const daysLeft = getDaysRemaining(item.deletedAt);
               return (
-                <div 
+                <div
                   key={item.id}
                   className="group flex flex-col p-3 rounded-2xl bg-neutral-50 hover:bg-neutral-100 dark:bg-white/5 dark:hover:bg-white/10 transition-all duration-300 border border-transparent hover:border-blue-500/20 shadow-sm hover:shadow-md relative overflow-hidden"
                 >
@@ -184,7 +189,7 @@ export default function ProjectRecycleBin({ projectId }: { projectId: string }) 
                           {item.type.toUpperCase()}
                         </Tag>
                       </div>
-                      
+
                       {/* SMART METADATA: Breadcrumbs/Location */}
                       <div className="flex flex-col gap-0.5 text-[9px] text-neutral-400 font-medium leading-tight">
                         {item.type === 'card' && item.column && (

@@ -595,4 +595,14 @@ export class AuthMessageHandler {
       return { success: false, message: error.message || 'User not found' };
     }
   }
+
+  @MessagePattern({ cmd: 'auth.findInternalUser' })
+  async handleFindInternalUser(@Payload() payload: { userId: string }) {
+    try {
+      const user = await this.userService.findInternalUser(payload.userId);
+      return { success: true, data: user };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'User not found' };
+    }
+  }
 }

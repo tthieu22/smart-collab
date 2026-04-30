@@ -10,7 +10,7 @@ import ProjectActionBar from '@smart/components/project/ProjectActionBar';
 import ProjectGuestCursor from '@smart/components/project/ProjectGuestCursor';
 import { Loading } from '@smart/components/ui/loading';
 import { autoRequest } from '@smart/services/auto.request';
-import { message } from 'antd';
+import { message, Modal, Popover } from 'antd';
 
 import dynamic from 'next/dynamic';
 
@@ -294,23 +294,31 @@ export default function ProjectDetailPage({ params }: Props) {
                 </div>
               )}
 
-
-
+              {/* ===== INLINE CHAT PANEL ===== */}
               {activeComponents.includes('chat') && (
                 <div className={sidePanelClass}>
                   <ProjectChat projectId={projectId} />
                 </div>
               )}
-
-
-              {activeComponents.includes('recycle') && (
-                <div className={sidePanelClass}>
-                  <ProjectRecycleBin projectId={projectId} />
-                </div>
-              )}
             </div>
           </DragDropContextProvider>
         </div>
+
+        {/* ===== RECYCLE BIN MODAL ===== */}
+        <Modal
+          title={null}
+          open={activeComponents.includes('recycle')}
+          onCancel={() => toggleComponent('recycle')}
+          footer={null}
+          width={800}
+          styles={{ body: { padding: 0 } }}
+          className="recycle-bin-modal"
+          centered
+        >
+          <div className="h-[600px] overflow-hidden rounded-2xl">
+            <ProjectRecycleBin projectId={projectId} />
+          </div>
+        </Modal>
       </div>
 
       <style jsx global>{`

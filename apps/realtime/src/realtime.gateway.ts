@@ -19,6 +19,7 @@ import { BoardService } from './services/project/board.service';
 import { ColumnService } from './services/project/column.service';
 import { CardService } from './services/project/card.service';
 import { MemberService } from './services/project/member.service';
+import { MeetingService } from './services/project/meeting.service';
 
 type Handler = (data: any, userId: string, client: Socket) => Promise<any>;
 type RealtimeTarget = { projectId?: string; userId?: string };
@@ -246,6 +247,13 @@ export class RealtimeGateway
         return { status: 'success', data: result };
       },
     ],
+    [
+      'project.meeting.create',
+      async (d, u, client) => {
+        const result = await this.meeting.createMeeting(d, u);
+        return result;
+      },
+    ],
   ]);
 
   constructor(
@@ -256,6 +264,7 @@ export class RealtimeGateway
     private readonly column: ColumnService,
     private readonly card: CardService,
     private readonly member: MemberService,
+    private readonly meeting: MeetingService,
   ) {}
 
   afterInit() {

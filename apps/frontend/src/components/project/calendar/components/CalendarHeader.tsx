@@ -79,11 +79,16 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                     className="absolute opacity-0 w-full h-full cursor-pointer z-10"
                 />
                 <div className={`
-                    flex items-center gap-2 px-2 py-1.5 rounded-md transition-all group
+                    flex items-center gap-3 px-2 py-1.5 rounded-md transition-all group
                     ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'}
                 `}>
-                    <CalendarOutlined className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-500'} group-hover:text-blue-500`} />
-                    <span className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                    <div className={`
+                        w-8 h-8 rounded-lg flex items-center justify-center
+                        ${isDark ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'}
+                    `}>
+                        <CalendarOutlined className="text-base" />
+                    </div>
+                    <span className={`text-sm font-bold tracking-tight ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
                         {dayjs(currentDate).format('MMMM')}
                     </span>
                     <DownOutlined className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />

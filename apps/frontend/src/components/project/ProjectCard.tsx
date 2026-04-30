@@ -12,6 +12,7 @@ interface ProjectCardProps {
   className?: string;
   showMembers?: boolean;
   gridCols?: 1 | 2 | 3;
+  disablePrefetch?: boolean;
 }
 
 export default function ProjectCard({
@@ -19,7 +20,8 @@ export default function ProjectCard({
   onClick,
   className = "",
   showMembers = true,
-  gridCols = 3
+  gridCols = 3,
+  disablePrefetch = false
 }: ProjectCardProps) {
   const prefetchProject = projectStore((s) => s.prefetchProject);
 
@@ -35,7 +37,7 @@ export default function ProjectCard({
 
   const content = (
     <div
-      onMouseEnter={() => prefetchProject(project.id)}
+      onMouseEnter={() => !disablePrefetch && prefetchProject(project.id)}
       className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isList ? 'flex-row h-56' : 'flex-col'
         } ${className}`}
     >
@@ -99,7 +101,7 @@ export default function ProjectCard({
 
   if (onClick) {
     return (
-      <div onClick={onClick} onMouseEnter={() => prefetchProject(project.id)} className="cursor-pointer">
+      <div onClick={onClick} onMouseEnter={() => !disablePrefetch && prefetchProject(project.id)} className="cursor-pointer">
         {content}
       </div>
     );

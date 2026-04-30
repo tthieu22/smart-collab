@@ -9,6 +9,8 @@ import LoginOverlay from '../LoginOverlay';
 import ColumnInbox from './ColumnInbox';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
+import { Tooltip } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 
 interface InboxProps {
   board: BoardType;
@@ -84,9 +86,13 @@ export default function Inbox({ board, className }: InboxProps) {
           `}>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
           </div>
-          <h2 className={`text-sm font-bold tracking-tight ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          <h2 className={`text-sm font-bold tracking-tight m-0 ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
             Inbox
           </h2>
+          <div className={`h-4 w-[1px] ${isDark ? 'bg-white/20' : 'bg-gray-300'} mx-1`} />
+          <Tooltip title="Quản lý các công việc được giao riêng cho bạn">
+            <InfoCircleOutlined className="text-neutral-400 cursor-help" />
+          </Tooltip>
         </div>
 
         <div className="flex items-center gap-2">

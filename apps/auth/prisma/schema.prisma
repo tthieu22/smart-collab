@@ -21,6 +21,8 @@ model User {
   website                      String?
   birthday                     DateTime?
   googleId                     String?
+  googleAccessToken            String?
+  googleRefreshToken           String?
   role                         String   @default("USER")  // bỏ enum, dùng string
   isVerified                   Boolean  @default(false)
   emailVerificationCode        String?

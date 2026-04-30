@@ -237,8 +237,12 @@ export class AuthController {
     try {
       this.logger.debug('👉 req.user:', req.user);
 
-      // req.user là { success, message, data }
       const userResp = req.user as any;
+
+      if (!userResp.success) {
+        throw new Error(userResp.message || 'Upsert user failed');
+      }
+
       const user = userResp.data;
 
       if (!user?.email) {

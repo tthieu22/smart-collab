@@ -8,9 +8,13 @@ import {
   SmileOutlined,
   CloseOutlined,
   FileOutlined,
-  RollbackOutlined
+  RollbackOutlined,
+  VideoCameraOutlined,
+  MessageOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Spin, Mentions, Popover, Tooltip, Upload, message, Image } from 'antd';
+import { Avatar, Button, Spin, Mentions, Popover, Tooltip, Upload, Image, Modal, Select, Input } from 'antd';
+import { message } from '@smart/providers/AntdStaticProvider';
 import { useUserStore } from '@smart/store/user';
 import { getProjectSocketManager } from '@smart/store/realtime';
 import { autoRequest } from '@smart/services/auto.request';
@@ -49,6 +53,9 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [meetingTitle, setMeetingTitle] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(true);
   const LIMIT = 20;
@@ -57,17 +64,17 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
 
   const fetchMessages = async (isInitial = false) => {
     if (loading || (loadingMore && !isInitial)) return;
-    
+
     if (isInitial) setLoading(true);
     else setLoadingMore(true);
 
     try {
       const currentSkip = isInitial ? 0 : messages.length;
       const res = await autoRequest<{ success: boolean; data: Message[] }>(
-        `/projects/${projectId}/chat?skip=${currentSkip}&limit=${LIMIT}`, 
+        `/projects/${projectId}/chat?skip=${currentSkip}&limit=${LIMIT}`,
         { method: 'GET' }
       );
-      
+
       if (res.success) {
         // Sort ASC (oldest to newest)
         const newMsgs = [...res.data].sort(
@@ -81,7 +88,7 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
           // Prepend older messages
           const scrollContainer = scrollRef.current;
           const oldScrollHeight = scrollContainer?.scrollHeight || 0;
-          
+
           setMessages(prev => [...newMsgs, ...prev]);
           setHasMore(res.data.length >= LIMIT);
 
@@ -105,7 +112,7 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
   useEffect(() => {
     const initData = async () => {
       await fetchMessages(true);
-      
+
       // Fetch project members for mentions
       try {
         const memberRes = await autoRequest<{ success: boolean; data: { members: any[] } }>(`/projects/get`, {
@@ -133,7 +140,26 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
       }
     });
 
-    return () => unsub();
+    const unsubInvite = socketManager.subscribe('realtime.meeting.invite', (data: any) => {
+      if (data.projectId === projectId) {
+        message.info({
+          content: (
+            <div className="flex flex-col gap-1">
+              <span className="font-bold">Mời họp: {data.title}</span>
+              <Button type="primary" size="small" href={data.meetLink} target="_blank">
+                Tham gia ngay
+              </Button>
+            </div>
+          ),
+          duration: 10,
+        });
+      }
+    });
+
+    return () => {
+      unsub();
+      unsubInvite();
+    };
   }, [projectId]);
 
   useEffect(() => {
@@ -162,7 +188,7 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
         method: 'POST',
         body: formData,
       });
-      
+
       if (res.success) {
         setAttachments(prev => [...prev, ...res.data]);
         onSuccess(res.data);
@@ -226,17 +252,64 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
     ),
   }));
 
+  const handleCreateMeeting = async () => {
+    if (selectedParticipants.length === 0) {
+      message.warning('Vui lòng chọn ít nhất một người tham gia');
+      return;
+    }
+
+    try {
+      const socketManager = getProjectSocketManager();
+      await socketManager.createMeeting(projectId, selectedParticipants, meetingTitle || 'Cuộc họp nhóm');
+      setIsMeetingModalOpen(false);
+      setSelectedParticipants([]);
+      setMeetingTitle('');
+      message.success('Đã tạo cuộc họp và gửi lời mời');
+    } catch (err) {
+      console.error(err);
+      message.error('Tạo cuộc họp thất bại');
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900 border-l dark:border-neutral-800">
-      <div className="p-4 border-b dark:border-neutral-800 flex items-center justify-between bg-neutral-50 dark:bg-neutral-900/50">
+    <div className={`h-full flex flex-col font-sans transition-colors duration-300 bg-white dark:bg-[#0b1220] border-l dark:border-white/5`}>
+      {/* HEADER SECTION - Standardized with Board/Recycle Bin */}
+      <div className={`
+        flex-none px-4 h-12 flex items-center justify-between z-10 relative border-b
+        dark:bg-[#1e1f22] dark:border-white/5 bg-white border-gray-100
+      `}>
+        <div className="flex items-center gap-3">
+          <div className={`
+            w-8 h-8 rounded-lg flex items-center justify-center
+            dark:bg-blue-500/10 dark:text-blue-400 bg-blue-50 text-blue-600
+          `}>
+            <MessageOutlined className="text-base" />
+          </div>
+          <h1 className={`text-sm font-bold tracking-tight m-0 dark:text-gray-100 text-gray-800`}>
+            Project Chat
+          </h1>
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <div className={`h-4 w-[1px] dark:bg-white/20 bg-gray-300 mx-1`} />
+          <Tooltip title="Trò chuyện trực tiếp với các thành viên trong dự án">
+            <InfoCircleOutlined className="text-neutral-400 cursor-help" />
+          </Tooltip>
+        </div>
+
         <div className="flex items-center gap-2">
-          <span className="font-bold dark:text-white">Project Chat</span>
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <Tooltip title="Tạo cuộc họp mới">
+            <Button
+              type="text"
+              size="small"
+              icon={<VideoCameraOutlined className="text-lg" />}
+              onClick={() => setIsMeetingModalOpen(true)}
+              className="text-neutral-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-500/10 flex items-center justify-center transition-all h-8 w-8 rounded-lg"
+            />
+          </Tooltip>
         </div>
       </div>
 
-      <div 
-        ref={scrollRef} 
+      <div
+        ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar"
       >
@@ -279,6 +352,25 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
                           }`}
                       >
                         {msg.content}
+                      </div>
+                    )}
+
+                    {msg.type === 'SYSTEM' && msg.metadata?.action === 'JOIN_MEETING' && (
+                      <div className="mt-1 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium text-xs">
+                          <VideoCameraOutlined />
+                          <span>Cuộc họp đang diễn ra</span>
+                        </div>
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<VideoCameraOutlined />}
+                          href={msg.metadata.meetLink}
+                          target="_blank"
+                          className="bg-green-600 hover:bg-green-700 border-none w-full"
+                        >
+                          Tham gia cuộc họp
+                        </Button>
                       </div>
                     )}
 
@@ -438,6 +530,47 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
           </div>
         </div>
       </div>
+
+      <Modal
+        title="Tạo cuộc họp mới"
+        open={isMeetingModalOpen}
+        onOk={handleCreateMeeting}
+        onCancel={() => setIsMeetingModalOpen(false)}
+        okText="Tạo cuộc họp"
+        cancelText="Hủy"
+        className="rounded-2xl overflow-hidden"
+      >
+        <div className="flex flex-col gap-4 py-4">
+          <div>
+            <div className="text-xs font-bold text-neutral-500 uppercase mb-2">Tên cuộc họp</div>
+            <Mentions
+              placeholder="Nhập tên cuộc họp (ví dụ: Daily Standup)"
+              value={meetingTitle}
+              onChange={setMeetingTitle}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-neutral-500 uppercase mb-2">Chọn người tham gia</div>
+            <Select
+              mode="multiple"
+              className="w-full"
+              placeholder="Chọn thành viên"
+              value={selectedParticipants}
+              onChange={setSelectedParticipants}
+              options={members.map(m => ({
+                label: (
+                  <div className="flex items-center gap-2">
+                    <Avatar src={m.userAvatar} size="small" />
+                    <span>{m.userName}</span>
+                  </div>
+                ),
+                value: m.userId
+              }))}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

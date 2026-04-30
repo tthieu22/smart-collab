@@ -46,10 +46,27 @@ model Project {
   customFields CustomFieldDefinition[]
   automations  AutomationRule[]
   chatMessages ProjectChatMessage[]
+  meetings     ProjectMeeting[]
 
   @@unique([folderPath], map: "unique_project_folderPath")
   @@index([ownerId])
   @@index([uploadedById])
+}
+
+// ------------------ PROJECT MEETING ------------------
+model ProjectMeeting {
+  id           String   @id @default(uuid())
+  projectId    String
+  title        String?
+  meetLink     String
+  participants String[] // Array of userIds
+  createdById  String
+  contextId    String?  // Optional cardId or boardId
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
 }
 
 // ------------------ PROJECT MEMBER ------------------
@@ -371,4 +388,17 @@ model ProjectChatMessage {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
+}
+
+// ------------------ USER CACHE (Synced from Auth) ------------------
+model UserCache {
+  id                 String   @id
+  email              String
+  firstName          String?
+  lastName           String?
+  avatar             String?
+  role               String   @default("USER")
+  googleAccessToken  String?
+  googleRefreshToken String?
+  updatedAt          DateTime @default(now())
 }

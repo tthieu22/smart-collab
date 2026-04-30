@@ -2,7 +2,7 @@
 
 import { MailOutlined, CalendarOutlined, AppstoreOutlined, SwitcherOutlined, MessageOutlined, HeartOutlined, DeleteOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import { useBoardStore } from "@smart/store/setting";
-import { useState } from "react";
+import React, { useState } from "react";
 import ProjectSwitchModal from "./ProjectSwitchModal";
 import { useUserStore } from "@smart/store/user";
 import { message } from "antd";
@@ -39,29 +39,35 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
        "
     >
       {buttons.map(({ key, label, icon, private: isPrivate }) => {
+        if (isPrivate && isGuest) return null;
+
         const isActive = activeComponents.includes(key);
 
         return (
-          <button
-            key={key}
-            onClick={() => {
-              if (key === "switch") {
-                setIsSwitchModalOpen(true);
-              } else {
-                onToggle(key);
-              }
-            }}
-            className={`
-               flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-150
-               ${isActive
-                ? "bg-white/60 dark:bg-black/60 text-blue-600 dark:text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
-                : "text-black/90 dark:text-white/80 hover:bg-white/40 dark:hover:bg-black/20"
-              }
-             `}
-          >
-            <span className="text-lg">{icon}</span>
-            <span>{label}</span>
-          </button>
+          <React.Fragment key={key}>
+            {key === 'recycle' && (
+              <div className="h-6 w-px bg-gray-200 dark:bg-neutral-800 mx-1" />
+            )}
+            <button
+              onClick={() => {
+                if (key === "switch") {
+                  setIsSwitchModalOpen(true);
+                } else {
+                  onToggle(key);
+                }
+              }}
+              className={`
+                 flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-150
+                 ${isActive
+                  ? "bg-white/60 dark:bg-black/60 text-blue-600 dark:text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                  : "text-black/90 dark:text-white/80 hover:bg-white/40 dark:hover:bg-black/20"
+                }
+               `}
+            >
+              <span className="text-lg">{icon}</span>
+              <span>{label}</span>
+            </button>
+          </React.Fragment>
         );
       })}
 

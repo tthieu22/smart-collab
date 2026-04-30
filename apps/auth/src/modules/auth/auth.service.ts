@@ -173,6 +173,8 @@ export class AuthService {
     familyName?: string;
     avatar?: string;
     id?: string;
+    googleAccessToken?: string;
+    googleRefreshToken?: string;
   }) {
     let user = await this.prisma.user.findUnique({
       where: { email: payload.email },
@@ -184,6 +186,8 @@ export class AuthService {
         avatar: true,
         role: true,
         googleId: true,
+        googleAccessToken: true,
+        googleRefreshToken: true,
         isVerified: true
       }
     });
@@ -197,27 +201,33 @@ export class AuthService {
           avatar: payload.avatar ?? null,
           role: "USER",
           googleId: payload.id ?? null,
+          googleAccessToken: payload.googleAccessToken ?? null,
+          googleRefreshToken: payload.googleRefreshToken ?? null,
         },
       });
 
-      await syncCreateUser({
-        id: user.id,
-        email: user.email,
-      });
+      await syncCreateUser(user);
   
     } else {
+      // Cập nhật thông tin và Token
+      const updateData: any = {
+        googleId: payload.id ?? user.googleId,
+        avatar: payload.avatar ?? user.avatar,
+      };
+
+      if (payload.googleAccessToken) {
+        updateData.googleAccessToken = payload.googleAccessToken;
+      }
+      if (payload.googleRefreshToken) {
+        updateData.googleRefreshToken = payload.googleRefreshToken;
+      }
+
       user = await this.prisma.user.update({
         where: { id: user.id },
-        data: {
-          googleId: payload.id ?? user.googleId,
-          avatar: payload.avatar ?? user.avatar,
-        },
+        data: updateData,
       });
 
-      await syncUpdateUser({
-        id: user.id,
-        email: user.email
-      });
+      await syncUpdateUser(user);
     }
 
     return user;

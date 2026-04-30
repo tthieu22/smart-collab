@@ -24,8 +24,6 @@ export class CardService {
       orderBy: [{ uploadedAt: "desc" as const }],
     },
     members: true,
-    column: true,
-    project: true,
     customFieldValues: {
       include: { field: true }
     }
@@ -131,22 +129,24 @@ export class CardService {
         comments: true,
         checklist: true,
         attachments: true,
-        column: true,
-        project: true,
+        members: true,
       },
     });
 
     // 4. Chuẩn hóa lại toàn bộ vị trí trong cột này để đảm bảo tính liên tục (0, 1, 2...)
     await this.reorderCards(params.columnId);
 
-    // 5. Chuẩn bị trả về (giữ nguyên correlationId nếu có)
     const cardToReturn = {
       correlationId: params.correlationId,
       ...card,
     };
 
-    this.logger.log(`Card created with ID: ${card.id}, publishing event...`);
-    // await this.amqpConnection.publish('project-exchange', 'card.created', { card: cardToReturn });
+    this.logger.log(`Card created with ID: ${card.id}, publishing optimized event...`);
+    await this.amqpConnection.publish('project-exchange', 'card.created', {
+      card: cardToReturn,
+      columnId: card.columnId,
+      projectId: card.projectId
+    });
     this.logger.log(`Published card.created event for card ID: ${card.id}`);
 
     return cardToReturn;

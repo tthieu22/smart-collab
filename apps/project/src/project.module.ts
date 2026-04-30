@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ClientsModule } from '@nestjs/microservices';
+import { rabbitmqConfig } from './config/rabbitmq.config';
 import { ProjectConsumer } from './project.consumer';
 import { PrismaModule } from '../prisma/project.module';
 // import { ProjectMemberConsumer } from './project.member.consumer';
@@ -23,6 +25,8 @@ import { ChatHandler } from './chat/chat.handle';
 import { AutomationService } from './automation/automation.service';
 import { AutomationConsumer } from './automation/automation.consumer';
 import { AutomationHandler } from './automation/automation.handle';
+import { MeetingService } from './meeting/meeting.service';
+import { MeetingHandler } from './meeting/meeting.handle';
 
 @Module({
   imports: [
@@ -31,8 +35,14 @@ import { AutomationHandler } from './automation/automation.handle';
     ConfigModule.forRoot({ isGlobal: true }),
     SharedRabbitMQModule,
     AiModule,
+    ClientsModule.register([
+      {
+        name: 'AUTH_SERVICE',
+        ...rabbitmqConfig('auth_queue'),
+      },
+    ]),
   ],
-  controllers: [CardHandler, ProjectHandler, ColumnHandler, BoardHandler, ChatHandler, AutomationHandler],
+  controllers: [CardHandler, ProjectHandler, ColumnHandler, BoardHandler, ChatHandler, AutomationHandler, MeetingHandler],
 
   providers: [
     ProjectConsumer,
@@ -45,7 +55,8 @@ import { AutomationHandler } from './automation/automation.handle';
     ModelRegistryService,
     ChatService,
     AutomationService,
-    AutomationConsumer
+    AutomationConsumer,
+    MeetingService
   ],
 })
 export class ProjectModule {}
