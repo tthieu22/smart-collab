@@ -76,4 +76,16 @@ export class ProjectConsumer {
       });
     }
   }
+  
+  @RabbitSubscribe({
+    exchange: 'smart-collab',
+    routingKey: 'realtime.project.chat',
+    queue: 'realtime_project_chat_queue',
+  })
+  public async handleProjectChat(msg: any) {
+    this.logger.log(`[CHAT] Received message for project ${msg?.projectId}`);
+    if (msg?.projectId && msg?.message) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.project.chat', msg);
+    }
+  }
 }

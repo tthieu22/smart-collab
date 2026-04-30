@@ -156,7 +156,18 @@ export class ProjectService {
 
   async deleteProject(projectId: string, userId?: string) {
     await this.checkProjectAccess(projectId, userId, 'admin');
-    return this.prisma.project.delete({ where: { id: projectId } });
+    return this.prisma.project.update({ 
+      where: { id: projectId },
+      data: { deletedAt: new Date() }
+    });
+  }
+
+  async restoreProject(projectId: string, userId?: string) {
+    await this.checkProjectAccess(projectId, userId, 'admin');
+    return this.prisma.project.update({ 
+      where: { id: projectId },
+      data: { deletedAt: null }
+    });
   }
 
   async getProjectStructure(projectId: string, userId?: string) {
@@ -213,8 +224,10 @@ export class ProjectService {
                     title: true,
                     description: true,
                     status: true,
+                    startDate: true,
                     deadline: true,
                     priority: true,
+                    dependencyId: true,
                     position: true,
                     createdById: true,
                     createdByName: true,
@@ -232,6 +245,12 @@ export class ProjectService {
                     coverFilename: true,
                     members: true,
                     labels: true,
+                    checklist: true,
+                    comments: true,
+                    attachments: true,
+                    customFieldValues: {
+                      include: { field: true }
+                    },
                   },
                 },
               },
@@ -402,6 +421,7 @@ export class ProjectService {
     const skip = (page - 1) * limit;
     
     const where: any = {
+      deletedAt: null,
       OR: [
         { ownerId: userId },
         { members: { some: { userId } } },

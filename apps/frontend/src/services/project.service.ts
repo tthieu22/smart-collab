@@ -153,6 +153,18 @@ class ProjectService {
       body: JSON.stringify({ query }),
     });
   }
+
+  aiGenerateSubtasks(cardId: string) {
+    return autoRequest<any>(`/projects/cards/${cardId}/ai-subtasks`, {
+      method: 'POST'
+    });
+  }
+
+  aiPredictTimeline(cardId: string) {
+    return autoRequest<any>(`/projects/cards/${cardId}/ai-timeline`, {
+      method: 'POST'
+    });
+  }
 }
 
 export const projectService = new ProjectService();

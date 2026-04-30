@@ -14,17 +14,17 @@ export class ColumnService {
   async getColumnById(columnId: string) {
     this.logger.log(`[getColumnById] columnId: ${columnId}`);
     return this.prisma.column.findUnique({
-      where: { id: columnId },
-      include: { cards: { orderBy: { position: 'asc' } } },
+      where: { id: columnId, deletedAt: null },
+      include: { cards: { where: { deletedAt: null }, orderBy: { position: 'asc' } } },
     });
   }
 
   async getColumnsByBoard(boardId: string) {
     this.logger.log(`[getColumnsByBoard] boardId: ${boardId}`);
     return this.prisma.column.findMany({
-      where: { boardId },
+      where: { boardId, deletedAt: null },
       orderBy: { position: 'asc' },
-      include: { cards: { orderBy: { position: 'asc' } } },
+      include: { cards: { where: { deletedAt: null }, orderBy: { position: 'asc' } } },
     });
   }
 
@@ -92,12 +92,20 @@ export class ColumnService {
 
   async removeColumn(columnId: string) {
     this.logger.log(`[removeColumn] columnId: ${columnId}`);
-    const column = await this.prisma.column.delete({
+    const column = await this.prisma.column.update({
       where: { id: columnId },
+      data: { deletedAt: new Date() }
     });
 
     await this.amqpConnection.publish('project-exchange', 'column.deleted', { columnId });
     return column;
+  }
+
+  async restoreColumn(columnId: string) {
+    return this.prisma.column.update({
+      where: { id: columnId },
+      data: { deletedAt: null }
+    });
   }
 
   async moveColumn(params: {

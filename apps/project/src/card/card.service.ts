@@ -26,11 +26,14 @@ export class CardService {
     members: true,
     column: true,
     project: true,
+    customFieldValues: {
+      include: { field: true }
+    }
   };
 
   async getCardDetail(cardId: string) {
     const card = await this.prisma.card.findUnique({
-      where: { id: cardId },
+      where: { id: cardId, deletedAt: null },
       include: this.CARD_INCLUDE_FULL,
     });
     return card ?? null;
@@ -40,7 +43,7 @@ export class CardService {
   async getCardsByColumn(columnId: string) {
     this.logger.log(`Fetching cards for column id: ${columnId}`);
     const cards = await this.prisma.card.findMany({
-      where: { columnId },
+      where: { columnId, deletedAt: null },
       orderBy: { position: 'asc' },
       include: this.CARD_INCLUDE_FULL,
     });
@@ -51,7 +54,7 @@ export class CardService {
   async getCardsByProject(projectId: string) {
     this.logger.log(`Fetching cards for project id: ${projectId}`);
     const cards = await this.prisma.card.findMany({
-      where: { projectId },
+      where: { projectId, deletedAt: null },
       orderBy: [{ columnId: 'asc' }, { position: 'asc' }],
       include: this.CARD_INCLUDE_FULL,
     });
@@ -170,6 +173,7 @@ export class CardService {
       'update-cover': () => this.handleUpdateCover(cardId, data, updatedById),
       'add-member': () => this.handleAddMember(cardId, data),
       'remove-member': () => this.handleRemoveMember(cardId, data),
+      'set-custom-field': () => this.handleSetCustomField(cardId, data),
     };
 
     const execute = actionHandlers[action];
@@ -380,7 +384,10 @@ export class CardService {
       throw new Error('Card not found');
     }
 
-    await this.prisma.card.delete({ where: { id: cardId } });
+    await this.prisma.card.update({ 
+      where: { id: cardId },
+      data: { deletedAt: new Date() }
+    });
 
     this.logger.log(`Card deleted with ID: ${cardId}, publishing event...`);
     await this.amqpConnection.publish('project-exchange', 'card.deleted', { cardId });
@@ -434,7 +441,7 @@ export class CardService {
     // 2. Validate destination column
     const destColumn = await this.prisma.column.findUnique({
       where: { id: destColumnId },
-      select: { id: true, projectId: true },
+      select: { id: true, projectId: true, title: true },
     });
 
     if (!destColumn) {
@@ -452,7 +459,7 @@ export class CardService {
           updatedCard = await tx.card.update({
             where: { id: cardId },
             data: { updatedById: movedById },
-            include: { labels: true, views: true, column: true },
+            // Removed heavy includes: labels, views, column
           });
         } else {
           // Cập nhật position của các card khác
@@ -475,7 +482,7 @@ export class CardService {
               position: destIndex,
               updatedById: movedById,
             },
-            include: { labels: true, views: true, column: true },
+            // Removed heavy includes
           });
         }
       } else {
@@ -509,7 +516,7 @@ export class CardService {
             position: destIndex,
             updatedById: movedById,
           },
-          include: { labels: true, views: true, column: true },
+          // Removed heavy includes
         });
       }
 
@@ -519,10 +526,10 @@ export class CardService {
         await this.reorderCards(destColumnId, tx);
       }
 
-      // Lấy lại dữ liệu card sau khi đã chuẩn hóa vị trí
+      // Lấy lại dữ liệu card cơ bản sau khi đã chuẩn hóa vị trí
       return tx.card.findUnique({
         where: { id: cardId },
-        include: { labels: true, views: true, column: true },
+        select: { id: true, columnId: true, position: true, projectId: true },
       });
     }, {
       timeout: 30000
@@ -530,6 +537,11 @@ export class CardService {
 
     if (!result) {
       throw new Error(`Card ${cardId} not found after move`);
+    }
+
+    // Award points if moved to Done
+    if (destColumn.title.toLowerCase().includes('done') && !isSameColumn) {
+      await this.awardPoints(movedById, result.projectId, 10);
     }
 
     const responseData = {
@@ -630,7 +642,7 @@ export class CardService {
             create: originalCard.labels.map((l) => ({ label: l.label })),
           },
         },
-        include: { labels: true, views: true, column: true },
+        include: { labels: true }, // Omit views and column to reduce payload size
       });
 
       await this.reorderCards(destColumnId, tx);
@@ -660,5 +672,53 @@ export class CardService {
       where: { columnId },
     });
     return count;
+  }
+
+  async restoreCard(cardId: string) {
+    return this.prisma.card.update({
+      where: { id: cardId },
+      data: { deletedAt: null },
+      include: this.CARD_INCLUDE_FULL,
+    });
+  }
+
+  // --- CUSTOM FIELD DEFINITIONS ---
+  async createCustomFieldDefinition(params: { projectId: string; name: string; type: string; options?: any }) {
+    return this.prisma.customFieldDefinition.create({
+      data: params
+    });
+  }
+
+  async getCustomFieldDefinitions(projectId: string) {
+    return this.prisma.customFieldDefinition.findMany({
+      where: { projectId }
+    });
+  }
+
+  async deleteCustomFieldDefinition(fieldId: string) {
+    return this.prisma.customFieldDefinition.delete({
+      where: { id: fieldId }
+    });
+  }
+
+  private async handleSetCustomField(cardId: string, data: { fieldId: string; value: string }) {
+    await this.prisma.customFieldValue.upsert({
+      where: { cardId_fieldId: { cardId, fieldId: data.fieldId } },
+      update: { value: data.value },
+      create: { cardId, fieldId: data.fieldId, value: data.value }
+    });
+    return this.findCardDetailById(cardId);
+  }
+
+  async awardPoints(userId: string, projectId: string | null, points: number) {
+    if (!projectId || !userId) return;
+    try {
+      await this.prisma.projectMember.update({
+        where: { projectId_userId: { projectId, userId } },
+        data: { points: { increment: points } }
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to award points: ${err.message}`);
+    }
   }
 }

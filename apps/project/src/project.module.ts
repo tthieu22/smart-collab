@@ -18,6 +18,11 @@ import { BoardHandler } from './board/board.handler';
 import { ModelRegistryService } from './llm/model-registry.service';
 import { LlmService } from './llm/llm.service';
 import { AiModule } from './ai/ai.module';
+import { ChatService } from './chat/chat.service';
+import { ChatHandler } from './chat/chat.handle';
+import { AutomationService } from './automation/automation.service';
+import { AutomationConsumer } from './automation/automation.consumer';
+import { AutomationHandler } from './automation/automation.handle';
 
 @Module({
   imports: [
@@ -27,7 +32,7 @@ import { AiModule } from './ai/ai.module';
     SharedRabbitMQModule,
     AiModule,
   ],
-  controllers: [CardHandler, ProjectHandler, ColumnHandler, BoardHandler],
+  controllers: [CardHandler, ProjectHandler, ColumnHandler, BoardHandler, ChatHandler, AutomationHandler],
 
   providers: [
     ProjectConsumer,
@@ -37,7 +42,10 @@ import { AiModule } from './ai/ai.module';
     // CardConsumer,
     CardService,
     LlmService,
-    ModelRegistryService
+    ModelRegistryService,
+    ChatService,
+    AutomationService,
+    AutomationConsumer
   ],
 })
 export class ProjectModule {}

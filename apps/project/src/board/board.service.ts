@@ -139,7 +139,7 @@ export class BoardService {
         : { ownerId, type };
 
     const boards = await this.prisma.board.findMany({
-      where,
+      where: { ...where, deletedAt: null },
       orderBy: { position: 'asc' },
     });
 
@@ -160,8 +160,18 @@ export class BoardService {
 
   /** ❌ Xóa board */
   async deleteBoard(boardId: string) {
-    await this.prisma.board.delete({ where: { id: boardId } });
+    await this.prisma.board.update({ 
+      where: { id: boardId },
+      data: { deletedAt: new Date() }
+    });
     await this.amqpConnection.publish('project-exchange', 'board.deleted', { boardId });
     return { boardId };
+  }
+
+  async restoreBoard(boardId: string) {
+    return this.prisma.board.update({ 
+      where: { id: boardId },
+      data: { deletedAt: null }
+    });
   }
 }

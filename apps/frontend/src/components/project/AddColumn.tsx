@@ -49,7 +49,8 @@ export default function AddColumn({ boardId }: AddColumnProps) {
         newColumnTitle.trim(),
         currentProject.id,
         (res) => {
-          if (res.status === "success" || res.column) {
+          console.log("AddColumn response:", res);
+          if (res?.status !== "error") {
             setNewColumnTitle("");
             setShowInput(false);
           } else {

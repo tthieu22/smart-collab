@@ -31,12 +31,21 @@ model Project {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Recycle Bin & Health
+  deletedAt    DateTime?
+  isArchived   Boolean   @default(false)
+  healthStatus String    @default("ON_TRACK") // ON_TRACK, AT_RISK, DELAYED
+
   members ProjectMember[]
   boards  Board[]
   columns Column[]
   cards   Card[]
   views   CardView[]
   events  EventStatistic[]
+
+  customFields CustomFieldDefinition[]
+  automations  AutomationRule[]
+  chatMessages ProjectChatMessage[]
 
   @@unique([folderPath], map: "unique_project_folderPath")
   @@index([ownerId])
@@ -57,6 +66,10 @@ model ProjectMember {
   userAvatar  String?
   userEmail   String?
 
+  // Gamification
+  points   Int      @default(0)
+  badges   String[] @default([])
+
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
@@ -72,6 +85,10 @@ model Board {
   position  Int       @default(0)
   columnIds String[]  @default([])
   metadata  Json?
+
+  // Recycle Bin
+  deletedAt  DateTime?
+  isArchived Boolean   @default(false)
 
   project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   columns   Column[]
@@ -92,6 +109,10 @@ model Column {
   metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Recycle Bin
+  deletedAt  DateTime?
+  isArchived Boolean   @default(false)
 
   project Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   board   Board?      @relation(fields: [boardId], references: [id], onDelete: Cascade)
@@ -126,6 +147,10 @@ model Card {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Recycle Bin
+  deletedAt  DateTime?
+  isArchived Boolean   @default(false)
+  
   // === COVER IMAGE (ảnh bìa) ===
   coverPublicId     String?
   coverUrl          String?
@@ -149,6 +174,12 @@ model Card {
   comments    CardComment[]
   checklist   ChecklistItem[]
   attachments Attachment[]
+  customFieldValues CustomFieldValue[]
+
+  // Gantt Dependencies
+  dependencyId String?
+  dependency   Card?   @relation("CardDependency", fields: [dependencyId], references: [id], onDelete: SetNull)
+  dependents   Card[]  @relation("CardDependency")
 
   @@index([projectId, status, updatedAt])
   @@index([columnId, position])
@@ -270,4 +301,65 @@ model EventStatistic {
   project Project @relation(fields: [projectId], references: [id])
 
   @@unique([projectId, eventType, date])
+}
+
+// ------------------ CUSTOM FIELDS ------------------
+model CustomFieldDefinition {
+  id        String   @id @default(uuid())
+  projectId String
+  name      String
+  type      String   // TEXT, NUMBER, DROPDOWN, DATE
+  options   Json?    // For DROPDOWN type
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  values  CustomFieldValue[]
+
+  @@index([projectId])
+}
+
+model CustomFieldValue {
+  id        String  @id @default(uuid())
+  cardId    String
+  fieldId   String
+  value     String?
+
+  card  Card                  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  field CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, fieldId])
+  @@index([fieldId])
+}
+
+// ------------------ AUTOMATION ------------------
+model AutomationRule {
+  id           String   @id @default(uuid())
+  projectId    String
+  name         String
+  triggerType  String   // CARD_CREATED, CARD_MOVED, DEADLINE_APPROACHING
+  conditions   Json?    // Filter conditions
+  actionType   String   // ASSIGN_USER, ADD_LABEL, SEND_NOTIFICATION
+  actionConfig Json?    // Action parameters
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+// ------------------ PROJECT CHAT ------------------
+model ProjectChatMessage {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  userName  String?
+  avatar    String?
+  content   String
+  type      String   @default("TEXT") // TEXT, SYSTEM
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
 }

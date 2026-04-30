@@ -18,6 +18,10 @@ const Inbox = dynamic(() => import('@smart/components/project/inbox/Inbox'), { s
 const Calendar = dynamic(() => import('@smart/components/project/calendar/Calendar'), { ssr: false, loading: () => <Loading /> });
 const Board = dynamic(() => import('@smart/components/project/board/Board'), { ssr: false, loading: () => <Loading /> });
 const DragDropContextProvider = dynamic(() => import('@smart/components/project/dnd/DragDropProvider'), { ssr: false });
+const ProjectChat = dynamic(() => import('@smart/components/project/chat/ProjectChat'), { ssr: false });
+const ProjectHealth = dynamic(() => import('@smart/components/project/health/ProjectHealth'), { ssr: false });
+const ProjectRecycleBin = dynamic(() => import('@smart/components/project/recycle/ProjectRecycleBin'), { ssr: false });
+import ProjectPresence from '@smart/components/project/ProjectPresence';
 
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { useBoardStore } from '@smart/store/setting';
@@ -245,10 +249,19 @@ export default function ProjectDetailPage({ params }: Props) {
   const boardClass = isSingle
     ? `${basePanel} flex-1`
     : `${basePanel} min-w-[700px] flex-1`;
+
+  const sidePanelClass = isSingle
+    ? `${basePanel} flex-1`
+    : `${basePanel} min-w-[350px] max-w-[400px]`;
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter noScroll>
       <div className="bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
         <ProjectGuestCursor />
+
+        <div className="fixed top-[84px] right-8 z-50">
+          <ProjectPresence projectId={projectId} />
+        </div>
+
         <ProjectActionBar
           activeComponents={activeComponents}
           onToggle={toggleComponent}
@@ -279,6 +292,26 @@ export default function ProjectDetailPage({ params }: Props) {
               {activeComponents.includes('board') && mainBoard && (
                 <div className={boardClass}>
                   <Board board={mainBoard} />
+                </div>
+              )}
+
+
+
+              {activeComponents.includes('chat') && (
+                <div className={sidePanelClass}>
+                  <ProjectChat projectId={projectId} />
+                </div>
+              )}
+
+              {activeComponents.includes('health') && (
+                <div className={sidePanelClass}>
+                  <ProjectHealth projectId={projectId} />
+                </div>
+              )}
+
+              {activeComponents.includes('recycle') && (
+                <div className={sidePanelClass}>
+                  <ProjectRecycleBin projectId={projectId} />
                 </div>
               )}
             </div>

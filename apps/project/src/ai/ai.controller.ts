@@ -84,4 +84,28 @@ export class AiController {
     this.logger.log('[ai.optimize-post]');
     return this.aiService.optimizePost(payload);
   }
+
+  @MessagePattern({ cmd: 'ai.generate-subtasks' })
+  async generateSubtasks(@Payload() payload: any) {
+    this.logger.log('[ai.generate-subtasks]');
+    return this.aiService.generateSubtasks(payload);
+  }
+
+  @MessagePattern({ cmd: 'ai.predict-timeline' })
+  async predictTimeline(@Payload() payload: any) {
+    this.logger.log('[ai.predict-timeline]');
+    return this.aiService.predictTimeline(payload);
+  }
+
+  @MessagePattern({ cmd: 'ai.analyze-project-health' })
+  async analyzeProjectHealth(@Payload() payload: any) {
+    this.logger.log('[ai.analyze-project-health]');
+    return this.aiService.analyzeProjectHealth(payload);
+  }
+
+  @MessagePattern({ cmd: 'ai.analyze-sentiment' })
+  async analyzeSentiment(@Payload() payload: any) {
+    this.logger.log('[ai.analyze-sentiment]');
+    return this.aiService.analyzeSentiment(payload);
+  }
 }

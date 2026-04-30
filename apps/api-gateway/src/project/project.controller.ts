@@ -284,4 +284,91 @@ export class ProjectController {
     );
     return result;
   }
+
+  /** PROJECT HEALTH */
+  @Get(':id/health')
+  async getHealth(@Param('id') projectId: string) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'project.get_health' }, { projectId }),
+    );
+  }
+
+  /** RECYCLE BIN */
+  @Get(':id/recycle-bin')
+  async getRecycleBin(@Param('id') projectId: string) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'project.recycle-bin.get_all' }, { projectId }),
+    );
+  }
+
+  @Post(':id/restore')
+  async restoreItem(@Param('id') projectId: string, @Body() body: { type: string; id: string }) {
+    let cmd = '';
+    switch (body.type) {
+      case 'project': cmd = 'project.restore'; break;
+      case 'board': cmd = 'project.board.restore'; break;
+      case 'column': cmd = 'project.column.restore'; break;
+      case 'card': cmd = 'project.card.restore'; break;
+    }
+    return firstValueFrom(
+      this.projectClient.send({ cmd }, { projectId, cardId: body.id, boardId: body.id, columnId: body.id }),
+    );
+  }
+
+  /** PROJECT CHAT */
+  @Get(':id/chat')
+  async getChatMessages(@Param('id') projectId: string, @Req() req: any) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'project.chat.get_all' }, { projectId }),
+    );
+  }
+
+  @Post(':id/chat')
+  async sendChatMessage(@Param('id') projectId: string, @Body() body: any, @Req() req: any) {
+    const user = req.user;
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'project.chat.send' }, { 
+        projectId, 
+        userId: user.userId, 
+        payload: body 
+      }),
+    );
+  }
+
+  /** AI ENHANCEMENTS */
+  @Post(':id/ai/health')
+  async aiAnalyzeHealth(@Param('id') projectId: string) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'ai.analyze-project-health' }, { projectId }),
+    );
+  }
+
+  @Post('cards/:cardId/ai-subtasks')
+  async aiGenerateSubtasks(@Param('cardId') cardId: string) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'ai.generate-subtasks' }, { cardId }),
+    );
+  }
+
+  @Post('cards/:cardId/ai-timeline')
+  async aiPredictTimeline(@Param('cardId') cardId: string) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'ai.predict-timeline' }, { cardId }),
+    );
+  }
+
+  /** CUSTOM FIELDS */
+  @Post('custom-field')
+  async createCustomField(@Body() body: any) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'project.custom-field.create' }, body),
+    );
+  }
+
+  @Get(':projectId/custom-field')
+  async getCustomFields(@Param('projectId') projectId: string) {
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'project.custom-field.get_all' }, { projectId }),
+    );
+  }
 }

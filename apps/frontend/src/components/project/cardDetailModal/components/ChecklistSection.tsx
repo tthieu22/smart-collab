@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Space, Input, Checkbox, Progress, Typography, theme } from 'antd';
-import { CheckSquareOutlined, PlusOutlined } from '@ant-design/icons';
+import { Space, Input, Checkbox, Progress, Typography, theme, Button } from 'antd';
+import { CheckSquareOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons';
 import type { ChecklistItem } from '@smart/types/project';
 
 const { Text } = Typography;
@@ -14,6 +14,7 @@ interface Props {
   addChecklistItem: () => void;
   toggleChecklist: (id: string) => void;
   progress: number;
+  onAiBreakdown?: () => void;
 }
 
 const ChecklistSection: React.FC<Props> = ({
@@ -23,6 +24,7 @@ const ChecklistSection: React.FC<Props> = ({
   addChecklistItem,
   toggleChecklist,
   progress,
+  onAiBreakdown,
 }) => {
   const { token } = theme.useToken();
 
@@ -67,6 +69,15 @@ const ChecklistSection: React.FC<Props> = ({
           strokeColor={token.colorPrimary}
           trailColor={token.colorFillQuaternary}
         />
+        <Button 
+          size="small" 
+          type="text" 
+          icon={<SyncOutlined />} 
+          onClick={onAiBreakdown}
+          style={{ color: '#2563eb', fontWeight: 600 }}
+        >
+          AI Breakdown
+        </Button>
       </div>
 
       <Space direction="vertical" style={{ width: '100%' }}>

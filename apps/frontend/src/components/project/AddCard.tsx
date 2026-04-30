@@ -19,20 +19,21 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
   const handleSave = async () => {
     if (!newCardTitle.trim()) return;
     setLoading(true);
-
     try {
       await socketManager.createCard(
         projectId,
         columnId,
         newCardTitle.trim(),
         (res) => {
-          if (res.status === "success" || res.card) {
+          console.log("AddCard response:", res);
+          if (res?.status !== "error") {
             setNewCardTitle("");
           }
           setLoading(false);
         }
       );
     } catch (err) {
+      console.error("Create card failed:", err);
       setLoading(false);
     }
   };
@@ -67,8 +68,9 @@ export function AddCard({ projectId, columnId }: AddCardProps) {
         variant="filled"
         onKeyDown={handleKeyDown}
         style={{ paddingRight: 32 }}
+        disabled={loading}
       />
-      {newCardTitle && (
+      {newCardTitle && !loading && (
         <button
           onClick={handleCancel}
           aria-label="Cancel"

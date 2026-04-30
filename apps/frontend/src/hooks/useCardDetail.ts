@@ -211,6 +211,7 @@ export const useCardDetail = (
       locationName?: string | null;
       latitude?: number | null;
       longitude?: number | null;
+      dependencyId?: string | null;
     }) => {
       if (!card) return;
 
@@ -224,6 +225,7 @@ export const useCardDetail = (
         locationName: fields.locationName ?? card.locationName,
         latitude: fields.latitude ?? card.latitude,
         longitude: fields.longitude ?? card.longitude,
+        dependencyId: fields.dependencyId ?? card.dependencyId,
       };
 
       await updateCardOnServer({
@@ -311,6 +313,24 @@ export const useCardDetail = (
     },
     [card, startTypewriter, updateCard]
   );
+
+  const generateSubtasks = useCallback(async () => {
+    if (!card) return;
+    setLoading(true);
+    try {
+      const res: any = await projectService.aiGenerateSubtasks(card.id);
+      if (res.success) {
+        message.success('Đã tự động tạo checklist thành công');
+        // Refresh card
+        const fetched: any = await projectService.getCard(card.id);
+        updateCard(fetched.data);
+      }
+    } catch (err) {
+      message.error('AI breakdown thất bại');
+    } finally {
+      setLoading(false);
+    }
+  }, [card, updateCard]);
 
   // Comment add (local update)
   const addComment = useCallback(async () => {
@@ -523,6 +543,7 @@ export const useCardDetail = (
     safeLabels,
 
     updateBasic,
+    updateCardOnServer,
     addLabel: (label: string, color?: string) =>
       card
         ? updateCardOnServer({
@@ -569,6 +590,7 @@ export const useCardDetail = (
         message.error('Xóa thẻ thất bại');
       }
     },
+    generateSubtasks,
     onClose,
   };
 };

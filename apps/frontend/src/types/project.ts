@@ -89,6 +89,8 @@ export interface Card {
   checklist?: ChecklistItem[];
   attachments?: Attachment[];
   members?: CardMember[];
+  dependencyId?: string | null;
+  dependency?: Card | null;
 }
 
 // ------------------ CARD COMMENT ------------------

@@ -14,6 +14,8 @@ import DatesSection from './components/DatesSection';
 import PrioritySection from './components/PrioritySection';
 import CoverSection from './components/CoverSection';
 import LocationSection from './components/LocationSection';
+import CustomFieldsSection from './components/CustomFieldsSection';
+import DependencySection from './components/DependencySection';
 
 const { Text } = Typography;
 
@@ -60,6 +62,8 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
     addMember,
     removeMember,
     updateCover,
+    updateCardOnServer,
+    generateSubtasks,
   } = useCardDetail(cardId, isOpen, onClose);
 
   const { token } = theme.useToken();
@@ -223,6 +227,7 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
       <div style={{ display: 'flex', height: '88vh', overflow: 'hidden' }}
         onKeyDown={e => e.stopPropagation()}
         onMouseDown={e => e.stopPropagation()}
+        onPointerDown={e => e.stopPropagation()}
       >
         {/* CỘT CHÍNH (CHỨA 4 TIỂU CỘT) */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -294,6 +299,24 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
                       longitude={card?.longitude}
                       onChange={(data) => updateBasic(data)}
                     />
+                    <Divider style={{ margin: '8px 0' }} />
+                    <DependencySection 
+                      dependencyId={card?.dependencyId}
+                      cardId={cardId}
+                      projectId={card?.projectId || ''}
+                      onChange={(id) => updateBasic({ dependencyId: id })}
+                    />
+                    <Divider style={{ margin: '8px 0' }} />
+                    <CustomFieldsSection 
+                      values={(card as any)?.customFieldValues || []} 
+                      onUpdate={(fieldId, value) => {
+                        updateCardOnServer({
+                          cardId,
+                          action: 'set-custom-field',
+                          data: { fieldId, value }
+                        });
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -308,6 +331,7 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
                     addChecklistItem={addChecklistItem}
                     toggleChecklist={toggleChecklist}
                     progress={progress}
+                    onAiBreakdown={generateSubtasks}
                   />
                   <Divider style={{ margin: '20px 0' }} />
                   <AttachmentsSection

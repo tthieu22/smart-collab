@@ -808,4 +808,123 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
 
     this.logger.log('AI PROJECT BUILD COMPLETED');
   }
+
+  async generateSubtasks(payload: { cardId: string; userId: string; locale?: string }) {
+    const locale = payload?.locale ?? 'vi';
+    const cardRes = await this.rpc<any>('project.get.card', payload.cardId);
+    const card = this.unwrap(cardRes);
+    if (!card) return { success: false, message: 'Card not found' };
+
+    const prompt = this.promptFactory.generateSubtasks(card, locale);
+    const aiRes = await this.llm.complete(prompt);
+
+    let subtasks = [];
+    try {
+      const parsed = JSON.parse(aiRes.content);
+      subtasks = parsed.subtasks || [];
+    } catch {
+      return { success: false, message: 'AI failed to generate valid subtasks' };
+    }
+
+    // Persist into backend
+    for (const sub of subtasks) {
+      await this.rpc('project.card.update', {
+        projectId: card.projectId,
+        userId: payload.userId,
+        payload: {
+          cardId: card.id,
+          action: 'add-checklist-item',
+          data: { title: sub.title },
+        },
+      });
+    }
+
+    return { success: true, subtasks };
+  }
+
+  async predictTimeline(payload: { cardId: string; userId: string; locale?: string }) {
+    const locale = payload?.locale ?? 'vi';
+    const cardRes = await this.rpc<any>('project.get.card', payload.cardId);
+    const card = this.unwrap(cardRes);
+    if (!card) return { success: false, message: 'Card not found' };
+
+    const prompt = this.promptFactory.predictTimeline(card, locale);
+    const aiRes = await this.llm.complete(prompt);
+
+    try {
+      const prediction = JSON.parse(aiRes.content);
+      return { success: true, prediction };
+    } catch {
+      return { success: false, message: 'AI failed to predict timeline' };
+    }
+  }
+
+  async analyzeProjectHealth(payload: { projectId: string; userId: string; locale?: string }) {
+    const locale = payload?.locale ?? 'vi';
+    const projectRes = await this.rpc<any>('project.get', { projectId: payload.projectId, userId: payload.userId });
+    const project = this.unwrap(projectRes);
+    if (!project) return { success: false, message: 'Project not found' };
+
+    // Calculate stats
+    let totalTasks = 0;
+    let completedTasks = 0;
+    let overdueTasks = 0;
+    const now = new Date();
+
+    project.boards?.forEach((b: any) => {
+      b.columns?.forEach((c: any) => {
+        c.cards?.forEach((card: any) => {
+          totalTasks++;
+          if (card.column?.title?.toLowerCase().includes('done')) completedTasks++;
+          if (card.deadline && new Date(card.deadline) < now) overdueTasks++;
+        });
+      });
+    });
+
+    const stats = { name: project.name, totalTasks, completedTasks, overdueTasks };
+    const prompt = this.promptFactory.analyzeProjectHealth(stats, locale);
+    const aiRes = await this.llm.complete(prompt);
+
+    try {
+      const health = JSON.parse(aiRes.content);
+      // Update healthStatus in DB
+      await this.rpc('project.update', {
+        projectId: project.id,
+        userId: payload.userId,
+        payload: { healthStatus: health.status },
+      });
+      return { success: true, health };
+    } catch {
+      return { success: false, message: 'AI health analysis failed' };
+    }
+  }
+
+  async analyzeSentiment(payload: { projectId: string; userId: string; locale?: string }) {
+    const locale = payload?.locale ?? 'vi';
+    const projectRes = await this.rpc<any>('project.get', { projectId: payload.projectId, userId: payload.userId });
+    const project = this.unwrap(projectRes);
+    if (!project) return { success: false, message: 'Project not found' };
+
+    // Collect comments
+    const comments: any[] = [];
+    project.boards?.forEach((b: any) => {
+      b.columns?.forEach((c: any) => {
+        c.cards?.forEach((card: any) => {
+          if (card.comments) comments.push(...card.comments);
+        });
+      });
+    });
+
+    if (comments.length === 0) return { success: true, sentiment: 'NEUTRAL', summary: 'Không có bình luận nào để phân tích.' };
+
+    const prompt = this.promptFactory.analyzeSentiment(comments.slice(-20), locale); // Last 20 comments
+    const aiRes = await this.llm.complete(prompt);
+
+    try {
+      const result = JSON.parse(aiRes.content);
+      return { success: true, ...result };
+    } catch {
+      return { success: false, message: 'AI sentiment analysis failed' };
+    }
+  }
 }

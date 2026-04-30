@@ -153,6 +153,7 @@ export class ProjectSocketManager {
         'realtime.comment.deleted',
         'realtime.notification.created',
         'realtime.project.online',
+        'realtime.project.chat',
         'realtime.action.response',
       ];
 
@@ -226,6 +227,18 @@ export class ProjectSocketManager {
       if (remaining.length)
         this.correlationCallbacks.set(correlationId, remaining);
       else this.correlationCallbacks.delete(correlationId);
+    };
+  }
+  
+  /** Subscribe to a general realtime event. Returns an unsubscribe function. */
+  subscribe(event: string, callback: (data: any) => void): () => void {
+    if (!this.socket) {
+      console.warn('Socket not initialized, cannot subscribe to', event);
+      return () => {};
+    }
+    this.socket.on(event, callback);
+    return () => {
+      this.socket?.off(event, callback);
     };
   }
 

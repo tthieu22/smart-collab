@@ -1,6 +1,6 @@
 "use client";
 
-import { MailOutlined, CalendarOutlined, AppstoreOutlined, SwitcherOutlined } from "@ant-design/icons";
+import { MailOutlined, CalendarOutlined, AppstoreOutlined, SwitcherOutlined, MessageOutlined, HeartOutlined, DeleteOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import { useBoardStore } from "@smart/store/setting";
 import { useState } from "react";
 import ProjectSwitchModal from "./ProjectSwitchModal";
@@ -25,6 +25,9 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
     { key: "inbox", label: "Inbox", icon: <MailOutlined />, private: true },
     { key: "calendar", label: "Calendar", icon: <CalendarOutlined />, private: true },
     { key: "board", label: "Board", icon: <AppstoreOutlined />, private: false },
+    { key: "chat", label: "Chat", icon: <MessageOutlined />, private: false },
+    { key: "health", label: "Health", icon: <HeartOutlined />, private: false },
+    { key: "recycle", label: "Recycle Bin", icon: <DeleteOutlined />, private: true },
     { key: "switch", label: "Switch Board", icon: <SwitcherOutlined />, private: false },
   ];
 

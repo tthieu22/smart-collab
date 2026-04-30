@@ -55,8 +55,8 @@ export class CardHandler {
     try {
       const mergedParams = {
         projectId: payload.projectId,
-        correlationId:payload.correlationId,
-        ...payload.payload, 
+        correlationId: payload.correlationId,
+        ...payload.payload,
         createdById: payload.userId,
       };
 
@@ -65,7 +65,7 @@ export class CardHandler {
       const result = await this.cardService.createCard(mergedParams);
 
       this.logger.log(`[handleCreateCard] Card created successfully: ${JSON.stringify(result)}`);
-      return result;
+      return { status: 'success', correlationId: payload.correlationId, data: result };
     } catch (error: any) {
       this.logger.error(`[handleCreateCard] Error creating card: ${error.message}`, error.stack);
       return { status: 'error', message: error.message };
@@ -155,6 +155,46 @@ export class CardHandler {
       return result;
     } catch (error: any) {
       this.logger.error(`[handleCopyCard] ${error.message}`, error.stack);
+      return { status: 'error', message: error.message };
+    }
+  }
+  @MessagePattern({ cmd: 'project.card.restore' })
+  async handleRestoreCard(@Payload() payload: any) {
+    this.logger.log(`Restoring card with payload: ${JSON.stringify(payload)}`);
+    try {
+      const result = await this.cardService.restoreCard(payload.cardId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'project.custom-field.create' })
+  async handleCreateCustomField(@Payload() payload: any) {
+    try {
+      const result = await this.cardService.createCustomFieldDefinition(payload);
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'project.custom-field.get_all' })
+  async handleGetCustomFields(@Payload() payload: any) {
+    try {
+      const result = await this.cardService.getCustomFieldDefinitions(payload.projectId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'project.custom-field.delete' })
+  async handleDeleteCustomField(@Payload() payload: any) {
+    try {
+      const result = await this.cardService.deleteCustomFieldDefinition(payload.fieldId);
+      return { success: true, data: result };
+    } catch (error: any) {
       return { status: 'error', message: error.message };
     }
   }

@@ -31,14 +31,14 @@ export class CardService {
     const dto = { ...payload, createdById: userId };
     const result = await this.request('project.card.create', dto);
     // this.logger.log(`[createCard] completed with result: ${JSON.stringify(result)}`);
-    return result;
+    return result.data ?? result;
   }
 
   async updateCard(payload: any) {
     this.logger.log(`[updateCard] received payload: ${JSON.stringify(payload)}`);
     const result = await this.request('project.card.update', payload);
     // this.logger.log(`[updateCard] completed with result: ${JSON.stringify(result)}`);
-    return result;
+    return result.data ?? result;
   }
 
   async deleteCard(payload: any, userId: string): Promise<LockResult> {

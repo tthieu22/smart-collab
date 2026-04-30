@@ -320,4 +320,98 @@ ${JSON.stringify(context.data, null, 2)}
 Answer (Natural Language Markdown ONLY):
 `;
   }
+
+  // ================= TASK BREAKDOWN =================
+  generateSubtasks(card: any, locale = 'vi') {
+    return `
+You are a task management expert. 
+Break down the following task into a detailed checklist of actionable subtasks.
+
+Task Title: "${card.title}"
+Task Description: "${card.description || 'No description provided'}"
+
+Return ONLY valid JSON:
+{
+  "subtasks": [
+    { "title": "Công việc con 1", "done": false },
+    { "title": "Công việc con 2", "done": false }
+  ]
+}
+
+Rules:
+- Generate 4-8 subtasks.
+- Language: ${locale}
+- ONLY JSON.
+`;
+  }
+
+  // ================= SMART SCHEDULING =================
+  predictTimeline(card: any, locale = 'vi') {
+    return `
+You are a project scheduling expert. 
+Based on the task details, suggest an optimized start date and deadline.
+Assume today is ${new Date().toISOString().split('T')[0]}.
+
+Task Title: "${card.title}"
+Priority: ${card.priority || 'Medium'}
+
+Return ONLY valid JSON:
+{
+  "startDate": "YYYY-MM-DD",
+  "deadline": "YYYY-MM-DD",
+  "reasoning": "Giải thích ngắn gọn tại sao chọn ngày này"
+}
+
+Rules:
+- Language: ${locale}
+- ONLY JSON.
+`;
+  }
+
+  // ================= PROJECT HEALTH =================
+  analyzeProjectHealth(projectInfo: any, locale = 'vi') {
+    return `
+You are a senior project controller. 
+Analyze the project statistics and determine the overall health status.
+
+Project Name: "${projectInfo.name}"
+Total Tasks: ${projectInfo.totalTasks}
+Completed Tasks: ${projectInfo.completedTasks}
+Overdue Tasks: ${projectInfo.overdueTasks}
+
+Return ONLY valid JSON:
+{
+  "status": "ON_TRACK" | "AT_RISK" | "DELAYED",
+  "score": 0-100,
+  "summary": "Tóm tắt tình trạng sức khỏe dự án"
+}
+
+Rules:
+- Language: ${locale}
+- ONLY JSON.
+`;
+  }
+
+  // ================= SENTIMENT ANALYSIS =================
+  analyzeSentiment(comments: any[], locale = 'vi') {
+    return `
+You are a team morale analyst. 
+Analyze the following comments and determine the overall sentiment and emotional tone of the team.
+
+Comments:
+${JSON.stringify(comments, null, 2)}
+
+Return ONLY valid JSON:
+{
+  "sentiment": "POSITIVE" | "NEUTRAL" | "NEGATIVE",
+  "score": 0-100,
+  "summary": "Tóm tắt tâm trạng của team",
+  "flags": ["Căng thẳng", "Hào hứng", "Thất vọng"]
+}
+
+Rules:
+- Language: ${locale}
+- ONLY JSON.
+`;
+  }
 }
