@@ -318,8 +318,13 @@ export class ProjectController {
   /** PROJECT CHAT */
   @Get(':id/chat')
   async getChatMessages(@Param('id') projectId: string, @Req() req: any) {
+    const { skip, limit } = req.query;
     return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.chat.get_all' }, { projectId }),
+      this.projectClient.send({ cmd: 'project.chat.get_all' }, { 
+        projectId, 
+        skip: skip ? Number(skip) : 0, 
+        limit: limit ? Number(limit) : 20 
+      }),
     );
   }
 

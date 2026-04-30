@@ -6,7 +6,8 @@ import { NotificationProvider } from '@smart/providers/NotificationProvider';
 import { AuthProvider } from '@smart/providers/AuthProvider';
 import GlobalPostDetailModal from '@smart/components/home/feed/GlobalPostDetailModal';
 import AppWrapper from '@smart/components/layouts/AppWrapper';
-import { Spin } from 'antd';
+import AntdStaticProvider from '@smart/providers/AntdStaticProvider';
+import { Spin, App } from 'antd';
 import { Inter } from 'next/font/google';
 import React from 'react';
 
@@ -37,10 +38,13 @@ export default function RootLayout({
             <NotificationProvider>
               <AuthProvider>
                 <AppWrapper>
-                  <React.Suspense fallback={null}>
-                    {children}
-                    <GlobalPostDetailModal />
-                  </React.Suspense>
+                  <App>
+                    <AntdStaticProvider />
+                    <React.Suspense fallback={null}>
+                      {children}
+                      <GlobalPostDetailModal />
+                    </React.Suspense>
+                  </App>
                 </AppWrapper>
               </AuthProvider>
             </NotificationProvider>

@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { arrayMove } from '@dnd-kit/sortable';
 import { AnalyticsData, Board, Card, CardLabel, CardView, Column, Project, ProjectMember } from '@smart/types/project';
-import { message } from 'antd';
+import { message } from '@smart/providers/AntdStaticProvider';
 import { autoRequest } from '../services/auto.request';
 
 interface ProjectState {
