@@ -31,9 +31,9 @@ export class ColumnService {
   async getColumnsByProject(projectId: string) {
     this.logger.log(`[getColumnsByProject] projectId: ${projectId}`);
     return this.prisma.column.findMany({
-      where: { projectId },
+      where: { projectId, deletedAt: null },
       orderBy: [{ boardId: 'asc' }, { position: 'asc' }],
-      include: { cards: { orderBy: { position: 'asc' } } },
+      include: { cards: { where: { deletedAt: null }, orderBy: { position: 'asc' } } },
     });
   }
 
@@ -65,7 +65,8 @@ export class ColumnService {
     });
 
     await this.amqpConnection.publish('project-exchange', 'column.created', {
-      ...column,
+      projectId: column.projectId,
+      column: column,
       correlationId: params.correlationId,
     });
 
@@ -97,15 +98,57 @@ export class ColumnService {
       data: { deletedAt: new Date() }
     });
 
-    await this.amqpConnection.publish('project-exchange', 'column.deleted', { columnId });
+    await this.amqpConnection.publish('project-exchange', 'column.deleted', { 
+      columnId, 
+      projectId: column.projectId,
+      boardId: column.boardId 
+    });
+
+    // Notify recycle bin realtime
+    this.amqpConnection.publish('smart-collab', 'realtime.recycle.added', {
+      projectId: column.projectId,
+      item: {
+        id: column.id,
+        title: column.title,
+        type: 'column',
+        deletedAt: new Date(),
+      }
+    });
+
     return column;
   }
 
   async restoreColumn(columnId: string) {
-    return this.prisma.column.update({
+    const column = await this.prisma.column.update({
       where: { id: columnId },
-      data: { deletedAt: null }
+      data: { deletedAt: null },
+      include: { 
+        cards: { 
+          where: { deletedAt: null }, 
+          orderBy: { position: 'asc' },
+          include: {
+            members: true,
+            labels: true,
+            checklist: true,
+            attachments: true,
+          }
+        } 
+      },
     });
+
+    // Notify recycle bin realtime
+    this.amqpConnection.publish('smart-collab', 'realtime.recycle.removed', {
+      projectId: column.projectId,
+      itemId: column.id,
+    });
+
+    // Notify project exchange for board updates
+    this.amqpConnection.publish('project-exchange', 'column.created', {
+      projectId: column.projectId,
+      column: column,
+    });
+
+    return column;
   }
 
   async moveColumn(params: {

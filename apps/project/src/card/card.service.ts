@@ -390,8 +390,24 @@ export class CardService {
     });
 
     this.logger.log(`Card deleted with ID: ${cardId}, publishing event...`);
-    await this.amqpConnection.publish('project-exchange', 'card.deleted', { cardId });
-    this.logger.log(`Published card.deleted event for card ID: ${cardId}`);
+    await this.amqpConnection.publish('project-exchange', 'card.deleted', { 
+      cardId, 
+      columnId: card.columnId,
+      projectId: card.projectId 
+    });
+
+    // Notify recycle bin realtime
+    this.amqpConnection.publish('smart-collab', 'realtime.recycle.added', {
+      projectId: card.projectId,
+      item: {
+        id: card.id,
+        title: card.title,
+        type: 'card',
+        deletedAt: new Date(),
+      }
+    });
+
+    this.logger.log(`Published card.deleted and recycle.added events for card ID: ${cardId}`);
 
     return { cardId };
   }
@@ -675,11 +691,26 @@ export class CardService {
   }
 
   async restoreCard(cardId: string) {
-    return this.prisma.card.update({
+    const card = await this.prisma.card.update({
       where: { id: cardId },
       data: { deletedAt: null },
       include: this.CARD_INCLUDE_FULL,
     });
+
+    // Notify recycle bin realtime
+    this.amqpConnection.publish('smart-collab', 'realtime.recycle.removed', {
+      projectId: card.projectId,
+      itemId: card.id,
+    });
+
+    // Notify project exchange for board updates
+    this.amqpConnection.publish('project-exchange', 'card.created', {
+      projectId: card.projectId,
+      card: card,
+      columnId: card.columnId,
+    });
+
+    return card;
   }
 
   // --- CUSTOM FIELD DEFINITIONS ---

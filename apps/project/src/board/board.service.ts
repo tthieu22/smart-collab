@@ -76,17 +76,19 @@ export class BoardService {
 
   /** Lấy full board (columns + cards + labels + views) */
   async getBoardById(boardId: string) {
-    const board = await this.prisma.board.findUnique({ where: { id: boardId } });
+    const board = await this.prisma.board.findUnique({ 
+      where: { id: boardId, deletedAt: null } 
+    });
     if (!board) return null;
 
     const columns = await this.prisma.column.findMany({
-      where: { boardId: board.id },
+      where: { boardId: board.id, deletedAt: null },
       orderBy: { position: 'asc' },
     });
 
     const columnIds = columns.map((c) => c.id);
     const cards = await this.prisma.card.findMany({
-      where: { columnId: { in: columnIds } },
+      where: { columnId: { in: columnIds }, deletedAt: null },
       orderBy: { position: 'asc' },
     });
 
@@ -160,18 +162,48 @@ export class BoardService {
 
   /** ❌ Xóa board */
   async deleteBoard(boardId: string) {
-    await this.prisma.board.update({ 
+    const board = await this.prisma.board.update({ 
       where: { id: boardId },
       data: { deletedAt: new Date() }
     });
-    await this.amqpConnection.publish('project-exchange', 'board.deleted', { boardId });
+    await this.amqpConnection.publish('project-exchange', 'board.deleted', { boardId, projectId: board.projectId });
+
+    if (board.projectId) {
+      // Notify recycle bin realtime
+      this.amqpConnection.publish('smart-collab', 'realtime.recycle.added', {
+        projectId: board.projectId,
+        item: {
+          id: board.id,
+          title: board.title,
+          type: 'board',
+          deletedAt: new Date(),
+        }
+      });
+    }
+
     return { boardId };
   }
 
   async restoreBoard(boardId: string) {
-    return this.prisma.board.update({ 
+    const board = await this.prisma.board.update({ 
       where: { id: boardId },
       data: { deletedAt: null }
     });
+
+    if (board.projectId) {
+      // Notify recycle bin realtime
+      this.amqpConnection.publish('smart-collab', 'realtime.recycle.removed', {
+        projectId: board.projectId,
+        itemId: board.id,
+      });
+
+      // Notify project exchange for UI updates
+      this.amqpConnection.publish('project-exchange', 'board.created', {
+        projectId: board.projectId,
+        board: board,
+      });
+    }
+
+    return board;
   }
 }

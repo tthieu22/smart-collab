@@ -17,8 +17,12 @@ export class ChatService {
     content: string;
     userName?: string;
     userAvatar?: string;
+    type?: string;
+    parentId?: string;
+    attachments?: any;
+    metadata?: any;
   }) {
-    const { projectId, userId, content, userName, userAvatar } = params;
+    const { projectId, userId, content, userName, userAvatar, type, parentId, attachments, metadata } = params;
 
     const message = await this.prisma.projectChatMessage.create({
       data: {
@@ -27,6 +31,13 @@ export class ChatService {
         content,
         userName: userName || 'User',
         avatar: userAvatar,
+        type: type || 'TEXT',
+        parentId,
+        attachments,
+        metadata,
+      },
+      include: {
+        replyTo: true,
       },
     });
 
@@ -39,11 +50,15 @@ export class ChatService {
     return message;
   }
 
-  async getMessages(projectId: string, limit: number = 50) {
+  async getMessages(projectId: string, skip: number = 0, limit: number = 20) {
     return this.prisma.projectChatMessage.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      skip: Number(skip) || 0,
+      take: Number(limit) || 20,
+      include: {
+        replyTo: true,
+      },
     });
   }
 

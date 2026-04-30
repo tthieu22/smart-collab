@@ -26,7 +26,6 @@ export default function ProjectActionBar({ activeComponents, onToggle }: Project
     { key: "calendar", label: "Calendar", icon: <CalendarOutlined />, private: true },
     { key: "board", label: "Board", icon: <AppstoreOutlined />, private: false },
     { key: "chat", label: "Chat", icon: <MessageOutlined />, private: false },
-    { key: "health", label: "Health", icon: <HeartOutlined />, private: false },
     { key: "recycle", label: "Recycle Bin", icon: <DeleteOutlined />, private: true },
     { key: "switch", label: "Switch Board", icon: <SwitcherOutlined />, private: false },
   ];

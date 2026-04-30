@@ -19,7 +19,6 @@ const Calendar = dynamic(() => import('@smart/components/project/calendar/Calend
 const Board = dynamic(() => import('@smart/components/project/board/Board'), { ssr: false, loading: () => <Loading /> });
 const DragDropContextProvider = dynamic(() => import('@smart/components/project/dnd/DragDropProvider'), { ssr: false });
 const ProjectChat = dynamic(() => import('@smart/components/project/chat/ProjectChat'), { ssr: false });
-const ProjectHealth = dynamic(() => import('@smart/components/project/health/ProjectHealth'), { ssr: false });
 const ProjectRecycleBin = dynamic(() => import('@smart/components/project/recycle/ProjectRecycleBin'), { ssr: false });
 import ProjectPresence from '@smart/components/project/ProjectPresence';
 
@@ -303,11 +302,6 @@ export default function ProjectDetailPage({ params }: Props) {
                 </div>
               )}
 
-              {activeComponents.includes('health') && (
-                <div className={sidePanelClass}>
-                  <ProjectHealth projectId={projectId} />
-                </div>
-              )}
 
               {activeComponents.includes('recycle') && (
                 <div className={sidePanelClass}>

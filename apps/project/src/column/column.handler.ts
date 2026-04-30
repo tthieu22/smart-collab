@@ -128,4 +128,17 @@ export class ColumnHandler {
       return { status: 'error', message: error.message, correlationId: payload?.correlationId };
     }
   }
+
+  @MessagePattern({ cmd: 'project.column.restore' })
+  async handleRestoreColumn(@Payload() payload: any) {
+    this.logger.log(`[handleRestoreColumn] Payload: ${JSON.stringify(payload)}`);
+    try {
+      const columnId = payload.payload?.columnId || payload.columnId;
+      const result = await this.columnService.restoreColumn(columnId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      this.logger.error(`[handleRestoreColumn] Failed: ${error.message}`, error.stack);
+      return { status: 'error', message: error.message };
+    }
+  }
 }

@@ -170,6 +170,36 @@ export class ProjectService {
     });
   }
 
+  async getRecycleBin(projectId: string) {
+    const [boards, columns, cards] = await Promise.all([
+      this.prisma.board.findMany({
+        where: { projectId, deletedAt: { not: null } },
+        orderBy: { deletedAt: 'desc' },
+      }),
+      this.prisma.column.findMany({
+        where: { projectId, deletedAt: { not: null } },
+        include: { board: { select: { title: true } } },
+        orderBy: { deletedAt: 'desc' },
+      }),
+      this.prisma.card.findMany({
+        where: { projectId, deletedAt: { not: null } },
+        include: { 
+          column: { select: { title: true } },
+          project: { select: { name: true } }
+        },
+        orderBy: { deletedAt: 'desc' },
+      }),
+    ]);
+
+    const items = [
+      ...boards.map(b => ({ ...b, type: 'board' })),
+      ...columns.map(c => ({ ...c, type: 'column' })),
+      ...cards.map(c => ({ ...c, type: 'card' })),
+    ].sort((a, b) => new Date(b.deletedAt!).getTime() - new Date(a.deletedAt!).getTime());
+
+    return items;
+  }
+
   async getProjectStructure(projectId: string, userId?: string) {
     const project = await this.checkProjectAccess(projectId, userId, 'view');
 
@@ -199,6 +229,7 @@ export class ProjectService {
         uploadedById: true,
         members: true,
         boards: {
+          where: { deletedAt: null },
           orderBy: { position: 'asc' },
           select: {
             id: true,
@@ -206,6 +237,7 @@ export class ProjectService {
             type: true,
             position: true,
             columns: {
+              where: { deletedAt: null },
               orderBy: { position: 'asc' },
               select: {
                 id: true,
@@ -216,6 +248,7 @@ export class ProjectService {
                 createdAt: true,
                 updatedAt: true,
                 cards: {
+                  where: { deletedAt: null },
                   orderBy: { position: 'asc' },
                   select: {
                     id: true,
@@ -265,6 +298,7 @@ export class ProjectService {
         ownerId: userId ?? project.ownerId,
         projectId: null,
         type: { in: ['inbox', 'calendar'] },
+        deletedAt: null,
       },
       select: {
         id: true,
@@ -272,6 +306,7 @@ export class ProjectService {
         type: true,
         position: true,
         columns: {
+          where: { deletedAt: null },
           orderBy: { position: 'asc' },
           select: {
             id: true,
@@ -282,6 +317,7 @@ export class ProjectService {
             createdAt: true,
             updatedAt: true,
             cards: {
+              where: { deletedAt: null },
               orderBy: { position: 'asc' },
               select: {
                 id: true,

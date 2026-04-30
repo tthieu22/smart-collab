@@ -96,15 +96,12 @@ export class CardHandler {
   async handleDeleteCard(@Payload() payload: any) {
     this.logger.log(`Deleting card with payload: ${JSON.stringify(payload)}`);
     try {
-      const mergedParams = {
-        projectId: payload.projectId,
-        correlationId: payload.correlationId,
-        ...payload.payload,
-        deletedById: payload.userId,
-      };
-      const result = await this.cardService.removeCard(mergedParams);
-      this.logger.log(`Card deleted successfully: ${JSON.stringify(result)}`);
-      return result;
+      const cardId = payload.cardId || payload.payload?.cardId;
+      if (!cardId) throw new Error('cardId is required');
+
+      const result = await this.cardService.removeCard(cardId);
+      this.logger.log(`Card deleted successfully: ${cardId}`);
+      return { status: 'success', data: result };
     } catch (error: any) {
       this.logger.error(`Error deleting card: ${error.message}`, error.stack);
       return { status: 'error', message: error.message };

@@ -18,6 +18,10 @@ export class ChatHandler {
         content: payload.payload.content,
         userName: payload.payload.userName,
         userAvatar: payload.payload.userAvatar,
+        type: payload.payload.type,
+        parentId: payload.payload.parentId,
+        attachments: payload.payload.attachments,
+        metadata: payload.payload.metadata,
       });
       return { success: true, data: result };
     } catch (error: any) {
@@ -28,7 +32,7 @@ export class ChatHandler {
   @MessagePattern({ cmd: 'project.chat.get_all' })
   async handleGetMessages(@Payload() payload: any) {
     try {
-      const result = await this.chatService.getMessages(payload.projectId, payload.limit);
+      const result = await this.chatService.getMessages(payload.projectId, payload.skip, payload.limit);
       return { success: true, data: result };
     } catch (error: any) {
       return { status: 'error', message: error.message };

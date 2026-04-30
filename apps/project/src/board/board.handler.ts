@@ -11,7 +11,7 @@ export class BoardHandler {
   constructor(private readonly boardService: BoardService) {}
 
   @MessagePattern({ cmd: 'board.create' })
-  async handleCreateBoard(@Payload() payload: CreateBoardDto) {
+  async handleCreateBoard(@Payload() payload: any) {
     this.logger.log(`[board.create] Received payload: ${JSON.stringify(payload)}`);
 
     try {
@@ -24,7 +24,7 @@ export class BoardHandler {
   }
 
   @MessagePattern({ cmd: 'board.get' })
-  async handleGetBoards(@Payload() payload: GetBoardsDto) {
+  async handleGetBoards(@Payload() payload: any) {
     this.logger.log(`[board.get] Received payload: ${JSON.stringify(payload)}`);
 
     try {
@@ -37,7 +37,7 @@ export class BoardHandler {
   }
 
   @MessagePattern({ cmd: 'board.update' })
-  async handleUpdateBoard(@Payload() payload: UpdateBoardDto) {
+  async handleUpdateBoard(@Payload() payload: any) {
     this.logger.log(`[board.update] Received payload: ${JSON.stringify(payload)}`);
 
     try {
@@ -50,7 +50,7 @@ export class BoardHandler {
   }
 
   @MessagePattern({ cmd: 'board.delete' })
-  async handleDeleteBoard(@Payload() payload: DeleteBoardDto | { boardId: string }) {
+  async handleDeleteBoard(@Payload() payload: any) {
     this.logger.log(`[board.delete] Received payload: ${JSON.stringify(payload)}`);
 
     try {
@@ -59,6 +59,19 @@ export class BoardHandler {
       return { success: true, data: result };
     } catch (error: any) {
       this.logger.error(`Error handling board.delete: ${error.message}`, error.stack);
+      return { success: false, message: error.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'project.board.restore' })
+  async handleRestoreBoard(@Payload() payload: any) {
+    this.logger.log(`[project.board.restore] Received payload: ${JSON.stringify(payload)}`);
+    try {
+      const boardId = payload.boardId || payload.id;
+      const result = await this.boardService.restoreBoard(boardId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      this.logger.error(`Error handling board.restore: ${error.message}`, error.stack);
       return { success: false, message: error.message };
     }
   }

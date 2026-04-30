@@ -43,7 +43,8 @@ export class CardService {
 
   async deleteCard(payload: any, userId: string): Promise<LockResult> {
     this.logger.log(`[deleteCard] received payload: ${JSON.stringify(payload)}, userId: ${userId}`);
-    const { projectId, cardId, correlationId } = payload;
+    const { projectId, correlationId, payload: innerPayload } = payload;
+    const cardId = payload.cardId || innerPayload?.cardId;
     const result = await this.lockService.emitWithLock(
       projectId,
       cardId,

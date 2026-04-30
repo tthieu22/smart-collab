@@ -65,6 +65,10 @@ export const Card = React.memo(function Card({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (activeId || isOverlay) return;
+      // Do not open modal if clicking on buttons or their children
+      if ((e.target as HTMLElement).closest('button, .ant-dropdown, .ant-popover, .ant-popconfirm')) {
+        return;
+      }
       e.stopPropagation();
       setIsModalOpen(true);
     },
@@ -76,7 +80,7 @@ export const Card = React.memo(function Card({
       e.stopPropagation();
       try {
         const socket = getProjectSocketManager();
-        await socket.updateCard(boardId, card.id, 'update-basic', { status: 'ARCHIVED' });
+        await socket.updateCard(currentProject?.id, card.id, 'update-basic', { status: 'ARCHIVED' });
         message.success('Đã hoàn thành công việc');
       } catch (error) {
         message.error('Thao tác thất bại');
@@ -89,7 +93,7 @@ export const Card = React.memo(function Card({
     async () => {
       try {
         const socket = getProjectSocketManager();
-        await socket.deleteCard(boardId, card.id);
+        await socket.deleteCard(currentProject?.id || '', card.id);
         message.success('Đã xóa thẻ');
       } catch (error) {
         message.error('Xóa thẻ thất bại');
@@ -199,7 +203,10 @@ export const Card = React.memo(function Card({
                         trigger={['click']}
                         placement="bottomRight"
                         popupRender={() => (
-                          <div className="bg-white dark:bg-neutral-800 shadow-2xl border border-gray-100 dark:border-neutral-700 rounded-lg overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
+                          <div 
+                            className="bg-white dark:bg-neutral-800 shadow-2xl border border-gray-100 dark:border-neutral-700 rounded-lg overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-200"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <div
                               className="px-3 py-2.5 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer text-sm dark:text-neutral-200 transition-colors"
                               onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); }}

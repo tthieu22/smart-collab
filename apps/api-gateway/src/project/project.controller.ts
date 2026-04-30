@@ -337,23 +337,34 @@ export class ProjectController {
 
   /** AI ENHANCEMENTS */
   @Post(':id/ai/health')
-  async aiAnalyzeHealth(@Param('id') projectId: string) {
+  async aiAnalyzeHealth(@Param('id') projectId: string, @Req() req: any) {
+    const user = req.user;
     return firstValueFrom(
-      this.projectClient.send({ cmd: 'ai.analyze-project-health' }, { projectId }),
+      this.projectClient.send({ cmd: 'ai.analyze-project-health' }, { projectId, userId: user.userId }),
     );
   }
 
   @Post('cards/:cardId/ai-subtasks')
-  async aiGenerateSubtasks(@Param('cardId') cardId: string) {
+  async aiGenerateSubtasks(@Param('cardId') cardId: string, @Req() req: any) {
+    const user = req.user;
     return firstValueFrom(
-      this.projectClient.send({ cmd: 'ai.generate-subtasks' }, { cardId }),
+      this.projectClient.send({ cmd: 'ai.generate-subtasks' }, { cardId, userId: user.userId }),
     );
   }
 
   @Post('cards/:cardId/ai-timeline')
-  async aiPredictTimeline(@Param('cardId') cardId: string) {
+  async aiPredictTimeline(@Param('cardId') cardId: string, @Req() req: any) {
+    const user = req.user;
     return firstValueFrom(
-      this.projectClient.send({ cmd: 'ai.predict-timeline' }, { cardId }),
+      this.projectClient.send({ cmd: 'ai.predict-timeline' }, { cardId, userId: user.userId }),
+    );
+  }
+
+  @Post(':id/ai/sentiment')
+  async aiAnalyzeSentiment(@Param('id') projectId: string, @Req() req: any) {
+    const user = req.user;
+    return firstValueFrom(
+      this.projectClient.send({ cmd: 'ai.analyze-sentiment' }, { projectId, userId: user.userId }),
     );
   }
 

@@ -392,7 +392,19 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
 
     try {
       const analysis = JSON.parse(aiRes.content);
-      return { success: true, analysis };
+      
+      // Also get health status
+      const healthRes = await this.analyzeProjectHealth({ 
+        projectId: project.id, 
+        userId: payload.userId,
+        locale
+      });
+
+      return { 
+        success: true, 
+        analysis,
+        health: healthRes.success ? healthRes.health : null
+      };
     } catch (err) {
       this.logger.error('Parse board analysis failed', aiRes.content);
       return { success: false, message: 'AI analysis failed to parse' };
@@ -842,7 +854,7 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
     return { success: true, subtasks };
   }
 
-  async predictTimeline(payload: { cardId: string; userId: string; locale?: string }) {
+  async predictTimeline(payload: { cardId: string; userId?: string; locale?: string }) {
     const locale = payload?.locale ?? 'vi';
     const cardRes = await this.rpc<any>('project.get.card', payload.cardId);
     const card = this.unwrap(cardRes);
@@ -859,7 +871,7 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
     }
   }
 
-  async analyzeProjectHealth(payload: { projectId: string; userId: string; locale?: string }) {
+  async analyzeProjectHealth(payload: { projectId: string; userId?: string; locale?: string }) {
     const locale = payload?.locale ?? 'vi';
     const projectRes = await this.rpc<any>('project.get', { projectId: payload.projectId, userId: payload.userId });
     const project = this.unwrap(projectRes);
@@ -893,7 +905,17 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
         userId: payload.userId,
         payload: { healthStatus: health.status },
       });
-      return { success: true, health };
+      return { 
+        success: true, 
+        health: {
+          ...health,
+          insights: {
+            completedTasks,
+            totalTasks,
+            overdueTasks
+          }
+        } 
+      };
     } catch {
       return { success: false, message: 'AI health analysis failed' };
     }

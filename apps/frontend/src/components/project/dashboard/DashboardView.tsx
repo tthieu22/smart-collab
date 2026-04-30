@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Row, Col, Typography, theme as antdTheme, Tag, Tooltip, Button, message } from 'antd';
-import { ThunderboltOutlined, PrinterOutlined } from '@ant-design/icons';
+import { Row, Col, Typography, theme as antdTheme, Tag, Tooltip, Button, message, Spin } from 'antd';
+import { ThunderboltOutlined, PrinterOutlined, HeartOutlined, SyncOutlined } from '@ant-design/icons';
+import { autoRequest } from '@smart/services/auto.request';
 import { Board as BoardType } from '@smart/types/project';
 import { projectStore } from '@smart/store/project';
 import { useBoardStore } from '@smart/store/setting';
@@ -40,10 +41,12 @@ interface ChatMessage {
 const DashboardView: React.FC<Props> = ({ board }) => {
   const { token } = antdTheme.useToken();
   const theme = useBoardStore((s) => s.resolvedTheme);
-  const { cards, columnCards, boardColumns, columns } = projectStore();
+  const { cards, columnCards, boardColumns, columns, currentProject } = projectStore();
 
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
+  const [healthData, setHealthData] = useState<any>(null);
+  const [sentimentData, setSentimentData] = useState<any>(null);
 
   // Chat AI State
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -67,13 +70,24 @@ const DashboardView: React.FC<Props> = ({ board }) => {
     setIsAiLoading(true);
     const { currentProject } = projectStore.getState();
     try {
-      const res = await projectService.analyzeBoard(currentProject?.id || board.projectId || board.id);
-      if (res.success && res.analysis) {
-        setAiAnalysis(res.analysis);
-        message.success('Đã hoàn thành phân tích AI');
-      } else {
-        message.error('Không thể phân tích dữ liệu');
+      const projectId = currentProject?.id || board.projectId || board.id;
+      
+      // Run analyses (Health is now merged into board analysis on BE)
+      const [boardAnalysis, sentimentRes] = await Promise.all([
+        projectService.analyzeBoard(projectId),
+        autoRequest<any>(`/projects/${projectId}/ai/sentiment`, { method: 'POST' })
+      ]);
+
+      if (boardAnalysis.success) {
+        if (boardAnalysis.analysis) setAiAnalysis(boardAnalysis.analysis);
+        if (boardAnalysis.health) setHealthData(boardAnalysis.health);
       }
+      
+      if (sentimentRes.success) {
+        setSentimentData(sentimentRes);
+      }
+      
+      message.success('Đã hoàn thành phân tích toàn diện');
     } catch (error) {
       message.error('Lỗi khi gọi AI Service');
     } finally {
@@ -248,6 +262,9 @@ const DashboardView: React.FC<Props> = ({ board }) => {
                 cards={cards}
                 glassStyle={glassStyle}
                 token={token}
+                healthData={healthData}
+                sentimentData={sentimentData}
+                projectId={currentProject?.id || board.projectId || board.id}
               />
             </Col>
             <Col xs={24} xl={8}>

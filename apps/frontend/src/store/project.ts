@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { arrayMove } from '@dnd-kit/sortable';
 import { AnalyticsData, Board, Card, CardLabel, CardView, Column, Project, ProjectMember } from '@smart/types/project';
+import { message } from 'antd';
 import { autoRequest } from '../services/auto.request';
 
 interface ProjectState {
@@ -117,6 +118,10 @@ export const projectStore = create<ProjectState>((set, get) => ({
         if (p) {
           get().setCurrentProject(p);
           return p;
+        }
+        
+        if (res?.success === false && res?.message) {
+          message.error(res.message);
         }
         return null;
       } catch (err) {

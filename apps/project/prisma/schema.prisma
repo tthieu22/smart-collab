@@ -356,7 +356,16 @@ model ProjectChatMessage {
   userName  String?
   avatar    String?
   content   String
-  type      String   @default("TEXT") // TEXT, SYSTEM
+  type      String   @default("TEXT") // TEXT, SYSTEM, FILE
+  
+  // Real-time enhancements
+  parentId    String?
+  replyTo     ProjectChatMessage? @relation("ChatReplies", fields: [parentId], references: [id])
+  replies     ProjectChatMessage[] @relation("ChatReplies")
+  
+  attachments Json?    // Array of file info: { url, name, type, size }
+  metadata    Json?    // For mentions: { taggedUserIds: string[] }, reactions, etc.
+  
   createdAt DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

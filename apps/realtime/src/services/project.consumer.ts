@@ -22,6 +22,33 @@ export class ProjectConsumer {
 
   @RabbitSubscribe({
     exchange: 'project-exchange',
+    routingKey: 'board.created',
+    queue: 'realtime_board_created_queue',
+  })
+  public async handleBoardCreated(msg: any) {
+    this.logger.log(`[EVENT] Received board.created: ${JSON.stringify(msg)}`);
+    if (msg?.projectId && msg?.board) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.board.created', msg.board);
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'project-exchange',
+    routingKey: 'board.deleted',
+    queue: 'realtime_board_deleted_queue',
+  })
+  public async handleBoardDeleted(msg: any) {
+    this.logger.log(`[EVENT] Received board.deleted: ${JSON.stringify(msg)}`);
+    if (msg?.projectId && msg?.boardId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.board.deleted', {
+        projectId: msg.projectId,
+        boardId: msg.boardId
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'project-exchange',
     routingKey: 'column.created',
     queue: 'realtime_column_created_queue',
   })
@@ -86,6 +113,85 @@ export class ProjectConsumer {
     this.logger.log(`[CHAT] Received message for project ${msg?.projectId}`);
     if (msg?.projectId && msg?.message) {
       this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.project.chat', msg);
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'smart-collab',
+    routingKey: 'realtime.recycle.added',
+    queue: 'realtime_recycle_added_queue',
+  })
+  public async handleRecycleAdded(msg: any) {
+    this.logger.log(`[RECYCLE] Item added for project ${msg?.projectId}`);
+    if (msg?.projectId && msg?.item) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.recycle.added', msg.item);
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'smart-collab',
+    routingKey: 'realtime.recycle.removed',
+    queue: 'realtime_recycle_removed_queue',
+  })
+  public async handleRecycleRemoved(msg: any) {
+    this.logger.log(`[RECYCLE] Item removed for project ${msg?.projectId}`);
+    if (msg?.projectId && msg?.itemId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.recycle.removed', { id: msg.itemId });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'project-exchange',
+    routingKey: 'card.deleted',
+    queue: 'realtime_card_deleted_queue',
+  })
+  public async handleCardDeleted(msg: any) {
+    this.logger.log(`[EVENT] Received card.deleted: ${JSON.stringify(msg)}`);
+    if (msg?.projectId && msg?.cardId && msg?.columnId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.card.deleted', {
+        projectId: msg.projectId,
+        columnId: msg.columnId,
+        cardId: msg.cardId
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'project-exchange',
+    routingKey: 'card.created',
+    queue: 'realtime_card_created_queue',
+  })
+  public async handleCardCreated(msg: any) {
+    this.logger.log(`[EVENT] Received card.created: ${JSON.stringify(msg)}`);
+    if (msg?.projectId && msg?.card) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.card.created', {
+        ...msg.card,
+        columnId: msg.columnId
+      });
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'project-exchange',
+    routingKey: 'card.updated',
+    queue: 'realtime_card_updated_queue',
+  })
+  public async handleCardUpdated(msg: any) {
+    this.logger.log(`[EVENT] Received card.updated: ${JSON.stringify(msg)}`);
+    if (msg?.projectId && msg?.card) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.card.updated', msg.card);
+    }
+  }
+
+  @RabbitSubscribe({
+    exchange: 'project-exchange',
+    routingKey: 'card.moved',
+    queue: 'realtime_card_moved_queue',
+  })
+  public async handleCardMoved(msg: any) {
+    this.logger.log(`[EVENT] Received card.moved: ${JSON.stringify(msg)}`);
+    if (msg?.projectId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.card.moved', msg);
     }
   }
 }

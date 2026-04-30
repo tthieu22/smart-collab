@@ -1,85 +1,192 @@
 'use client';
 
-import React from 'react';
-import { Row, Col, Card, Progress, Typography, Tag } from 'antd';
-import { LineChartOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Row, Col, Card, Progress, Typography, Tag, Statistic, Spin, Empty } from 'antd';
+import { 
+  HeartOutlined, 
+  CheckCircleOutlined, 
+  WarningOutlined, 
+  CloseCircleOutlined,
+  ThunderboltOutlined,
+  RiseOutlined,
+  MessageOutlined
+} from '@ant-design/icons';
+import { autoRequest } from '@smart/services/auto.request';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface Props {
-    stats: {
-        checklistPercent: number;
-        done: number;
-        total: number;
-        percent: number;
-    };
-    columns: any;
-    boardColumns: string[];
-    boardId: string;
-    cards: any;
-    glassStyle: React.CSSProperties;
-    token: any;
+  stats: any;
+  columns: any;
+  boardColumns: string[];
+  boardId: string;
+  cards: any;
+  glassStyle: React.CSSProperties;
+  token: any;
+  healthData?: any;
+  sentimentData?: any;
+  projectId: string;
 }
 
-const HealthAnalytics: React.FC<Props> = ({ stats, columns, boardColumns, boardId, cards, glassStyle, token }) => {
-    return (
-        <Card bordered={false} style={glassStyle} title={<div className="flex justify-between items-center"><span><LineChartOutlined /> Phân tích sức khỏe dự án</span> <Tag color="green" className="rounded-full px-3">ỔN ĐỊNH</Tag></div>}>
-            <Row gutter={[48, 24]}>
-                <Col xs={24} md={14}>
-                    <div className="py-10">
-                        <Row gutter={[24, 24]}>
-                            <Col span={12}>
-                                <div className="p-6 rounded-[24px] bg-blue-500/5 border border-blue-500/10 backdrop-blur-sm">
-                                    <Text type="secondary" className="text-[10px] uppercase font-bold block mb-2">Chỉ số Checklist</Text>
-                                    <Title level={3} className="m-0 dark:text-white font-[900]">{stats.checklistPercent}%</Title>
-                                    <Progress percent={stats.checklistPercent} showInfo={false} strokeColor="#1890ff" className="mt-2" />
-                                </div>
-                            </Col>
-                            <Col span={12}>
-                                <div className="p-6 rounded-[24px] bg-emerald-500/5 border border-emerald-500/10 backdrop-blur-sm">
-                                    <Text type="secondary" className="text-[10px] uppercase font-bold block mb-2">Tốc độ đốt việc</Text>
-                                    <Title level={3} className="m-0 dark:text-white font-[900]">{(stats.done / (stats.total || 1) * 1.5).toFixed(1)}x</Title>
-                                    <Text className="text-[10px] text-emerald-500 font-bold mt-2 inline-block">VẬN TỐC TỐI ƯU</Text>
-                                </div>
-                            </Col>
-                        </Row>
+const HealthAnalytics: React.FC<Props> = ({ 
+  stats, 
+  columns, 
+  boardColumns, 
+  boardId, 
+  cards, 
+  glassStyle, 
+  token,
+  healthData: initialHealth,
+  sentimentData: initialSentiment,
+  projectId
+}) => {
+  const [health, setHealth] = useState<any>(initialHealth);
+  const [sentiment, setSentiment] = useState<any>(initialSentiment);
+  const [loading, setLoading] = useState(!initialHealth);
 
-                        <div className="mt-8">
-                            <Text strong className="text-xs block mb-6 opacity-40 uppercase tracking-widest">Phân phối thẻ theo trạng thái</Text>
-                            <div className="flex flex-col gap-6">
-                                {Object.values(columns).filter((c: any) => boardColumns.includes(c.id)).map((col: any, idx) => {
-                                    const count = cards ? Object.values(cards).filter((c: any) => c.columnId === col.id).length : 0;
-                                    const p = stats.total > 0 ? (count / stats.total) * 100 : 0;
-                                    return (
-                                        <div key={idx} className="group cursor-default">
-                                            <div className="flex justify-between text-[11px] mb-2">
-                                                <span className="font-bold opacity-60 group-hover:opacity-100 group-hover:text-indigo-500 transition-all">{col.title}</span>
-                                                <span className="font-[900]">{count} thẻ</span>
-                                            </div>
-                                            <Progress percent={p} showInfo={false} strokeColor={token.colorPrimary} strokeWidth={6} className="m-0" />
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                </Col>
-                <Col xs={24} md={10}>
-                    <div className="h-full flex flex-col justify-center">
-                        <Card bordered={false} className="bg-indigo-600/5 border-none rounded-[48px] p-4">
-                            <div className="text-center py-8">
-                                <Progress type="circle" percent={stats.percent} strokeColor={{ '0%': '#6366f1', '100%': '#a855f7' }} strokeWidth={10} size={180} />
-                                <div className="mt-8">
-                                    <Title level={4} className="m-0 dark:text-white font-[900]">NHỊP ĐỘ DỰ ÁN</Title>
-                                    <Text type="secondary" className="text-xs font-medium">Chỉ số hoàn thiện hiện tại</Text>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                </Col>
-            </Row>
-        </Card>
-    );
+  useEffect(() => {
+    if (initialHealth) setHealth(initialHealth);
+    if (initialSentiment) setSentiment(initialSentiment);
+  }, [initialHealth, initialSentiment]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (initialHealth) return;
+      setLoading(true);
+      try {
+        const hRes = await autoRequest<any>(`/projects/${projectId}/health`, { method: 'GET' });
+        if (hRes.success) setHealth(hRes.data);
+      } catch (err) {
+        console.error('Failed to fetch dashboard health', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [projectId]);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ON_TRACK': return <CheckCircleOutlined className="text-green-500" />;
+      case 'AT_RISK': return <WarningOutlined className="text-yellow-500" />;
+      case 'DELAYED': return <CloseCircleOutlined className="text-red-500" />;
+      default: return <ThunderboltOutlined className="text-blue-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ON_TRACK': return 'green';
+      case 'AT_RISK': return 'gold';
+      case 'DELAYED': return 'red';
+      default: return 'blue';
+    }
+  };
+
+  const getSentimentEmoji = (s?: string) => {
+    switch (s) {
+      case 'POSITIVE': return '😊';
+      case 'NEGATIVE': return '😟';
+      case 'NEUTRAL': 
+      default: return '😐';
+    }
+  };
+
+  if (loading) return (
+    <Card bordered={false} style={glassStyle} className="h-[400px] flex items-center justify-center">
+      <Spin tip="Đang tải dữ liệu sức khỏe..." />
+    </Card>
+  );
+
+  return (
+    <Card 
+      bordered={false} 
+      style={glassStyle} 
+      title={<div className="flex justify-between items-center"><span className="flex items-center gap-2"><HeartOutlined className="text-red-500" /> Sức khỏe dự án (AI)</span></div>}
+    >
+      {!health ? (
+        <div className="py-20 flex flex-col items-center justify-center opacity-40">
+           <Empty description="Nhấn 'TẠO BÁO CÁO' để AI phân tích sức khỏe dự án" />
+        </div>
+      ) : (
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={14}>
+             <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between mb-6 bg-white/5 p-5 rounded-[24px] border border-white/5">
+                   <div className="flex items-center gap-4">
+                      <div className="text-3xl">{getStatusIcon(health.status)}</div>
+                      <div>
+                        <Text className="text-[10px] uppercase font-black opacity-40 tracking-widest block mb-1">Trạng thái</Text>
+                        <Tag color={getStatusColor(health.status)} className="border-none px-3 font-black rounded-full text-xs">
+                           {health.status.replace('_', ' ')}
+                        </Tag>
+                      </div>
+                   </div>
+                   <div className="text-right">
+                      <Text className="text-[10px] uppercase font-black opacity-40 tracking-widest block mb-1">Điểm AI</Text>
+                      <Progress 
+                        type="circle" 
+                        percent={health.score} 
+                        size={60} 
+                        strokeWidth={12}
+                        strokeColor={{ '0%': '#3b82f6', '100%': '#10b981' }}
+                      />
+                   </div>
+                </div>
+
+                <div className="flex-1 bg-indigo-500/5 p-5 rounded-[24px] border border-indigo-500/10 relative overflow-hidden group min-h-[120px]">
+                   <RiseOutlined className="absolute top-4 right-4 text-2xl opacity-5 group-hover:opacity-20 transition-opacity" />
+                   <h4 className="text-[10px] font-black uppercase text-indigo-500 mb-2 tracking-widest">
+                      AI Summary
+                   </h4>
+                   <p className="text-[13px] font-medium leading-relaxed italic m-0 opacity-80">
+                      "{health.summary}"
+                   </p>
+                </div>
+             </div>
+          </Col>
+
+          <Col xs={24} lg={10}>
+            <div className="flex flex-col gap-3">
+                <Card className="bg-blue-600 rounded-[20px] border-none text-white p-1 shadow-lg shadow-blue-500/10">
+                   <Statistic 
+                      title={<span className="text-blue-100 text-[9px] font-bold uppercase tracking-widest">Hoàn thành</span>}
+                      value={health.insights?.completedTasks || 0}
+                      suffix={`/ ${health.insights?.totalTasks || 0}`}
+                      valueStyle={{ color: 'white', fontWeight: 900, fontSize: '1.2rem' }}
+                   />
+                </Card>
+
+                <Card className="bg-white/5 rounded-[20px] border border-white/5 p-1">
+                   <div className="flex items-center gap-2 mb-2">
+                      <MessageOutlined className="text-green-500 text-xs" />
+                      <Text className="text-[9px] font-black uppercase opacity-40 tracking-widest">Cảm xúc Team</Text>
+                   </div>
+                   <div className="flex items-start gap-3">
+                      <div className="text-2xl">{getSentimentEmoji(sentiment?.sentiment)}</div>
+                      <div className="min-w-0">
+                         <div className="text-[9px] font-bold text-neutral-400 uppercase">{sentiment?.sentiment || 'Ready'}</div>
+                         <Text className="text-[10px] leading-tight block truncate opacity-70">
+                            {sentiment?.summary || 'Chưa có dữ liệu'}
+                         </Text>
+                      </div>
+                   </div>
+                </Card>
+
+                <Card className="bg-red-500 rounded-[20px] border-none text-white p-1 shadow-lg shadow-red-500/10">
+                   <Statistic 
+                      title={<span className="text-red-100 text-[9px] font-bold uppercase tracking-widest">Quá hạn</span>}
+                      value={health.insights?.overdueTasks || 0}
+                      valueStyle={{ color: 'white', fontWeight: 900, fontSize: '1.2rem' }}
+                      prefix={<WarningOutlined className="opacity-50 text-sm" />}
+                   />
+                </Card>
+            </div>
+          </Col>
+        </Row>
+      )}
+    </Card>
+  );
 };
 
 export default HealthAnalytics;

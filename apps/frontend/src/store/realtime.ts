@@ -411,6 +411,12 @@ export class ProjectSocketManager {
           store.removeCard(msg.columnId, msg.cardId);
         break;
       }
+      case 'realtime.card.moved': {
+        if (msg?.cardId && msg?.srcColumnId && msg?.destColumnId) {
+          store.moveCard(msg.srcColumnId, msg.destColumnId, msg.cardId, msg.destIndex);
+        }
+        break;
+      }
       case 'realtime.column.created': {
         if (msg?.boardId && msg?.id) store.addColumn(msg.boardId, msg);
         break;
@@ -422,6 +428,12 @@ export class ProjectSocketManager {
       case 'realtime.column.deleted': {
         if (msg?.boardId && msg?.columnId)
           store.removeColumn(msg.boardId, msg.columnId);
+        break;
+      }
+      case 'realtime.column.moved': {
+        if (msg?.columnId && msg?.srcBoardId && msg?.destBoardId) {
+          store.moveColumn(msg.srcBoardId, msg.destBoardId, msg.columnId, msg.destIndex);
+        }
         break;
       }
       case 'realtime.board.created':

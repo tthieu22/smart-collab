@@ -146,4 +146,24 @@ export class ProjectHandler {
       return { success: false, message: error.message };
     }
   }
+
+  @MessagePattern({ cmd: 'project.recycle-bin.get_all' })
+  async handleGetRecycleBin(@Payload() payload: { projectId: string }) {
+    try {
+      const items = await this.projectService.getRecycleBin(payload.projectId);
+      return { success: true, data: items };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'project.restore' })
+  async handleRestoreProject(@Payload() payload: { projectId: string; userId?: string }) {
+    try {
+      const result = await this.projectService.restoreProject(payload.projectId, payload.userId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  }
 }
