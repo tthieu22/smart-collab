@@ -32,11 +32,13 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons';
 import { projectService } from '@smart/services/project.service';
-import CalendarView from '@smart/components/project/calendar/CalendarView';
-import TableView from '@smart/components/project/table/TableView';
-import TimelineView from '@smart/components/project/timeline/TimelineView';
-import DashboardView from '@smart/components/project/dashboard/DashboardView';
-import MapView from '@smart/components/project/map/MapView';
+import dynamic from 'next/dynamic';
+
+const CalendarView = dynamic(() => import('@smart/components/project/calendar/CalendarView'), { ssr: false });
+const TableView = dynamic(() => import('@smart/components/project/table/TableView'), { ssr: false });
+const TimelineView = dynamic(() => import('@smart/components/project/timeline/TimelineView'), { ssr: false });
+const DashboardView = dynamic(() => import('@smart/components/project/dashboard/DashboardView'), { ssr: false });
+const MapView = dynamic(() => import('@smart/components/project/map/MapView'), { ssr: false });
 import { Dropdown, Button, MenuProps } from 'antd';
 
 interface Props {

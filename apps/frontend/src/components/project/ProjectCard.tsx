@@ -106,7 +106,7 @@ export default function ProjectCard({
   }
 
   return (
-    <Link href={`/projects/${project.id}`} className="block">
+    <Link href={`/projects/${project.id}`} prefetch className="block">
       {content}
     </Link>
   );

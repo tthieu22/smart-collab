@@ -215,7 +215,7 @@ export function NotificationMenu() {
                 </span>
               ),
               children: (
-                <div className="max-h-[450px] overflow-y-auto px-2 py-2">
+                <div className="max-h-[450px] overflow-y-auto px-2 py-2 custom-scrollbar">
                   {filteredNotifications.length > 0 ? (
                     filteredNotifications.map(n => renderNotification(n))
                   ) : (
@@ -235,7 +235,7 @@ export function NotificationMenu() {
                 </span>
               ),
               children: (
-                <div className="max-h-[450px] overflow-y-auto px-2 py-2">
+                <div className="max-h-[450px] overflow-y-auto px-2 py-2 custom-scrollbar">
                   {unreadNotifications.length > 0 ? (
                     unreadNotifications.map(n => renderNotification(n))
                   ) : (

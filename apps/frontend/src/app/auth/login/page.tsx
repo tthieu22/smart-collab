@@ -66,11 +66,11 @@
        <motion.div 
          initial={{ opacity: 0, scale: 0.95 }}
          animate={{ opacity: 1, scale: 1 }}
-         className="w-full max-w-[450px] bg-white/10 dark:bg-black/40 backdrop-blur-2xl rounded-[40px] border border-white/20 p-8 md:p-10 shadow-2xl z-10"
+         className="w-full max-w-[450px] bg-white/70 dark:bg-black/60 backdrop-blur-[10px] rounded-[16px] border border-white/40 dark:border-white/10 p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-2xl z-10"
        >
          <div className="text-center mb-8">
-           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Đăng nhập</h2>
-           <p className="text-sm text-gray-500 dark:text-gray-400">Chào mừng bạn quay trở lại!</p>
+           <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Đăng nhập</h2>
+           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Chào mừng bạn quay trở lại!</p>
          </div>
  
          <div className="space-y-4">
@@ -82,7 +82,7 @@
                value={email}
                onChange={(e) => setEmail(e.target.value)}
                size="large"
-               className="h-11 rounded-xl bg-white/50 dark:bg-black/50 border-white/20"
+               className="h-11 rounded-xl bg-white/50 dark:bg-black/50 border-blue-100/50 dark:border-white/10"
              />
            </div>
  
@@ -94,7 +94,7 @@
                value={password}
                onChange={(e) => setPassword(e.target.value)}
                size="large"
-               className="h-11 rounded-xl bg-white/50 dark:bg-black/50 border-white/20"
+               className="h-11 rounded-xl bg-white/50 dark:bg-black/50 border-blue-100/50 dark:border-white/10"
              />
            </div>
  
@@ -109,18 +109,18 @@
              ĐĂNG NHẬP
            </Button>
  
-           <Divider className="border-white/10 text-gray-400 text-[10px] uppercase font-bold my-6">hoặc</Divider>
+           <Divider className="border-blue-100/50 dark:border-white/5 text-gray-400 text-[10px] uppercase font-bold my-6">hoặc</Divider>
  
            <div className="grid grid-cols-2 gap-3">
              <button
                onClick={() => window.location.href = `${APP_CONFIG.API_BASE_URL}${API_ENDPOINTS.AUTH.GOOGLE}`}
-               className="h-11 rounded-xl flex items-center justify-center bg-white/80 dark:bg-neutral-900/80 border border-white/10 font-semibold text-sm transition-all hover:bg-white active:scale-95"
+               className="h-11 rounded-xl flex items-center justify-center bg-white/80 dark:bg-neutral-900/80 border border-blue-100/50 dark:border-white/10 font-semibold text-sm transition-all hover:bg-white dark:hover:bg-neutral-800 active:scale-95 text-gray-900 dark:text-white"
              >
                <GoogleOutlined className="text-red-500 mr-2" /> Google
              </button>
              <button
                onClick={() => setQrModalOpen(true)}
-               className="h-11 rounded-xl flex items-center justify-center bg-white/80 dark:bg-neutral-900/80 border border-white/10 font-semibold text-sm transition-all hover:bg-white active:scale-95"
+               className="h-11 rounded-xl flex items-center justify-center bg-white/80 dark:bg-neutral-900/80 border border-blue-100/50 dark:border-white/10 font-semibold text-sm transition-all hover:bg-white dark:hover:bg-neutral-800 active:scale-95 text-gray-900 dark:text-white"
              >
                <QrcodeOutlined className="text-blue-500 mr-2" /> QR Code
              </button>

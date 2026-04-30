@@ -68,7 +68,7 @@ export function AvatarMenu() {
       navigateLater("/user/settings");
     } else if (key === "logout") {
       clearUserStore();
-      navigateLater("/login");
+      navigateLater("/auth/login");
     } else if (key === "ai-auto-post") {
       navigateLater("/admin/ai-auto-post");
     } else if (key === "theme-light") {

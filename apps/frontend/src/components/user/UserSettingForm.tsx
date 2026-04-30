@@ -191,7 +191,7 @@ export function UserSettingForm() {
       if (res.success) {
         message.success("Tài khoản đã được đánh dấu xóa. Bạn có 30 ngày để khôi phục.");
         clearUserStore();
-        window.location.href = "/login";
+        window.location.href = "/auth/login";
       } else {
         message.error(res.message || "Xóa tài khoản thất bại");
       }

@@ -71,7 +71,7 @@ export default function ProfileHeader({
                             <h1 className="text-xl md:text-2xl font-black truncate tracking-tighter text-gray-900 dark:text-gray-100">
                                 {profileUser.name}
                             </h1>
-                            {profileData.friends.some((u: any) => u.id === currentUserId) && (
+                            {profileData?.friends?.some((u: any) => u.id === currentUserId) && (
                                 <Tag className="m-0 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-lg px-2 py-0 font-black text-[9px] uppercase tracking-wider">
                                     Friend
                                 </Tag>
@@ -104,12 +104,12 @@ export default function ProfileHeader({
 
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="font-black text-gray-900 dark:text-gray-100">{profileData.followersCount}</span>
+                                    <span className="font-black text-gray-900 dark:text-gray-100">{profileData?.followersCount || 0}</span>
                                     <span className="opacity-60 tracking-[0.2em] text-[9px]">Followers</span>
                                 </div>
                                 <div className="w-px h-3 bg-gray-200 dark:bg-neutral-800" />
                                 <div className="flex items-center gap-1.5">
-                                    <span className="font-black text-gray-900 dark:text-gray-100">{profileData.followingCount}</span>
+                                    <span className="font-black text-gray-900 dark:text-gray-100">{profileData?.followingCount || 0}</span>
                                     <span className="opacity-60 tracking-[0.2em] text-[9px]">Following</span>
                                 </div>
                             </div>

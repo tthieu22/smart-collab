@@ -59,7 +59,7 @@ export default function ProfileTabs({
                     <Users size={13} />
                     <span>Mối quan hệ</span>
                     <span className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
-                        {profileData.friends.length}
+                        {profileData?.friends?.length || 0}
                     </span>
                 </div>
             ),
@@ -74,7 +74,7 @@ export default function ProfileTabs({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {items.map(u => {
-                    const isFollowingThisUser = profileData.following.some((f: any) => f.id === u.id);
+                    const isFollowingThisUser = profileData?.following?.some((f: any) => f.id === u.id);
                     const isMeInList = u.id === currentUserId;
 
                     return (
@@ -189,9 +189,9 @@ export default function ProfileTabs({
 
                 {activeTab === '3' && (
                     <div className="space-y-8 pb-4">
-                        <UserList items={profileData.friends} title="Bạn cùng đam mê" emptyText="Hành trình kết nối đang bắt đầu..." />
-                        <UserList items={profileData.followers} title="Cộng đồng hâm mộ" emptyText="Chưa có người hâm mộ nào..." />
-                        <UserList items={profileData.following} title="Tài năng quan tâm" emptyText="Chưa quan tâm ai..." />
+                        <UserList items={profileData?.friends || []} title="Bạn cùng đam mê" emptyText="Hành trình kết nối đang bắt đầu..." />
+                        <UserList items={profileData?.followers || []} title="Cộng đồng hâm mộ" emptyText="Chưa có người hâm mộ nào..." />
+                        <UserList items={profileData?.following || []} title="Tài năng quan tâm" emptyText="Chưa quan tâm ai..." />
                     </div>
                 )}
             </div>

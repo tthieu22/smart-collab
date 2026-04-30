@@ -12,10 +12,12 @@ import { Loading } from '@smart/components/ui/loading';
 import { autoRequest } from '@smart/services/auto.request';
 import { message } from 'antd';
 
-import Inbox from '@smart/components/project/inbox/Inbox';
-import Calendar from '@smart/components/project/calendar/Calendar';
-import Board from '@smart/components/project/board/Board';
-import DragDropContextProvider from '@smart/components/project/dnd/DragDropProvider';
+import dynamic from 'next/dynamic';
+
+const Inbox = dynamic(() => import('@smart/components/project/inbox/Inbox'), { ssr: false, loading: () => <Loading /> });
+const Calendar = dynamic(() => import('@smart/components/project/calendar/Calendar'), { ssr: false, loading: () => <Loading /> });
+const Board = dynamic(() => import('@smart/components/project/board/Board'), { ssr: false, loading: () => <Loading /> });
+const DragDropContextProvider = dynamic(() => import('@smart/components/project/dnd/DragDropProvider'), { ssr: false });
 
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { useBoardStore } from '@smart/store/setting';

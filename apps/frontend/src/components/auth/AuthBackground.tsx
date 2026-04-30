@@ -1,113 +1,106 @@
 "use client";
- 
- import React, { useMemo, useEffect } from "react";
- import { useTheme } from "next-themes";
- import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
- 
- export default function AuthBackground() {
-   const { resolvedTheme } = useTheme();
-   const isDark = resolvedTheme === "dark";
- 
-   // Mouse tracking for subtle parallax hull vibration
-   const mouseX = useMotionValue(0);
-   const mouseY = useMotionValue(0);
-   const springX = useSpring(mouseX, { damping: 40, stiffness: 80 });
-   const springY = useSpring(mouseY, { damping: 40, stiffness: 80 });
- 
-   // Stars Parallax
-   const starsX = useTransform(springX, [0, 1920], [30, -30]);
-   const starsY = useTransform(springY, [0, 1080], [30, -30]);
- 
-   useEffect(() => {
-     const handleMouseMove = (e: MouseEvent) => {
-       mouseX.set(e.clientX);
-       mouseY.set(e.clientY);
-     };
-     window.addEventListener("mousemove", handleMouseMove);
-     return () => window.removeEventListener("mousemove", handleMouseMove);
-   }, []);
- 
-   // Warp Field: Moving forward at high speed
-   const warpStars = useMemo(() => [...Array(150)].map((_, i) => ({
-     id: i,
-     x: Math.random() * 100,
-     y: Math.random() * 100,
-     size: Math.random() * 2 + 0.8,
-     duration: 1.0 + Math.random() * 3.0, // Fast speed
-     delay: Math.random() * 10
-   })), []);
- 
-   return (
-     <div className={`fixed inset-0 z-0 overflow-hidden transition-colors duration-1000 pointer-events-none
-       ${isDark ? 'bg-[#010206]' : 'bg-[#f0f4ff]'}
-     `}>
-       {/* 1. Base Space Gradient */}
-       <div className={`absolute inset-0 transition-opacity duration-1000 
-         ${isDark 
-           ? 'bg-[radial-gradient(circle_at_center,_rgba(10,20,60,1)_0%,_rgba(1,2,6,1)_100%)]' 
-           : 'bg-[radial-gradient(circle_at_center,_rgba(215,225,255,1)_0%,_rgba(240,244,255,1)_100%)]'
-         }
-       `} />
- 
-       {/* 2. Warp Field (3D Star Tunnel) */}
-       <div className="absolute inset-0 perspective-[1000px]">
-         {warpStars.map((star) => (
-           <motion.div
-             key={star.id}
-             initial={{ z: -1000, opacity: 0 }}
-             animate={{ 
-               z: [0, 2000], 
-               opacity: [0, 1, 1, 0],
-               scale: [1, 2.5, 0]
-             }}
-             transition={{ 
-               duration: star.duration, 
-               repeat: Infinity, 
-               delay: star.delay, 
-               ease: "easeIn" 
-             }}
-             className={`absolute rounded-full
-               ${isDark ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}
-             `}
-             style={{
-               width: star.size + "px",
-               height: star.size + "px",
-               left: star.x + "%",
-               top: star.y + "%",
-             }}
-           />
-         ))}
-       </div>
- 
-       {/* 3. Nebula Passing Glow */}
-       <motion.div 
-         animate={{ opacity: [0.1, 0.3, 0.1], scale: [1, 1.2, 1] }}
-         transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-         className={`absolute inset-0 opacity-20 blur-[120px]
-           ${isDark ? 'bg-[radial-gradient(circle_at_70%_30%,_rgba(59,130,246,0.3)_0%,_transparent_50%)]' : 'bg-[radial-gradient(circle_at_70%_30%,_rgba(59,130,246,0.1)_0%,_transparent_50%)]'}
-         `} 
-       />
- 
-       {/* 4. Hull Dust (Subtle Static Stars for Parallax) */}
-       <motion.div 
-         style={{ x: starsX, y: starsY }}
-         className="absolute inset-0 pointer-events-none"
-       >
-         {[...Array(50)].map((_, i) => (
-           <motion.div
-             key={i}
-             animate={{ opacity: [0.2, 0.8, 0.2] }}
-             transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 5 }}
-             className={`absolute rounded-full ${isDark ? 'bg-white/50' : 'bg-blue-500/50'}`}
-             style={{
-               width: "1.2px",
-               height: "1.2px",
-               top: Math.random() * 100 + "%",
-               left: Math.random() * 100 + "%",
-             }}
-           />
-         ))}
-       </motion.div>
-     </div>
-   );
- }
+
+import React, { useMemo, useEffect, useState } from "react";
+import { useTheme } from "next-themes";
+import { motion } from "framer-motion";
+
+export default function AuthBackground() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const isDark = resolvedTheme === "dark";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // --- LIGHT MODE: Cloud Logic (Hiển thị cực rõ) ---
+  const clouds = useMemo(() => [
+    { id: 1, w: "w-[500px]", h: "h-[250px]", top: "top-10", left: "left-[-10%]", duration: 50, delay: 0 },
+    { id: 2, w: "w-[700px]", h: "h-[350px]", top: "top-1/4", left: "left-[-20%]", duration: 70, delay: -15 },
+    { id: 3, w: "w-[600px]", h: "h-[300px]", top: "top-1/2", left: "left-[-15%]", duration: 60, delay: -30 },
+  ], []);
+
+  if (!mounted) return null;
+
+  if (isDark) {
+    return (
+      <div className="fixed inset-0 z-0 overflow-hidden bg-[#010206] pointer-events-none">
+        {/* Layer 1: Base Space */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(10,20,60,1)_0%,_rgba(1,2,6,1)_100%)]" />
+        
+        {/* Layer 2: Effect (Warp) */}
+        <div className="absolute inset-0 perspective-[1000px] opacity-40">
+          {[...Array(60)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ z: -1000, opacity: 0 }}
+              animate={{ z: [0, 2000], opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 10, ease: "easeIn" }}
+              className="absolute rounded-full bg-white"
+              style={{ 
+                width: "1.5px", height: "1.5px", 
+                left: Math.random() * 100 + "%", 
+                top: Math.random() * 100 + "%" 
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Layer 3: Overlay Protection */}
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+      </div>
+    );
+  }
+
+  // --- LIGHT MODE: CHẾ ĐỘ HIỂN THỊ CAO ---
+  return (
+    <div className="fixed inset-0 z-0 overflow-hidden bg-white pointer-events-none">
+      {/* LỚP 1: BASE BACKGROUND (Xanh rõ rệt) */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(180deg, #87ceeb 0%, #b3e5fc 50%, #ffffff 100%)'
+        }}
+      />
+
+      {/* LỚP 2: EFFECT LAYER (Mây đậm nét) */}
+      <div className="absolute inset-0 overflow-hidden">
+        {clouds.map((cloud) => (
+          <motion.div
+            key={cloud.id}
+            initial={{ x: "-100%" }}
+            animate={{ x: "200%" }}
+            transition={{ 
+              duration: cloud.duration, 
+              repeat: Infinity, 
+              ease: "linear", 
+              delay: cloud.delay 
+            }}
+            className={`${cloud.w} ${cloud.h} ${cloud.top} ${cloud.left} absolute bg-white rounded-full opacity-[0.6] blur-[15px] shadow-[0_20px_50px_rgba(255,255,255,0.5)]`}
+          />
+        ))}
+
+        {/* Sun Glow */}
+        <div 
+          className="absolute -top-[100px] -right-[100px] w-[500px] h-[500px] opacity-[0.4] blur-[60px]"
+          style={{ background: 'radial-gradient(circle, #fff3b0, transparent)' }}
+        />
+      </div>
+
+      {/* LỚP 3: OVERLAY (Gần như trong suốt để hiện mây) */}
+      <div 
+        className="absolute inset-0 bg-white/5 backdrop-blur-[0.5px]"
+      />
+
+      {/* Noise layer (Pro tip để tránh bị flat) */}
+      <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
+    </div>
+  );
+}
+
+
+
+
+
+
+
