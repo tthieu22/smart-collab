@@ -47,7 +47,7 @@ const CustomFieldsSection: React.FC<Props> = ({ values, onUpdate }) => {
         {values.map((val) => (
           <div key={val.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div className="flex flex-col">
-              <Text size="small" type="secondary" style={{ fontSize: 11, textTransform: 'uppercase' }}>
+              <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase' }}>
                 {val.field.name}
               </Text>
               <Input 
@@ -57,7 +57,7 @@ const CustomFieldsSection: React.FC<Props> = ({ values, onUpdate }) => {
                 className="bg-transparent border-none px-0 hover:bg-neutral-100 dark:hover:bg-white/5"
               />
             </div>
-            <Tag color="blue" size="small">{val.field.type}</Tag>
+            <Tag color="blue">{val.field.type}</Tag>
           </div>
         ))}
       </Space>

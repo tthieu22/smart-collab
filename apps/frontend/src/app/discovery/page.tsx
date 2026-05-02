@@ -40,15 +40,15 @@ export default function DiscoveryPage() {
             const res = await userService.getSuggestions(p, limit, type);
             if (res.success) {
                 setItems(res.data);
-                setTotal(res.total);
+                setTotal(res.total || 0);
 
                 // Lưu vào store nếu là trang 1 và không có filter
                 if (p === 1 && !type) {
                     setSuggestedUsersData({
                         items: res.data,
-                        total: res.total,
-                        page: res.page,
-                        limit: res.limit
+                        total: res.total || 0,
+                        page: res.page || 1,
+                        limit: res.limit || limit
                     });
                 }
             }

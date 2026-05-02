@@ -48,8 +48,8 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
     if (!targetUserId) return;
     try {
       const res = await (await import('@smart/services/user.service')).userService.getProfileRelation(targetUserId);
-      if (res) {
-        setProfileData(res);
+      if (res?.success && res.data) {
+        setProfileData(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch relation data', err);
@@ -69,8 +69,8 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
     try {
       setLoading(true);
       const res = await (await import('@smart/services/user.service')).userService.toggleFollow(targetUserId);
-      if (res) {
-        message.success(res.followed ? 'Đã theo dõi' : 'Đã bỏ theo dõi');
+      if (res?.success) {
+        message.success(res.data.followed ? 'Đã theo dõi' : 'Đã bỏ theo dõi');
         fetchRelationData();
       }
     } catch (err) {
@@ -84,8 +84,8 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
     try {
       setActionLoading(id);
       const res = await (await import('@smart/services/user.service')).userService.toggleFollow(id);
-      if (res) {
-        message.success(res.followed ? 'Đã theo dõi' : 'Đã bỏ theo dõi');
+      if (res?.success) {
+        message.success(res.data.followed ? 'Đã theo dõi' : 'Đã bỏ theo dõi');
         fetchRelationData();
       }
     } catch (err) {

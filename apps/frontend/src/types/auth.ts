@@ -88,10 +88,13 @@ export interface ValidateUserResponse {
   data?: User;
 }
 
-export interface ApiResponse<T = unknown> {
+export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
-  data?: T;
+  data: T;
+  total?: number;
+  page?: number;
+  limit?: number;
 }
 
 export interface RegisterRequest {

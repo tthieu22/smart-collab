@@ -25,9 +25,9 @@ export default function DiscoveryCard({ user, gridCols = 3 }: DiscoveryCardProps
         try {
             setLoading(true);
             const res = await userService.toggleFollow(user.id);
-            if (res.followed !== undefined) {
-                setIsFollowing(res.followed);
-                message.success(res.followed ? `Đã theo dõi ${user.name}` : `Đã bỏ theo dõi ${user.name}`);
+            if (res?.success && res.data.followed !== undefined) {
+                setIsFollowing(res.data.followed);
+                message.success(res.data.followed ? `Đã theo dõi ${user.name}` : `Đã bỏ theo dõi ${user.name}`);
             }
         } catch (err) {
             message.error('Không thể thực hiện hành động này');
