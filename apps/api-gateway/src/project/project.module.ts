@@ -9,13 +9,6 @@ import { ColumnController } from './column/column.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    RabbitMQModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        getGolevelupRabbitMQOptions(configService),
-    }),
     ClientsModule.registerAsync([
       {
         name: 'PROJECT_SERVICE',

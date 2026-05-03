@@ -4,7 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ClientsModule } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
-import { getRabbitMQOptions } from './config/rabbitmq.config';
+import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import { getGolevelupRabbitMQOptions, getRabbitMQOptions } from './config/rabbitmq.config';
 import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
 import { UploadModule } from './upload/upload.module';
@@ -13,12 +14,20 @@ import { HomeModule } from './home/home.module';
 import { UserModule } from './user/user.module';
 import { SearchModule } from './search/search.module';
 import { HealthModule } from './health/health.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
-    // Config
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    
+    // RabbitMQ
+    RabbitMQModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        getGolevelupRabbitMQOptions(configService),
     }),
 
     // Rate limiting (100 req / 60s)
@@ -68,6 +77,7 @@ import { HealthModule } from './health/health.module';
     UploadModule,
     SearchModule,
     HealthModule,
+    RealtimeModule,
   ],
 })
 export class AppModule {}

@@ -12,8 +12,6 @@ import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-  
     // JWT
     JwtModule.registerAsync({
       imports: [ConfigModule],

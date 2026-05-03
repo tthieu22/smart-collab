@@ -96,7 +96,8 @@ export class ProjectSocketManager {
     try {
       const authToken = useAuthStore.getState().accessToken;
 
-      this.socket = io('http://localhost:3003', {
+      const realtimeUrl = process.env.NEXT_PUBLIC_REALTIME_URL || 'http://localhost:8000';
+      this.socket = io(realtimeUrl, {
         auth: { token: authToken },
         autoConnect: true,
         reconnection: true,
