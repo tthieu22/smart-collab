@@ -1,5 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { ProjectPrismaService } from '../../prisma/prisma.service';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { ChatService } from '../chat/chat.service';
 
@@ -12,7 +12,7 @@ export class MeetingService {
   private readonly logger = new Logger(MeetingService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: ProjectPrismaService,
     private readonly amqpConnection: AmqpConnection,
     private readonly chatService: ChatService,
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,

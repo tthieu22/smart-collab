@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { ProjectPrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AutomationService {
   private readonly logger = new Logger(AutomationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: ProjectPrismaService) {}
 
   async processEvent(projectId: string, triggerType: string, payload: any) {
     this.logger.log(`Processing automation trigger: ${triggerType} for project ${projectId}`);

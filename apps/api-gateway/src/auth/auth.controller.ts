@@ -238,18 +238,21 @@ export class AuthController {
       this.logger.debug('👉 req.user:', req.user);
 
       const userResp = req.user as any;
+      let user = userResp;
 
-      if (!userResp.success) {
-        throw new Error(userResp.message || 'Upsert user failed');
+      // Nếu userResp có success (kiểu wrapper), lấy data bên trong
+      if (userResp.hasOwnProperty('success')) {
+        if (!userResp.success) {
+          throw new Error(userResp.message || 'Upsert user failed');
+        }
+        user = userResp.data;
       }
-
-      const user = userResp.data;
 
       if (!user?.email) {
         throw new Error('Google profile does not contain email');
       }
 
-      this.logger.debug('✅ Upserted user:', user);
+      this.logger.debug('✅ Final user object:', user);
 
       const result = await this.authClient.generateOAuthCode({
         userId: user.id,

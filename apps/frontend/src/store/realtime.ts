@@ -96,7 +96,7 @@ export class ProjectSocketManager {
     try {
       const authToken = useAuthStore.getState().accessToken;
 
-      this.socket = io('http://localhost:3003', {
+      this.socket = io('http://localhost:8000', {
         auth: { token: authToken },
         autoConnect: true,
         reconnection: true,

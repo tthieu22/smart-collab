@@ -37,16 +37,16 @@ export async function autoRequest<T>(
   const fetchPromise = (async () => {
     try {
       const { accessToken, setAccessToken, clearAuth } = useAuthStore.getState();
-      const isFormData = options.body instanceof FormData;
+      const isFormData = options.body instanceof FormData || (options.body && typeof options.body === 'object' && options.body.constructor && options.body.constructor.name === 'FormData');
 
       const config: RequestInit = {
+        ...options,
         headers: {
           ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           ...options.headers,
         },
         credentials: 'include',
-        ...options,
       };
 
       let response = await fetch(url, config);

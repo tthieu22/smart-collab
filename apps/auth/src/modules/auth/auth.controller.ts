@@ -273,6 +273,10 @@ export class AuthController {
       avatar,
     });
 
+    if (!user) {
+      throw new Error('Failed to upsert user');
+    }
+
     const code = randomBytes(24).toString('hex');
     await this.otcService.putOTC(
       code,

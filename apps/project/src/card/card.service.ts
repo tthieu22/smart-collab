@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { ProjectPrismaService } from '../../prisma/prisma.service';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 @Injectable()
@@ -7,7 +7,7 @@ export class CardService {
   private readonly logger = new Logger(CardService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: ProjectPrismaService,
     private readonly amqpConnection: AmqpConnection,
   ) { }
   

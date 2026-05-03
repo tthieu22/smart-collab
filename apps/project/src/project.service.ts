@@ -1,5 +1,5 @@
 import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { ProjectPrismaService } from '../prisma/prisma.service';
 import { BoardService } from './board/board.service';
 import { ProjectMessage } from './dto/project.dto';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
@@ -7,7 +7,7 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 @Injectable()
 export class ProjectService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: ProjectPrismaService,
     private readonly boardService: BoardService,
     private readonly amqpConnection: AmqpConnection,
   ) {}

@@ -14,7 +14,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) =>
-          getRabbitMQOptions('home_requests_queue', configService),
+          getRabbitMQOptions('home_requests_queue_v2', configService),
       },
     ]),
   ],

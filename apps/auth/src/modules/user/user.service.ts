@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { AuthPrismaService } from '../../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcryptjs';
@@ -13,7 +13,7 @@ import { firstValueFrom } from 'rxjs';
 @Injectable()
 export class UserService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: AuthPrismaService,
     private readonly mailerService: MailerService,
     @Inject('HOME_SERVICE') private readonly homeClient: ClientProxy,
     @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
@@ -44,6 +44,7 @@ export class UserService {
         isVerified: false,
         emailVerificationCode,
         emailVerificationCodeExpires,
+        createdAt: new Date(),
       },
     });
 
@@ -390,7 +391,7 @@ export class UserService {
         where: { followerId: userId },
         select: { followingId: true },
       });
-      followingIds = following.map((f) => f.followingId).filter(Boolean);
+      followingIds = following.map((f: any) => f.followingId).filter(Boolean);
     } catch (err) {
       console.error('[getSuggestions] Failed to fetch following list', err);
     }
@@ -453,7 +454,7 @@ export class UserService {
       });
 
       const moreUsers = await this.prisma.user.findMany({
-        where: { id: { notIn: [...excludeIds, ...activeUsers.map(u => u.id)] } },
+        where: { id: { notIn: [...excludeIds, ...activeUsers.map((u: any) => u.id)] } },
         orderBy: { createdAt: 'desc' },
         select: { 
           id: true, email: true, firstName: true, lastName: true, avatar: true, bio: true, loginCount: true, location: true, createdAt: true,
@@ -517,21 +518,21 @@ export class UserService {
       }
     });
 
-    const followers = followersData.map(f => ({
+    const followers = followersData.map((f: any) => ({
       ...f.follower,
       name: `${f.follower.firstName || ''} ${f.follower.lastName || ''}`.trim() || f.follower.email,
       username: f.follower.email.split('@')[0],
     }));
 
-    const following = followingData.map(f => ({
+    const following = followingData.map((f: any) => ({
       ...f.following,
       name: `${f.following.firstName || ''} ${f.following.lastName || ''}`.trim() || f.following.email,
       username: f.following.email.split('@')[0],
     }));
 
     // Bạn bè (Mutual) = những người có trong cả 2 danh sách
-    const followingIds = following.map(u => u.id);
-    const friends = followers.filter(u => followingIds.includes(u.id));
+    const followingIds = following.map((u: any) => u.id);
+    const friends = followers.filter((u: any) => followingIds.includes(u.id));
 
     return {
       followers,
@@ -539,7 +540,7 @@ export class UserService {
       friends,
       followersCount: followers.length,
       followingCount: following.length,
-      isFollowing: observerId ? followers.some(u => u.id === observerId) : false,
+      isFollowing: observerId ? followers.some((u: any) => u.id === observerId) : false,
     };
   }
 }

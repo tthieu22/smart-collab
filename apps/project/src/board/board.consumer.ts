@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe, AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { BoardService } from './board.service';
+import { CreateBoardDto, GetBoardsDto, UpdateBoardDto, DeleteBoardDto } from './dto/board.dto';
 
 @Injectable()
 export class BoardConsumer {

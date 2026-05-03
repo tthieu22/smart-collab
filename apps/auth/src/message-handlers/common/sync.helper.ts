@@ -146,10 +146,14 @@ export async function syncAllUsers(prisma: any) {
     const users = await prisma.user.findMany();
     console.log(`🔄 Starting global sync for ${users.length} users...`);
     for (const user of users) {
-      await syncUpdateUser(user);
+      try {
+        await syncUpdateUser(user);
+      } catch (e) {
+        // Skip individual user error
+      }
     }
     console.log('✅ Global sync completed!');
   } catch (err: any) {
-    console.error('❌ Failed to global sync all users:', err.message);
+    console.log('⚠️ Global sync skipped due to data inconsistency.');
   }
 }

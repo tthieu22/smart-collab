@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../../node_modules/.prisma/project-client"
+  output   = "../../../node_modules/.prisma/project-client"
 }
 
 datasource db {
@@ -400,5 +400,6 @@ model UserCache {
   role               String   @default("USER")
   googleAccessToken  String?
   googleRefreshToken String?
-  updatedAt          DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
 }

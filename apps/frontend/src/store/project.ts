@@ -302,7 +302,11 @@ export const projectStore = create<ProjectState>((set, get) => ({
     }),
 
   addProject: (project) =>
-    set((s) => ({ allProjects: [...s.allProjects, project] })),
+    set((s) => {
+      const exists = s.allProjects.some((p) => p.id === project.id);
+      if (exists) return s;
+      return { allProjects: [...s.allProjects, project] };
+    }),
 
   updateProject: (project) =>
     set((s) => ({

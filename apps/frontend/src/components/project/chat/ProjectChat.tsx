@@ -17,7 +17,9 @@ import { Avatar, Button, Spin, Mentions, Popover, Tooltip, Upload, Image, Modal,
 import { message } from '@smart/providers/AntdStaticProvider';
 import { useUserStore } from '@smart/store/user';
 import { getProjectSocketManager } from '@smart/store/realtime';
+import { uploadService } from '@smart/services/upload.service';
 import { autoRequest } from '@smart/services/auto.request';
+import { projectStore } from '@smart/store/project';
 
 const { Option } = Mentions;
 
@@ -42,6 +44,7 @@ interface ProjectMember {
 }
 
 export default function ProjectChat({ projectId }: { projectId: string }) {
+  const { currentProject } = projectStore();
   const { currentUser } = useUserStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -177,28 +180,24 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
 
   const onFileUpload = async (options: any) => {
     const { file, onSuccess, onError } = options;
+    const folder = currentProject?.folderPath || projectId;
+
     setUploading(true);
-    const formData = new FormData();
-    formData.append('files', file);
-    formData.append('action', 'upload');
-    formData.append('projectFolder', projectId);
 
     try {
-      const res = await autoRequest<{ success: boolean; data: any[] }>('/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      console.log('[ProjectChat] Starting upload to folder:', folder);
+      const res = await uploadService.uploadFiles(folder, [file]);
 
       if (res.success) {
-        setAttachments(prev => [...prev, ...res.data]);
+        setAttachments((prev) => [...prev, ...res.data]);
         onSuccess(res.data);
+        message.success('Tải lên thành công');
       } else {
-        message.error('Upload failed: ' + (res as any).data);
-        onError(res.data);
+        throw new Error(res.data || 'Upload failed');
       }
-    } catch (err) {
-      console.error(err);
-      message.error('Upload error');
+    } catch (err: any) {
+      console.error('[ProjectChat] Upload error:', err);
+      message.error(err.message || 'Lỗi tải lên tệp');
       onError(err);
     } finally {
       setUploading(false);

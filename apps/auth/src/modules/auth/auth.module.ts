@@ -8,8 +8,8 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { OtcModule } from '../otc/otc.module';
-import { PrismaModule } from '../../../prisma/prisma.module';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { AuthPrismaModule } from '../../../prisma/prisma.module';
+import { AuthPrismaService } from '../../../prisma/prisma.service';
 import { syncAllUsers } from '../../message-handlers/common/sync.helper';
 
 @Module({
@@ -17,7 +17,7 @@ import { syncAllUsers } from '../../message-handlers/common/sync.helper';
     ConfigModule,
     UserModule,
     OtcModule,
-    PrismaModule,
+    AuthPrismaModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -35,7 +35,7 @@ import { syncAllUsers } from '../../message-handlers/common/sync.helper';
   exports: [AuthService],
 })
 export class AuthModule implements OnModuleInit {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: AuthPrismaService) {}
 
   async onModuleInit() {
     // Tự động đồng bộ toàn bộ User sang Postgres khi khởi động

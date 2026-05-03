@@ -29,7 +29,7 @@ import { ColumnController } from './column/column.controller';
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) =>
-          getRabbitMQOptions('auth_queue', configService),
+          getRabbitMQOptions('auth_queue_v2', configService),
       },
     ]),
   ],

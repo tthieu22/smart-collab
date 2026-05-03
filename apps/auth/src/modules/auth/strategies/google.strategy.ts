@@ -34,6 +34,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       googleRefreshToken: refreshToken,
     });
 
+    if (!user) {
+      return done(new Error('Failed to upsert user'));
+    }
+
     done(null, user);
   }
 }

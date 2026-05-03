@@ -13,7 +13,7 @@ import { getRabbitMQOptions } from '../config/rabbitmq.config';
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) =>
-          getRabbitMQOptions('auth_queue', configService),
+          getRabbitMQOptions('auth_queue_v2', configService),
       },
       {
         name: 'PROJECT_SERVICE',
@@ -34,7 +34,7 @@ import { getRabbitMQOptions } from '../config/rabbitmq.config';
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) =>
-          getRabbitMQOptions('home_requests_queue', configService),
+          getRabbitMQOptions('home_requests_queue_v2', configService),
       },
     ]),
   ],

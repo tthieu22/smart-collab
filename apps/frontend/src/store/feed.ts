@@ -195,10 +195,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
 
   createPost: async ({ title, content, linkUrl, media, visibility, mood, backgroundStyle }) => {
     try {
-      const res = await autoRequest<FeedPost>('/home/post', {
+      const response = await autoRequest<{ success: boolean; data: FeedPost }>('/home/post', {
         method: 'POST',
         body: JSON.stringify({ title, content, linkUrl, media, visibility, mood, backgroundStyle }),
       });
+      const res = response.data;
       
       set((s) => ({
         posts: {
@@ -305,10 +306,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
 
   addComment: async (postId, content) => {
     try {
-      const res = await autoRequest<FeedComment>(`/home/post/${postId}/comment`, {
+      const response = await autoRequest<{ success: boolean; data: FeedComment }>(`/home/post/${postId}/comment`, {
         method: 'POST',
         body: JSON.stringify({ content }),
       });
+      const res = response.data;
 
       set((s) => {
         const post = s.posts[postId];
@@ -454,7 +456,8 @@ export const useFeedStore = create<FeedState>((set, get) => ({
 
     const promise = (async () => {
       try {
-        const res = await autoRequest<FeedPost>(`/home/post/${postId}`);
+        const response = await autoRequest<{ success: boolean; data: FeedPost }>(`/home/post/${postId}`);
+        const res = response.data;
         set((s) => ({
           posts: {
             ...s.posts,
@@ -484,7 +487,8 @@ export const useFeedStore = create<FeedState>((set, get) => ({
 
     const promise = (async () => {
       try {
-        const res = await autoRequest<FeedComment[]>(`/home/post/${postId}/comments`);
+        const response = await autoRequest<{ success: boolean; data: FeedComment[] }>(`/home/post/${postId}/comments`);
+        const res = response.data;
         set((s) => {
           const newComments = { ...s.comments };
           const commentIds: FeedID[] = [];
@@ -521,7 +525,8 @@ export const useFeedStore = create<FeedState>((set, get) => ({
 
   refreshPostData: async (postId) => {
     try {
-      const data = await autoRequest<FeedDataset>('/home/feed', { method: 'GET' });
+      const response = await autoRequest<{ success: boolean; data: FeedDataset }>('/home/feed', { method: 'GET' });
+      const data = response.data;
       const targetPost = data.posts.find((p) => p.id === postId);
       if (!targetPost) return;
 
@@ -573,8 +578,8 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   reloadFeed: async () => {
     set({ isLoading: true, postIds: [], readPostIds: [], page: 0, hasMore: true });
     try {
-      const data = await autoRequest<FeedDataset>('/home/feed', { method: 'GET' });
-      get().bootstrap(data);
+      const response = await autoRequest<{ success: boolean; data: FeedDataset }>('/home/feed', { method: 'GET' });
+      get().bootstrap(response.data);
       set({ isLoading: false }); // CRITICAL FIX: End loading state
     } catch (err: any) {
       set({ error: err.message, isLoading: false });
@@ -589,10 +594,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     try {
       const nextPage = s.page + 1;
       const excludeIds = s.readPostIds.join(',');
-      const data = await autoRequest<FeedDataset>(
+      const response = await autoRequest<{ success: boolean; data: FeedDataset }>(
         `/home/feed?page=${nextPage}&limit=5&excludeIds=${excludeIds}`,
         { method: 'GET' }
       );
+      const data = response.data;
 
       if (data.posts.length === 0) {
         set({ hasMore: false, isLoading: false });
@@ -721,11 +727,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
   fetchUserProfileData: async (targetUserId) => {
     try {
-      const res = await autoRequest<any>(`/home/user/profile-data`, {
+      const res = await autoRequest<{ success: boolean; data: any }>(`/home/user/profile-data`, {
         method: 'POST',
         body: JSON.stringify({ targetUserId }),
       });
-      return res;
+      return res.data;
     } catch (err: any) {
       console.error(err);
       return { followersCount: 0, followingCount: 0, isFollowing: false };
@@ -733,11 +739,11 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
   fetchUserMedia: async (targetUserId) => {
     try {
-      const res = await autoRequest<any[]>(`/home/user/media`, {
+      const res = await autoRequest<{ success: boolean; data: any[] }>(`/home/user/media`, {
         method: 'POST',
         body: JSON.stringify({ targetUserId }),
       });
-      return res;
+      return res.data;
     } catch (err: any) {
       console.error(err);
       return [];

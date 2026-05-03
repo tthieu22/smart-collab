@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../../node_modules/.prisma/auth-client"
+  output   = "../../../node_modules/.prisma/auth-client"
 }
 
 datasource db {
@@ -29,6 +29,8 @@ model User {
   emailVerificationCodeExpires DateTime?
   emailNotifications           Boolean  @default(true)
   pushNotifications            Boolean  @default(true)
+  loginCount                   Int      @default(0)
+  mood                         String?
   createdAt                    DateTime? @default(now())
   updatedAt                    DateTime? @updatedAt
 
@@ -43,7 +45,6 @@ model User {
   auditLogs                    AuditLog[]
   devices                      Device[]
   deletedAt                    DateTime?
-  loginCount                   Int      @default(0)
 }
 
 model Follower {
@@ -75,10 +76,15 @@ model RefreshToken {
 model Post {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   authorId  String   @db.ObjectId
-  content   String
-  media     Json?    @default("[]")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  content         String
+  title           String?
+  linkUrl         String?
+  media           Json?    @default("[]")
+  visibility      String?  @default("public")
+  mood            String?
+  backgroundStyle String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
   author    User     @relation(fields: [authorId], references: [id])
   comments  Comment[]
@@ -90,13 +96,43 @@ model NewsArticle {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   authorId  String   @db.ObjectId
   category  String   @default("NEWS") // NEWS | TIP
+  title     String
   content   String
   linkUrl   String?
   media     Json?    @default("[]")
+  
+  // Deduplication
+  hash      String?
+  sourceUrl String?
+  embedding Float[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   author    User     @relation(fields: [authorId], references: [id])
+}
+
+model AutoPostSettings {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  enabled             Boolean  @default(false)
+  eventTriggerEnabled Boolean  @default(true)
+  postCountPerRun     Int      @default(1)
+  intervalMinutes     Int      @default(60)
+  contentTemplate     String
+  locale              String   @default("vi")
+  rssSources          String[]
+  topicTrackingDays   Int      @default(7)
+  lastRunAt           DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model AutoPostEventLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  event     String
+  status    String
+  message   String?
+  createdAt DateTime @default(now())
 }
 
 model Comment {
@@ -120,6 +156,8 @@ model Reaction {
 
   post      Post     @relation(fields: [postId], references: [id])
   author    User     @relation(fields: [authorId], references: [id])
+
+  @@unique([postId, authorId])
 }
 
 model Notification {
@@ -129,6 +167,8 @@ model Notification {
   type        String   // LIKE, COMMENT, etc.
   postId      String?  @db.ObjectId
   commentId   String?  @db.ObjectId
+  projectId   String?
+  projectName String?
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
 

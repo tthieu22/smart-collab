@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ClientsModule } from '@nestjs/microservices';
 import { rabbitmqConfig } from './config/rabbitmq.config';
 import { ProjectConsumer } from './project.consumer';
-import { PrismaModule } from '../prisma/project.module';
+import { ProjectPrismaModule } from '../prisma/project.module';
 // import { ProjectMemberConsumer } from './project.member.consumer';
 import { BoardModule } from './board/board.module';
 import { SharedRabbitMQModule } from './config/rabbitmq.module';
@@ -30,7 +30,7 @@ import { MeetingHandler } from './meeting/meeting.handle';
 
 @Module({
   imports: [
-    PrismaModule,
+    ProjectPrismaModule,
     BoardModule,
     ConfigModule.forRoot({ isGlobal: true }),
     SharedRabbitMQModule,

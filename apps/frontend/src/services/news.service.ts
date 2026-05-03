@@ -7,20 +7,30 @@ import type {
   UpdateNewsPayload,
 } from '@smart/types/ai-autopost';
 
-function unwrapNewsList(res: unknown): NewsArticle[] {
-  let arr: unknown[] = [];
-  if (Array.isArray(res)) arr = res;
-  else if (res && typeof res === 'object' && 'data' in res) {
-    const d = (res as { data: unknown }).data;
-    if (Array.isArray(d)) arr = d;
+function unwrapNewsList(res: any): NewsArticle[] {
+  let arr: any[] = [];
+  if (Array.isArray(res)) {
+    arr = res;
+  } else if (res && typeof res === 'object') {
+    // Check success wrapper
+    const data = res.success === true ? res.data : res;
+    // Check items or data field in the unwrapped object
+    if (Array.isArray(data)) {
+      arr = data;
+    } else if (data && typeof data === 'object') {
+      const items = data.items || data.data;
+      if (Array.isArray(items)) {
+        arr = items;
+      }
+    }
   }
   return arr.map((item) => normalizeNewsArticle(item as NewsArticle));
 }
 
-function unwrapNews(res: unknown): NewsArticle {
+function unwrapNews(res: any): NewsArticle {
   let raw = res;
-  if (raw && typeof raw === 'object' && 'data' in raw) {
-    raw = (raw as { data: unknown }).data;
+  if (raw && typeof raw === 'object' && raw.success === true) {
+    raw = raw.data;
   }
   return normalizeNewsArticle(raw as NewsArticle);
 }
@@ -47,7 +57,8 @@ class NewsService {
     if (params.q) searchParams.append('q', params.q);
 
     const qs = searchParams.toString();
-    const res = await autoRequest<any>(`/home/news?${qs}`, { method: 'GET' });
+    const response = await autoRequest<{ success: boolean; data: any }>(`/home/news?${qs}`, { method: 'GET' });
+    const res = response.data;
 
     if (Array.isArray(res)) {
       return {
@@ -58,9 +69,9 @@ class NewsService {
       };
     }
 
-    const data = res?.data || res?.items || [];
+    const items = res?.items || res?.data || (Array.isArray(res) ? res : []);
     return {
-      data: (Array.isArray(data) ? data : []).map((item) => normalizeNewsArticle(item as NewsArticle)),
+      data: (Array.isArray(items) ? items : []).map((item) => normalizeNewsArticle(item as NewsArticle)),
       total: res?.total || 0,
       page: res?.page || 0,
       limit: res?.limit || 10,
@@ -86,7 +97,8 @@ class NewsService {
 
     const qs = searchParams.toString();
     const q = qs ? `?${qs}` : '';
-    const res = await autoRequest<any>(`/home/admin/news${q}`, { method: 'GET' });
+    const response = await autoRequest<{ success: boolean; data: any }>(`/home/admin/news${q}`, { method: 'GET' });
+    const res = response.data;
 
     // Handle both old array format and new paginated object format
     if (Array.isArray(res)) {
@@ -98,9 +110,9 @@ class NewsService {
       };
     }
 
-    const data = res?.data || res?.items || [];
+    const items = res?.items || res?.data || (Array.isArray(res) ? res : []);
     return {
-      data: (Array.isArray(data) ? data : []).map((item) => normalizeNewsArticle(item as NewsArticle)),
+      data: (Array.isArray(items) ? items : []).map((item) => normalizeNewsArticle(item as NewsArticle)),
       total: res?.total || 0,
       page: res?.page || 0,
       limit: res?.limit || 10,

@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { AuthPrismaService } from '../../../prisma/prisma.service';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { addDays } from 'date-fns';
@@ -29,7 +29,7 @@ export class AuthService {
 
   constructor(
     private readonly users: UserService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: AuthPrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
   ) {
@@ -186,24 +186,41 @@ export class AuthService {
         avatar: true,
         role: true,
         googleId: true,
-        googleAccessToken: true,
-        googleRefreshToken: true,
-        isVerified: true
+        isVerified: true,
+        createdAt: true,
       }
     });
 
     if (!user) {
+      const createData: any = {
+        email: payload.email,
+        firstName: payload.givenName ?? null,
+        lastName: payload.familyName ?? null,
+        avatar: payload.avatar ?? null,
+        role: "USER",
+        googleId: payload.id ?? null,
+        createdAt: new Date(),
+      };
+
+      // Chỉ thêm nếu Prisma Client hỗ trợ
+      if ('googleAccessToken' in (this.prisma.user as any).fields || (this.prisma.user as any).googleAccessToken) {
+        createData.googleAccessToken = payload.googleAccessToken ?? null;
+        createData.googleRefreshToken = payload.googleRefreshToken ?? null;
+      }
+
       user = await this.prisma.user.create({
-        data: {
-          email: payload.email,
-          firstName: payload.givenName ?? null,
-          lastName: payload.familyName ?? null,
-          avatar: payload.avatar ?? null,
-          role: "USER",
-          googleId: payload.id ?? null,
-          googleAccessToken: payload.googleAccessToken ?? null,
-          googleRefreshToken: payload.googleRefreshToken ?? null,
-        },
+        data: createData,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          role: true,
+          googleId: true,
+          isVerified: true,
+          createdAt: true,
+        }
       });
 
       await syncCreateUser(user);
@@ -215,16 +232,31 @@ export class AuthService {
         avatar: payload.avatar ?? user.avatar,
       };
 
-      if (payload.googleAccessToken) {
-        updateData.googleAccessToken = payload.googleAccessToken;
+      // Chỉ cập nhật Token nếu Prisma Client hỗ trợ
+      if ('googleAccessToken' in (this.prisma.user as any).fields || (this.prisma.user as any).googleAccessToken) {
+        if (payload.googleAccessToken) updateData.googleAccessToken = payload.googleAccessToken;
+        if (payload.googleRefreshToken) updateData.googleRefreshToken = payload.googleRefreshToken;
       }
-      if (payload.googleRefreshToken) {
-        updateData.googleRefreshToken = payload.googleRefreshToken;
+
+      // Nếu user cũ thiếu createdAt, bổ sung ngay
+      if (!(user as any).createdAt) {
+        updateData.createdAt = new Date();
       }
 
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: updateData,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          role: true,
+          googleId: true,
+          isVerified: true,
+          createdAt: true,
+        }
       });
 
       await syncUpdateUser(user);

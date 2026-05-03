@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  main-be:
+    image: ghcr.io/${GITHUB_REPOSITORY}/main-be:latest
+    container_name: smart-collab-main-be
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - DATABASE_URL=${DATABASE_URL_MONGO}
+      - DATABASE_URL_POSTGRE=${DATABASE_URL_POSTGRE}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - REDIS_URL=${REDIS_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "8000:8000"
+
+  home-service:
+    image: ghcr.io/${GITHUB_REPOSITORY}/home-service:latest
+    container_name: smart-collab-home-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_RABBITMQ_ADDRESSES=${RABBITMQ_URL}
+      - SPRING_DATASOURCE_URL=${DATABASE_URL_POSTGRE}
+      - SPRING_DATA_MONGODB_URI=${DATABASE_URL_MONGO}

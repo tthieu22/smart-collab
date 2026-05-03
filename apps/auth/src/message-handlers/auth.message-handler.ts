@@ -395,7 +395,7 @@ export class AuthMessageHandler {
     try {
       const users = await this.userService.search(payload.query);
       // Map to include a full name for easier display
-      const mappedUsers = users.map(u => ({
+      const mappedUsers = users.map((u: any) => ({
         ...u,
         name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email
       }));

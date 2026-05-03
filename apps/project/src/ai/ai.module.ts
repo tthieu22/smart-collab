@@ -7,6 +7,7 @@ import { EventsPublisher } from './events.publisher';
 import { ScraperService } from './scraper.service';
 import { DiscoveryService } from './discovery.service';
 import { ImageService } from './image.service';
+import { HomeModule } from '../../../auth/src/modules/home/home.module';
 
 import {
   ProjectGenerator,
@@ -26,6 +27,7 @@ import { ModelRegistryService } from '../llm/model-registry.service';
 @Module({
   imports: [
     SharedRabbitMQModule,
+    HomeModule,
     ClientsModule.registerAsync([
       {
         name: 'PROJECT_SERVICE',
@@ -39,14 +41,14 @@ import { ModelRegistryService } from '../llm/model-registry.service';
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) =>
-          getNestRabbitMQOptions('home_requests_queue', configService),
+          getNestRabbitMQOptions('home_requests_queue_v2', configService),
       },
       {
         name: 'AUTH_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) =>
-          getNestRabbitMQOptions('auth_queue', configService),
+          getNestRabbitMQOptions('auth_queue_v2', configService),
       },
     ]),
   ],

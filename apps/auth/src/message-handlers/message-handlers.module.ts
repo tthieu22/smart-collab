@@ -3,16 +3,18 @@ import { AuthMessageHandler } from './auth.message-handler';
 import { UserModule } from '../modules/user/user.module';
 import { OtcModule } from '../modules/otc/otc.module';
 import { AuthModule as AuthServiceModule } from '../modules/auth/auth.module';
+import { HomeModule } from '../modules/home/home.module';
+import { HomeMessageHandler } from './home.message-handler';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { RedisModule } from '@nestjs-modules/ioredis';
-import { PrismaModule } from '../../prisma/prisma.module';
+import { AuthPrismaModule } from '../../prisma/prisma.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { redisConfig } from '../config/redis.config';
 import { mailerConfig } from '../config/mailer.config';
 
 @Module({
   imports: [
-    PrismaModule,
+    AuthPrismaModule,
 
     // Mailer
     MailerModule.forRootAsync({
@@ -32,8 +34,9 @@ import { mailerConfig } from '../config/mailer.config';
     AuthServiceModule,
     UserModule,
     OtcModule,
+    HomeModule,
   ],
-  controllers: [AuthMessageHandler],
+  controllers: [AuthMessageHandler, HomeMessageHandler],
   // exports: [AuthMessageHandler],
 })
 export class MessageHandlersModule {}

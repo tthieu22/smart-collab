@@ -19,10 +19,10 @@ export function useHomeFeedBootstrap() {
     const fetchFeed = async () => {
       setLoading(true);
       try {
-        const data = await autoRequest<FeedDataset>('/home/feed', {
+        const response = await autoRequest<{ success: boolean; data: FeedDataset }>('/home/feed', {
           method: 'GET',
         });
-        bootstrap(data);
+        bootstrap(response.data);
       } catch (err: any) {
         setError(err.message);
       } finally {
