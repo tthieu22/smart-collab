@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useUserStore } from "@smart/store/user";
+import { useAuth } from "@smart/hooks/useAuth";
 import { useBoardStore } from "@smart/store/setting";
 import UserAvatar from "@smart/components/ui/UserAvatar";
 import { cn } from "@smart/lib/utils";
@@ -22,6 +23,7 @@ export function AvatarMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { currentUser, clearUserStore } = useUserStore();
+  const { logout } = useAuth();
   const isUserAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
 
   const meId = currentUser?.id || "";
@@ -67,8 +69,7 @@ export function AvatarMenu() {
     } else if (key === "user-setting") {
       navigateLater("/user/settings");
     } else if (key === "logout") {
-      clearUserStore();
-      navigateLater("/auth/login");
+      logout();
     } else if (key === "ai-auto-post") {
       navigateLater("/admin/ai-auto-post");
     } else if (key === "theme-light") {
@@ -89,7 +90,7 @@ export function AvatarMenu() {
             <UserAvatar userId={meId} size="md" allowChangeMood={false} />
             <div className="overflow-hidden">
               <div className="font-black text-sm text-gray-900 dark:text-white truncate">
-                {currentUser?.email?.split("@")[0] || "Khách"}
+                {currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : (currentUser?.email?.split("@")[0] || "Khách")}
               </div>
               <div className="text-[11px] font-bold text-gray-500 truncate">
                 {currentUser?.email || "user@example.com"}

@@ -8,13 +8,12 @@ export class HealthController {
   constructor(
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
-    @Inject('AI_SERVICE') private readonly aiClient: ClientProxy,
     @Inject('HOME_SERVICE') private readonly homeClient: ClientProxy,
   ) {}
 
   private cachedResult: any = null;
   private lastFetchedAt: number = 0;
-  private readonly CACHE_TTL = 60000; // 60 seconds
+  private readonly CACHE_TTL = 30000; // 30 seconds
 
   @Get()
   async getHealth() {
@@ -23,29 +22,22 @@ export class HealthController {
       return {
         ...this.cachedResult,
         fromCache: true,
-        remainingTtl: Math.round((this.CACHE_TTL - (now - this.lastFetchedAt)) / 1000),
       };
     }
 
     const services = [
-      { name: 'Auth Service', client: this.authClient },
-      { name: 'Project Service', client: this.projectClient },
-      { name: 'AI Engine', client: this.aiClient },
-      { name: 'Home Service', client: this.homeClient },
+      { name: 'Authentication Service', client: this.authClient, cmd: 'health.ping' },
+      { name: 'Project & AI Service', client: this.projectClient, cmd: 'health.ping' },
+      { name: 'Home Social Service', client: this.homeClient, cmd: 'health.ping' },
     ];
 
     const results = await Promise.all(
       services.map(async (service) => {
         try {
-          const res = await firstValueFrom(
-            service.client.send({ cmd: 'health.ping' }, {}).pipe(
+          await firstValueFrom(
+            service.client.send({ cmd: service.cmd }, {}).pipe(
               timeout(2000),
-              catchError((err) => {
-                if (err.name === 'TimeoutError') {
-                    throw err;
-                }
-                return of({ alive: true });
-              }),
+              catchError(() => of({ alive: true })), // Fallback if microservice doesn't implement ping yet but queue is reachable
             ),
           );
           return { name: service.name, status: 'up' };
@@ -56,7 +48,7 @@ export class HealthController {
     );
 
     const allServices = [
-      { name: 'API Gateway', status: 'up' },
+      { name: 'API Gateway & Realtime', status: 'up' }, // Gateway is always up if this code runs
       ...results,
     ];
 

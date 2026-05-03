@@ -8,12 +8,10 @@ import { Activity, Server, Database, Globe, CheckCircle2, AlertTriangle } from '
 
 export default function StatusPage() {
     const services = [
-        { name: 'API Gateway', status: 'operational', uptime: '99.98%' },
+        { name: 'API Gateway & Realtime', status: 'operational', uptime: '99.98%', note: 'Unified Gateway on Port 8000' },
         { name: 'Authentication Service', status: 'operational', uptime: '100%' },
-        { name: 'Project Service', status: 'operational', uptime: '99.95%' },
-        { name: 'Realtime WebSocket', status: 'operational', uptime: '99.99%' },
-        { name: 'AI Generation Hub', status: 'degraded', uptime: '98.50%', note: 'High latency detected' },
-        { name: 'Storage CDN', status: 'operational', uptime: '100%' },
+        { name: 'Project & AI Service', status: 'operational', uptime: '99.95%', note: 'Handling Core & AI tasks' },
+        { name: 'Home Social Service', status: 'operational', uptime: '99.99%', note: 'Java Backend' },
     ];
 
     return (

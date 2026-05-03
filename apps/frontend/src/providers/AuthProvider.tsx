@@ -37,7 +37,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [isInitialized, isUserInitialized, accessToken, user, router, pathname]);
 
-  if (!isInitialized) {
+  // Chỉ cho phép vào app khi đã init xong auth. 
+  // Nếu đã có token, phải đợi init xong thông tin user nữa mới cho vào để tránh bị trống Avatar/Profile.
+  const shouldShowLoading = !isInitialized || (!!accessToken && !isUserInitialized);
+
+  if (shouldShowLoading) {
     return <Loading text=" " />;
   }
 

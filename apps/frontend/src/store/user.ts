@@ -6,8 +6,8 @@ interface UserState {
   allUsers: User[];
   isLoading: boolean;
   error: string | null;
-  isInitialized: boolean; // ✅ auth init
-  isUserInitialized: boolean; // ✅ user init riêng
+  isInitialized: boolean;
+  isUserInitialized: boolean;
   suggestedUsers: any[];
   suggestedUsersData: {
     items: any[];
@@ -68,7 +68,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),
   setInitialized: (initialized) => set({ isInitialized: initialized }),
-  setUserInitialized: (initialized) => set({ isUserInitialized: initialized }), // ✅ thêm
+  setUserInitialized: (initialized) => set({ isUserInitialized: initialized }),
   clearUserStore: () =>
     set({
       currentUser: null,
@@ -76,7 +76,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       isLoading: false,
       error: null,
       isInitialized: false,
-      isUserInitialized: false, // ✅ reset
+      isUserInitialized: false,
     }),
   isAdmin: () => String(get().currentUser?.role || '').toUpperCase() === 'ADMIN',
 }));

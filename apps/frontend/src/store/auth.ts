@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { authService } from '../services/auth.service';
 import { useUserStore } from './user';
-import { getProjectSocketManager } from "./realtime"; // dùng getter thay vì import instance trực tiếp
+import { getProjectSocketManager } from "./realtime";
 
 interface AuthState {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitialized: boolean;
+  refreshTimer: NodeJS.Timeout | null;
 
   // Actions
   setAccessToken: (token: string | null) => void;
@@ -24,9 +25,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: false,
   isInitialized: false,
+  refreshTimer: null,
 
   setAccessToken: (token: string | null) => {
+    // Xóa timer cũ nếu có
+    const currentTimer = get().refreshTimer;
+    if (currentTimer) clearTimeout(currentTimer);
+
     set({ accessToken: token, isAuthenticated: !!token });
+
+    // Nếu có token mới, đặt lịch refresh chủ động
+    if (token) {
+      try {
+        // Giải mã JWT để lấy thời gian hết hạn (exp)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiresAt = payload.exp * 1000;
+        const timeout = expiresAt - Date.now() - 30000; // Refresh trước 30 giây
+
+        if (timeout > 0) {
+          const timer = setTimeout(() => {
+            get().initializeAuth();
+          }, timeout);
+          set({ refreshTimer: timer });
+        }
+      } catch (e) {
+        console.error("Failed to set refresh timer", e);
+      }
+    }
   },
 
   setLoading: (loading: boolean) => set({ isLoading: loading }),
@@ -45,21 +70,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
     }
 
-    // Lazy-init socket
     const socketManager = getProjectSocketManager();
     socketManager.initSocket();
   },
 
   logout: () => {
-    set({ accessToken: null, isAuthenticated: false, isLoading: false });
-
+    const currentTimer = get().refreshTimer;
+    if (currentTimer) clearTimeout(currentTimer);
+    
+    set({ accessToken: null, isAuthenticated: false, isLoading: false, refreshTimer: null });
     const socketManager = getProjectSocketManager();
     socketManager.disconnect();
   },
 
   clearAuth: () => {
-    set({ accessToken: null, isAuthenticated: false, isLoading: false });
+    const currentTimer = get().refreshTimer;
+    if (currentTimer) clearTimeout(currentTimer);
 
+    set({ accessToken: null, isAuthenticated: false, isLoading: false, refreshTimer: null });
     const socketManager = getProjectSocketManager();
     socketManager.disconnect();
   },
@@ -67,14 +95,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initializeAuth: async (): Promise<boolean> => {
     const { setLoading, setAccessToken, setInitialized, clearAuth } = get();
 
-    if (get().isInitialized) return true;
-
+    // Lưu ý: Không chặn nếu đã initialized vì đây là hàm dùng chung cho cả auto-refresh
     setLoading(true);
 
     try {
       const response = await authService.refresh();
 
       if (response.success && response.data?.accessToken) {
+        // Hàm setAccessToken ở trên sẽ tự động đặt lại Timer mới
         setAccessToken(response.data.accessToken);
 
         const socketManager = getProjectSocketManager();

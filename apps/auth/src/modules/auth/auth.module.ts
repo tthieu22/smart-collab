@@ -25,7 +25,7 @@ import { syncAllUsers } from '../../message-handlers/common/sync.helper';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET', 'your-secret'),
         signOptions: {
-          expiresIn: config.get('JWT_EXPIRES_IN') as any, // 👈 FIX
+          expiresIn: config.get('JWT_ACCESS_EXPIRES') || '15m',
         },
       }),
     }),

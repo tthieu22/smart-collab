@@ -9,7 +9,7 @@ import { getGolevelupRabbitMQOptions, getRabbitMQOptions } from './config/rabbit
 import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
 import { UploadModule } from './upload/upload.module';
-import { AiModule } from './ai/ai.module';
+
 import { HomeModule } from './home/home.module';
 import { UserModule } from './user/user.module';
 import { SearchModule } from './search/search.module';
@@ -58,19 +58,11 @@ import { RealtimeModule } from './realtime/realtime.module';
           getRabbitMQOptions('project_queue', configService),
       },
     ]),
-    ClientsModule.registerAsync([
-      {
-        name: 'AI_SERVICE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) =>
-          getRabbitMQOptions('ai_queue', configService),
-      },
-    ]),
+
     // Import các module controller của Gateway
     AuthModule,
     ProjectModule,
-    AiModule,
+
     HomeModule,
     UserModule,
     // Upload moudle

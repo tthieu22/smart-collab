@@ -6,7 +6,8 @@ export default () => ({
   // JWT Configuration
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key',
-    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m',
+    refreshDays: Number(process.env.REFRESH_DAYS) || 7,
   },
   
   // RabbitMQ Configuration

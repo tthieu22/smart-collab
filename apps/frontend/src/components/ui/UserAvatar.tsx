@@ -2,6 +2,7 @@
 
 import { useFeedStore } from '@smart/store/feed';
 import { cn } from '@smart/lib/utils';
+import { useUserStore } from '@smart/store/user';
 import { Popover, Tooltip, Image } from 'antd';
 import { Cloud, Plus } from 'lucide-react';
 import type { FeedUser } from '@smart/types/feed';
@@ -30,6 +31,24 @@ const upscaleGoogleAvatar = (url: string | null | undefined) => {
   return url;
 };
 
+const sizeClasses = {
+  xs: 'h-6 w-6 text-[10px]',
+  sm: 'h-8 w-8 text-xs',
+  md: 'h-11 w-11 text-sm',
+  lg: 'h-16 w-16 text-lg',
+  xl: 'h-32 w-32 text-2xl',
+  '2xl': 'h-40 w-40 text-3xl',
+};
+
+const badgeSizeClasses = {
+  xs: 'w-3 h-3 text-[8px]',
+  sm: 'w-4 h-4 text-[10px]',
+  md: 'w-5 h-5 text-xs',
+  lg: 'w-7 h-7 text-sm',
+  xl: 'w-10 h-10 text-xl',
+  '2xl': 'w-12 h-12 text-2xl',
+};
+
 interface UserAvatarProps {
   userId: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -51,39 +70,28 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   mood,
   previewable = false
 }, ref) => {
-  const user = useFeedStore((s) => s.users[userId]);
-  const currentUserId = useFeedStore((s) => s.currentUserId);
+  const feedUser = useFeedStore((s) => s.users[userId]);
+  const currentUser = useUserStore((s) => s.currentUser);
   const updateUserMood = useFeedStore((s) => s.updateUserMood);
 
-  // If user not in feed store, they might be in user store (me)
-  // We'll fallback to a basic rendering if user is missing but we'll try to get it from store
+  // Lấy dữ liệu user: Ưu tiên feedUser nếu có, nếu không (trường hợp trên Header) thì dùng currentUser
+  const isMe = userId === currentUser?.id;
+  const user = feedUser || (isMe ? {
+    id: currentUser?.id,
+    name: currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : (currentUser?.email?.split('@')[0] || 'Me'),
+    avatarUrl: currentUser?.avatar,
+    email: currentUser?.email,
+    mood: currentUser?.mood
+  } : null);
 
   if (!user) {
-    // If it's me but not in feed store yet (unlikely but possible in header)
-    return null;
+    return (
+      <div className={cn("relative group shrink-0 inline-block rounded-full animate-pulse bg-gray-200 dark:bg-neutral-800", sizeClasses[size], className)} />
+    );
   }
 
-  const isMe = userId === currentUserId;
   const displayMood = mood || user.mood;
   const currentMood = MOODS.find(m => m.value === displayMood);
-
-  const sizeClasses = {
-    xs: 'h-6 w-6 text-[10px]',
-    sm: 'h-8 w-8 text-xs',
-    md: 'h-11 w-11 text-sm',
-    lg: 'h-16 w-16 text-lg',
-    xl: 'h-32 w-32 text-2xl',
-    '2xl': 'h-40 w-40 text-3xl',
-  };
-
-  const badgeSizeClasses = {
-    xs: 'w-3 h-3 text-[8px]',
-    sm: 'w-4 h-4 text-[10px]',
-    md: 'w-5 h-5 text-xs',
-    lg: 'w-7 h-7 text-sm',
-    xl: 'w-10 h-10 text-xl',
-    '2xl': 'w-12 h-12 text-2xl',
-  };
 
   const moodPicker = (
     <div className="grid grid-cols-4 gap-2 p-2 max-w-[200px]">

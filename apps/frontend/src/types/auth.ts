@@ -16,6 +16,7 @@ export interface User {
   googleId?: string | null;
   emailVerificationCode?: string | null;
   emailVerificationCodeExpires?: string | null;
+  mood?: string | null;
 }
 
 export interface LoginCredentials {

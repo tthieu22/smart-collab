@@ -25,12 +25,11 @@ async function bootstrap() {
   await app.startAllMicroservices();
   logger.log('Microservices started');
 
-  // Nếu cần expose HTTP API thì listen port
-  await app.listen(3002);
-  logger.log('HTTP server listening on port 3002');
-
+  // Khởi tạo app mà không listen port (Pure Microservice)
+  await app.init();
+  
   logger.log(
-    '🚀 Project Service is running (project_queue + ai_queue) and HTTP on 3002',
+    '🚀 Project Service is running (project_queue + ai_queue) as a pure Microservice',
   );
 }
 
