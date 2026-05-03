@@ -11,7 +11,10 @@ import { AppController } from './app.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      envFilePath: ['.env', 'apps/main-be/.env'],
+    }),
     ScheduleModule.forRoot(),
     GatewayModule,
     AuthModule,

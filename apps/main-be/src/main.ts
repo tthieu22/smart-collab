@@ -14,6 +14,14 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   const port = configService.get<number>('PORT') || 8000;
+  const redisUrl = configService.get<string>('REDIS_URL');
+  const rabbitUrl = configService.get<string>('RABBITMQ_URL');
+
+  logger.log(`🔍 Checking Environment Variables:`);
+  logger.log(`📡 PORT: ${port}`);
+  logger.log(`📦 REDIS_URL: ${redisUrl ? (redisUrl.substring(0, 15) + '...') : 'NOT FOUND'}`);
+  logger.log(`🐰 RABBITMQ_URL: ${rabbitUrl ? (rabbitUrl.substring(0, 15) + '...') : 'NOT FOUND'}`);
+
   const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
 
   // --- HTTP Config (Gateway) ---
