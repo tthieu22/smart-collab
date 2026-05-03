@@ -13,7 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(MainBeModule);
   const configService = app.get(ConfigService);
 
-  const port =  8000;
+  const port = configService.get<number>('PORT') || 8000;
   const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
 
   // --- HTTP Config (Gateway) ---
