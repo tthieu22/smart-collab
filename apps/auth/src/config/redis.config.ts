@@ -1,6 +1,18 @@
 import { ConfigService } from '@nestjs/config';
 
 export const redisConfig = (configService: ConfigService) => {
+  const redisUrl = configService.get<string>('REDIS_URL');
+  
+  if (redisUrl) {
+    return {
+      type: 'single' as const,
+      url: redisUrl,
+      options: {
+        tls: redisUrl.startsWith('rediss://') ? {} : undefined,
+      }
+    };
+  }
+
   const options: any = {
     host: configService.get<string>('REDIS_HOST') ?? '127.0.0.1',
     port: configService.get<number>('REDIS_PORT') ?? 6379,
