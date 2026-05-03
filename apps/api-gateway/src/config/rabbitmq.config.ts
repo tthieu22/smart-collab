@@ -10,11 +10,12 @@ export const getRabbitMQOptions = (
   transport: Transport.RMQ,
   options: {
     urls: [
+      String(configService.get('RABBITMQ_URL') ||
       `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
         'RABBITMQ_PASSWORD',
       )}@${configService.get('RABBITMQ_HOST')}:${configService.get(
         'RABBITMQ_PORT',
-      )}`,
+      )}`),
     ],
     queue,
     queueOptions: { durable: true },
@@ -24,10 +25,10 @@ export const getRabbitMQOptions = (
 // 👉 Cho golevelup/nestjs-rabbitmq (event bus)
 export const getGolevelupRabbitMQOptions = (configService: ConfigService) => ({
   exchanges: [{ name: 'smart-collab', type: 'topic' }],
-  uri: `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
+  uri: String(configService.get('RABBITMQ_URL') || `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
     'RABBITMQ_PASSWORD',
   )}@${configService.get('RABBITMQ_HOST')}:${configService.get(
     'RABBITMQ_PORT',
-  )}`,
+  )}`),
   connectionInitOptions: { wait: false },
 });

@@ -10,11 +10,12 @@ export const getNestRabbitMQOptions = (
   transport: Transport.RMQ,
   options: {
     urls: [
+      String(configService.get('RABBITMQ_URL') ||
       `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
         'RABBITMQ_PASSWORD',
       )}@${configService.get('RABBITMQ_HOST')}:${configService.get(
         'RABBITMQ_PORT',
-      )}`,
+      )}`),
     ],
     queue,
     queueOptions: { durable: true },
@@ -27,7 +28,7 @@ export const rabbitmqConfig = (queue: string): RmqOptions => ({
     urls: [
       process.env.RABBITMQ_URL ||
         `amqp://${process.env.RABBITMQ_USER}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`,
-    ],
+    ] as string[],
     queue,
     queueOptions: {
       durable: true,
@@ -42,10 +43,10 @@ export const getGolevelupRabbitMQOptions = (configService: ConfigService) => ({
     { name: 'smart-collab', type: 'topic' },
     { name: 'notification_exchange', type: 'topic' }
   ],
-  uri: `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
+  uri: String(configService.get('RABBITMQ_URL') || `amqp://${configService.get('RABBITMQ_USER')}:${configService.get(
     'RABBITMQ_PASSWORD',
   )}@${configService.get('RABBITMQ_HOST')}:${configService.get(
     'RABBITMQ_PORT',
-  )}`,
+  )}`),
   connectionInitOptions: { wait: false },
 });
