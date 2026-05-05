@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build"
+    "build": "nest build",
+    "start:prod": "node dist/main.js"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.4",
