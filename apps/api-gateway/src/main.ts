@@ -10,59 +10,79 @@ import * as express from 'express';
 
 async function bootstrap() {
   const logger = new Logger('API Gateway');
+
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // Lấy env từ ConfigService
-  const payloadLimit = configService.get<string>('PAYLOAD_LIMIT') || '50mb';
-  const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-  const port = configService.get<number>('PORT') || 8000;
+  // ===== ENV SAFE HANDLING =====
+  const payloadLimit =
+    configService.get<string>('PAYLOAD_LIMIT') || '50mb';
 
-  // CORS
+  const frontendUrl =
+    configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+  // ⚠️ FIX CRITICAL: Render always provides string PORT
+  const port = parseInt(process.env.PORT || '8000', 10);
+
+  // ===== CORS =====
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production' ? frontendUrl : 'http://localhost:3000',
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? frontendUrl
+        : 'http://localhost:3000',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400,
   });
 
-  // Logging request
+  // ===== REQUEST LOGGING =====
   app.use((req: any, res: any, next: any) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    console.log(
+      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`,
+    );
     next();
   });
 
-  // Security middleware
+  // ===== SECURITY =====
   app.use(cookieParser());
   app.use(helmet());
   app.use(compression());
 
+  // ===== BODY LIMIT =====
   app.use('/api', express.json({ limit: payloadLimit }));
-  app.use('/api', express.urlencoded({ limit: payloadLimit, extended: true }));
+  app.use(
+    '/api',
+    express.urlencoded({ limit: payloadLimit, extended: true }),
+  );
 
-  // Global validation pipe
+  // ===== GLOBAL PIPE =====
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      transformOptions: { enableImplicitConversion: true },
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  // Global Interceptor for _id to id mapping
+  // ===== GLOBAL INTERCEPTOR =====
   app.useGlobalInterceptors(new MongoIdInterceptor());
 
-  // Global prefix
+  // ===== GLOBAL PREFIX =====
   app.setGlobalPrefix('api', {
     exclude: ['health', 'health/ready'],
   });
 
+  // ===== START SERVER =====
   await app.listen(port, '0.0.0.0');
-  logger.log(`🔧 Environment: ${configService.get<string>('NODE_ENV')}`);
+
+  logger.log(`🔧 Environment: ${process.env.NODE_ENV}`);
   logger.log(`🚀 Payload limit: ${payloadLimit}`);
-  logger.log(`🚀 Server running on port ${port}`);
+  logger.log(`🌐 Frontend URL: ${frontendUrl}`);
+  logger.log(`🔥 Server running on port: ${port}`);
 }
 
 bootstrap().catch((error) => {
