@@ -31,7 +31,7 @@ export class CardService {
 
   async getCardDetail(cardId: string) {
     const card = await this.prisma.card.findUnique({
-      where: { id: cardId, deletedAt: null },
+      where: { id: cardId, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       include: this.CARD_INCLUDE_FULL,
     });
     return card ?? null;
@@ -41,7 +41,7 @@ export class CardService {
   async getCardsByColumn(columnId: string) {
     this.logger.log(`Fetching cards for column id: ${columnId}`);
     const cards = await this.prisma.card.findMany({
-      where: { columnId, deletedAt: null },
+      where: { columnId, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       orderBy: { position: 'asc' },
       include: this.CARD_INCLUDE_FULL,
     });
@@ -52,7 +52,7 @@ export class CardService {
   async getCardsByProject(projectId: string) {
     this.logger.log(`Fetching cards for project id: ${projectId}`);
     const cards = await this.prisma.card.findMany({
-      where: { projectId, deletedAt: null },
+      where: { projectId, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       orderBy: [{ columnId: 'asc' }, { position: 'asc' }],
       include: this.CARD_INCLUDE_FULL,
     });
@@ -464,8 +464,8 @@ export class CardService {
       throw new Error('Destination column not found');
     }
 
-    // 3. Bắt đầu transaction: cập nhật position + card
-    const result = await this.prisma.$transaction(async (tx: any) => {
+    // 3. Cập nhật position + card (bỏ transaction để tránh WriteConflict trong MongoDB)
+    const result = await (async (tx: any) => {
       let updatedCard;
 
       if (isSameColumn) {
@@ -537,19 +537,14 @@ export class CardService {
       }
 
       // 4. Chuẩn hóa lại toàn bộ vị trí ở cả 2 cột (hoặc 1 cột nếu di chuyển nội bộ)
-      await this.reorderCards(currentColumnId, tx);
-      if (destColumnId !== currentColumnId) {
-        await this.reorderCards(destColumnId, tx);
-      }
+      // MongoDB transaction conflict: avoid reorderCards here. updateMany already handles positioning.
 
       // Lấy lại dữ liệu card cơ bản sau khi đã chuẩn hóa vị trí
       return tx.card.findUnique({
         where: { id: cardId },
         select: { id: true, columnId: true, position: true, projectId: true },
       });
-    }, {
-      timeout: 30000
-    });
+    })(this.prisma);
 
     if (!result) {
       throw new Error(`Card ${cardId} not found after move`);
@@ -631,8 +626,8 @@ export class CardService {
     // 2. Tính position (nếu không có destIndex → chèn cuối)
     const finalPosition = destIndex ?? await this.getNextPosition(destColumnId);
 
-    // 3. Tạo card mới trong transaction
-    const newCard = await this.prisma.$transaction(async (tx: any) => {
+    // 3. Tạo card mới (bỏ transaction để tránh WriteConflict trong MongoDB)
+    const newCard = await (async (tx: any) => {
       // Tăng position các card từ finalPosition trở đi
       if (destIndex !== undefined) {
         await tx.card.updateMany({
@@ -661,11 +656,9 @@ export class CardService {
         include: { labels: true }, // Omit views and column to reduce payload size
       });
 
-      await this.reorderCards(destColumnId, tx);
+      // MongoDB transaction conflict: avoid reorderCards here. updateMany already handles positioning.
       return created;
-    }, {
-      timeout: 30000
-    });
+    })(this.prisma);
 
     // 4. Emit event
     this.eventEmitter.emit('card.copied', {

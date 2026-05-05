@@ -254,7 +254,7 @@ model Project {
   chatMessages ProjectChatMessage[]
   meetings     ProjectMeeting[]
 
-  @@unique([folderPath], map: "unique_project_folderPath")
+
   @@index([ownerId])
   @@index([uploadedById])
 }

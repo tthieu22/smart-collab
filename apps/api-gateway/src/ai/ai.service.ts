@@ -21,6 +21,7 @@ export class AiService {
       case 'ai.discover-content': return this.handler.discoverContent(payload);
       case 'ai.generate-news-post': return this.handler.generateNewsPost(payload);
       case 'ai.search-images': return this.handler.searchImages(payload);
+      case 'ai.generate-subtasks': return this.handler.generateSubtasks(payload);
       default:
         throw new Error(`Unhandled AI command: ${cmd}`);
     }

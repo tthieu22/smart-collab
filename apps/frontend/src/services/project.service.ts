@@ -66,12 +66,14 @@ class ProjectService {
   getAllProjects(pageOrOptions: number | any = 1, limit: number = 10) {
     let page = 1;
     let actualLimit = limit;
-    let otherOptions = {};
+    let otherOptions: any = {};
 
     if (typeof pageOrOptions === 'object') {
       page = pageOrOptions.page || 1;
       actualLimit = pageOrOptions.limit || 10;
-      otherOptions = pageOrOptions;
+      otherOptions = { ...pageOrOptions };
+      delete otherOptions.page;
+      delete otherOptions.limit;
     } else {
       page = pageOrOptions;
     }

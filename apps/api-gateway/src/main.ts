@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
+import { MongoIdInterceptor } from './common/interceptors/mongo-id.interceptor';
 import cookieParser from 'cookie-parser';
 import * as express from 'express';
 
@@ -49,6 +50,9 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  // Global Interceptor for _id to id mapping
+  app.useGlobalInterceptors(new MongoIdInterceptor());
 
   // Global prefix
   app.setGlobalPrefix('api', {

@@ -71,8 +71,8 @@ export class ProjectHandler {
     this.logger.log(`[project.get_all] Received payload: ${JSON.stringify(payload)}`);
     try {
       const userId = payload?.userId;
-      const page = payload?.page;
-      const limit = payload?.limit;
+      const page = payload?.page ?? 1;
+      const limit = payload?.limit ?? 20;
       const search = payload?.search;
       const projects = await this.projectService.getAllProjects(userId, page, limit, search);
       return { success: true, data: projects };

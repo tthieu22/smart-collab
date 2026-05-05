@@ -14,26 +14,26 @@ export class ColumnService {
   async getColumnById(columnId: string) {
     this.logger.log(`[getColumnById] columnId: ${columnId}`);
     return this.prisma.column.findUnique({
-      where: { id: columnId, deletedAt: null },
-      include: { cards: { where: { deletedAt: null }, orderBy: { position: 'asc' } } },
+      where: { id: columnId, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
+      include: { cards: { where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] }, orderBy: { position: 'asc' } } },
     });
   }
 
   async getColumnsByBoard(boardId: string) {
     this.logger.log(`[getColumnsByBoard] boardId: ${boardId}`);
     return this.prisma.column.findMany({
-      where: { boardId, deletedAt: null },
+      where: { boardId, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       orderBy: { position: 'asc' },
-      include: { cards: { where: { deletedAt: null }, orderBy: { position: 'asc' } } },
+      include: { cards: { where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] }, orderBy: { position: 'asc' } } },
     });
   }
 
   async getColumnsByProject(projectId: string) {
     this.logger.log(`[getColumnsByProject] projectId: ${projectId}`);
     return this.prisma.column.findMany({
-      where: { projectId, deletedAt: null },
+      where: { projectId, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       orderBy: [{ boardId: 'asc' }, { position: 'asc' }],
-      include: { cards: { where: { deletedAt: null }, orderBy: { position: 'asc' } } },
+      include: { cards: { where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] }, orderBy: { position: 'asc' } } },
     });
   }
 
@@ -124,7 +124,7 @@ export class ColumnService {
       data: { deletedAt: null },
       include: { 
         cards: { 
-          where: { deletedAt: null }, 
+          where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] }, 
           orderBy: { position: 'asc' },
           include: {
             members: true,

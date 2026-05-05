@@ -48,6 +48,22 @@ export class AiController {
     );
   }
 
+  @Post('cards/:cardId/ai-subtasks')
+  async aiGenerateSubtasks(
+    @Param('cardId') cardId: string,
+    @Req() req: any,
+  ) {
+    const user = req.user;
+    return this.aiService.send(
+      { cmd: 'ai.generate-subtasks' },
+      {
+        cardId,
+        userId: user.userId,
+        locale: 'vi',
+      },
+    );
+  }
+
   @Post(':id/ai-analyze-board')
   async analyzeBoard(@Param('id') boardId: string, @Req() req: any) {
     return this.aiService.send(

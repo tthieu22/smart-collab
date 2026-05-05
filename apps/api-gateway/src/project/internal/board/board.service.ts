@@ -29,13 +29,23 @@ export class BoardService {
   }) {
     const { projectId, ownerId, type, title } = params;
 
+    // Check if a board of this type already exists for the given scope
     const existing = await this.prisma.board.findFirst({
       where: type === 'board' ? { projectId, type } : { ownerId, type },
     });
 
+    // For personal boards (inbox/calendar) we treat an existing board as reusable
     if (existing) {
-      throw new Error(`${type} board already exists`);
+      if (type === 'board') {
+        // Project main board must be unique per project; keep the error
+        throw new Error(`${type} board already exists`);
+      }
+      // For existing personal board, fetch full board, emit event and return it
+      const fullExisting = await this.getBoardById(existing.id);
+      this.eventEmitter.emit('board.created', { board: fullExisting });
+      return fullExisting;
     }
+
 
     const boardProjectId =
       type === 'inbox' || type === 'calendar' ? undefined : projectId;
@@ -75,19 +85,19 @@ export class BoardService {
 
   /** Lấy full board (columns + cards + labels + views) */
   async getBoardById(boardId: string) {
-    const board = await this.prisma.board.findUnique({ 
-      where: { id: boardId, deletedAt: null } 
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId }
     });
     if (!board) return null;
 
     const columns = await this.prisma.column.findMany({
-      where: { boardId: board.id, deletedAt: null },
+      where: { boardId: board.id, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       orderBy: { position: 'asc' },
     });
 
     const columnIds = columns.map((c: any) => c.id);
     const cards = await this.prisma.card.findMany({
-      where: { columnId: { in: columnIds }, deletedAt: null },
+      where: { columnId: { in: columnIds }, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       orderBy: { position: 'asc' },
     });
 
@@ -126,7 +136,11 @@ export class BoardService {
 
     if ((type === 'inbox' || type === 'calendar') && ownerId) {
       const personalBoard = await this.prisma.board.findFirst({
-        where: { ownerId, type, projectId: null },
+        where: { 
+          ownerId, 
+          type, 
+          OR: [{ projectId: { isSet: false } }, { projectId: null }]
+        },
       });
 
       if (!personalBoard) {
@@ -140,7 +154,7 @@ export class BoardService {
         : { ownerId, type };
 
     const boards = await this.prisma.board.findMany({
-      where: { ...where, deletedAt: null },
+      where: { ...where, OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
       orderBy: { position: 'asc' },
     });
 

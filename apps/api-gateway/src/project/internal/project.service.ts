@@ -235,7 +235,7 @@ export class ProjectService {
         uploadedById: true,
         members: true,
         boards: {
-          where: { deletedAt: null },
+          where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
           orderBy: { position: 'asc' },
           select: {
             id: true,
@@ -243,7 +243,7 @@ export class ProjectService {
             type: true,
             position: true,
             columns: {
-              where: { deletedAt: null },
+              where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
               orderBy: { position: 'asc' },
               select: {
                 id: true,
@@ -254,7 +254,7 @@ export class ProjectService {
                 createdAt: true,
                 updatedAt: true,
                 cards: {
-                  where: { deletedAt: null },
+                  where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
                   orderBy: { position: 'asc' },
                   select: {
                     id: true,
@@ -299,12 +299,17 @@ export class ProjectService {
       },
     });
 
+    const targetUserId = userId ?? project.ownerId;
+    await this.ensureDefaultBoards(targetUserId);
+
     const specialBoards = await this.prisma.board.findMany({
       where: {
-        ownerId: userId ?? project.ownerId,
-        projectId: null,
+        ownerId: targetUserId,
         type: { in: ['inbox', 'calendar'] },
-        deletedAt: null,
+        AND: [
+          { OR: [{ projectId: { isSet: false } }, { projectId: null }] },
+          { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] }
+        ]
       },
       select: {
         id: true,
@@ -312,7 +317,7 @@ export class ProjectService {
         type: true,
         position: true,
         columns: {
-          where: { deletedAt: null },
+          where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
           orderBy: { position: 'asc' },
           select: {
             id: true,
@@ -323,7 +328,7 @@ export class ProjectService {
             createdAt: true,
             updatedAt: true,
             cards: {
-              where: { deletedAt: null },
+              where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
               orderBy: { position: 'asc' },
               select: {
                 id: true,
@@ -463,18 +468,27 @@ export class ProjectService {
     const skip = (page - 1) * limit;
     
     const where: any = {
-      deletedAt: null,
       OR: [
-        { ownerId: userId },
-        { members: { some: { userId } } },
+        { deletedAt: { isSet: false } },
+        { deletedAt: null }
       ],
+      AND: [
+        {
+          OR: [
+            { ownerId: userId },
+            { members: { some: { userId } } },
+          ]
+        }
+      ]
     };
 
     if (search) {
       const words = search.trim().split(/\s+/);
-      where.AND = words.map(word => ({
-        name: { contains: word, mode: 'insensitive' }
-      }));
+      words.forEach(word => {
+        where.AND.push({
+          name: { contains: word, mode: 'insensitive' }
+        });
+      });
     }
 
     const [items, total] = await Promise.all([
@@ -490,7 +504,12 @@ export class ProjectService {
       }),
     ]);
 
-    return { items, total, page, limit };
+    const mappedItems = items.map((item: any) => ({
+      ...item,
+      id: item.id || item._id,
+    }));
+
+    return { items: mappedItems, total, page, limit };
   }
 
   private async ensureDefaultBoards(ownerId: string) {
@@ -500,8 +519,11 @@ export class ProjectService {
     const existingBoards = await this.prisma.board.findMany({
       where: {
         ownerId,
-        projectId: null,
         type: { in: DEFAULT_TYPES },
+        AND: [
+          { OR: [{ projectId: { isSet: false } }, { projectId: null }] },
+          { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] }
+        ]
       },
       select: { id: true, type: true },
     });
