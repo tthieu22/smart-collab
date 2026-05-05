@@ -1,38 +1,50 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import { Module, Global } from '@nestjs/common';
 import { ProjectController } from './project.controller';
-import { getGolevelupRabbitMQOptions, getRabbitMQOptions } from '../config/rabbitmq.config';
-import { ClientsModule } from '@nestjs/microservices';
-import { CardController } from './column/card.cotroller';
 import { ColumnController } from './column/column.controller';
+import { CardController } from './column/card.controller';
+import { ProjectService } from './project.service';
 
+// Internal implementations
+import { ProjectService as InternalProjectService } from './internal/project.service';
+import { ProjectHandler } from './internal/project.handle';
+
+import { BoardService as InternalBoardService } from './internal/board/board.service';
+import { BoardHandler } from './internal/board/board.handler';
+
+import { ColumnService as InternalColumnService } from './internal/column/column.service';
+import { ColumnHandler } from './internal/column/column.handler';
+
+import { CardService as InternalCardService } from './internal/card/card.service';
+import { CardHandler } from './internal/card/card.handle';
+
+import { ChatService as InternalChatService } from './internal/chat/chat.service';
+import { ChatHandler } from './internal/chat/chat.handle';
+import { MeetingService as InternalMeetingService } from './internal/meeting/meeting.service';
+import { MeetingHandler } from './internal/meeting/meeting.handle';
+import { AutomationService as InternalAutomationService } from './internal/automation/automation.service';
+import { AutomationHandler } from './internal/automation/automation.handle';
+
+@Global()
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    RabbitMQModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        getGolevelupRabbitMQOptions(configService),
-    }),
-    ClientsModule.registerAsync([
-      {
-        name: 'PROJECT_SERVICE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) =>
-          getRabbitMQOptions('project_queue', configService),
-      },
-      {
-        name: 'AUTH_SERVICE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) =>
-          getRabbitMQOptions('auth_queue_v2', configService),
-      },
-    ]),
+  controllers: [ProjectController, ColumnController, CardController],
+  providers: [
+    ProjectService,
+    // Internal implementations
+    InternalProjectService,
+    InternalBoardService,
+    InternalColumnService,
+    InternalCardService,
+    InternalChatService,
+    ProjectHandler,
+    BoardHandler,
+    ColumnHandler,
+    CardHandler,
+    ChatHandler,
+    MeetingHandler,
+    AutomationHandler,
+    InternalMeetingService,
+    InternalAutomationService,
   ],
-  controllers: [ProjectController, CardController, ColumnController],
+  exports: [ProjectService, InternalProjectService],
 })
 export class ProjectModule {}

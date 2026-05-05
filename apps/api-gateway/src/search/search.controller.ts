@@ -1,62 +1,37 @@
-import { Controller, Get, Query, UseGuards, Inject, Logger, Req } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { firstValueFrom } from 'rxjs';
+import { ProjectService } from '../project/project.service';
+import { HomeService } from '../home/home.service';
 
 @Controller('search')
 @UseGuards(JwtAuthGuard)
 export class SearchController {
-  private readonly logger = new Logger(SearchController.name);
-
   constructor(
-    @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
-    @Inject('HOME_SERVICE') private readonly homeClient: ClientProxy,
+    private readonly projectService: ProjectService,
+    private readonly homeService: HomeService,
   ) {}
 
   @Get()
-  async search(
-    @Query('q') q: string, 
-    @Query('limit') limit: string,
-    @Req() req: any
-  ) {
-    if (!q) {
-      return { projects: [], news: [], posts: [] };
-    }
+  async search(@Query('q') query: string, @Req() req: any) {
+    // 1. Search projects
+    const projects = await this.projectService.send(
+      { cmd: 'project.search' },
+      { query, userId: req.user.userId }
+    );
 
-    const searchLimit = parseInt(limit) || 20;
-    const userId = req.user?.userId;
+    // 2. Search news/posts via Home
+    const home = await this.homeService.send(
+      { cmd: 'home.news.search' },
+      { q: query }
+    );
 
-    try {
-      // 1. Search Projects
-      const projectResult: any = await firstValueFrom(
-        this.projectClient.send({ cmd: 'project.get_all' }, { search: q, page: 1, limit: searchLimit, userId })
-      );
-
-      // 2. Search News & Posts (Calling Java service)
-      const homeResult: any = await firstValueFrom(
-        this.homeClient.send(
-          { cmd: 'home.search.global' },
-          { 
-            userId: req.user?.userId,
-            payload: { q, limit: searchLimit }
-          }
-        )
-      );
-
-      this.logger.log(`Project Result: ${JSON.stringify(projectResult)}`);
-      this.logger.log(`Home Result: ${JSON.stringify(homeResult)}`);
-      this.logger.log(`[Search] Query: "${q}" | Projects found: ${projectResult?.data?.items?.length || 0} | News found: ${homeResult?.news?.length || 0} | Posts found: ${homeResult?.posts?.length || 0}`);
-
-      return {
-        // Project service returns { success, data: { items, total } }
-        projects: projectResult?.data?.items || projectResult?.items || [],
-        // Home service (Java) returns Map.of("news", list, "posts", list)
-        news: homeResult?.news || [],
-        posts: homeResult?.posts || [],
-      };
-    } catch (error: any) {
-      this.logger.error(`[SearchController] search error for "${q}":`, error);
-      return { projects: [], news: [], posts: [], error: error.message };
-    }
+    return {
+      success: true,
+      data: {
+        projects: (projects as any)?.data || [],
+        news: (home as any)?.data?.news || [],
+        posts: (home as any)?.data?.posts || [],
+      }
+    };
   }
 }

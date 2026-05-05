@@ -1,0 +1,611 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email                        String   @unique
+  password                     String?
+  firstName                    String?
+  lastName                     String?
+  avatar                       String?
+  coverImage                   String?
+  bio                          String?
+  location                     String?
+  website                      String?
+  birthday                     DateTime?
+  googleId                     String?
+  googleAccessToken            String?
+  googleRefreshToken           String?
+  role                         String   @default("USER")  // bỏ enum, dùng string
+  isVerified                   Boolean  @default(false)
+  emailVerificationCode        String?
+  emailVerificationCodeExpires DateTime?
+  emailNotifications           Boolean  @default(true)
+  pushNotifications            Boolean  @default(true)
+  loginCount                   Int      @default(0)
+  mood                         String?
+  createdAt                    DateTime? @default(now())
+  updatedAt                    DateTime? @updatedAt
+
+  refreshTokens                RefreshToken[]
+  posts                        Post[]
+  newsArticles                 NewsArticle[]
+  comments                     Comment[]
+  reactions                    Reaction[]
+  followers                    Follower[] @relation("Followers")
+  following                    Follower[] @relation("Following")
+  receivedNotifications        Notification[] @relation("Recipient")
+  auditLogs                    AuditLog[]
+  devices                      Device[]
+  deletedAt                    DateTime?
+}
+
+model Follower {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  followerId  String   @db.ObjectId
+  followingId String   @db.ObjectId
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([followerId, followingId])
+}
+
+model RefreshToken {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  hashedToken String
+  revoked     Boolean  @default(false)
+  device      String?
+  ip          String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  authorId  String   @db.ObjectId
+  content         String
+  title           String?
+  linkUrl         String?
+  media           Json?    @default("[]")
+  visibility      String?  @default("public")
+  mood            String?
+  backgroundStyle String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  author    User     @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  reactions Reaction[]
+}
+
+/// Tin tức / bài AI — tách bộ sưu tập khỏi Post (bảng tin xã hội).
+model NewsArticle {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  authorId  String   @db.ObjectId
+  category  String   @default("NEWS") // NEWS | TIP
+  title     String
+  content   String
+  linkUrl   String?
+  media     Json?    @default("[]")
+  
+  // Deduplication
+  hash      String?
+  sourceUrl String?
+  embedding Float[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model AutoPostSettings {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  enabled             Boolean  @default(false)
+  eventTriggerEnabled Boolean  @default(true)
+  postCountPerRun     Int      @default(1)
+  intervalMinutes     Int      @default(60)
+  contentTemplate     String
+  locale              String   @default("vi")
+  rssSources          String[]
+  topicTrackingDays   Int      @default(7)
+  lastRunAt           DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model AutoPostEventLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  event     String
+  status    String
+  message   String?
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  authorId  String   @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post      Post     @relation(fields: [postId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model Reaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  authorId  String   @db.ObjectId
+  type      String   // LIKE, LOVE, HAHA, WOW, SAD, ANGRY
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+
+  @@unique([postId, authorId])
+}
+
+model Notification {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  recipientId String   @db.ObjectId
+  senderId    String   @db.ObjectId
+  type        String   // LIKE, COMMENT, etc.
+  postId      String?  @db.ObjectId
+  commentId   String?  @db.ObjectId
+  projectId   String?
+  projectName String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  recipient   User     @relation(name: "Recipient", fields: [recipientId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  action    String   // LOGIN, UPDATE_PROFILE, CHANGE_PASSWORD, etc.
+  details   String?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model QrLogin {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String?  @db.ObjectId
+  status    String   @default("PENDING") // PENDING, SCANNED, CONFIRMED, EXPIRED
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+}
+
+model Device {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  refreshToken String?  @unique
+  ip           String?
+  userAgent    String?
+  deviceName   String?  // e.g. "Chrome on Windows"
+  location     String?
+  lastUsed     DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id])
+}
+  
+// --- PROJECT MODELS ---  
+// ------------------ PROJECT ------------------
+model Project {
+  id          String  @id @default(uuid()) @map("_id")
+  name        String
+  description String?
+  ownerId     String
+  folderPath  String?
+  visibility  String  @default("PRIVATE")
+  color       String?
+  background  String?
+
+  // File info
+  publicId         String?
+  fileUrl          String?
+  fileType         String?
+  fileSize         Int?
+  resourceType     String?
+  originalFilename String?
+  uploadedById     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Recycle Bin & Health
+  deletedAt    DateTime?
+  isArchived   Boolean   @default(false)
+  healthStatus String    @default("ON_TRACK") // ON_TRACK, AT_RISK, DELAYED
+
+  members ProjectMember[]
+  boards  Board[]
+  columns Column[]
+  cards   Card[]
+  views   CardView[]
+  events  EventStatistic[]
+
+  customFields CustomFieldDefinition[]
+  automations  AutomationRule[]
+  chatMessages ProjectChatMessage[]
+  meetings     ProjectMeeting[]
+
+  @@unique([folderPath], map: "unique_project_folderPath")
+  @@index([ownerId])
+  @@index([uploadedById])
+}
+
+// ------------------ PROJECT MEETING ------------------
+model ProjectMeeting {
+  id           String   @id @default(uuid()) @map("_id")
+  projectId    String
+  title        String?
+  meetLink     String
+  participants String[] // Array of userIds
+  createdById  String
+  contextId    String?  // Optional cardId or boardId
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+// ------------------ PROJECT MEMBER ------------------
+model ProjectMember {
+  id        String   @id @default(uuid()) @map("_id")
+  projectId String
+  userId    String
+  role      String   @default("MEMBER")
+  status    String   @default("ACCEPTED") // PENDING, ACCEPTED, REJECTED
+  joinedAt  DateTime @default(now())
+
+  // Denormalized user info
+  userName    String?
+  userAvatar  String?
+  userEmail   String?
+
+  // Gamification
+  points   Int      @default(0)
+  badges   String[] @default([])
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+// ------------------ BOARD ------------------
+model Board {
+  id        String   @id @default(uuid()) @map("_id")
+  projectId String?
+  title     String
+  type      String
+  position  Int       @default(0)
+  columnIds String[]  @default([])
+  metadata  Json?
+
+  // Recycle Bin
+  deletedAt  DateTime?
+  isArchived Boolean   @default(false)
+
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  columns   Column[]
+  ownerId   String?
+
+  @@index([projectId])
+  @@index([ownerId])
+  @@index([projectId, position])
+}
+
+// ------------------ COLUMN ------------------
+model Column {
+  id        String   @id @default(uuid()) @map("_id")
+  projectId String?
+  boardId   String?
+  title     String
+  position  Int      @default(0)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Recycle Bin
+  deletedAt  DateTime?
+  isArchived Boolean   @default(false)
+
+  project Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  board   Board?      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards   Card[]
+  views   CardView[]
+
+  @@index([projectId, boardId, position])
+}
+
+// ------------------ CARD ------------------
+// ------------------ CARD ------------------
+model Card {
+  id           String   @id @default(uuid()) @map("_id")
+  projectId    String?
+  columnId     String?
+  title        String
+  description  String?
+  status       String   @default("ACTIVE")
+  startDate    DateTime?
+  deadline     DateTime?
+  priority     Int?
+  position     Int      @default(0)
+
+  // Người tạo / sửa (denormalized - không FK)
+  createdById     String?
+  createdByName   String?
+  createdByAvatar String?
+  updatedById     String?
+  updatedByName   String?
+  updatedByAvatar String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Recycle Bin
+  deletedAt  DateTime?
+  isArchived Boolean   @default(false)
+  
+  // === COVER IMAGE (ảnh bìa) ===
+  coverPublicId     String?
+  coverUrl          String?
+  coverFileType     String?
+  coverFileSize     Int?
+  coverResourceType String?
+  coverFilename     String?
+
+  // === LOCATION (cho Map View) ===
+  locationName      String?
+  latitude          Float?
+  longitude         Float?
+
+  // === RELATIONS ===
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  column  Column?  @relation(fields: [columnId], references: [id], onDelete: SetNull)
+
+  labels      CardLabel[]
+  members     CardMember[]
+  views       CardView[]
+  comments    CardComment[]
+  checklist   ChecklistItem[]
+  attachments Attachment[]
+  customFieldValues CustomFieldValue[]
+
+  // Gantt Dependencies
+  dependencyId String?
+  dependency   Card?   @relation("CardDependency", fields: [dependencyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dependents   Card[]  @relation("CardDependency")
+
+  @@index([projectId, status, updatedAt])
+  @@index([columnId, position])
+}
+
+// ------------------ CARD MEMBER ------------------
+model CardMember {
+  id          String   @id @default(uuid()) @map("_id")
+  cardId      String
+  userId      String
+  userName    String?
+  userAvatar  String?
+  joinedAt    DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, userId])
+  @@index([userId])
+}
+
+// ------------------ CARD COMMENT ------------------
+model CardComment {
+  id        String   @id @default(uuid()) @map("_id")
+  cardId    String
+  userId    String
+  userName  String
+  avatar    String?
+  content   String
+  createdAt DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+}
+
+// ------------------ CHECKLIST ITEM ------------------
+model ChecklistItem {
+  id       String @id @default(uuid()) @map("_id")
+  cardId   String
+  title    String
+  done     Boolean @default(false)
+  position Int     @default(0)
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, position])
+}
+
+// ------------------ ATTACHMENT (File / Image) ------------------
+model Attachment {
+  id           String   @id @default(uuid()) @map("_id")
+  cardId       String
+  name         String
+  url          String
+  size         String
+  uploadedAt   DateTime @default(now())
+
+  // Người upload (denormalized)
+  uploadedById     String?
+  uploadedByName   String?
+  uploadedByAvatar String?
+
+  // File info (giống Project)
+  publicId         String?
+  fileType         String?
+  fileSize         Int?
+  resourceType     String?
+  originalFilename String?
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([uploadedAt])
+}
+// ------------------ CARD LABEL ------------------
+model CardLabel {
+  id     String @id @default(uuid()) @map("_id")
+  cardId String
+  label  String
+  color  String?
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, label])
+}
+
+// ------------------ CARD VIEW ------------------
+model CardView {
+  id            String   @id @default(uuid()) @map("_id")
+  cardId        String
+  projectId     String
+  componentType String // board / inbox / calendar
+  columnId      String?
+  position      Int      @default(0)
+  version       Int      @default(1)
+  isPinned      Boolean?
+  customTitle   String?
+  metadata      Json?
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  card    Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  column  Column? @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, projectId, componentType, version], map: "unique_card_view_version")
+  @@index([projectId, componentType, position])
+  @@index([projectId, columnId, position])
+  @@index([cardId])
+}
+
+// ------------------ EVENTS / STATISTICS ------------------
+model EventStatistic {
+  id        String   @id @default(uuid()) @map("_id")
+  projectId String
+  eventType String
+  count     Int      @default(0)
+  date      DateTime
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, eventType, date])
+}
+
+// ------------------ CUSTOM FIELDS ------------------
+model CustomFieldDefinition {
+  id        String   @id @default(uuid()) @map("_id")
+  projectId String
+  name      String
+  type      String   // TEXT, NUMBER, DROPDOWN, DATE
+  options   Json?    // For DROPDOWN type
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  values  CustomFieldValue[]
+
+  @@index([projectId])
+}
+
+model CustomFieldValue {
+  id        String  @id @default(uuid()) @map("_id")
+  cardId    String
+  fieldId   String
+  value     String?
+
+  card  Card                  @relation(fields: [cardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  field CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cardId, fieldId])
+  @@index([fieldId])
+}
+
+// ------------------ AUTOMATION ------------------
+model AutomationRule {
+  id           String   @id @default(uuid()) @map("_id")
+  projectId    String
+  name         String
+  triggerType  String   // CARD_CREATED, CARD_MOVED, DEADLINE_APPROACHING
+  conditions   Json?    // Filter conditions
+  actionType   String   // ASSIGN_USER, ADD_LABEL, SEND_NOTIFICATION
+  actionConfig Json?    // Action parameters
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+// ------------------ PROJECT CHAT ------------------
+model ProjectChatMessage {
+  id        String   @id @default(uuid()) @map("_id")
+  projectId String
+  userId    String
+  userName  String?
+  avatar    String?
+  content   String
+  type      String   @default("TEXT") // TEXT, SYSTEM, FILE
+  
+  // Real-time enhancements
+  parentId    String?
+  replyTo     ProjectChatMessage? @relation("ChatReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     ProjectChatMessage[] @relation("ChatReplies")
+  
+  attachments Json?    // Array of file info: { url, name, type, size }
+  metadata    Json?    // For mentions: { taggedUserIds: string[] }, reactions, etc.
+  
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+// ------------------ USER CACHE (Synced from Auth) ------------------
+model UserCache {
+  id String @id @map("_id")
+  email              String
+  firstName          String?
+  lastName           String?
+  avatar             String?
+  role               String   @default("USER")
+  googleAccessToken  String?
+  googleRefreshToken String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
+}

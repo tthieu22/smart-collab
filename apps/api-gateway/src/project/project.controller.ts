@@ -5,7 +5,6 @@ import {
   UseGuards,
   Req,
   Patch,
-  Inject,
   Logger,
   Get,
   Param,
@@ -13,8 +12,8 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { Project } from './dto/project.dto';
-import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom, timeout } from 'rxjs';
+import { ProjectService } from './project.service';
+import { AuthService } from '../auth/auth.service';
 import * as nodemailer from 'nodemailer';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -25,14 +24,13 @@ export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);
 
   constructor(
-    @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
-    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
+    private readonly projectService: ProjectService,
+    private readonly authService: AuthService,
   ) {}
 
   /** CREATE PROJECT */
   @Post()
   async create(@Body() body: Project, @Req() req: any) {
-    this.logger.log(`Received create project request: ${JSON.stringify(body)}`);
     const user = req.user;
     const dto = { 
       ...body, 
@@ -41,46 +39,24 @@ export class ProjectController {
       userAvatar: user.avatar,
       userEmail: user.email
     };
-    this.logger.log(`Sending create project DTO: ${JSON.stringify(dto)}`);
-
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.create' }, dto),
-    );
-
-    this.logger.log(`Create project response: ${JSON.stringify(result)}`);
-    return result;
+    return this.projectService.send({ cmd: 'project.create' }, dto);
   }
 
   /** UPDATE PROJECT */
   @Patch('update')
   async update(@Body() body: Project, @Req() req: any) {
     const user = req.user;
-    this.logger.log(`Received update project request from ${user.userId}: ${JSON.stringify(body)}`);
-
     const dto = { ...body, userId: user.userId };
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.update' }, dto),
-    );
-
-    this.logger.log(`Update project response: ${JSON.stringify(result)}`);
-    return result;
+    return this.projectService.send({ cmd: 'project.update' }, dto);
   }
 
   /** GET PROJECT */
   @Public()
   @Post('get')
   async getProject(@Body() body: Project,  @Req() req: any) {
-    this.logger.log(`Received get project request: ${JSON.stringify(body)}`);
-
-    // User có thể không có, vì route public
     const userId = req.user?.userId;
     const dto = { ...body, userId };
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.get' }, dto),
-    );
-
-    // this.logger.log(`Get project response: ${JSON.stringify(result)}`);
-    return result;
+    return this.projectService.send({ cmd: 'project.get' }, dto);
   }
 
   /** GET ALL PROJECTS */
@@ -90,109 +66,61 @@ export class ProjectController {
     const page = body.page ? Number(body.page) : 1;
     const limit = body.limit ? Number(body.limit) : 10;
     const search = body.search;
-    
     const dto = { ...body, userId, page, limit, search };
-    this.logger.log(`Received get-all projects request: ${JSON.stringify(dto)}`);
-
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.get_all' }, dto),
-    );
-
-    // this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
-    return result;
+    return this.projectService.send({ cmd: 'project.get_all' }, dto);
   }
   
   /** GET CARD BY ID */
   @Get('card')
   async getCardById(@Body() body: { cardId?: string }, @Req() req: any) {
     const userId = req.user?.userId;
-    const dto = { ...body, userId };
-    this.logger.log(`Received get-all projects request: ${JSON.stringify(dto)}`);
-
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.get.card' }, dto),
-    );
-
-    // this.logger.log(`Get-all projects response: ${JSON.stringify(result)}`);
-    return result;
+    return this.projectService.send({ cmd: 'project.card.get' }, { ...body, userId });
   }
 
-
-  /**
-   * POST /projects/members
-   * Body: { projectId: string, userId: string }
-   */
+  /** ADD MEMBER */
   @Post('members')
   async addMember(@Body() body: { projectId: string; userId: string }, @Req() req: any) {
     const user = req.user;
-    this.logger.log(`Adding member ${body.userId} to project ${body.projectId} by ${user.userId}`);
+    let userData = await this.authService.getCurrentUser({ userId: body.userId });
     
-    // Fetch user info from AUTH_SERVICE to denormalize it in Project service
-    let userData: any = null;
-    try {
-      userData = await firstValueFrom(
-        this.authClient.send({ cmd: 'auth.me' }, { userId: body.userId }).pipe(timeout(3000))
-      );
-    } catch (err) {
-      this.logger.warn(`Failed to fetch user info for ${body.userId}: ${err}`);
-    }
-
     const userName = userData?.data ? `${userData.data.firstName || ''} ${userData.data.lastName || ''}`.trim() || userData.data.email : undefined;
     const userAvatar = userData?.data?.avatar;
 
-    // Gọi microservice để thêm member vào project
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.add_member' }, { 
-        ...body, 
-        addedBy: user.userId,
-        userName,
-        userAvatar,
-        userEmail: userData?.data?.email
-      }),
-    );
-    return result;
+    return this.projectService.send({ cmd: 'project.add_member' }, { 
+      ...body, 
+      addedBy: user.userId,
+      userName,
+      userAvatar,
+      userEmail: userData?.data?.email
+    });
   }
 
   /** DELETE PROJECT */
   @Post('delete')
   async delete(@Body() body: { id: string }, @Req() req: any) {
     const userId = req.user.userId;
-    this.logger.log(`Received delete project request from ${userId}: ${JSON.stringify(body)}`);
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.delete' }, { projectId: body.id, userId }),
-    );
-    return result;
+    return this.projectService.send({ cmd: 'project.delete' }, { projectId: body.id, userId });
   }
 
   /** REMOVE MEMBER */
   @Post('remove-member')
   async removeMember(@Body() body: { projectId: string; userId: string }, @Req() req: any) {
     const user = req.user;
-    this.logger.log(`Removing member ${body.userId} from project ${body.projectId} by ${user.userId}`);
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.remove_member' }, { 
-        projectId: body.projectId, 
-        userId: body.userId, 
-        removedBy: user.userId 
-      }),
-    );
-    return result;
+    return this.projectService.send({ cmd: 'project.remove_member' }, { 
+      projectId: body.projectId, 
+      userId: body.userId, 
+      removedBy: user.userId 
+    });
   }
 
-  /**
-   * POST /projects/invite-email
-   * Body: { email: string, projectId: string, projectName: string }
-   */
+  /** INVITE EMAIL */
   @Post('invite-email')
   async inviteEmail(
     @Body() body: { email: string; projectId: string; projectName: string },
     @Req() req: any,
   ) {
     const inviterName = req.user?.username || req.user?.email || 'Một thành viên';
-    this.logger.log(`Sending invite email to ${body.email} for project ${body.projectId}`);
-
     try {
-      // 1. Cấu hình transporter (Lấy từ biến môi trường, mặc định dùng dummy)
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT || '587', 10),
@@ -203,31 +131,22 @@ export class ProjectController {
         },
       });
 
-      // 2. Đọc file template HTML
       const templatePath = path.join(__dirname, 'templates', 'invite-email.html');
       let htmlTemplate = '';
       if (fs.existsSync(templatePath)) {
         htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
       } else {
-        // Fallback nội dung nếu không tìm thấy file
         htmlTemplate = `<p>Bạn được mời tham gia dự án {{projectName}} bởi {{inviterName}}.</p><a href="{{inviteUrl}}">Tham gia ngay</a>`;
       }
 
-      // 3. Tạo inviteUrl (Chuyển hướng đến trang Auth rồi tự động join project)
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const inviteUrl = `${frontendUrl}/auth/login?redirect=/projects/${body.projectId}&invite=true&email=${encodeURIComponent(body.email)}`;
 
-      // In ra terminal để DEV có thể copy link tự test mà không cần mail thực tế
-      this.logger.log(`\n\n--- MOCK EMAIL LINK ---\n${inviteUrl}\n-----------------------\n`);
-
-      // 4. Thay thế các biến trong template
       htmlTemplate = htmlTemplate
         .replace(/{{projectName}}/g, body.projectName || 'Dự án mới')
         .replace(/{{inviterName}}/g, inviterName)
         .replace(/{{inviteUrl}}/g, inviteUrl);
 
-      // 5. Gửi email
-      // Ghi chú: Cần cấu hình SMTP thực tế trong file .env để hoạt động
       if (process.env.SMTP_USER) {
         await transporter.sendMail({
           from: `"Smart Collab" <${process.env.SMTP_USER}>`,
@@ -235,23 +154,14 @@ export class ProjectController {
           subject: `[Smart Collab] Lời mời tham gia dự án: ${body.projectName}`,
           html: htmlTemplate,
         });
-        this.logger.log(`Email sent successfully to ${body.email}`);
-      } else {
-        this.logger.warn('SMTP_USER is not configured. Email sending simulated.');
       }
-
       return { success: true, message: 'Email sent successfully (or simulated)' };
     } catch (error) {
-      this.logger.error(`Failed to send email to ${body.email}`, error);
       return { success: false, message: 'Failed to send email', error: error instanceof Error ? error.message : String(error) };
     }
   }
 
-  /**
-   * RESPOND TO PROJECT INVITE
-   * POST /projects/:id/respond-invite
-   * Body: { accept: boolean }
-   */
+  /** RESPOND TO PROJECT INVITE */
   @Post(':id/respond-invite')
   async respondInvite(
     @Param('id') projectId: string,
@@ -259,146 +169,61 @@ export class ProjectController {
     @Req() req: any,
   ) {
     const user = req.user;
-    this.logger.log(`User ${user.userId} responding to invite for project ${projectId}: ${body.accept}`);
-    
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.member.respond_invite' }, { 
-        projectId, 
-        userId: user.userId, 
-        accept: body.accept 
-      }),
-    );
-    return result;
+    return this.projectService.send({ cmd: 'project.member.respond_invite' }, { 
+      projectId, 
+      userId: user.userId, 
+      accept: body.accept 
+    });
   }
 
   @Post('analytics')
   async getAnalytics(@Body() body: { projectId?: string }, @Req() req: any) {
     const userId = req.user.userId;
-    this.logger.log(`Fetching analytics for user ${userId}, project ${body.projectId}`);
-    
-    const result = await firstValueFrom(
-      this.projectClient.send({ cmd: 'project.analytics' }, { 
-        userId, 
-        projectId: body.projectId 
-      }),
-    );
-    return result;
-  }
-
-  /** PROJECT HEALTH */
-  @Get(':id/health')
-  async getHealth(@Param('id') projectId: string) {
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.get_health' }, { projectId }),
-    );
+    return this.projectService.send({ cmd: 'project.analytics' }, { 
+      userId, 
+      projectId: body.projectId 
+    });
   }
 
   /** RECYCLE BIN */
   @Get(':id/recycle-bin')
   async getRecycleBin(@Param('id') projectId: string) {
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.recycle-bin.get_all' }, { projectId }),
-    );
+    return this.projectService.send({ cmd: 'project.recycle-bin.get_all' }, { projectId });
   }
 
   @Post(':id/restore')
   async restoreItem(@Param('id') projectId: string, @Body() body: { type: string; id: string }) {
-    let cmd = '';
-    switch (body.type) {
-      case 'project': cmd = 'project.restore'; break;
-      case 'board': cmd = 'project.board.restore'; break;
-      case 'column': cmd = 'project.column.restore'; break;
-      case 'card': cmd = 'project.card.restore'; break;
-    }
-    return firstValueFrom(
-      this.projectClient.send({ cmd }, { projectId, cardId: body.id, boardId: body.id, columnId: body.id }),
-    );
+    let cmd = 'project.restore';
+    if (body.type === 'board') cmd = 'project.board.restore';
+    if (body.type === 'column') cmd = 'project.column.restore';
+    if (body.type === 'card') cmd = 'project.card.restore';
+    
+    return this.projectService.send({ cmd }, { 
+      projectId, 
+      cardId: body.id, 
+      boardId: body.id, 
+      columnId: body.id 
+    });
   }
 
-  /** PROJECT CHAT */
+  /** CHAT */
   @Get(':id/chat')
   async getChatMessages(@Param('id') projectId: string, @Req() req: any) {
     const { skip, limit } = req.query;
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.chat.get_all' }, { 
-        projectId, 
-        skip: skip ? Number(skip) : 0, 
-        limit: limit ? Number(limit) : 20 
-      }),
-    );
+    return this.projectService.send({ cmd: 'project.chat.get_all' }, { 
+      projectId, 
+      skip: skip ? Number(skip) : 0, 
+      limit: limit ? Number(limit) : 20 
+    });
   }
 
   @Post(':id/chat')
   async sendChatMessage(@Param('id') projectId: string, @Body() body: any, @Req() req: any) {
     const user = req.user;
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.chat.send' }, { 
-        projectId, 
-        userId: user.userId, 
-        payload: body 
-      }),
-    );
-  }
-
-  /** AI ENHANCEMENTS */
-  @Post(':id/ai/health')
-  async aiAnalyzeHealth(@Param('id') projectId: string, @Req() req: any) {
-    const user = req.user;
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'ai.analyze-project-health' }, { projectId, userId: user.userId }),
-    );
-  }
-
-  /** PROJECT MEETINGS */
-  @Post(':id/meetings')
-  async createMeeting(@Param('id') projectId: string, @Body() body: any, @Req() req: any) {
-    const userId = req.user.userId || req.user.sub; // Hỗ trợ cả 2 định dạng
-    this.logger.log(`Creating meeting for project ${projectId} by user ${userId}`);
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.meeting.create' }, { 
-        projectId, 
-        userId, 
-        payload: body 
-      }),
-    );
-  }
-
-  @Post('cards/:cardId/ai-subtasks')
-  async aiGenerateSubtasks(@Param('cardId') cardId: string, @Req() req: any) {
-    const user = req.user;
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'ai.generate-subtasks' }, { cardId, userId: user.userId }),
-    );
-  }
-
-  @Post('cards/:cardId/ai-timeline')
-  async aiPredictTimeline(@Param('cardId') cardId: string, @Req() req: any) {
-    const user = req.user;
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'ai.predict-timeline' }, { cardId, userId: user.userId }),
-    );
-  }
-
-  @Post(':id/ai/sentiment')
-  async aiAnalyzeSentiment(@Param('id') projectId: string, @Req() req: any) {
-    const user = req.user;
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'ai.analyze-sentiment' }, { projectId, userId: user.userId }),
-    );
-  }
-
-  /** CUSTOM FIELDS */
-  @Post('custom-field')
-  async createCustomField(@Body() body: any) {
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.custom-field.create' }, body),
-    );
-  }
-
-  @Get(':projectId/custom-field')
-  async getCustomFields(@Param('projectId') projectId: string) {
-    return firstValueFrom(
-      this.projectClient.send({ cmd: 'project.custom-field.get_all' }, { projectId }),
-    );
+    return this.projectService.send({ cmd: 'project.chat.send' }, { 
+      projectId, 
+      userId: user.userId, 
+      payload: body 
+    });
   }
 }
