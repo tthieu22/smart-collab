@@ -19,7 +19,7 @@ async function bootstrap() {
     configService.get<string>('PAYLOAD_LIMIT') || '50mb';
 
   const frontendUrl =
-    configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    configService.get<string>('FRONTEND_URL') || 'https://tthieu-smart-collab.vercel.app/';
 
   // ⚠️ FIX CRITICAL: Render always provides string PORT
   const port = parseInt(process.env.PORT || '8000', 10);
@@ -29,7 +29,7 @@ async function bootstrap() {
     origin:
       process.env.NODE_ENV === 'production'
         ? frontendUrl
-        : 'http://localhost:3000',
+        : 'https://tthieu-smart-collab.vercel.app/',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
