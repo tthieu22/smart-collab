@@ -59,7 +59,7 @@ async function bootstrap() {
     exclude: ['health', 'health/ready'],
   });
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`🔧 Environment: ${configService.get<string>('NODE_ENV')}`);
   logger.log(`🚀 Payload limit: ${payloadLimit}`);
   logger.log(`🚀 Server running on port ${port}`);
