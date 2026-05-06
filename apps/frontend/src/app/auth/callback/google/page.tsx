@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@smart/services/auth.service';
+import { useAuthStore } from '@smart/store/auth';
 import { Loading } from '@smart/components/ui/loading';
 
 export default function GoogleCallbackPage() {
@@ -18,8 +19,15 @@ export default function GoogleCallbackPage() {
     if (code) {
       processedRef.current = true;
       authService.oauthExchange(code)
-        .then(() => {
-          router.push('/');
+        .then((res) => {
+          if (res.success && res.data?.accessToken) {
+            // Cập nhật token và thông tin user vào store
+            const { login } = useAuthStore.getState();
+            login(res.data.accessToken, res.data.user);
+            router.push('/');
+          } else {
+            throw new Error(res.message || 'Không nhận được mã truy cập');
+          }
         })
         .catch((err) => {
           console.error('OAuth exchange error:', err);

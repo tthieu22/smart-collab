@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   Layers,
   Newspaper,
-  Settings,
-  Sparkles
 } from "lucide-react";
 import { cn } from "@smart/lib/utils";
 import { useFeedStore } from "@smart/store/feed";
@@ -21,7 +19,6 @@ export function Navbar() {
     { key: "/", icon: <LayoutDashboard size={18} />, label: "Feed" },
     { key: "/projects", icon: <Layers size={18} />, label: "Dự án" },
     { key: "/news", icon: <Newspaper size={18} />, label: "Tin tức" },
-    { key: "/admin/ai-auto-post", icon: <Settings size={18} />, label: "Cấu hình AI" },
   ];
 
   const handleItemClick = (e: React.MouseEvent, key: string) => {

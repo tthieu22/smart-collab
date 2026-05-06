@@ -146,9 +146,9 @@ export default function FeedPostCard({ postId }: { postId: string }) {
                   {dayjs(post.createdAt).fromNow()}
                 </span>
                 <span>•</span>
-                <Tooltip title={post.visibility === 'public' ? 'Công khai' : post.visibility === 'friends' ? 'Bạn bè' : 'Chỉ mình tôi'}>
+                <Tooltip title={(post.visibility || 'public').toLowerCase() === 'public' ? 'Công khai' : (post.visibility || 'public').toLowerCase() === 'friends' ? 'Bạn bè' : 'Chỉ mình tôi'}>
                   <span className="flex items-center gap-1">
-                    {visibilityIcons[post.visibility || 'public']}
+                    {visibilityIcons[(post.visibility || 'public').toLowerCase() as keyof typeof visibilityIcons] || visibilityIcons.public}
                   </span>
                 </Tooltip>
               </div>

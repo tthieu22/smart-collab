@@ -128,11 +128,21 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   draftBackgroundStyle: null,
 
   bootstrap: (dataset: FeedDataset) => {
+    console.log('[FeedStore] Bootstrapping with dataset:', dataset);
     const users: Record<FeedID, FeedUser> = { ...get().users };
     const posts: Entities<FeedPost> = {};
     const comments: Entities<FeedComment> = {};
     const postIds: FeedID[] = [];
     const commentsByPostId: Record<FeedID, FeedID[]> = {};
+
+    if (!dataset) {
+      console.error('[FeedStore] Bootstrap failed: dataset is null/undefined');
+      return;
+    }
+
+    if (!dataset.users || !dataset.posts) {
+      console.error('[FeedStore] Bootstrap failed: users or posts missing from dataset', dataset);
+    }
 
     dataset.users.forEach((u) => {
       const normalizedUser = {
@@ -147,6 +157,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     dataset.posts.forEach((p) => {
       posts[p.id] = {
         ...p,
+        visibility: (p.visibility || 'public').toLowerCase() as any,
         reactionSummary: { ...emptyReactions, ...(p.reactionSummary || {}) },
         media: p.media || [],
         myReaction: p.myReaction ?? null,

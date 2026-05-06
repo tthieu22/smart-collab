@@ -64,6 +64,8 @@ export interface OAuthExchangeResponse {
   message: string;
   data?: {
     accessToken: string;
+    refreshToken?: string;
+    user?: User;
   };
 }
 

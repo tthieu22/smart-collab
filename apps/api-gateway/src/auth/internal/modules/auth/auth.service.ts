@@ -289,7 +289,18 @@ export class AuthService {
     const user = await this.users.findOne(rec.userId);
     if (!user) return null;
 
-    return this.issueTokensForUser(user);
+    const tokens = await this.issueTokensForUser(user);
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar,
+        role: user.role,
+      }
+    };
   }
 
   /** 📱 QR Login Logic */

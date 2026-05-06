@@ -13,7 +13,7 @@ interface AuthState {
   setAccessToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
   setInitialized: (initialized: boolean) => void;
-  login: (token: string) => void;
+  login: (token: string, user?: any) => void;
   logout: () => void;
   clearAuth: () => void;
   initializeAuth: () => Promise<boolean>;
@@ -32,17 +32,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setLoading: (loading: boolean) => set({ isLoading: loading }),
   setInitialized: (initialized: boolean) => set({ isInitialized: initialized }),
 
-  login: async (token: string) => {
+  login: async (token: string, user?: any) => {
     const { setCurrentUser } = useUserStore.getState();
     set({ accessToken: token, isAuthenticated: true, isLoading: true });
 
-    try {
-      const response = await authService.me();
-      if (response.success && response.data) {
-        setCurrentUser(response.data);
-      }
-    } finally {
+    if (user) {
+      setCurrentUser(user);
       set({ isLoading: false });
+    } else {
+      try {
+        const response = await authService.me();
+        if (response.success && response.data) {
+          setCurrentUser(response.data);
+        }
+      } finally {
+        set({ isLoading: false });
+      }
     }
 
     // Lazy-init socket

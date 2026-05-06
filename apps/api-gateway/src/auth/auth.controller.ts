@@ -261,8 +261,9 @@ export class AuthController {
   async googleRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
     this.logger.debug('⚡️ [/auth/google/redirect] handler calleed');
 
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://tthieu-smart-collab.vercel.app';
     const cb = this.configService.get<string>('FRONTEND_GOOGLE_CALLBACK_URL')
-      ?? 'http://localhost:3000/auth/callback/google';
+      ?? `${frontendUrl}/auth/callback/google`;
 
     try {
       this.logger.debug('👉 req.user:', req.user);

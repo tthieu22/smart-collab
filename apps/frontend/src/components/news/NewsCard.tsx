@@ -13,7 +13,20 @@ interface NewsCardProps {
 
 export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) {
   const thumb = article.media?.find((m) => m.type?.toLowerCase() === 'image') ?? article.media?.[0];
-  const excerpt = article.content.replace(/\s+/g, ' ').trim();
+  const getSafeExcerpt = (text: string) => {
+    let cleanText = text;
+    try {
+      if (text.trim().startsWith('{')) {
+        const parsed = JSON.parse(text);
+        cleanText = parsed.content || parsed.title || text;
+      }
+    } catch {
+      cleanText = text;
+    }
+    return cleanText.replace(/\s+/g, ' ').trim();
+  };
+
+  const excerpt = getSafeExcerpt(article.content);
   const isGrid = variant === 'grid';
 
   const excerptShort = excerpt.length > (isGrid ? 100 : 180)
