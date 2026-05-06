@@ -92,16 +92,16 @@ export default function ProjectSwitchModal({ isOpen, onClose }: ProjectSwitchMod
             </div>
             <div>
               <h1 className={`text-lg font-bold tracking-tight m-0 dark:text-gray-100 text-gray-800`}>
-                Chuyển đổi dự án
+                Du hành Thiên hà
               </h1>
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium m-0">
                 Chọn dự án bạn muốn truy cập nhanh
               </p>
             </div>
           </div>
-          
+
           <Input
-            placeholder="Tìm kiếm dự án..."
+            placeholder="Tìm kiếm tọa độ thiên hà..."
             prefix={<SearchOutlined className="opacity-40" />}
             size="large"
             className="w-72 bg-neutral-100 dark:bg-white/5 border-none rounded-xl h-10"
@@ -127,9 +127,9 @@ export default function ProjectSwitchModal({ isOpen, onClose }: ProjectSwitchMod
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
+                <ProjectCard
+                  key={project.id}
+                  project={project}
                   onClick={() => handleProjectClick(project.id)}
                   showMembers={false}
                   disablePrefetch={true}

@@ -37,7 +37,7 @@ export default function ProfileSidebar({
                             <div className="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
                                 <Sparkles size={14} className="text-blue-500" />
                             </div>
-                            <span className="text-[10px] font-black tracking-[0.2em] text-gray-800 dark:text-gray-100 uppercase">Giới thiệu</span>
+                            <span className="text-[10px] font-black tracking-[0.2em] text-gray-800 dark:text-gray-100 uppercase">Lịch Sử Du Hành</span>
                         </div>
                         {isMe && <Edit size={12} className="text-gray-400 group-hover:text-blue-500 cursor-pointer transition-colors" onClick={() => setIsEditModalOpen(true)} />}
                     </div>
@@ -107,7 +107,7 @@ export default function ProfileSidebar({
                         <div className="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
                             <LayoutGrid size={14} className="text-indigo-500" />
                         </div>
-                        <span className="text-[10px] font-black tracking-[0.2em] text-gray-800 dark:text-gray-100 uppercase">Khoảnh khắc</span>
+                        <span className="text-[10px] font-black tracking-[0.2em] text-gray-800 dark:text-gray-100 uppercase">Dữ Liệu Hình Ảnh</span>
                     </div>
                     {userMedia.length > 0 && (
                         <button

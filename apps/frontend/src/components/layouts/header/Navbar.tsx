@@ -16,9 +16,9 @@ export function Navbar() {
   const reloadFeed = useFeedStore((s) => s.reloadFeed);
 
   const items = [
-    { key: "/", icon: <LayoutDashboard size={18} />, label: "Feed" },
-    { key: "/projects", icon: <Layers size={18} />, label: "Dự án" },
-    { key: "/news", icon: <Newspaper size={18} />, label: "Tin tức" },
+    { key: "/", icon: <LayoutDashboard size={18} />, label: "Nhật Ký Tinh Tú" },
+    { key: "/projects", icon: <Layers size={18} />, label: "Thiên Hà" },
+    { key: "/news", icon: <Newspaper size={18} />, label: "Bản Tin Thiên Hà" },
   ];
 
   const handleItemClick = (e: React.MouseEvent, key: string) => {

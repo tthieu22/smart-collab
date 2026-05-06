@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@smart/hooks/useAuth';
-import { Loading } from '@smart/components/ui/loading';
+import GlobalLoading from '@smart/components/ui/GlobalLoading';
 import { ROUTES } from '@smart/lib/constants';
 import { useUserStore } from '@smart/store/user';
 import { useAuthStore } from '@smart/store/auth';
@@ -37,9 +37,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [isInitialized, isUserInitialized, accessToken, user, router, pathname]);
 
-  if (!isInitialized) {
-    return <Loading text=" " />;
-  }
-
-  return <>{children}</>;
+  return (
+    <>
+      <GlobalLoading loading={!isInitialized} text="Đang chuẩn bị phi thuyền cộng tác..." />
+      {isInitialized && children}
+    </>
+  );
 };

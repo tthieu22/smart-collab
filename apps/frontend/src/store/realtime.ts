@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { projectStore } from '@smart/store/project';
 import { useAuthStore } from '@smart/store/auth';
 import { useUserStore } from '@smart/store/user';
+import { message } from '@smart/providers/AntdStaticProvider';
 import { MoveCopyCardPayload } from '@smart/types/project';
 
 type CorrelationCallback = (msg: any) => void;
@@ -461,10 +462,41 @@ export class ProjectSocketManager {
       case 'realtime.notification.created': {
         const { useUserNotificationStore } = require('./user-notifications');
         useUserNotificationStore.getState().addNotification(msg);
+        
+        // Phát âm thanh thông báo
+        try {
+          const audio = new Audio('/sound/kai.mp3');
+          audio.play().catch(e => console.warn('Audio play failed (waiting for user interaction):', e));
+        } catch (err) {
+          console.error('Failed to play notification sound:', err);
+        }
         break;
       }
       case 'realtime.project.updated': {
         if (msg?.id) store.updateProject(msg);
+        break;
+      }
+      case 'realtime.project.deleted': {
+        if (msg?.projectId) {
+          store.removeProject(msg.projectId);
+          message.warning('Dự án này đã bị xóa hoặc di chuyển vào thùng rác.');
+        }
+        break;
+      }
+      case 'realtime.project.restored': {
+        if (msg?.id) {
+          store.addProject(msg);
+          message.success(`Dự án "${msg.name}" đã được khôi phục.`);
+        }
+        break;
+      }
+      case 'realtime.recycle.added': {
+        // Có thể thông báo cho user nếu họ đang mở tab Thùng rác
+        console.log('[REALTIME] Item added to recycle bin:', msg);
+        break;
+      }
+      case 'realtime.recycle.removed': {
+        console.log('[REALTIME] Item removed from recycle bin:', msg);
         break;
       }
       case 'realtime.project.online': {

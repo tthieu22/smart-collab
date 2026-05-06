@@ -105,12 +105,12 @@ export default function ProfileHeader({
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1.5">
                                     <span className="font-black text-gray-900 dark:text-gray-100">{profileData?.followersCount || 0}</span>
-                                    <span className="opacity-60 tracking-[0.2em] text-[9px]">Followers</span>
+                                    <span className="opacity-60 tracking-[0.2em] text-[9px]">Phi Hành Đoàn</span>
                                 </div>
                                 <div className="w-px h-3 bg-gray-200 dark:bg-neutral-800" />
                                 <div className="flex items-center gap-1.5">
                                     <span className="font-black text-gray-900 dark:text-gray-100">{profileData?.followingCount || 0}</span>
-                                    <span className="opacity-60 tracking-[0.2em] text-[9px]">Following</span>
+                                    <span className="opacity-60 tracking-[0.2em] text-[9px]">Đang Kết Nối</span>
                                 </div>
                             </div>
                         </div>
@@ -126,7 +126,7 @@ export default function ProfileHeader({
                                     onClick={() => setIsEditModalOpen(true)}
                                 >
                                     <Edit size={14} />
-                                    <span>Sửa hồ sơ</span>
+                                    <span>Cấu hình hồ sơ</span>
                                 </Button>
                                 <Button variant="secondary" className="h-9 w-9 p-0 rounded-xl bg-gray-100/50 dark:bg-neutral-900 border-none ring-1 ring-black/5 dark:ring-white/5">
                                     <Settings size={16} className="text-gray-500" />
@@ -144,7 +144,7 @@ export default function ProfileHeader({
                                     loading={loading}
                                 >
                                     {profileData.isFollowing ? <UserCheck size={14} /> : <UserPlus size={14} />}
-                                    <span>{profileData.isFollowing ? 'Huỷ' : 'Connect'}</span>
+                                    <span>{profileData.isFollowing ? 'Huỷ' : 'Gia nhập đoàn'}</span>
                                 </Button>
                                 <Tooltip title="Message">
                                     <Button variant="secondary" className="rounded-xl h-9 w-9 flex items-center justify-center p-0 bg-gray-100/80 dark:bg-neutral-900 border-none ring-1 ring-black/5 dark:ring-white/5">

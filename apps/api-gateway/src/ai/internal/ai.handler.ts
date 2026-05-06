@@ -1,6 +1,6 @@
 import { Controller, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { AiService } from './ai.service';
+import { InternalAiService } from './ai.service';
 import { HomeService } from '../../home/home.service';
 import { ProjectService } from '../../project/project.service';
 
@@ -16,8 +16,8 @@ export class AiHandler implements OnModuleInit {
   private readonly logger = new Logger(AiHandler.name);
 
   constructor(
-    @Inject(forwardRef(() => AiService))
-    private readonly aiService: AiService,
+    @Inject(forwardRef(() => InternalAiService))
+    private readonly aiService: InternalAiService,
     @Inject(forwardRef(() => HomeService))
     private readonly homeService: HomeService,
     private readonly projectService: ProjectService,

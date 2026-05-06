@@ -130,6 +130,8 @@ export class UserService {
         emailNotifications: true,
         pushNotifications: true,
         loginCount: true,
+        googleAccessToken: true,
+        googleRefreshToken: true,
         createdAt: true,
       },
     });

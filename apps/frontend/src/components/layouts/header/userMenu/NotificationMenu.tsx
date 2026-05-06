@@ -193,7 +193,7 @@ export function NotificationMenu() {
       className="w-[400px] bg-white dark:bg-[#0a0a0a] rounded-[24px] overflow-hidden border border-gray-100 dark:border-white/10 shadow-2xl"
     >
       <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
-        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Thông báo</h3>
+        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Tín hiệu vũ trụ</h3>
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-bold text-gray-400">Chỉ hiện đã đọc</span>
           <Switch size="small" checked={onlyRead} onChange={setOnlyRead} />
@@ -221,7 +221,7 @@ export function NotificationMenu() {
                   ) : (
                     <div className="py-12 flex flex-col items-center justify-center opacity-50">
                       <Bell className="mb-2 text-gray-400" />
-                      <span className="text-xs font-bold">Không có thông báo nào</span>
+                      <span className="text-xs font-bold">Trạm radar chưa nhận được tín hiệu nào</span>
                     </div>
                   )}
                 </div>
@@ -241,7 +241,7 @@ export function NotificationMenu() {
                   ) : (
                     <div className="py-12 flex flex-col items-center justify-center opacity-50">
                       <Check className="mb-2 text-gray-400" />
-                      <span className="text-xs font-bold">Bạn đã đọc hết thông báo!</span>
+                      <span className="text-xs font-bold">Hệ thống đã tiếp nhận mọi tín hiệu!</span>
                     </div>
                   )}
                 </div>

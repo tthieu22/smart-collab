@@ -11,7 +11,8 @@ import {
   Heart,
   Cpu,
   Activity,
-  ArrowUpRight
+  ArrowUpRight,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@smart/components/ui/button';
 import { Input } from 'antd';
@@ -96,8 +97,8 @@ export default function Footer() {
             <div className="flex items-center gap-3">
               <div className="relative group">
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20">
-                  <Zap size={18} className="text-white fill-current" />
+                <div className="relative p-2 bg-gradient-to-br from-blue-600 to-violet-600 rounded-xl shadow-lg shadow-blue-600/20 text-white">
+                  <Sparkles size={18} className="fill-current" />
                 </div>
               </div>
               <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white uppercase">

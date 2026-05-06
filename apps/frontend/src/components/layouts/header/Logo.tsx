@@ -10,7 +10,9 @@ export function Logo() {
       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 text-white">
         <Sparkles size={16} />
       </span>
-      <span className="hidden text-sm font-semibold tracking-wide sm:inline">Smart Collab</span>
+      <span className="hidden text-sm font-black tracking-tight sm:inline uppercase">
+        SMART <span className="text-blue-600">COLLAB</span>
+      </span>
     </Link>
   );
 }

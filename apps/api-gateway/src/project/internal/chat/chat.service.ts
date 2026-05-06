@@ -46,6 +46,7 @@ export class ChatService {
       projectId,
       message,
     });
+    this.logger.log(`[realtime.project.chat] Event emitted for project ${projectId}, message ${message.id}`);
 
     return message;
   }

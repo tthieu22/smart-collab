@@ -96,8 +96,8 @@ export default function Calendar({
   if (isGuest) {
     return (
       <div className={`relative flex-1 ${theme === 'dark' ? 'bg-[#141517]' : 'bg-white'} ${className ?? ''}`}>
-        <LoginOverlay 
-          title="Lịch trình dự án" 
+        <LoginOverlay
+          title="Lộ trình Tinh tú"
           description="Đăng nhập để xem và quản lý thời hạn, sự kiện và tiến độ công việc của bạn trên lịch trình trực quan."
         />
       </div>

@@ -31,7 +31,7 @@ export function TipsGuideSideCard() {
           <div className="p-1 rounded-md bg-amber-100 dark:bg-amber-900/40">
             <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-amber-500/10" />
           </div>
-          <div className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Mẹo thông minh</div>
+          <div className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Mẹo</div>
         </div>
         <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
       </div>

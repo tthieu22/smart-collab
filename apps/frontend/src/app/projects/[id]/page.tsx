@@ -257,9 +257,7 @@ export default function ProjectDetailPage({ params }: Props) {
       <div className="bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
         <ProjectGuestCursor />
 
-        <div className="fixed top-[84px] right-8 z-50">
-          <ProjectPresence projectId={projectId} />
-        </div>
+
 
         <ProjectActionBar
           activeComponents={activeComponents}

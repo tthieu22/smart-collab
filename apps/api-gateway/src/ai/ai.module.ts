@@ -8,7 +8,7 @@ import { AuthModule } from '../auth/auth.module';
 
 // Internal implementations
 import { AiHandler } from './internal/ai.handler';
-import { AiService as InternalAiService } from './internal/ai.service';
+import { InternalAiService } from './internal/ai.service';
 import { DomainService } from './internal/domain.service';
 import { EventsPublisher } from './internal/events.publisher';
 import { PromptFactory } from './internal/prompt.factory';

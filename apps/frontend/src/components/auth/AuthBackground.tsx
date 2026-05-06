@@ -20,34 +20,82 @@ export default function AuthBackground() {
     { id: 3, w: "w-[600px]", h: "h-[300px]", top: "top-1/2", left: "left-[-15%]", duration: 60, delay: -30 },
   ], []);
 
+  // --- DARK MODE: Star Logic (Stabilized) ---
+  const darkStars = useMemo(() => [...Array(80)].map((_, i) => ({
+    id: i,
+    size: 1.5 + Math.random() * 2,
+    left: Math.random() * 100 + "%",
+    top: Math.random() * 100 + "%",
+    duration: 2 + Math.random() * 3,
+    delay: Math.random() * 5
+  })), []);
+
+  const warpStars = useMemo(() => [...Array(30)].map((_, i) => ({
+    id: i,
+    left: Math.random() * 100 + "%",
+    top: Math.random() * 100 + "%",
+    duration: 3 + Math.random() * 4,
+    delay: Math.random() * 10
+  })), []);
+
   if (!mounted) return null;
 
   if (isDark) {
     return (
-      <div className="fixed inset-0 z-0 overflow-hidden bg-[#010206] pointer-events-none">
-        {/* Layer 1: Base Space */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(10,20,60,1)_0%,_rgba(1,2,6,1)_100%)]" />
+      <div className="fixed inset-0 z-0 overflow-hidden bg-[#02040a] pointer-events-none">
+        {/* Layer 1: Nebula */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,_rgba(59,130,246,0.1)_0%,_transparent_50%),_radial-gradient(circle_at_70%_60%,_rgba(139,92,246,0.1)_0%,_transparent_50%)]" />
         
-        {/* Layer 2: Effect (Warp) */}
-        <div className="absolute inset-0 perspective-[1000px] opacity-40">
-          {[...Array(60)].map((_, i) => (
+        {/* Layer 2: Constant Twinkling Stars */}
+        {darkStars.map((star) => (
+          <motion.div
+            key={`star-${star.id}`}
+            animate={{ 
+              opacity: [0.4, 1, 0.4],
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ 
+              duration: star.duration, 
+              repeat: Infinity, 
+              delay: star.delay,
+              ease: "easeInOut"
+            }}
+            className="absolute rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]"
+            style={{ 
+              width: star.size + "px", 
+              height: star.size + "px", 
+              left: star.left, 
+              top: star.top,
+            }}
+          />
+        ))}
+
+        {/* Layer 3: Moving Warp Stars */}
+        <div className="absolute inset-0" style={{ perspective: '1000px' }}>
+          {warpStars.map((star) => (
             <motion.div
-              key={i}
-              initial={{ z: -1000, opacity: 0 }}
-              animate={{ z: [0, 2000], opacity: [0, 1, 1, 0] }}
-              transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 10, ease: "easeIn" }}
-              className="absolute rounded-full bg-white"
+              key={`warp-${star.id}`}
+              initial={{ opacity: 0, z: -1000 }}
+              animate={{ opacity: [0, 1, 1, 0], z: 1000 }}
+              transition={{ 
+                duration: star.duration, 
+                repeat: Infinity, 
+                delay: star.delay,
+                ease: "easeIn" 
+              }}
+              className="absolute rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,1)]"
               style={{ 
-                width: "1.5px", height: "1.5px", 
-                left: Math.random() * 100 + "%", 
-                top: Math.random() * 100 + "%" 
+                width: "2.5px", 
+                height: "2.5px", 
+                left: star.left, 
+                top: star.top 
               }}
             />
           ))}
         </div>
 
-        {/* Layer 3: Overlay Protection */}
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+        {/* Layer 4: Overlay */}
+        <div className="absolute inset-0 bg-black/10 backdrop-blur-[0.5px]" />
       </div>
     );
   }

@@ -74,8 +74,8 @@ export default function NewsPage() {
       <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500">
         <PageHeader
           icon={<Newspaper className="w-5 h-5" />}
-          title="Tin tức mới nhất"
-          description="Quản lý và theo dõi các tin tức, bài viết mới nhất từ hệ thống."
+          title="Bản Tin Thiên Hà"
+          description="Cập nhật những biến động và tín hiệu mới nhất từ khắp các dải ngân hà."
           extra={extra}
         />
 

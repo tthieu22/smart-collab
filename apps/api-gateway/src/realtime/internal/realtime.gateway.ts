@@ -343,7 +343,7 @@ export class RealtimeGateway
     c.emit('realtime.action.response', { correlationId: id, ...data });
   }
 
-  private emitToProject = (
+  public emitToProject = (
     projectId: string,
     event: string,
     data: any,

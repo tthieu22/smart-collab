@@ -13,10 +13,35 @@ export class HealthController {
 
   @Get()
   @HealthCheck()
-  check() {
-    return this.health.check([
-      () => this.prismaHealth.pingCheck('database', this.prisma as any),
-      // Add other checks as needed
-    ]);
+  async check() {
+    try {
+      // Kiểm tra DB nhanh
+      await (this.prisma as any).$queryRaw`SELECT 1`;
+      return {
+        status: 'ok',
+        info: {
+          api: { status: 'up' },
+          database: { status: 'up' }
+        },
+        error: {},
+        details: {
+          api: { status: 'up' },
+          database: { status: 'up' }
+        }
+      };
+    } catch (err) {
+      return {
+        status: 'error',
+        info: {
+          api: { status: 'up' },
+          database: { status: 'down' }
+        },
+        error: { message: (err as any).message },
+        details: {
+          api: { status: 'up' },
+          database: { status: 'down' }
+        }
+      };
+    }
   }
 }

@@ -30,8 +30,8 @@ export interface AiBoard {
 }
 
 @Injectable()
-export class AiService {
-  private readonly logger = new Logger(AiService.name);
+export class InternalAiService {
+  private readonly logger = new Logger(InternalAiService.name);
 
   constructor(
     private readonly domainService: DomainService,
@@ -890,7 +890,7 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
       b.columns?.forEach((c: any) => {
         c.cards?.forEach((card: any) => {
           totalTasks++;
-          if (card.column?.title?.toLowerCase().includes('done')) completedTasks++;
+          if (c.title?.toLowerCase().includes('done') || c.title?.toLowerCase().includes('hoàn thành')) completedTasks++;
           if (card.deadline && new Date(card.deadline) < now) overdueTasks++;
         });
       });

@@ -2,6 +2,7 @@
 
 import { Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
+import GlobalLoading from './GlobalLoading';
 
 interface LoadingProps {
   size?: 'small' | 'default' | 'large';
@@ -17,7 +18,7 @@ export function Loading({
   const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
   if (fullScreen) {
-    return null;
+    return <GlobalLoading loading={true} text={text} />;
   }
 
   return (

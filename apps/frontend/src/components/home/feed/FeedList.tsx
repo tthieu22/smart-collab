@@ -39,8 +39,8 @@ export default function FeedList() {
             <Spin size="large" />
           </div>
           <div className="text-center space-y-1">
-            <p className="text-neutral-700 dark:text-neutral-200 font-semibold tracking-tight">Đang làm mới bảng tin</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-500 animate-pulse">Vui lòng chờ trong giây lát...</p>
+            <p className="text-neutral-700 dark:text-neutral-200 font-semibold tracking-tight">Đang dò quét tín hiệu tinh tú...</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 animate-pulse">Vui lòng chờ trạm radar xử lý...</p>
           </div>
         </div>
       )}
@@ -80,9 +80,9 @@ export default function FeedList() {
         >
           <div className="inline-block px-10 py-8 bg-white dark:bg-neutral-900 rounded-[32px] shadow-xl border border-neutral-100 dark:border-neutral-800 max-w-sm mx-auto">
             <div className="text-4xl mb-4 animate-bounce">✨</div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Bạn đã bắt kịp mọi thứ!</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Bạn đã khám phá hết dải ngân hà!</h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
-              Bạn đã xem hết các bài viết mới nhất. Hãy quay lại sau hoặc làm mới để xem lại.
+              Mọi tín hiệu mới nhất đã được thu nhận. Hãy quay lại sau khi trạm radar có dữ liệu mới.
             </p>
             <button
               onClick={() => {
@@ -95,7 +95,7 @@ export default function FeedList() {
               className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
             >
               <SwitcherOutlined />
-              Làm mới bảng tin
+              Dò quét lại tín hiệu
             </button>
           </div>
         </motion.div>
@@ -103,8 +103,8 @@ export default function FeedList() {
 
       {!hasMore && postIds.length === 0 && !isLoading && (
         <div className="py-20 text-center text-neutral-500 dark:text-neutral-400">
-          <p className="text-lg font-medium">Chưa có bài viết nào để hiển thị.</p>
-          <p className="text-sm opacity-60 mt-1">Hãy theo dõi thêm bạn bè để thấy bài viết của họ!</p>
+          <p className="text-lg font-medium">Không gian đang tĩnh lặng... Chưa nhận được tín hiệu nào.</p>
+          <p className="text-sm opacity-60 mt-1">Hãy kết nối thêm với các phi hành đoàn khác để nhận tín hiệu!</p>
         </div>
       )}
     </div>

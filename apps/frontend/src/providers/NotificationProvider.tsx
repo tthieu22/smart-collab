@@ -14,7 +14,17 @@ export const NotificationProvider = ({
 }) => {
   const { notifications, removeNotification } = useNotificationStore();
   const accessToken = useAuthStore((s) => s.accessToken);
+  const unreadCount = useUserNotificationStore((s) => s.unreadCount);
   const setUserNotifications = useUserNotificationStore((s) => s.setNotifications);
+
+  useEffect(() => {
+    const baseTitle = 'Smart Collab';
+    if (unreadCount > 0) {
+      document.title = `(${unreadCount}) ${baseTitle}`;
+    } else {
+      document.title = baseTitle;
+    }
+  }, [unreadCount]);
 
   useEffect(() => {
     if (!accessToken) return;

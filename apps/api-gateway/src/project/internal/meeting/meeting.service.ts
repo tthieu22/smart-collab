@@ -138,7 +138,7 @@ export class MeetingService {
     });
 
     // 4. Also post a system message in the chat
-    await this.chatService.sendMessage({
+    const chatMsg = await this.chatService.sendMessage({
       projectId,
       userId: createdById,
       content: `📹 Đã bắt đầu một cuộc họp mới: ${meeting.title}`,
@@ -149,6 +149,7 @@ export class MeetingService {
         action: 'JOIN_MEETING'
       }
     });
+    this.logger.log(`[MEETING] System chat message created: ${chatMsg.id}`);
 
     return meeting;
   }

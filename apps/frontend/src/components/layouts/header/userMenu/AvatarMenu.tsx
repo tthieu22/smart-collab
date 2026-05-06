@@ -103,12 +103,12 @@ export function AvatarMenu() {
     {
       key: "profile",
       icon: <User size={16} />,
-      label: <span className="text-xs font-bold">Thông tin cá nhân</span>,
+      label: <span className="text-xs font-bold">Dữ Liệu Phi Hành Gia</span>,
     },
     {
       key: "user-setting",
       icon: <Settings size={16} />,
-      label: <span className="text-xs font-bold">Cài đặt người dùng</span>,
+      label: <span className="text-xs font-bold">Cấu Hình Trạm Điều Hành</span>,
     },
     {
       key: "theme",
@@ -158,7 +158,7 @@ export function AvatarMenu() {
     {
       key: "logout",
       icon: <LogOut size={16} />,
-      label: <span className="text-xs font-bold">Đăng xuất</span>,
+      label: <span className="text-xs font-bold">Rời Trạm / Đóng Khoang</span>,
       danger: true,
     },
   ];

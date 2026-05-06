@@ -38,7 +38,7 @@ export default function ProfileTabs({
             label: (
                 <div className="flex items-center gap-2 group">
                     <LayoutGrid size={13} />
-                    <span>Bài viết</span>
+                    <span>Tín Hiệu</span>
                     <span className="text-[9px] bg-gray-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">{userPosts.length}</span>
                 </div>
             ),
@@ -48,7 +48,7 @@ export default function ProfileTabs({
             label: (
                 <div className="flex items-center gap-2 group">
                     <Info size={13} />
-                    <span>Giới thiệu</span>
+                    <span>Định Danh</span>
                 </div>
             ),
         },
@@ -57,7 +57,7 @@ export default function ProfileTabs({
             label: (
                 <div className="flex items-center gap-2 group">
                     <Users size={13} />
-                    <span>Mối quan hệ</span>
+                    <span>Đội Ngũ</span>
                     <span className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
                         {profileData?.friends?.length || 0}
                     </span>
@@ -149,9 +149,9 @@ export default function ProfileTabs({
                                 <div className="h-16 w-16 bg-gray-50 dark:bg-neutral-900 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-neutral-800">
                                     <LayoutGrid size={28} className="text-gray-200 dark:text-neutral-700" />
                                 </div>
-                                <h4 className="font-black text-gray-900 dark:text-gray-100 text-sm mb-1 uppercase tracking-[0.1em]">Khoảng lặng sáng tạo</h4>
+                                <h4 className="font-black text-gray-900 dark:text-gray-100 text-sm mb-1 uppercase tracking-[0.1em]">Vùng Không Gian Tĩnh Lặng</h4>
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-60">
-                                    {isMe ? 'Hãy bắt đầu hành trình chia sẻ của bạn.' : 'Chưa có bài viết nào được đăng tải.'}
+                                    {isMe ? 'Hãy phát đi tín hiệu đầu tiên của bạn vào không gian.' : 'Chưa nhận được tín hiệu nào từ tọa độ này.'}
                                 </p>
                             </Card>
                         )}
@@ -162,22 +162,22 @@ export default function ProfileTabs({
                     <Card padding="none" className="rounded-[24px] border border-gray-200 dark:border-neutral-800 shadow-sm bg-white/50 dark:bg-neutral-950/30 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 overflow-hidden">
                         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-neutral-800/50 bg-gray-50/50 dark:bg-neutral-900/20">
                             <h3 className="font-black text-[9px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
-                                Thông tin định danh
+                                Chứng Chỉ Phi Hành Gia
                             </h3>
                         </div>
                         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="p-4 bg-white/50 dark:bg-neutral-900/40 rounded-xl border border-gray-200 dark:border-neutral-800/50 shadow-sm transition-all hover:shadow-md hover:border-blue-500/30 group">
-                                <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-2 opacity-80 group-hover:opacity-100">Full Name</p>
+                                <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-2 opacity-80 group-hover:opacity-100">Danh Tính</p>
                                 <h4 className="font-black text-xs text-gray-900 dark:text-gray-100 leading-none">{profileUser.name}</h4>
                             </div>
                             <div className="p-4 bg-white/50 dark:bg-neutral-900/40 rounded-xl border border-gray-200 dark:border-neutral-800/50 shadow-sm transition-all hover:shadow-md hover:border-purple-500/30 group">
-                                <p className="text-[8px] font-black text-purple-500 uppercase tracking-widest mb-2 opacity-80 group-hover:opacity-100">Joined On</p>
+                                <p className="text-[8px] font-black text-purple-500 uppercase tracking-widest mb-2 opacity-80 group-hover:opacity-100">Ngày Nhập Trạm</p>
                                 <h4 className="font-black text-xs text-gray-900 dark:text-gray-100 leading-none">{dayjs(profileUser.createdAt).format('DD/MM/YYYY')}</h4>
                             </div>
                             {profileUser.bio && (
                                 <div className="p-5 bg-white/50 dark:bg-neutral-900/40 rounded-xl border border-gray-200 dark:border-neutral-800/50 sm:col-span-2 relative overflow-hidden group">
                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500 transition-all group-hover:w-2" />
-                                    <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-2.5 opacity-80">Personal Signature</p>
+                                    <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-2.5 opacity-80">Châm Ngôn Vũ Trụ</p>
                                     <p className="text-[11px] font-bold text-gray-600 dark:text-neutral-300 leading-relaxed italic pl-1 border-l border-gray-200 dark:border-neutral-800 ml-1">
                                         "{profileUser.bio}"
                                     </p>
@@ -189,9 +189,9 @@ export default function ProfileTabs({
 
                 {activeTab === '3' && (
                     <div className="space-y-8 pb-4">
-                        <UserList items={profileData?.friends || []} title="Bạn cùng đam mê" emptyText="Hành trình kết nối đang bắt đầu..." />
-                        <UserList items={profileData?.followers || []} title="Cộng đồng hâm mộ" emptyText="Chưa có người hâm mộ nào..." />
-                        <UserList items={profileData?.following || []} title="Tài năng quan tâm" emptyText="Chưa quan tâm ai..." />
+                        <UserList items={profileData?.friends || []} title="Đồng Đội Thân Thiết" emptyText="Chưa kết nối với đồng đội nào..." />
+                        <UserList items={profileData?.followers || []} title="Phi Hành Đoàn Theo Dõi" emptyText="Chưa có phi hành đoàn nào theo dõi..." />
+                        <UserList items={profileData?.following || []} title="Trạm Đang Theo Dấu" emptyText="Chưa theo dấu trạm nào..." />
                     </div>
                 )}
             </div>

@@ -285,17 +285,17 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
             <MessageOutlined className="text-base" />
           </div>
           <h1 className={`text-sm font-bold tracking-tight m-0 dark:text-gray-100 text-gray-800`}>
-            Project Chat
+            Kênh Truyền Tin
           </h1>
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <div className={`h-4 w-[1px] dark:bg-white/20 bg-gray-300 mx-1`} />
-          <Tooltip title="Trò chuyện trực tiếp với các thành viên trong dự án">
+          <Tooltip title="Kênh truyền tin trực tiếp với phi hành đoàn">
             <InfoCircleOutlined className="text-neutral-400 cursor-help" />
           </Tooltip>
         </div>
 
         <div className="flex items-center gap-2">
-          <Tooltip title="Tạo cuộc họp mới">
+          <Tooltip title="Mở cổng truyền hình (Họp)">
             <Button
               type="text"
               size="small"

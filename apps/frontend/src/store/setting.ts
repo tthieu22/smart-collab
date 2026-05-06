@@ -15,8 +15,12 @@ export const useBoardStore = create<BoardStore>((set) => {
 
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem("theme");
+    // Nếu không có trong storage hoặc storage bị lỗi, mặc định là light
     if (saved === "light" || saved === "dark" || saved === "system") {
       initialTheme = saved as "light" | "dark" | "system";
+    } else {
+      initialTheme = "light";
+      localStorage.setItem("theme", "light");
     }
 
     if (initialTheme === "system") {
@@ -24,13 +28,19 @@ export const useBoardStore = create<BoardStore>((set) => {
         ? "dark"
         : "light";
 
-      // lắng nghe thay đổi theme hệ thống
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-        set({ resolvedTheme: e.matches ? "dark" : "light" });
+        const currentTheme = useBoardStore.getState().theme;
+        if (currentTheme === "system") {
+          set({ resolvedTheme: e.matches ? "dark" : "light" });
+          document.documentElement.classList.toggle("dark", e.matches);
+        }
       });
     } else {
       resolved = initialTheme;
     }
+
+    // Đồng bộ class dark ngay khi khởi tạo ở client
+    document.documentElement.classList.toggle("dark", resolved === "dark");
   }
 
   return {
@@ -62,9 +72,13 @@ export const useBoardStore = create<BoardStore>((set) => {
         : theme;
 
       set({ theme, resolvedTheme: newResolved });
-      try {
-        localStorage.setItem("theme", theme);
-      } catch {}
+      
+      if (typeof window !== "undefined") {
+        document.documentElement.classList.toggle("dark", newResolved === "dark");
+        try {
+          localStorage.setItem("theme", theme);
+        } catch {}
+      }
     },
   };
 });

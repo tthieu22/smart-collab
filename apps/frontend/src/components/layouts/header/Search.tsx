@@ -7,7 +7,7 @@ import debounce from "lodash/debounce";
 
 const { Text } = Typography;
 
-export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
+export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({ projects: [], news: [], posts: [] });
@@ -125,7 +125,7 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
           {results.projects.length > 0 && (
             <div className="search-group">
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
-                <ProjectOutlined style={{ marginRight: 8 }} /> DỰ ÁN
+                <ProjectOutlined style={{ marginRight: 8 }} /> THIÊN HÀ
               </div>
               {results.projects.map(p => (
                 <div key={p.id} className="suggestion-item" onClick={() => handleSelect('project', p.id)}>
@@ -138,7 +138,7 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
           {results.news.length > 0 && (
             <div className="search-group" style={{ marginTop: 8 }}>
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
-                <GlobalOutlined style={{ marginRight: 8 }} /> TIN TỨC
+                <GlobalOutlined style={{ marginRight: 8 }} /> TIN TỨC VŨ TRỤ
               </div>
               {results.news.map(n => (
                 <div key={n.id} className="suggestion-item" onClick={() => handleSelect('news', n.id)}>
@@ -151,7 +151,7 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
           {results.posts.length > 0 && (
             <div className="search-group" style={{ marginTop: 8 }}>
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
-                <FileTextOutlined style={{ marginRight: 8 }} /> BÀI VIẾT
+                <FileTextOutlined style={{ marginRight: 8 }} /> NHẬT KÝ TRẠM
               </div>
               {results.posts.map(p => (
                 <div key={p.id} className="suggestion-item" onClick={() => handleSelect('post', p.id)}>

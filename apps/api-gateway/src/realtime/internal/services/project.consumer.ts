@@ -121,4 +121,90 @@ export class ProjectConsumer {
       this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.board.updated', msg.board);
     }
   }
+
+  @OnEvent('realtime.project.updated')
+  public async handleProjectUpdated(msg: any) {
+    this.logger.log(`[EVENT] Received project.updated: ${JSON.stringify(msg)}`);
+    if (msg?.project?.id) {
+      this.gateway.server.to(`project:${msg.project.id}`).emit('realtime.project.updated', msg.project);
+    }
+  }
+
+  @OnEvent('realtime.project.chat')
+  public async handleProjectChat(msg: any) {
+    this.logger.log(`[EVENT] Received project.chat for project ${msg?.projectId}`);
+    if (msg?.projectId && msg?.message) {
+      // Use the gateway's helper to ensure consistent prefixing and diagnostics
+      this.gateway.emitToProject(msg.projectId, 'realtime.project.chat', msg);
+      this.logger.debug(`[CHAT] Emitted realtime.project.chat to room project:${msg.projectId}`);
+    }
+  }
+
+  @OnEvent('board.deleted')
+  public async handleBoardDeleted(msg: any) {
+    if (msg?.projectId && msg?.boardId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.board.deleted', { boardId: msg.boardId });
+    }
+  }
+
+  @OnEvent('column.created')
+  public async handleColumnCreated(msg: any) {
+    if (msg?.projectId && msg?.column) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.column.created', { ...msg.column, boardId: msg.boardId });
+    }
+  }
+
+  @OnEvent('column.updated')
+  public async handleColumnUpdated(msg: any) {
+    if (msg?.projectId && msg?.column) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.column.updated', msg.column);
+    }
+  }
+
+  @OnEvent('column.deleted')
+  public async handleColumnDeleted(msg: any) {
+    if (msg?.projectId && msg?.columnId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.column.deleted', { boardId: msg.boardId, columnId: msg.columnId });
+    }
+  }
+
+  @OnEvent('column.moved')
+  public async handleColumnMoved(msg: any) {
+    if (msg?.projectId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.column.moved', msg);
+    }
+  }
+
+  @OnEvent('project.member_added')
+  public async handleMemberAdded(msg: any) {
+    if (msg?.projectId && msg?.member) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.project.member_added', msg.member);
+    }
+  }
+
+  @OnEvent('project.member_removed')
+  public async handleMemberRemoved(msg: any) {
+    if (msg?.projectId && msg?.userId) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.project.member_removed', { userId: msg.userId });
+    }
+  }
+
+  @OnEvent('project.member_role_updated')
+  public async handleMemberRoleUpdated(msg: any) {
+    if (msg?.projectId && msg?.member) {
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.project.member_role_updated', msg.member);
+    }
+  }
+
+  @OnEvent('card.copied')
+  public async handleCardCopied(msg: any) {
+    this.logger.log(`[EVENT] Received card.copied: ${JSON.stringify(msg)}`);
+    if (msg?.projectId && msg?.card) {
+      // Khi copy card, FE coi nó như một card mới được tạo
+      this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.card.created', {
+        ...msg.card,
+        columnId: msg.columnId
+      });
+    }
+  }
 }

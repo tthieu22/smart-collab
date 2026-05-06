@@ -6,6 +6,7 @@ import {
   Req,
   Logger,
   Param,
+  Get,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AiService } from './ai.service';
@@ -64,6 +65,22 @@ export class AiController {
     );
   }
 
+  @Post('cards/:cardId/ai-timeline')
+  async aiPredictTimeline(
+    @Param('cardId') cardId: string,
+    @Req() req: any,
+  ) {
+    const user = req.user;
+    return this.aiService.send(
+      { cmd: 'ai.predict-timeline' },
+      {
+        cardId,
+        userId: user.userId,
+        locale: 'vi',
+      },
+    );
+  }
+
   @Post(':id/ai-analyze-board')
   async analyzeBoard(@Param('id') boardId: string, @Req() req: any) {
     return this.aiService.send(
@@ -106,6 +123,30 @@ export class AiController {
       { cmd: 'ai.optimize-post' },
       {
         content,
+        locale: 'vi',
+      },
+    );
+  }
+  
+  @Get(':id/health')
+  async getProjectHealth(@Param('id') projectId: string, @Req() req: any) {
+    return this.aiService.send(
+      { cmd: 'ai.analyze-project-health' },
+      {
+        projectId,
+        userId: req.user.userId,
+        locale: 'vi',
+      },
+    );
+  }
+
+  @Post(':id/ai/sentiment')
+  async getProjectSentiment(@Param('id') projectId: string, @Req() req: any) {
+    return this.aiService.send(
+      { cmd: 'ai.analyze-sentiment' },
+      {
+        projectId,
+        userId: req.user.userId,
         locale: 'vi',
       },
     );

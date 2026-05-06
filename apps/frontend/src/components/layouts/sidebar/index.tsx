@@ -7,16 +7,16 @@ export default function Sidebar() {
       <h2 className="mb-3 text-base font-semibold">Menu</h2>
       <nav className="flex flex-col gap-1 text-sm">
         <Link href="/" prefetch className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
-          Bảng tin
+          Nhật Ký Tinh Tú
         </Link>
         <Link href="/profile" prefetch className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
-          Trang cá nhân
+          Hồ Sơ Phi Hành Gia
         </Link>
         <Link href="/projects" prefetch className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
-          Dự án
+          Thiên Hà
         </Link>
         <Link href="/news" prefetch className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
-          Tin tuc
+          Bản Tin Thiên Hà
         </Link>
         <Link href="/admin/ai-auto-post" prefetch className="rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">
           AI Auto Post (test)

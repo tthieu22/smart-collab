@@ -39,7 +39,7 @@ const TableView = dynamic(() => import('@smart/components/project/table/TableVie
 const TimelineView = dynamic(() => import('@smart/components/project/timeline/TimelineView'), { ssr: false });
 const DashboardView = dynamic(() => import('@smart/components/project/dashboard/DashboardView'), { ssr: false });
 const MapView = dynamic(() => import('@smart/components/project/map/MapView'), { ssr: false });
-import { Dropdown, Button, MenuProps } from 'antd';
+import { Dropdown, Button, MenuProps, Avatar, List, Popover, Badge } from 'antd';
 
 interface Props {
   board: BoardType;
@@ -47,7 +47,7 @@ interface Props {
 
 export default function Board({ board }: Props) {
   const { activeItem, registerBoardScrollContainer } = useDragContext();
-  const { boardColumns, columns, currentProject } = projectStore();
+  const { boardColumns, columns, currentProject, onlineUsers } = projectStore();
   const { currentUser } = useUserStore();
   const theme = useBoardStore((s) => s.theme);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -161,6 +161,115 @@ export default function Board({ board }: Props) {
     onClick: () => setViewMode(opt.value as any)
   }));
 
+  const activeProjectMembers = useMemo(() => {
+    if (!currentProject?.members) return [];
+    return onlineUsers.filter(id =>
+      currentProject.members.some(m => m.userId === id && m.status === 'ACCEPTED')
+    );
+  }, [onlineUsers, currentProject]);
+
+  const guestMembers = useMemo(() => {
+    if (!currentProject?.members) return [];
+    const memberIds = new Set(currentProject.members.map(m => m.userId));
+    const guests = onlineUsers.filter(id => !memberIds.has(id));
+
+    const spaceNames = [
+      'Tiểu Hành Tinh', 'Sao Chổi', 'Tinh Vân', 'Hố Đen', 'Thiên Thạch',
+      'Siêu Tân Tinh', 'Quasar', 'Pulsar', 'Vệ Tinh', 'Bụi Vũ Trụ',
+      'Thiên Hà Lùn', 'Sao Biến Quang', 'Mưa Sao Băng', 'Nhật Thực', 'Nguyệt Thực'
+    ];
+
+    return guests.map((id, index) => ({
+      id,
+      name: spaceNames[index % spaceNames.length] + ' ' + (Math.floor(index / spaceNames.length) + 1),
+      isGuest: true
+    }));
+  }, [onlineUsers, currentProject]);
+
+  const memberListContent = (
+    <div className="w-72">
+      <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+            Phi hành đoàn ({currentProject?.members?.length || 0})
+          </span>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded">
+            {activeProjectMembers.length + guestMembers.length} đang du hành
+          </span>
+        </div>
+      </div>
+      <div className="max-h-80 overflow-y-auto">
+        <List
+          dataSource={currentProject?.members || []}
+          className="px-2 py-1"
+          renderItem={(member) => {
+            const isOnline = onlineUsers.includes(member.userId);
+            const name = (member.user?.firstName && member.user.firstName !== 'User')
+              ? member.user.firstName
+              : member.user?.email || 'Unknown';
+            return (
+              <div className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-all cursor-default group">
+                <Badge
+                  dot
+                  color={isOnline ? "green" : "gray"}
+                  offset={[-2, 28]}
+                  className={isOnline ? "animate-pulse" : "opacity-30"}
+                >
+                  <Avatar
+                    src={member.user?.avatar}
+                    icon={<TeamOutlined />}
+                    size="small"
+                    className={`border border-white/20 ${!isOnline && 'grayscale'}`}
+                  />
+                </Badge>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-semibold truncate ${isOnline ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {name} {member.userId === currentUser?.id && '(Bạn)'}
+                    </span>
+                    {member.role === 'OWNER' && (
+                      <span className="text-[9px] px-1 bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 rounded font-bold uppercase">Captain</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{member.user?.email}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`} />
+                </div>
+              </div>
+            );
+          }}
+        />
+
+        {guestMembers.length > 0 && (
+          <>
+            <div className="px-4 py-2 bg-gray-50/30 dark:bg-white/5 border-y border-gray-100 dark:border-white/5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Khách vãng lai ({guestMembers.length})</span>
+            </div>
+            <List
+              dataSource={guestMembers}
+              className="px-2 py-1"
+              renderItem={(guest) => (
+                <div className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-all cursor-default group">
+                  <Badge dot color="green" offset={[-2, 28]} className="animate-pulse">
+                    <Avatar icon={<GlobalOutlined />} size="small" className="bg-purple-500/20 text-purple-500 border-none" />
+                  </Badge>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white truncate italic">
+                      {guest.name}
+                    </span>
+                    <span className="text-[9px] text-purple-500 font-bold uppercase tracking-tighter">Nhà du hành ẩn danh</span>
+                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                </div>
+              )}
+            />
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div
       className={`relative flex flex-col overflow-hidden transition-all duration-300 h-full font-sans ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
@@ -206,14 +315,14 @@ export default function Board({ board }: Props) {
                 onPressEnter={onTitleBlur}
               />
             ) : (
-              <h1 
+              <h1
                 className={`text-lg font-bold tracking-tight px-1 rounded transition-colors ${isOwner ? 'cursor-pointer hover:bg-black/5 dark:hover:bg-white/10' : ''} ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
                 onClick={() => isOwner && setIsEditingTitle(true)}
               >
                 {currentProject?.name}
               </h1>
             )}
-            
+
             {isOwner ? (
               <Dropdown
                 menu={{
@@ -228,22 +337,22 @@ export default function Board({ board }: Props) {
               >
                 <Tooltip title={`Quyền: ${currentProject?.visibility} (Nhấp để thay đổi)`}>
                   <div className="cursor-pointer opacity-60 hover:opacity-100 transition-opacity flex items-center">
-                    {currentProject?.visibility === 'PRIVATE' ? <LockOutlined /> : 
-                    currentProject?.visibility === 'PUBLIC' ? <GlobalOutlined /> : <TeamOutlined />}
+                    {currentProject?.visibility === 'PRIVATE' ? <LockOutlined /> :
+                      currentProject?.visibility === 'PUBLIC' ? <GlobalOutlined /> : <TeamOutlined />}
                   </div>
                 </Tooltip>
               </Dropdown>
             ) : (
               <Tooltip title={`Quyền: ${currentProject?.visibility}`}>
                 <div className="opacity-40 flex items-center">
-                  {currentProject?.visibility === 'PRIVATE' ? <LockOutlined /> : 
-                   currentProject?.visibility === 'PUBLIC' ? <GlobalOutlined /> : <TeamOutlined />}
+                  {currentProject?.visibility === 'PRIVATE' ? <LockOutlined /> :
+                    currentProject?.visibility === 'PUBLIC' ? <GlobalOutlined /> : <TeamOutlined />}
                 </div>
               </Tooltip>
             )}
           </div>
 
-          <Tooltip 
+          <Tooltip
             trigger={['click']}
             title={
               <div className="p-2 min-w-[200px]">
@@ -289,37 +398,60 @@ export default function Board({ board }: Props) {
 
           <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'}`} />
 
-          <div className="flex -space-x-2 overflow-hidden">
-            {currentProject?.members?.slice(0, 5).map((member) => {
-              const name = (member.user?.firstName && member.user.firstName !== 'User')
-                ? member.user.firstName
-                : member.user?.email || 'User';
-              const email = member.user?.email;
-              const initial = name.charAt(0).toUpperCase();
-              return (
-                <Tooltip key={member.id} title={email ? `${name} (${email}) ${member.status === 'PENDING' ? '[Chờ xác nhận]' : ''}` : name}>
-                  <div
-                    className={`w-7 h-7 rounded-full bg-blue-500 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm cursor-pointer hover:z-10 transition-transform hover:scale-110 ${member.status === 'PENDING' ? 'opacity-40 grayscale-[0.5]' : ''}`}
-                  >
-                    {member.user?.avatar ? (
-                      <img
-                        src={member.user.avatar}
-                        alt={name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      initial
-                    )}
+          <Popover
+            content={memberListContent}
+            trigger="click"
+            placement="bottomRight"
+            overlayClassName="member-popover"
+            arrow={false}
+          >
+            <div className="flex items-center gap-1.5 cursor-pointer">
+              <div className="flex -space-x-2 overflow-hidden hover:opacity-80 transition-opacity">
+                {currentProject?.members?.slice(0, 5).map((member) => {
+                  const name = (member.user?.firstName && member.user.firstName !== 'User')
+                    ? member.user.firstName
+                    : member.user?.email || 'User';
+                  const email = member.user?.email;
+                  const initial = name.charAt(0).toUpperCase();
+                  const isOnline = onlineUsers.includes(member.userId);
+                  return (
+                    <Tooltip key={member.id} title={email ? `${name} (${email}) ${member.status === 'PENDING' ? '[Chờ xác nhận]' : ''} ${isOnline ? '[Đang online]' : ''}` : name}>
+                      <div
+                        className={`relative w-7 h-7 rounded-full bg-blue-500 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm transition-transform hover:scale-110 z-0 hover:z-10 ${member.status === 'PENDING' ? 'opacity-40 grayscale-[0.5]' : ''}`}
+                      >
+                        {member.user?.avatar ? (
+                          <img
+                            src={member.user.avatar}
+                            alt={name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          initial
+                        )}
+                        {isOnline && (
+                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-neutral-900 rounded-full z-10" />
+                        )}
+                      </div>
+                    </Tooltip>
+                  );
+                })}
+                {currentProject?.members && currentProject.members.length > 5 && (
+                  <div className="w-7 h-7 rounded-full bg-gray-400 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-0">
+                    +{currentProject.members.length - 5}
                   </div>
-                </Tooltip>
-              );
-            })}
-            {currentProject?.members && currentProject.members.length > 5 && (
-              <div className="w-7 h-7 rounded-full bg-gray-400 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm cursor-pointer hover:z-10">
-                +{currentProject.members.length - 5}
+                )}
               </div>
-            )}
-          </div>
+
+              {activeProjectMembers.length + guestMembers.length > 0 && (
+                <div className="flex items-center ml-1 cursor-help opacity-60 hover:opacity-100 transition-opacity bg-black/5 dark:bg-white/5 px-2 py-1 rounded-full border border-black/5 dark:border-white/5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] font-bold ml-1.5 text-green-600 dark:text-green-400 uppercase">
+                    {activeProjectMembers.length + guestMembers.length}
+                  </span>
+                </div>
+              )}
+            </div>
+          </Popover>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
@@ -343,7 +475,7 @@ export default function Board({ board }: Props) {
                 <line x1="19" y1="8" x2="19" y2="14" />
                 <line x1="22" y1="11" x2="16" y2="11" />
               </svg>
-              Thêm thành viên
+              Chiêu mộ
             </button>
           )}
         </div>

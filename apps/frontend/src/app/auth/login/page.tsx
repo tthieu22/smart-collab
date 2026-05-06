@@ -3,12 +3,13 @@
  import { useState } from 'react';
  import Link from 'next/link';
  import { useRouter, useSearchParams } from 'next/navigation';
- import { UserOutlined, LockOutlined, GoogleOutlined, QrcodeOutlined } from '@ant-design/icons';
- import { Input, Button, Divider } from 'antd';
+ import { UserOutlined, LockOutlined, GoogleOutlined, QrcodeOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
+ import { Input, Button, Divider, Tooltip } from 'antd';
  import { authService } from '@smart/services/auth.service';
  import { useAuthStore } from '@smart/store/auth';
  import { useUserStore } from '@smart/store/user';
  import { useNotificationStore } from '@smart/store/notification';
+ import { useBoardStore } from '@smart/store/setting';
  import { ROUTES, APP_CONFIG, API_ENDPOINTS } from '@smart/lib/constants';
  import { QrLoginModal } from '@smart/components/auth/QrLoginModal';
  import { motion } from 'framer-motion';
@@ -21,11 +22,16 @@
    const { login: storeLogin, setAccessToken, setLoading } = useAuthStore();
    const { setCurrentUser, setUserInitialized } = useUserStore();
    const { addNotification } = useNotificationStore();
+   const { theme, setTheme, resolvedTheme } = useBoardStore();
  
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [loading, setLocalLoading] = useState(false);
    const [qrModalOpen, setQrModalOpen] = useState(false);
+ 
+   const toggleTheme = () => {
+     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+   };
  
    const handleSubmit = async () => {
      if (!email || !password) {
@@ -62,7 +68,20 @@
    };
  
    return (
-     <div className="min-h-screen flex items-center justify-center p-6 bg-transparent font-sans">
+     <div className="min-h-screen flex items-center justify-center p-6 bg-transparent font-sans relative">
+       {/* Theme Toggle Button */}
+       <div className="fixed top-6 right-6 z-50">
+         <Tooltip title={resolvedTheme === 'dark' ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}>
+           <Button
+             shape="circle"
+             icon={resolvedTheme === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+             onClick={toggleTheme}
+             size="large"
+             className="flex items-center justify-center bg-white/50 dark:bg-black/50 backdrop-blur-md border-white/20 dark:border-white/10 shadow-lg hover:scale-110 transition-transform"
+           />
+         </Tooltip>
+       </div>
+ 
        <motion.div 
          initial={{ opacity: 0, scale: 0.95 }}
          animate={{ opacity: 1, scale: 1 }}

@@ -16,9 +16,12 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-export const metadata: Metadata = {
+ export const metadata: Metadata = {
   title: 'Smart Collab',
   description: 'Smart Collab',
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
