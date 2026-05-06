@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 
 export interface CookieOptions {
   httpOnly?: boolean;
@@ -12,12 +13,29 @@ export interface CookieOptions {
 
 @Injectable()
 export class CookieService {
-  private readonly defaultOptions: CookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-  };
+  constructor(private readonly configService: ConfigService) {}
+
+  private get defaultOptions(): CookieOptions {
+    // Lấy frontendUrl với fallback giống hệt main.ts để đảm bảo đồng nhất
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://tthieu-smart-collab.vercel.app';
+    const nodeEnv = this.configService.get<string>('NODE_ENV') || 'development';
+    
+    // 100% Xác định môi trường deploy:
+    // - Nếu URL chứa https
+    // - HOẶC URL không chứa localhost
+    // - HOẶC đang chạy trên một cloud platform (Render thường set biến PORT)
+    const isHttps = frontendUrl.startsWith('https://');
+    const isLocalhost = frontendUrl.includes('localhost');
+    const isDeployed = isHttps || !isLocalhost || !!process.env.PORT;
+
+    return {
+      httpOnly: true,
+      // Nếu là môi trường deploy, BẮT BUỘC phải dùng cấu hình này để browser không chặn
+      secure: isDeployed, 
+      sameSite: isDeployed ? 'none' : 'lax',
+      path: '/',
+    };
+  }
 
   setRefreshCookie(
     res: Response,

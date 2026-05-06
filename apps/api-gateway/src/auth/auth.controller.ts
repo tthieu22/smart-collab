@@ -55,12 +55,27 @@ export class AuthController {
       const result = await this.authClient.login(loginDto);
 
       // Xử lý cookies nếu login thành công
-      if (result.success && result.data?.refreshToken) {
-        this.cookieService.setRefreshCookie(
-          res,
-          result.data.refreshToken,
-          new Date(result.data.refreshTokenExpiresAt),
-        );
+      if (result.success && result.data) {
+        if (result.data.refreshToken) {
+          this.cookieService.setRefreshCookie(
+            res,
+            result.data.refreshToken,
+            new Date(result.data.refreshTokenExpiresAt),
+          );
+        }
+        
+        if (result.data.accessToken) {
+          // Mặc định 15 phút nếu không có accessTokenExpiresAt
+          const accessExpiresAt = result.data.accessTokenExpiresAt 
+            ? new Date(result.data.accessTokenExpiresAt)
+            : new Date(Date.now() + 15 * 60 * 1000);
+            
+          this.cookieService.setAccessCookie(
+            res,
+            result.data.accessToken,
+            accessExpiresAt,
+          );
+        }
       }
 
       return result;
@@ -93,21 +108,36 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse> {
     try {
-      const refreshToken = req.cookies?.refresh_token;
-      console.log(refreshToken, "Cookie");
+      const refreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
+      console.log('Refresh Token from Cookie/Body:', refreshToken ? 'Found' : 'Missing');
+      
       if (!refreshToken) {
         throw new UnauthorizedException('Missing refresh token');
       }
 
       const result = await this.authClient.refresh({ refreshToken });
 
-      // Cập nhật refresh token cookie nếu thành công
-      if (result.success && result.data?.refreshToken) {
-        this.cookieService.setRefreshCookie(
-          res,
-          result.data.refreshToken,
-          new Date(result.data.refreshTokenExpiresAt),
-        );
+      // Cập nhật cookies nếu thành công
+      if (result.success && result.data) {
+        if (result.data.refreshToken) {
+          this.cookieService.setRefreshCookie(
+            res,
+            result.data.refreshToken,
+            new Date(result.data.refreshTokenExpiresAt),
+          );
+        }
+        
+        if (result.data.accessToken) {
+          const accessExpiresAt = result.data.accessTokenExpiresAt 
+            ? new Date(result.data.accessTokenExpiresAt)
+            : new Date(Date.now() + 15 * 60 * 1000);
+            
+          this.cookieService.setAccessCookie(
+            res,
+            result.data.accessToken,
+            accessExpiresAt,
+          );
+        }
       }
 
       return result;
@@ -293,12 +323,26 @@ export class AuthController {
       const result = await this.authClient.oauthExchange(oauthDto);
       console.log('✅ oauthExchange result:', result);
 
-      if (result.success && result.data?.refreshToken) {
-        this.cookieService.setRefreshCookie(
-          res,
-          result.data.refreshToken,
-          new Date(result.data.refreshTokenExpiresAt),
-        );
+      if (result.success && result.data) {
+        if (result.data.refreshToken) {
+          this.cookieService.setRefreshCookie(
+            res,
+            result.data.refreshToken,
+            new Date(result.data.refreshTokenExpiresAt),
+          );
+        }
+        
+        if (result.data.accessToken) {
+          const accessExpiresAt = result.data.accessTokenExpiresAt 
+            ? new Date(result.data.accessTokenExpiresAt)
+            : new Date(Date.now() + 15 * 60 * 1000);
+            
+          this.cookieService.setAccessCookie(
+            res,
+            result.data.accessToken,
+            accessExpiresAt,
+          );
+        }
       }
 
       return result;
@@ -450,12 +494,26 @@ export class AuthController {
     try {
       const result = await this.authClient.checkQrStatus({ token });
       
-      if (result.success && result.data?.status === 'CONFIRMED' && result.data?.refreshToken) {
-        this.cookieService.setRefreshCookie(
-          res,
-          result.data.refreshToken,
-          new Date(result.data.refreshTokenExpiresAt),
-        );
+      if (result.success && result.data?.status === 'CONFIRMED' && result.data) {
+        if (result.data.refreshToken) {
+          this.cookieService.setRefreshCookie(
+            res,
+            result.data.refreshToken,
+            new Date(result.data.refreshTokenExpiresAt),
+          );
+        }
+        
+        if (result.data.accessToken) {
+          const accessExpiresAt = result.data.accessTokenExpiresAt 
+            ? new Date(result.data.accessTokenExpiresAt)
+            : new Date(Date.now() + 15 * 60 * 1000);
+            
+          this.cookieService.setAccessCookie(
+            res,
+            result.data.accessToken,
+            accessExpiresAt,
+          );
+        }
       }
       
       return result;
