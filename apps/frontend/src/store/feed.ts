@@ -11,6 +11,7 @@ import type {
   FeedUser,
 } from '@smart/types/feed';
 import { autoRequest } from '../services/auto.request';
+import { API_ENDPOINTS } from '@smart/lib/constants';
 
 type Entities<T extends { id: FeedID }> = Record<FeedID, T>;
 
@@ -706,7 +707,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     }));
 
     try {
-      await autoRequest('/users/me', {
+      await autoRequest(API_ENDPOINTS.USER.UPDATE_ME, {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
@@ -716,7 +717,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
   fetchUser: async (userId: string) => {
     try {
-      const res = await autoRequest<{ success: boolean; data: FeedUser }>(`/users/${userId}`);
+      const res = await autoRequest<{ success: boolean; data: FeedUser }>(`${API_ENDPOINTS.USER.FIND_ALL}/${userId}`);
       if (res.success && res.data) {
         const u = res.data;
         const normalizedUser = {

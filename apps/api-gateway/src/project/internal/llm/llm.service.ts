@@ -54,6 +54,20 @@ export class LlmService {
     }
   }
 
+  async completeText(prompt: string): Promise<LlmResponse> {
+    try {
+      return await this.withRetry(() => this.completeGroq(prompt, false));
+    } catch (err) {
+      this.logger.warn('⚠️ Groq text failed → fallback OpenRouter');
+      try {
+        return await this.completeOpenRouter(prompt, false);
+      } catch (err) {
+        this.logger.warn('⚠️ OpenRouter text failed → fallback Ollama');
+        return await this.completeOllama(prompt, false);
+      }
+    }
+  }
+
   async completeCustom(system: string, user: string): Promise<LlmResponse> {
     try {
       const res = await this.groq.chat.completions.create({
@@ -75,18 +89,18 @@ export class LlmService {
     }
   }
 
-  private async completeGroq(prompt: string): Promise<LlmResponse> {
+  private async completeGroq(prompt: string, isJson = true): Promise<LlmResponse> {
     const res = await this.groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',
-      temperature: 0.3,
+      temperature: isJson ? 0.3 : 0.7,
       messages: [
         {
           role: 'system',
-          content: `
+          content: isJson ? `
           Return ONLY valid JSON.
           No explanation.
           No markdown.
-          `,
+          ` : 'Bạn là một trợ lý ảo hữu ích.',
         },
         {
           role: 'user',
@@ -100,12 +114,12 @@ export class LlmService {
     if (!content) throw new Error('Empty Groq response');
 
     return {
-      content: this.cleanJson(content),
+      content: isJson ? this.cleanJson(content) : content,
       provider: 'groq',
     };
   }
 
-  private async completeOpenRouter(prompt: string): Promise<LlmResponse> {
+  private async completeOpenRouter(prompt: string, isJson = true): Promise<LlmResponse> {
     if (!this.openrouterKey) {
       throw new Error('OpenRouter not configured');
     }
@@ -117,7 +131,7 @@ export class LlmService {
         messages: [
           {
             role: 'user',
-            content: prompt,
+            content: isJson ? `${prompt}\n\nReturn ONLY valid JSON.` : prompt,
           },
         ],
       },
@@ -133,18 +147,18 @@ export class LlmService {
     if (!content) throw new Error('Empty OpenRouter response');
 
     return {
-      content: this.cleanJson(content),
+      content: isJson ? this.cleanJson(content) : content,
       provider: 'openrouter',
     };
   }
 
-  private async completeOllama(prompt: string): Promise<LlmResponse> {
+  private async completeOllama(prompt: string, isJson = true): Promise<LlmResponse> {
     const ollamaUrl = this.config.get<string>('microservices.ollama') || 'http://localhost:11434';
     const res = await axios.post(
       `${ollamaUrl}/api/generate`,
       {
         model: 'llama3',
-        prompt,
+        prompt: isJson ? `${prompt}\n\nReturn ONLY valid JSON.` : prompt,
         stream: false,
       },
     );
@@ -154,7 +168,7 @@ export class LlmService {
     }
 
     return {
-      content: this.cleanJson(res.data.response),
+      content: isJson ? this.cleanJson(res.data.response) : res.data.response,
       provider: 'ollama',
     };
   }

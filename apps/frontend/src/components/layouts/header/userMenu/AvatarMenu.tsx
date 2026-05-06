@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useUserStore } from "@smart/store/user";
+import { useAuthStore } from "@smart/store/auth";
 import { useBoardStore } from "@smart/store/setting";
 import UserAvatar from "@smart/components/ui/UserAvatar";
 import { cn } from "@smart/lib/utils";
@@ -22,6 +23,7 @@ export function AvatarMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { currentUser, clearUserStore } = useUserStore();
+  const { logout: authLogout } = useAuthStore();
   const isUserAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
 
   const meId = currentUser?.id || "";
@@ -67,6 +69,7 @@ export function AvatarMenu() {
     } else if (key === "user-setting") {
       navigateLater("/user/settings");
     } else if (key === "logout") {
+      authLogout();
       clearUserStore();
       navigateLater("/auth/login");
     } else if (key === "ai-auto-post") {

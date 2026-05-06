@@ -68,6 +68,27 @@ class AuthService {
       body: JSON.stringify(request),
     });
   }
+
+  forgotPassword(email: string): Promise<ApiResponse> {
+    return autoRequest<ApiResponse>(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  resetPassword(request: any): Promise<ApiResponse> {
+    return autoRequest<ApiResponse>(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  resendCode(email: string): Promise<ApiResponse> {
+    return autoRequest<ApiResponse>(API_ENDPOINTS.AUTH.RESEND_CODE, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
 }
 
 export const authService = new AuthService();

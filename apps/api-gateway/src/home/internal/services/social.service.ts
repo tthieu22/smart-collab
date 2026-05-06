@@ -169,6 +169,7 @@ export class SocialService {
       visibility: post.visibility || 'public',
       mood: post.mood,
       title: post.title,
+      backgroundStyle: post.backgroundStyle,
       author: {
         id: post.author.id,
         name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim(),

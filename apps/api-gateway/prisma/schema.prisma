@@ -26,6 +26,8 @@ model User {
   isVerified                   Boolean  @default(false)
   emailVerificationCode        String?
   emailVerificationCodeExpires DateTime?
+  resetPasswordCode            String?
+  resetPasswordCodeExpires     DateTime?
   emailNotifications           Boolean  @default(true)
   pushNotifications            Boolean  @default(true)
   loginCount                   Int      @default(0)

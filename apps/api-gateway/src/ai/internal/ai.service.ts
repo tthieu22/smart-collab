@@ -344,7 +344,7 @@ Nội dung gốc:
 
 Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, không cần lời dẫn.`;
 
-    const aiRes = await this.llm.complete(prompt);
+    const aiRes = await this.llm.completeText(prompt);
     return { success: true, content: aiRes.content.trim() };
   }
 

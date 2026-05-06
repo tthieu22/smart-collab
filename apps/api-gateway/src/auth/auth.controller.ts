@@ -236,6 +236,30 @@ export class AuthController {
     }
   }
 
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { email: string }): Promise<ApiResponse> {
+    try {
+      return await this.authClient.forgotPassword(body);
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Forgot password failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: { email: string; code: string; newPassword: string }): Promise<ApiResponse> {
+    try {
+      return await this.authClient.resetPassword(body);
+    } catch (error: any) {
+      throw new HttpException(
+        error.message || 'Reset password failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('validate-user')
   async validateUser(
     @Body() validateDto: ValidateUserDto,

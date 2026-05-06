@@ -64,6 +64,22 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
     }
   }, [targetUserId]);
 
+  useEffect(() => {
+    const handleUploadAvatar = (e: any) => {
+      const { file } = e.detail;
+      if (file) {
+        onUpdateProfile({ 
+          firstName: profileUser?.firstName, 
+          lastName: profileUser?.lastName, 
+          avatarFile: file 
+        });
+      }
+    };
+
+    window.addEventListener('upload-avatar', handleUploadAvatar);
+    return () => window.removeEventListener('upload-avatar', handleUploadAvatar);
+  }, [profileUser]);
+
   const handleFollow = async () => {
     if (!targetUserId) return;
     try {
@@ -119,12 +135,12 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
       }
 
       const data = {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        bio: values.bio,
-        location: values.location,
-        website: values.website,
-        birthday: values.birthday ? values.birthday.toISOString() : null,
+        firstName: values.firstName ?? profileUser?.firstName,
+        lastName: values.lastName ?? profileUser?.lastName,
+        bio: values.bio ?? profileUser?.bio,
+        location: values.location ?? profileUser?.location,
+        website: values.website ?? profileUser?.website,
+        birthday: values.birthday ? values.birthday.toISOString() : (profileUser?.birthday || null),
         avatar: avatarUrl
       };
       await updateProfile(data);

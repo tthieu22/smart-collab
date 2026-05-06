@@ -3,7 +3,7 @@
 import { useFeedStore } from '@smart/store/feed';
 import { cn } from '@smart/lib/utils';
 import { Popover, Tooltip, Image } from 'antd';
-import { Cloud, Plus } from 'lucide-react';
+import { Cloud, Plus, Edit, Loader2 } from 'lucide-react';
 import type { FeedUser } from '@smart/types/feed';
 
 const MOODS = [
@@ -36,6 +36,8 @@ interface UserAvatarProps {
   className?: string;
   showMood?: boolean;
   allowChangeMood?: boolean;
+  allowChangeAvatar?: boolean;
+  isLoading?: boolean;
   mood?: string | null;
   previewable?: boolean;
 }
@@ -48,6 +50,8 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   className,
   showMood = true,
   allowChangeMood = false,
+  allowChangeAvatar = false,
+  isLoading = false,
   mood,
   previewable = false
 }, ref) => {
@@ -172,6 +176,42 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
           <div className="h-full w-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold uppercase">
             {user.name ? user.name.charAt(0) : (user.email ? user.email.charAt(0) : '?')}
           </div>
+        )}
+        
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] z-20 rounded-full">
+            <Loader2 className="animate-spin text-white" size={size === '2xl' ? 32 : 20} />
+          </div>
+        )}
+        
+        {isMe && allowChangeAvatar && (
+          <>
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                document.getElementById(`avatar-upload-${userId}`)?.click();
+              }}
+              className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
+            >
+              <div className="flex flex-col items-center gap-1 text-white scale-90 group-hover:scale-100 transition-transform">
+                <Edit size={size === '2xl' ? 24 : 16} strokeWidth={2.5} />
+                <span className={cn("font-black uppercase tracking-widest", size === '2xl' ? "text-[8px]" : "text-[6px]")}>Thay đổi</span>
+              </div>
+            </div>
+            <input
+              id={`avatar-upload-${userId}`}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const event = new CustomEvent('upload-avatar', { detail: { file } });
+                  window.dispatchEvent(event);
+                }
+              }}
+            />
+          </>
         )}
       </div>
       {MoodBadge}

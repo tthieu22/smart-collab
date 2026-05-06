@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useMemo, useEffect, useState } from "react";
-import { useTheme } from "next-themes";
+import { useBoardStore } from "@smart/store/setting";
 import { motion } from "framer-motion";
 
 export default function AuthBackground() {
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme } = useBoardStore();
   const [mounted, setMounted] = useState(false);
   const isDark = resolvedTheme === "dark";
 

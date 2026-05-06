@@ -626,6 +626,26 @@ export class AuthMessageHandler {
     }
   }
 
+  @MessagePattern({ cmd: 'auth.forgotPassword' })
+  async handleForgotPassword(@Payload() payload: { email: string }) {
+    try {
+      await this.userService.forgotPassword(payload.email);
+      return { success: true, message: 'Đã gửi mã khôi phục mật khẩu qua email' };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  @MessagePattern({ cmd: 'auth.resetPassword' })
+  async handleResetPassword(@Payload() payload: { email: string; code: string; newPassword: string }) {
+    try {
+      await this.userService.resetPassword(payload.email, payload.code, payload.newPassword);
+      return { success: true, message: 'Đặt lại mật khẩu thành công' };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
   async handleGeneric(cmd: string, payload: any) {
     this.logger.warn(`Fallback handleGeneric for cmd: ${cmd}`);
     return { success: false, message: `Command ${cmd} not explicitly handled in bridge` };

@@ -59,6 +59,8 @@ export default function ProfileHeader({
                                 userId={targetUserId}
                                 size="2xl"
                                 allowChangeMood={isMe}
+                                allowChangeAvatar={isMe}
+                                isLoading={loading}
                                 previewable={true}
                                 className="!h-28 !w-28 md:!h-36 md:!w-36 !rounded-full transition-transform duration-500 group-hover:scale-[1.02]"
                             />

@@ -55,7 +55,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     socketManager.initSocket();
   },
 
-  logout: () => {
+  logout: async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error('Logout API failed', err);
+    }
     set({ accessToken: null, isAuthenticated: false, isLoading: false });
 
     const socketManager = getProjectSocketManager();

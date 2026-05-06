@@ -137,4 +137,12 @@ export class AuthService {
   async getFollowRelation(payload: { targetId: string; observerId?: string }): Promise<any> {
     return this.handler.handleGetProfileRelation(payload);
   }
+
+  async forgotPassword(payload: { email: string }): Promise<any> {
+    return this.handler.handleForgotPassword(payload);
+  }
+
+  async resetPassword(payload: { email: string; code: string; newPassword: string }): Promise<any> {
+    return this.handler.handleResetPassword(payload);
+  }
 }

@@ -13,10 +13,13 @@ export default function GlobalPostDetailModal() {
       open={!!activePostId}
       onCancel={() => setActivePostId(null)}
       footer={null}
-      width={1024}
+      title={null}
+      closable={false}
+      width={1200}
       centered
-      destroyOnHidden
+      destroyOnClose
       styles={{
+        content: { padding: 0, borderRadius: '32px', overflow: 'hidden' },
         body: { padding: 0 }
       }}
       className="post-detail-modal"
@@ -24,7 +27,6 @@ export default function GlobalPostDetailModal() {
       {activePostId && (
         <PostDetail 
           postId={activePostId} 
-          onBack={() => setActivePostId(null)} 
         />
       )}
     </Modal>

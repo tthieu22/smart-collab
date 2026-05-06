@@ -22,6 +22,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         pathname === ROUTES.LOGIN || 
         pathname === ROUTES.REGISTER || 
         pathname === ROUTES.VERIFY ||
+        pathname === ROUTES.FORGOT_PASSWORD ||
+        pathname === ROUTES.RESET_PASSWORD ||
         pathname.startsWith('/projects/') || // Cho phép xem project public
         pathname.startsWith('/auth/google/callback');
 
@@ -29,8 +31,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!isPublicPath) {
           router.replace(ROUTES.LOGIN);
         }
-      } else if (isUserInitialized) {
-        if (!user && !isPublicPath) {
+      } else {
+        // Nếu đã có token và đang ở trang login/register/etc -> đẩy về trang chủ
+        if (isPublicPath && !pathname.startsWith('/projects/')) {
+          router.replace(ROUTES.HOME);
+        }
+        
+        if (isUserInitialized && !user && !isPublicPath) {
           router.replace(ROUTES.LOGIN);
         }
       }

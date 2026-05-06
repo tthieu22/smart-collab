@@ -76,7 +76,9 @@ export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const hasResults = results.projects.length > 0 || results.news.length > 0 || results.posts.length > 0;
+  const hasResults = (results?.projects?.length || 0) > 0 || 
+                     (results?.news?.length || 0) > 0 || 
+                     (results?.posts?.length || 0) > 0;
 
   return (
     <div ref={containerRef} className="relative w-full max-w-[700px]">
@@ -122,7 +124,7 @@ export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không tìm thấy kết quả" />
           )}
 
-          {results.projects.length > 0 && (
+          {(results?.projects?.length || 0) > 0 && (
             <div className="search-group">
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
                 <ProjectOutlined style={{ marginRight: 8 }} /> THIÊN HÀ
@@ -135,7 +137,7 @@ export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
             </div>
           )}
 
-          {results.news.length > 0 && (
+          {(results?.news?.length || 0) > 0 && (
             <div className="search-group" style={{ marginTop: 8 }}>
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
                 <GlobalOutlined style={{ marginRight: 8 }} /> TIN TỨC VŨ TRỤ
@@ -148,7 +150,7 @@ export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
             </div>
           )}
 
-          {results.posts.length > 0 && (
+          {(results?.posts?.length || 0) > 0 && (
             <div className="search-group" style={{ marginTop: 8 }}>
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
                 <FileTextOutlined style={{ marginRight: 8 }} /> NHẬT KÝ TRẠM

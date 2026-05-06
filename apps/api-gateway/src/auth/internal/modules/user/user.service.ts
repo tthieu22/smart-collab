@@ -507,4 +507,49 @@ export class UserService {
       isFollowing: observerId ? followers.some((u: any) => u.id === observerId) : false,
     };
   }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new Error('Không tìm thấy tài khoản với email này');
+    }
+
+    const resetPasswordCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetPasswordCodeExpires = dayjs().add(30, 'minutes').toDate();
+
+    await this.prisma.user.update({
+      where: { email },
+      data: { resetPasswordCode, resetPasswordCodeExpires },
+    });
+
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Khôi phục mật khẩu Smart Collab',
+      text: `Mã khôi phục mật khẩu của bạn là: ${resetPasswordCode}. Mã này có hiệu lực trong 30 phút.`,
+    });
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new Error('Người dùng không tồn tại');
+
+    if (
+      user.resetPasswordCode === code &&
+      user.resetPasswordCodeExpires &&
+      dayjs().isBefore(user.resetPasswordCodeExpires)
+    ) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await this.prisma.user.update({
+        where: { email },
+        data: {
+          password: hashedPassword,
+          resetPasswordCode: null,
+          resetPasswordCodeExpires: null,
+        },
+      });
+      await this.createLog(user.id, 'RESET_PASSWORD', 'Password reset via email code');
+    } else {
+      throw new Error('Mã khôi phục không chính xác hoặc đã hết hạn');
+    }
+  }
 }

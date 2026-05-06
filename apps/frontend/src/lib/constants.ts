@@ -8,6 +8,8 @@ export const ROUTES = {
   SETTINGS: '/auth/settings',
   GOOGLE_CALLBACK: '/auth/google/callback',
   ADMIN_AI_AUTO_POST: '/admin/ai-auto-post',
+  FORGOT_PASSWORD: '/auth/forgot-password',
+  RESET_PASSWORD: '/auth/reset-password',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -23,12 +25,15 @@ export const API_ENDPOINTS = {
     VERIFY_EMAIL: '/auth/verify-email',
     VALIDATE_USER: '/auth/validate-user',
     REGISTER: '/auth/register',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
+    RESEND_CODE: '/auth/resend-code',
   },
   USER: {
     CREATE: '/users',
     FIND_ALL: '/users',
     GET_ME: '/users/me',
-    UPDATE_ME: '/users/me',
+    UPDATE_ME: '/users/profile',
     UPDATE: '/users/:id',
     DELETE: '/users/:id',
     RESEND_VERIFICATION: '/users/resend-verification-code',

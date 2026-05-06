@@ -16,24 +16,26 @@ export class CookieService {
   constructor(private readonly configService: ConfigService) {}
 
   private get defaultOptions(): CookieOptions {
-    // Lấy frontendUrl với fallback giống hệt main.ts để đảm bảo đồng nhất
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://tthieu-smart-collab.vercel.app';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || '';
     const nodeEnv = this.configService.get<string>('NODE_ENV') || 'development';
     
-    // 100% Xác định môi trường deploy:
-    // - Nếu URL chứa https
-    // - HOẶC URL không chứa localhost
-    // - HOẶC đang chạy trên một cloud platform (Render thường set biến PORT)
+    // Kiểm tra xem yêu cầu có đến từ một môi trường bảo mật (HTTPS) không
     const isHttps = frontendUrl.startsWith('https://');
     const isLocalhost = frontendUrl.includes('localhost');
-    const isDeployed = isHttps || !isLocalhost || !!process.env.PORT;
+    const isProduction = nodeEnv === 'production';
+
+    // Cookie bảo mật chỉ hoạt động trên HTTPS
+    // sameSite: 'none' BẮT BUỘC phải có secure: true
+    // Nếu chạy local (http), dùng 'lax'. Nếu deploy (https), dùng 'none' để hỗ trợ cross-site.
+    const useSecure = isHttps; 
 
     return {
       httpOnly: true,
-      // Nếu là môi trường deploy, BẮT BUỘC phải dùng cấu hình này để browser không chặn
-      secure: isDeployed, 
-      sameSite: isDeployed ? 'none' : 'lax',
+      secure: useSecure,
+      sameSite: useSecure ? 'none' : 'lax',
       path: '/',
+      // Nếu deploy trên các domain khác nhau (ví dụ: api.com và app.com), 
+      // có thể cần cấu hình thêm domain ở đây, nhưng mặc định để undefined là an toàn nhất.
     };
   }
 

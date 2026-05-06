@@ -163,6 +163,7 @@ export class HomeService {
         visibility: 'PUBLIC', // Default
         mood: (post as any).mood,
         title: (post as any).title,
+        backgroundStyle: (post as any).backgroundStyle,
       };
     });
 
@@ -235,6 +236,7 @@ export class HomeService {
       visibility: 'PUBLIC',
       mood: (post as any).mood,
       title: (post as any).title,
+      backgroundStyle: (post as any).backgroundStyle,
     };
   }
 
