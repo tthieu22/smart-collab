@@ -34,6 +34,7 @@ export class ProjectService {
       case 'project.remove_member': return this.project.handleRemoveMember(payload);
       case 'project.member.respond_invite': return this.project.handleRespondInvite(payload);
       case 'project.analytics': return this.project.handleGetAnalytics(payload);
+      case 'project.search': return this.project.handleSearch(payload);
       case 'project.get_top_collaborators': return this.project.handleGetTopCollaborators();
       case 'project.recycle-bin.get_all': return this.project.handleGetRecycleBin(payload);
       case 'project.restore': return this.project.handleRestoreProject(payload);

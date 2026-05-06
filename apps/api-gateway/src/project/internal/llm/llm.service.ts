@@ -139,8 +139,9 @@ export class LlmService {
   }
 
   private async completeOllama(prompt: string): Promise<LlmResponse> {
+    const ollamaUrl = this.config.get<string>('microservices.ollama') || 'http://localhost:11434';
     const res = await axios.post(
-      'http://localhost:11434/api/generate',
+      `${ollamaUrl}/api/generate`,
       {
         model: 'llama3',
         prompt,
@@ -160,9 +161,8 @@ export class LlmService {
 
   async getEmbeddings(text: string): Promise<number[]> {
     try {
-      // Use OpenAI or HuggingFace or Ollama for embeddings
-      // Fallback to Ollama if locally available
-      const res = await axios.post('http://localhost:11434/api/embeddings', {
+      const ollamaUrl = this.config.get<string>('microservices.ollama') || 'http://localhost:11434';
+      const res = await axios.post(`${ollamaUrl}/api/embeddings`, {
         model: 'mxbai-embed-large',
         prompt: text.substring(0, 512)
       });

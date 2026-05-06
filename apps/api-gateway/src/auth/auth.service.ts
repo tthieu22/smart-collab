@@ -125,4 +125,16 @@ export class AuthService {
   async checkEmails(payload: { emails: string[] }): Promise<any> {
     return this.handler.handleCheckEmails(payload);
   }
+
+  async getSuggestions(payload: { userId: string; page?: number; limit?: number; type?: string }): Promise<any> {
+    return this.handler.handleGetSuggestions(payload);
+  }
+
+  async toggleFollow(payload: { followerId: string; followingId: string }): Promise<any> {
+    return this.handler.handleToggleFollow(payload);
+  }
+
+  async getFollowRelation(payload: { targetId: string; observerId?: string }): Promise<any> {
+    return this.handler.handleGetProfileRelation(payload);
+  }
 }

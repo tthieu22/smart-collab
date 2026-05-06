@@ -511,6 +511,44 @@ export class ProjectService {
 
     return { items: mappedItems, total, page, limit };
   }
+  
+  async search(userId: string, query: string) {
+    if (!query) return [];
+
+    // 1. Find projects where user is owner or member
+    const projects = await this.prisma.project.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { ownerId: userId },
+              { members: { some: { userId } } },
+            ],
+          },
+          {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { description: { contains: query, mode: 'insensitive' } },
+            ],
+          },
+          {
+            OR: [
+              { deletedAt: { isSet: false } },
+              { deletedAt: null }
+            ]
+          }
+        ],
+      },
+      take: 10,
+    });
+
+    return projects.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      type: 'project',
+      description: p.description,
+    }));
+  }
 
   private async ensureDefaultBoards(ownerId: string) {
     const DEFAULT_TYPES: Array<'inbox' | 'calendar'> = ['inbox', 'calendar'];

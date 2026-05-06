@@ -214,6 +214,17 @@ export class HomeMessageHandler implements OnModuleInit {
     }
   }
 
+  @MessagePattern({ cmd: 'home.news.search' })
+  async handleSearchNews(@Payload() data: any) {
+    try {
+      const { payload } = data;
+      const result = await this.homeService.search(payload.q || '');
+      return { success: true, data: result };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
+
   @MessagePattern({ cmd: 'home.news.create' })
   async handleCreateNews(@Payload() data: any) {
     try {

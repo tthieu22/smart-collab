@@ -167,4 +167,14 @@ export class ProjectHandler {
       return { success: false, message: error.message };
     }
   }
+  
+  @MessagePattern({ cmd: 'project.search' })
+  async handleSearch(@Payload() payload: { userId: string; query: string }) {
+    try {
+      const result = await this.projectService.search(payload.userId, payload.query);
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  }
 }

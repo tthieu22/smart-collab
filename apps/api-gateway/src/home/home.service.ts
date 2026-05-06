@@ -27,6 +27,7 @@ export class HomeService {
       case 'home.autopost.run-now': return this.handler.handleRunAutoPostNow(payload);
       case 'home.news.list': return this.handler.handleListNews(payload);
       case 'home.news.get': return this.handler.handleGetNewsArticle(payload);
+      case 'home.news.search': return this.handler.handleSearchNews(payload);
       case 'home.news.create': return this.handler.handleCreateNews(payload);
       case 'home.news.update': return this.handler.handleUpdateNews(payload);
       case 'home.news.delete': return this.handler.handleDeleteNews(payload);

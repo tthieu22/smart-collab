@@ -25,6 +25,7 @@ export default () => ({
     notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3004',
     realtime: process.env.REALTIME_SERVICE_URL || 'http://localhost:3005',
     ai: process.env.AI_SERVICE_URL || 'http://localhost:3006',
+    ollama: process.env.OLLAMA_URL || 'http://localhost:11434',
   },
 });
 
