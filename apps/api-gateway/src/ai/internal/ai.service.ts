@@ -535,6 +535,7 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
     const scrapedImages: string[] = [];
     
     // Scrape top 2 links to get more data
+    const sourceLink = searchLinks.length > 0 ? searchLinks[0] : null;
     for (const link of searchLinks.slice(0, 2)) {
       const { text, images } = await this.scraperService.scrapeUrl(link);
       if (text) {
@@ -547,8 +548,9 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
     
     const context = {
       ...(payload?.context ?? {}),
+      source_link: sourceLink,
       scraped_web_data: scrapedContent.substring(0, 5000), // Provide more data to AI
-      scraped_images: scrapedImages.slice(0, 10) // Provide image candidates
+      scraped_images: scrapedImages.slice(0, 15) // Provide more image candidates
     };
 
     const prompt = this.promptFactory.generateNewsPost(
@@ -570,34 +572,41 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
     if (jsonStart !== -1 && jsonEnd !== -1) {
        let potentialJson = rawContent.substring(jsonStart, jsonEnd + 1);
        try {
+         // Try standard parse first
          contentObj = JSON.parse(potentialJson);
-         this.logger.log('Successfully parsed JSON directly');
        } catch (err) {
-         this.logger.warn(`Direct JSON parse failed: ${(err as any).message}. Attempting cleanup...`);
-         // Attempt cleanup: Replace actual newlines inside what appears to be the JSON block
+         this.logger.warn(`Direct JSON parse failed: ${(err as any).message}. Attempting robust recovery...`);
+         
          try {
-           const cleanedJson = potentialJson
-             .replace(/\r?\n/g, '\\n') // Escape all newlines
-             .replace(/\\n\s*"/g, '"') // Unescape if it was just before a property
-             .replace(/"\s*\\n/g, '"'); // Unescape if it was just after a property
+           // ROBUST RECOVERY: Handle unescaped newlines in content strings
+           // This regex looks for newlines that are NOT followed by a JSON property key or a closing brace
+           const sanitized = potentialJson
+             .replace(/([^\\])\n/g, '$1\\n') // Escape raw newlines
+             .replace(/\\n\s*"/g, '"')      // Fix over-escaped property starts
+             .replace(/"\s*\\n/g, '"');      // Fix over-escaped property ends
            
-           // Actually, a safer way to clean "real" newlines in strings:
-           const superCleaned = potentialJson.replace(/(?<=:.*")(\r?\n)(?=.*")/g, "\\n");
-           
-           contentObj = JSON.parse(superCleaned);
-           this.logger.log('Successfully parsed JSON after string newline cleanup');
-         } catch {
-            // Last resort: extract fields via regex if JSON.parse keeps failing
-            this.logger.error('Final JSON parse failed. Extracting fields via regex...');
+           contentObj = JSON.parse(sanitized);
+           this.logger.log('Successfully parsed JSON after robust sanitation');
+         } catch (err2) {
+            this.logger.error('Robust parse failed, falling back to regex extraction');
+            
+            // Regex extraction as last resort
             const titleMatch = potentialJson.match(/"title"\s*:\s*"([^"]+)"/);
-            const contentMatch = potentialJson.match(/"content"\s*:\s*"([\s\S]+?)"(?=\s*(?:,|\}))/);
+            const contentMatch = potentialJson.match(/"content"\s*:\s*"([\s\S]+?)"(?=\s*"(?:imageUrl|imageKeywords|linkUrl)"\s*:|\s*\})/);
             const imageMatch = potentialJson.match(/"imageUrl"\s*:\s*"([^"]+)"/);
             const kwMatch = potentialJson.match(/"imageKeywords"\s*:\s*"([^"]+)"/);
+            const linkMatch = potentialJson.match(/"linkUrl"\s*:\s*"([^"]+)"/);
             
             if (titleMatch) contentObj.title = titleMatch[1];
-            if (contentMatch) contentObj.content = contentMatch[1].replace(/\\n/g, '\n').replace(/\n/g, ' ');
+            if (contentMatch) {
+              contentObj.content = contentMatch[1]
+                .replace(/\\n/g, '\n')
+                .replace(/\r/g, '')
+                .trim();
+            }
             if (imageMatch) contentObj.imageUrl = imageMatch[1];
             if (kwMatch) contentObj.imageKeywords = kwMatch[1];
+            if (linkMatch) contentObj.linkUrl = linkMatch[1];
          }
        }
     }
@@ -615,12 +624,21 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
       contentObj.content.toLowerCase().includes(processedTemplate.toLowerCase().substring(0, 20)) ||
       /\{\{\s*\w+\s*\}\}/i.test(contentObj.content);
 
+    // Validate AI provided image
+    if (contentObj.imageUrl && contentObj.imageUrl.length > 10) {
+      const isOk = await this.imageService.isUrlAccessible(contentObj.imageUrl);
+      if (!isOk) {
+        this.logger.warn(`AI provided image is dead or blocked: ${contentObj.imageUrl}. Forcing search fallback.`);
+        contentObj.imageUrl = null;
+      }
+    }
+
     const result = {
       success: true,
       title: contentObj.title || 'Tin tức mới',
       content: typeof contentObj.content === 'string' ? contentObj.content : rawContent,
       imageUrl: contentObj.imageUrl || null,
-      linkUrl: contentObj.linkUrl || (payload.context?.link as string) || null,
+      linkUrl: contentObj.linkUrl || (context.source_link as string) || (payload.context?.link as string) || null,
       imageKeywords: contentObj.imageKeywords || null
     };
 
@@ -680,8 +698,13 @@ Hãy trả về TRỰC TIẾP nội dung bài viết đã được tối ưu, kh
   }
 
   async getEmbeddings(payload: { text: string }) {
-    const vector = await this.llm.getEmbeddings(payload.text);
-    return { success: true, vector };
+    try {
+      const vector = await this.llm.getEmbeddings(payload.text);
+      return { success: true, vector };
+    } catch (err) {
+      this.logger.warn(`Embedding generation failed for text: "${payload.text.substring(0, 50)}...". Ollama might be offline.`);
+      return { success: false, vector: [], error: (err as any).message };
+    }
   }
 
   private async generateBackground(

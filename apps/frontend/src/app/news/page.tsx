@@ -11,6 +11,9 @@ import { NewsCard } from '@smart/components/news/NewsCard';
 import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
 import { PageHeader } from '@smart/components/ui/PageHeader';
 import { Card } from '@smart/components/ui/card';
+import { useUserStore } from '@smart/store/user';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { message } from 'antd';
 
 export default function NewsPage() {
   const {
@@ -22,6 +25,9 @@ export default function NewsPage() {
   } = useNewsStore();
 
   const [gridCols, setGridCols] = useState<1 | 2 | 3>(3);
+  const { currentUser, isAdmin: checkIsAdmin } = useUserStore();
+  const isAdmin = checkIsAdmin();
+  const [isAiPosting, setIsAiPosting] = useState(false);
 
   // Pagination states
   const [q] = useState('');
@@ -39,33 +45,63 @@ export default function NewsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleAiPostNow = async () => {
+    if (isAiPosting) return;
+    setIsAiPosting(true);
+    try {
+      const res = await newsService.runAutoPostNow();
+      if (res.success) {
+        message.success('AI đã tạo bài viết mới thành công!');
+        fetchPublished({ page: 0, limit });
+      } else {
+        message.error(res.message || 'Không thể tạo bài viết AI');
+      }
+    } catch (err: any) {
+      message.error('Lỗi khi gọi AI: ' + err.message);
+    } finally {
+      setIsAiPosting(false);
+    }
+  };
+
   if (isLoading && articles.length === 0) {
     return null;
   }
 
   const extra = (
-    <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
-      <button
-        onClick={() => setGridCols(1)}
-        className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-        title="1 Column"
-      >
-        <Square size={18} />
-      </button>
-      <button
-        onClick={() => setGridCols(2)}
-        className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-        title="2 Columns"
-      >
-        <Columns size={18} />
-      </button>
-      <button
-        onClick={() => setGridCols(3)}
-        className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-        title="3 Columns"
-      >
-        <LayoutGrid size={18} />
-      </button>
+    <div className="flex items-center gap-3">
+      {isAdmin && (
+        <button
+          onClick={handleAiPostNow}
+          disabled={isAiPosting}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none font-bold text-sm"
+        >
+          {isAiPosting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+          <span>AI Post News</span>
+        </button>
+      )}
+      <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
+        <button
+          onClick={() => setGridCols(1)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="1 Column"
+        >
+          <Square size={18} />
+        </button>
+        <button
+          onClick={() => setGridCols(2)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="2 Columns"
+        >
+          <Columns size={18} />
+        </button>
+        <button
+          onClick={() => setGridCols(3)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="3 Columns"
+        >
+          <LayoutGrid size={18} />
+        </button>
+      </div>
     </div>
   );
 

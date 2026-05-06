@@ -258,7 +258,9 @@ export class HomeService {
 
   async listNews(category: string, page: number, limit: number, q: string = '') {
     const skip = page * limit;
-    const where: any = { category };
+    const where: any = category === 'NEWS' 
+      ? { category: { in: ['NEWS', 'AUTO_AI'] } } 
+      : { category };
     if (q) {
       where.OR = [
         { title: { contains: q, mode: 'insensitive' } },

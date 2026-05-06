@@ -151,10 +151,16 @@ export function AvatarMenu() {
       ]
     },
     ...(isUserAdmin ? [
+      { type: 'divider' },
+      {
+        key: "admin-section",
+        label: <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Khu Vực Quản Trị</span>,
+        disabled: true,
+      },
       {
         key: "ai-auto-post",
-        icon: <Bot size={16} />,
-        label: <span className="text-xs font-bold">AI Auto Post</span>,
+        icon: <Bot size={16} className="text-blue-500" />,
+        label: <span className="text-xs font-bold">Quản Trị Bản Tin (AI)</span>,
       }
     ] : []),
     { type: 'divider' },

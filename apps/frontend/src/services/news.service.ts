@@ -161,6 +161,14 @@ class NewsService {
       method: 'POST',
     });
   }
+
+  async runAutoPostNow(topic?: string): Promise<{ success: boolean; data?: NewsArticle; message?: string }> {
+    const response = await autoRequest<{ success: boolean; data?: any; message?: string }>('/home/admin/auto-post/run-now', {
+      method: 'POST',
+      body: JSON.stringify({ topic }),
+    });
+    return response;
+  }
 }
 
 export const newsService = new NewsService();

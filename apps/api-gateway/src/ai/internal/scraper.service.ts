@@ -170,22 +170,51 @@ export class ScraperService {
         if (images.length >= 10) break;
       }
 
-      // Strategy 2: Google Images Fallback (Strongest fallback)
+      // Strategy 2: Yandex Images (Very robust fallback)
       if (images.length === 0) {
-        this.logger.log('Bing failed, trying Google Images Mobile...');
+        this.logger.log('Bing failed, trying Yandex Images...');
         try {
-          const gUrl = `https://www.google.com.vn/search?q=${encodeURIComponent(query)}&tbm=isch&asearch=ichunk&async=_id:rg_s,_pms:s,_jsfs:FCH_1`;
+          const yUrl = `https://yandex.com/images/search?text=${encodeURIComponent(query)}`;
+          const yRes = await axios.get(yUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9'
+            },
+            timeout: 7000
+          });
+          
+          // Improved Yandex Regex to capture more variations of high-res images
+          const yRegex = /"origin":\{"url":"(https?:\/\/[^"]+?\.(?:jpg|jpeg|png|webp))"/gi;
+          let yMatch;
+          while ((yMatch = yRegex.exec(yRes.data)) !== null) {
+            const imgUrl = yMatch[1];
+            if (!images.includes(imgUrl)) {
+              images.push(imgUrl);
+            }
+            if (images.length >= 12) break;
+          }
+        } catch (e) {
+          this.logger.warn(`Yandex fallback failed: ${(e as any).message}`);
+        }
+      }
+
+      // Strategy 3: Google Images Fallback
+      if (images.length === 0) {
+        this.logger.log('Yandex failed, trying Google Images...');
+        try {
+          const gUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch`;
           const gRes = await axios.get(gUrl, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36'
             }
           });
-          // Google JSON structure for images
-          const gRegex = /"(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp))",[0-9]+,[0-9]+/gi;
+          const gRegex = /\["(https?:\/\/[^"]+?\.(?:jpg|jpeg|png|webp))",[0-9]+,[0-9]+\]/gi;
           let gMatch;
           while ((gMatch = gRegex.exec(gRes.data)) !== null) {
-            if (!gMatch[1].includes('google.')) {
-              images.push(gMatch[1]);
+            const imgUrl = gMatch[1];
+            if (!imgUrl.includes('google.') && !images.includes(imgUrl)) {
+              images.push(imgUrl);
             }
             if (images.length >= 10) break;
           }
@@ -194,18 +223,24 @@ export class ScraperService {
         }
       }
 
-      // Strategy 3: DuckDuckGo Lite (Images are sometimes in the source)
+      // Strategy 4: DuckDuckGo fallback (Standard HTML instead of lite for better images)
       if (images.length === 0) {
          this.logger.log('Google failed, trying DuckDuckGo fallback');
-         const ddgUrl = `https://duckduckgo.com/lite/?q=${encodeURIComponent(query)}`;
-         const ddgRes = await axios.get(ddgUrl);
-         const imgRegex = /src="(https?:\/\/[^"]+\.(?:jpg|jpeg|png))"/gi;
-         let imgMatch;
-         while ((imgMatch = imgRegex.exec(ddgRes.data)) !== null) {
-            if (!imgMatch[1].includes('duckduckgo.com')) {
-               images.push(imgMatch[1]);
-            }
-         }
+         try {
+           const ddgUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+           const ddgRes = await axios.get(ddgUrl, {
+             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+           });
+           const imgRegex = /https?:\/\/[^"]+?\.(?:jpg|jpeg|png)/gi;
+           let imgMatch;
+           while ((imgMatch = imgRegex.exec(ddgRes.data)) !== null) {
+              const url = imgMatch[0];
+              if (!url.includes('duckduckgo.com') && !images.includes(url)) {
+                 images.push(url);
+              }
+              if (images.length >= 10) break;
+           }
+         } catch {}
       }
 
       // FINAL COMPACT FALLBACK: If absolutely nothing found, use high-quality neutral article images

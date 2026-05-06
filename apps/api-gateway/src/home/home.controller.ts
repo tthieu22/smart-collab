@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Req, UseGuards, Param, Query } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { HomeService } from './home.service';
 
 @Controller('home')
@@ -111,25 +113,29 @@ export class HomeController {
   }
 
   @Get('admin/auto-post/settings')
-  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async getAutoPostSettings() {
     return this.homeService.send({ cmd: 'home.autopost.settings.get' }, {});
   }
 
   @Patch('admin/auto-post/settings')
-  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async updateAutoPostSettings(@Body() body: any) {
     return this.homeService.send({ cmd: 'home.autopost.settings.update' }, { payload: body });
   }
 
   @Post('admin/auto-post/run-now')
-  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async runAutoPostNow(@Body() body: { topic?: string }) {
     return this.homeService.send({ cmd: 'home.autopost.run-now' }, { payload: body ?? {} });
   }
 
   @Get('admin/news')
-  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async listNewsAdmin(
     @Query('category') category?: string,
     @Query('page') page?: number,
@@ -171,7 +177,8 @@ export class HomeController {
   }
 
   @Post('admin/news')
-  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async createNews(
     @Body() body: { content: string; media?: any[]; category?: string; linkUrl?: string | null },
     @Req() req: any,
@@ -183,7 +190,8 @@ export class HomeController {
   }
 
   @Patch('admin/news/:id')
-  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async updateNews(
     @Param('id') id: string,
     @Body() body: { content?: string; category?: string; linkUrl?: string | null; media?: any[] },
@@ -196,7 +204,8 @@ export class HomeController {
   }
 
   @Post('admin/news/:id/delete')
-  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async deleteNews(@Param('id') id: string, @Req() req: any) {
     return this.homeService.send({ cmd: 'home.news.delete' }, {
       userId: req.user.userId,

@@ -17,7 +17,7 @@ export default function GlobalPostDetailModal() {
       closable={false}
       width={1200}
       centered
-      destroyOnClose
+      destroyOnHidden
       styles={{
         content: { padding: 0, borderRadius: '32px', overflow: 'hidden' },
         body: { padding: 0 }
