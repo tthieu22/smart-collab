@@ -258,15 +258,25 @@ export class HomeService {
 
   async listNews(category: string, page: number, limit: number, q: string = '') {
     const skip = page * limit;
-    const where: any = category === 'NEWS' 
-      ? { category: { in: ['NEWS', 'AUTO_AI'] } } 
-      : { category };
+    
+    // Normalize category for robust matching
+    const targetCat = (category || 'NEWS').toUpperCase();
+    
+    let where: any = {};
+    if (targetCat === 'NEWS' || targetCat === 'ALL') {
+      where.category = { in: ['NEWS', 'AUTO_AI'] };
+    } else {
+      where.category = targetCat;
+    }
+
     if (q) {
       where.OR = [
         { title: { contains: q, mode: 'insensitive' } },
         { content: { contains: q, mode: 'insensitive' } },
       ];
     }
+
+    this.logger.debug(`[HomeService] listNews - category: ${targetCat}, where: ${JSON.stringify(where)}`);
 
     const [items, total] = await Promise.all([
       this.prisma.newsArticle.findMany({
@@ -277,6 +287,8 @@ export class HomeService {
       }),
       this.prisma.newsArticle.count({ where }),
     ]);
+
+    this.logger.log(`[HomeService] listNews found ${items.length} items (total: ${total}) for category: ${targetCat}`);
 
     return { items, total, page, limit };
   }
