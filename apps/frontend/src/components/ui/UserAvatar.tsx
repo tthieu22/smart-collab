@@ -43,6 +43,7 @@ interface UserAvatarProps {
 }
 
 import React, { forwardRef } from 'react';
+import { useUserStore } from '@smart/store/user';
 
 export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   userId,
@@ -55,16 +56,29 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   mood,
   previewable = false
 }, ref) => {
-  const user = useFeedStore((s) => s.users[userId]);
-  const currentUserId = useFeedStore((s) => s.currentUserId);
+  const feedUser = useFeedStore((s) => s.users[userId]);
+  const { currentUser } = useUserStore();
+  const currentUserId = useFeedStore((s) => s.currentUserId) || currentUser?.id;
   const updateUserMood = useFeedStore((s) => s.updateUserMood);
 
-  // If user not in feed store, they might be in user store (me)
-  // We'll fallback to a basic rendering if user is missing but we'll try to get it from store
+  // Determine which user data to use
+  let user = feedUser;
+  if (!user && currentUser && userId === currentUser.id) {
+    user = {
+      ...currentUser,
+      name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email?.split('@')[0] || 'Phi Hành Gia',
+    } as any;
+  }
 
+  // Final fallback for "Guest" or missing user
   if (!user) {
-    // If it's me but not in feed store yet (unlikely but possible in header)
-    return null;
+    user = {
+      id: userId,
+      name: 'Phi Hành Gia Vô Danh',
+      email: 'galaxy@smartcollab.space',
+      avatarUrl: null,
+      mood: null
+    } as any;
   }
 
   const isMe = userId === currentUserId;

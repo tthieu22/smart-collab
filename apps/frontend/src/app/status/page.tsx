@@ -3,6 +3,8 @@
 import React from 'react';
 import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { PageHeader } from '@smart/components/ui/PageHeader';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 import { InfoContent } from '@smart/components/ui/InfoContent';
 import { Activity, Server, Database, Globe, CheckCircle2, AlertTriangle } from 'lucide-react';
 
@@ -18,7 +20,11 @@ export default function StatusPage() {
 
     return (
         <SiteLayout>
-            <div className="max-w-5xl mx-auto py-8 px-4">
+            <div className={cn(
+                UI_CONFIG.CONTAINER,
+                UI_CONFIG.MAX_WIDTH.STANDARD,
+                UI_CONFIG.PAGE_SPACING
+            )}>
                 <PageHeader
                     icon={<Activity />}
                     title="Trạng thái Hệ thống"

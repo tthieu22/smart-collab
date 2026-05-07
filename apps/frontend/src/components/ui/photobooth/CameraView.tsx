@@ -179,11 +179,52 @@ export const CameraView: React.FC<CameraViewProps> = ({
                 )}
             </AnimatePresence>
 
+            {/* Futuristic Tech Overlays */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {/* Corner Brackets */}
+                <div className="absolute top-10 left-10 w-20 h-20 border-t-2 border-l-2 border-white/40 rounded-tl-2xl" />
+                <div className="absolute top-10 right-10 w-20 h-20 border-t-2 border-r-2 border-white/40 rounded-tr-2xl" />
+                <div className="absolute bottom-10 left-10 w-20 h-20 border-b-2 border-l-2 border-white/40 rounded-bl-2xl" />
+                <div className="absolute bottom-10 right-10 w-20 h-20 border-b-2 border-r-2 border-white/40 rounded-br-2xl" />
+
+                {/* Central Crosshair */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center">
+                    <div className="w-full h-[1px] bg-white/20" />
+                    <div className="absolute h-full w-[1px] bg-white/20" />
+                    <div className="w-2 h-2 rounded-full border border-blue-500/50" />
+                </div>
+
+                {/* Scanning Line */}
+                <motion.div
+                    animate={{ top: ['0%', '100%'] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                    className="absolute left-0 right-0 h-[2px] bg-blue-500/20 shadow-[0_0_15px_#3b82f633] z-10"
+                />
+
+                {/* Data Readouts */}
+                <div className="absolute bottom-10 left-10 flex flex-col gap-1 opacity-40">
+                    <div className="text-[10px] text-white font-mono uppercase tracking-widest flex gap-2">
+                        <span>ISO: 400</span>
+                        <span>F/2.8</span>
+                        <span>1/125</span>
+                    </div>
+                    <div className="text-[10px] text-blue-400 font-mono uppercase tracking-widest">
+                        AI_ENHANCE: ACTIVE
+                    </div>
+                </div>
+
+                <div className="absolute top-1/2 right-10 -translate-y-1/2 flex flex-col gap-4 opacity-20">
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="w-1 h-1 bg-white rounded-full" />
+                    ))}
+                </div>
+            </div>
+
             {/* Camera UI Overlay */}
             <div className="absolute top-6 right-6 flex flex-col gap-4">
-                <div className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-2">
+                <div className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-2 shadow-xl">
                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-[10px] text-white font-bold tracking-widest uppercase">REC • LIVE</span>
+                    <span className="text-[10px] text-white font-black tracking-[0.2em] uppercase">REC • SMART_CAM</span>
                 </div>
             </div>
         </div>

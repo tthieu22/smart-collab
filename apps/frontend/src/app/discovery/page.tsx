@@ -11,6 +11,7 @@ import { cn } from '@smart/lib/utils';
 import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
 import { PageHeader } from '@smart/components/ui/PageHeader';
 import DiscoveryCard from '@smart/components/user/DiscoveryCard';
+import { UI_CONFIG } from '@smart/lib/constants';
 
 export default function DiscoveryPage() {
     const {
@@ -97,7 +98,11 @@ export default function DiscoveryPage() {
 
     return (
         <SiteLayout>
-            <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500">
+            <div className={cn(
+                UI_CONFIG.CONTAINER,
+                UI_CONFIG.MAX_WIDTH.STANDARD,
+                UI_CONFIG.PAGE_SPACING
+            )}>
                 <PageHeader
                     icon={<Users className="w-5 h-5" />}
                     title="Khám phá Cộng tác viên"
@@ -138,12 +143,12 @@ export default function DiscoveryPage() {
                     </div>
                 </div>
 
-                <div className={`min-h-[500px] ${gridCols === 1
-                    ? 'space-y-4'
-                    : gridCols === 2
-                        ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
-                        : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-                    }`}>
+                <div className={cn(
+                    "min-h-[500px]",
+                    gridCols === 1 && UI_CONFIG.GRID.NEWS[1],
+                    gridCols === 2 && UI_CONFIG.GRID.NEWS[2],
+                    gridCols === 3 && UI_CONFIG.GRID.NEWS[3]
+                )}>
 
                     {loading ? (
                         [...Array(6)].map((_, i) => (

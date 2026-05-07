@@ -287,14 +287,6 @@ export const PhotoboothSystem: React.FC<PhotoboothSystemProps> = ({ onCapture, o
                 )}
             </AnimatePresence>
 
-            {step !== 'idle' && (
-                <button
-                    onClick={onClose}
-                    className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md rounded-full flex items-center justify-center transition-all active:scale-90 z-[100]"
-                >
-                    <X size={20} className="text-white/60" />
-                </button>
-            )}
         </div>
     );
 };

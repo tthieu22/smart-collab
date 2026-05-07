@@ -24,7 +24,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
   const fetchComments = useFeedStore((s) => s.fetchComments);
   const addComment = useFeedStore((s) => s.addComment);
   const currentUser = useUserStore((s) => s.currentUser);
-  
+
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -61,9 +61,9 @@ export default function FeedPostCard({ postId }: { postId: string }) {
       padding="none"
       className="group/card overflow-hidden dark:bg-neutral-950 dark:border-neutral-800 ring-1 ring-black/5 dark:ring-white/5 shadow-sm hover:shadow-md transition-all duration-300 rounded-[24px]"
     >
-      <div className="p-3 sm:p-4">
+      <div className="p-4 md:p-5">
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <PostHeader post={post} author={author} />
 
           <Dropdown menu={{ items: dropdownItems }} trigger={['click']} placement="bottomRight">
@@ -78,20 +78,20 @@ export default function FeedPostCard({ postId }: { postId: string }) {
           onClick={() => setActivePostId(post.id)}
           className={cn(
             "cursor-pointer space-y-3",
-            post.backgroundStyle ? cn("rounded-[28px] p-10 flex flex-col items-center justify-center min-h-[240px] text-center font-black text-2xl shadow-inner text-white", post.backgroundStyle) : ""
+            post.backgroundStyle ? cn("rounded-[28px] p-8 md:p-10 flex flex-col items-center justify-center min-h-[200px] md:min-h-[240px] text-center font-black shadow-inner text-white", post.backgroundStyle) : ""
           )}
         >
           {post.title && !post.backgroundStyle && (
-            <h2 className="text-lg font-black text-gray-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <h2 className="text-[17px] md:text-lg font-black text-gray-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
               {post.title}
             </h2>
           )}
 
           <div className={cn(
-            "break-words leading-relaxed opacity-90",
+            "break-words leading-relaxed",
             post.backgroundStyle
-              ? "text-2xl font-black text-center whitespace-pre-wrap"
-              : "text-[15px] text-gray-800 dark:text-gray-200 whitespace-pre-wrap"
+              ? "text-xl md:text-2xl font-black text-center whitespace-pre-wrap"
+              : "text-[15px] text-gray-800 dark:text-gray-200 whitespace-pre-wrap opacity-90"
           )}>
             {post.content}
           </div>
@@ -117,7 +117,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
           <div
             onClick={() => setActivePostId(post.id)}
             className={cn(
-              "relative w-full cursor-pointer mt-3",
+              "relative w-full cursor-pointer mt-4",
               media.length === 1 ? "" : "grid gap-2 grid-cols-2"
             )}
           >
@@ -130,13 +130,13 @@ export default function FeedPostCard({ postId }: { postId: string }) {
                 )}
               >
                 {idx < 4 && (
-                   m.type === 'image' ? (
+                  m.type === 'image' ? (
                     <img
                       src={m.url}
                       alt={m.alt || 'media'}
                       className={cn(
                         "w-full object-cover transition-transform duration-700 hover:scale-105",
-                        media.length === 1 ? "max-h-[600px] h-auto" : "h-full"
+                        media.length === 1 ? "max-h-[500px] h-auto" : "h-full"
                       )}
                     />
                   ) : (
@@ -154,17 +154,17 @@ export default function FeedPostCard({ postId }: { postId: string }) {
         )}
 
         {/* REACTIONS SUMMARY */}
-        <div className="flex items-center justify-between mt-5 mb-3 px-1">
+        <div className="flex items-center justify-between mt-5 mb-4 px-1">
           <ReactionSummary post={post} />
-          <div className="text-[11px] text-gray-500 font-medium">
+          <div className="flex flex-col xs:flex-row items-end xs:items-center gap-1 xs:gap-3 text-[10px] sm:text-[11px] text-gray-400 font-bold uppercase tracking-wider">
             <span className="hover:text-blue-500 cursor-pointer">{post.commentCount || 0} truyền tin</span>
-            <span className="mx-1.5">•</span>
+            <span className="hidden xs:inline mx-0.5 opacity-30">•</span>
             <span className="hover:text-blue-500 cursor-pointer">{post.shareCount || 0} chia sẻ</span>
           </div>
         </div>
 
         {/* ACTION BUTTONS */}
-        <div className="border-t border-gray-50 dark:border-neutral-900 pt-3 pb-0.5">
+        <div className="border-t border-gray-50 dark:border-neutral-900 pt-3 pb-1">
           <PostActions post={post} layout="compact" />
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
       {/* COMMENT SECTION INTEGRATED */}
       <div className="bg-gray-50/50 dark:bg-black/20 px-4 pb-4 pt-2 border-t border-gray-50 dark:border-neutral-900">
         <div className="text-[11px] font-bold text-gray-400 mb-3 px-1">Tín hiệu phản hồi</div>
-        
+
         <div className="flex items-center gap-2.5 mb-5">
           <UserAvatar userId={currentUser?.id || ''} size="sm" />
           <div className="flex-1 relative group">
@@ -184,7 +184,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
               className="h-9 bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 hover:border-blue-400 focus:border-blue-500 rounded-xl text-[12px] dark:text-gray-300 transition-all"
               disabled={isSubmitting}
             />
-            <button 
+            <button
               onClick={handleSendComment}
               disabled={!commentText.trim() || isSubmitting}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors disabled:opacity-30"

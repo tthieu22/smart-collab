@@ -42,16 +42,29 @@ export const useAuth = () => {
         setCurrentUser(response.data);
         return response.data;
       } else {
-        clearAuth();
-        clearUserStore();
-        router.push(ROUTES.LOGIN);
-        return null;
+        throw new Error(response.message || 'Fetch failed');
       }
     } catch (error) {
       console.error('Fetch user failed:', error);
-      clearAuth();
-      clearUserStore();
-      router.push(ROUTES.LOGIN);
+      
+      const currentPath = window.location.pathname;
+      const isPublicPath = 
+        currentPath === ROUTES.LOGIN || 
+        currentPath === ROUTES.REGISTER || 
+        currentPath === ROUTES.VERIFY ||
+        currentPath === ROUTES.FORGOT_PASSWORD ||
+        currentPath === ROUTES.RESET_PASSWORD ||
+        currentPath === '/' ||
+        currentPath === '/feed' ||
+        currentPath === '/projects' ||
+        currentPath === '/news' ||
+        currentPath.startsWith('/projects/');
+
+      if (!isPublicPath) {
+        clearAuth();
+        clearUserStore();
+        router.push(ROUTES.LOGIN);
+      }
       return null;
     } finally {
       setIsFetchingUser(false);

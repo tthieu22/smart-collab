@@ -5,11 +5,17 @@ import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { PageHeader } from '@smart/components/ui/PageHeader';
 import { InfoContent, InfoSection } from '@smart/components/ui/InfoContent';
 import { HelpCircle, ChevronRight, PlayCircle, BookOpen } from 'lucide-react';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 
 export default function GuidePage() {
     return (
         <SiteLayout>
-            <div className="max-w-5xl mx-auto py-8 px-4">
+            <div className={cn(
+                UI_CONFIG.CONTAINER,
+                UI_CONFIG.MAX_WIDTH.STANDARD,
+                UI_CONFIG.PAGE_SPACING
+            )}>
                 <PageHeader
                     icon={<HelpCircle />}
                     title="Hướng dẫn sử dụng"

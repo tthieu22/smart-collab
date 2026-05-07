@@ -7,6 +7,8 @@ import { InfoContent, InfoSection } from '@smart/components/ui/InfoContent';
 import { Book, Code, Terminal, Zap, Search, ArrowRight } from 'lucide-react';
 import { Input } from 'antd';
 import Link from 'next/link';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 
 export default function DocsPage() {
     const categories = [
@@ -17,7 +19,11 @@ export default function DocsPage() {
 
     return (
         <SiteLayout>
-            <div className="max-w-5xl mx-auto py-8 px-4">
+            <div className={cn(
+                UI_CONFIG.CONTAINER,
+                UI_CONFIG.MAX_WIDTH.STANDARD,
+                UI_CONFIG.PAGE_SPACING
+            )}>
                 <PageHeader
                     icon={<Book />}
                     title="Tài liệu kỹ thuật"

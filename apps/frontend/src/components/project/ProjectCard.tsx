@@ -5,6 +5,8 @@ import Link from 'next/link';
 import type { Project } from '@smart/types/project';
 
 import { projectStore } from '@smart/store/project';
+import { cn } from '@smart/lib/utils';
+import { UI_CONFIG } from '@smart/lib/constants';
 
 interface ProjectCardProps {
   project: Project;
@@ -38,49 +40,74 @@ export default function ProjectCard({
   const content = (
     <div
       onMouseEnter={() => !disablePrefetch && prefetchProject(project.id)}
-      className={`group flex overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 isolation-auto z-0 ${isList ? 'flex-row h-56' : 'flex-col'
-        } ${className}`}
+      className={cn(
+        "group relative flex overflow-hidden",
+        UI_CONFIG.CARD.RADIUS,
+        UI_CONFIG.CARD.BORDER,
+        UI_CONFIG.CARD.BG,
+        UI_CONFIG.CARD.SHADOW,
+        isList ? "flex-col md:flex-row md:min-h-[220px]" : "flex-col h-full"
+      )}
     >
       {/* BACKGROUND IMAGE / COLOR CONTAINER */}
       <div
-        className={`relative overflow-hidden z-0 ${isList ? 'w-1/3 h-full shrink-0 rounded-l-[24px]' : 'h-40 w-full rounded-t-[24px]'
-          }`}
+        className={cn(
+          "relative overflow-hidden z-0 shrink-0",
+          isList ? "w-full md:w-1/3 h-48 md:h-auto" : "h-40 w-full"
+        )}
       >
         <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out group-hover:scale-110"
           style={bgStyle}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-700" />
+        
         {project.visibility && (
-          <span className="absolute left-4 top-4 rounded-xl bg-white/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-md shadow-sm border border-white/20">
+          <span className="absolute left-4 top-4 rounded-xl bg-white/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-md shadow-lg border border-white/20">
             {project.visibility}
           </span>
         )}
       </div>
 
       {/* PROJECT INFO */}
-      <div className={`flex flex-1 flex-col justify-between ${isList ? 'p-6' : 'p-4'}`}>
+      <div className={cn(
+        "flex flex-1 flex-col justify-between",
+        isList ? UI_CONFIG.CARD.LIST_PADDING : UI_CONFIG.CARD.PADDING
+      )}>
         <div className="min-w-0">
-          <h3 className={`mb-2 truncate font-bold capitalize text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors tracking-tight ${isList ? 'text-xl' : gridCols === 2 ? 'text-lg' : 'text-base'
-            }`}>
+          <div className="flex items-center gap-2 mb-2">
+             <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+             <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Active Project</span>
+          </div>
+          
+          <h3 className={cn(
+            "font-black capitalize text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all duration-300 tracking-tight",
+            isList ? "text-xl md:text-2xl mb-3" : "text-lg mb-2"
+          )}>
             {project.name}
           </h3>
+          
           {project.description && (
-            <p className={`text-gray-500 dark:text-neutral-400 font-medium ${isList ? 'line-clamp-3 text-base leading-relaxed' : 'line-clamp-2 text-sm'
-              }`}>
+            <p className={cn(
+              "text-gray-500 dark:text-neutral-400 font-medium leading-relaxed",
+              isList ? "line-clamp-3 text-[15px]" : "line-clamp-2 text-sm"
+            )}>
               {project.description}
             </p>
           )}
         </div>
 
         {showMembers && (
-          <div className={`mt-4 flex items-center justify-between border-t border-gray-50 pt-4 dark:border-neutral-800/50 ${isList ? 'hidden md:flex' : ''}`}>
+          <div className={cn(
+            "mt-6 flex items-center justify-between border-t border-gray-50 pt-5 dark:border-neutral-800/50",
+            !isList && "mt-auto"
+          )}>
             <div className="flex items-center space-x-3">
               <div className="flex -space-x-2.5">
                 {[...Array(Math.min(project.members?.length || 0, 4))].map((_, i) => (
                   <div
                     key={i}
-                    className="h-8 w-8 rounded-full border-2 border-white bg-gray-200 dark:border-neutral-900 dark:bg-neutral-800 ring-2 ring-transparent group-hover:ring-blue-500/20 transition-all"
+                    className="h-8 w-8 rounded-full border-2 border-white bg-gray-200 dark:border-neutral-900 dark:bg-neutral-800 ring-2 ring-transparent group-hover:ring-blue-500/20 transition-all shadow-sm"
                   />
                 ))}
                 {(project.members?.length || 0) > 4 && (
@@ -89,9 +116,16 @@ export default function ProjectCard({
                   </div>
                 )}
               </div>
-              <span className="text-xs font-bold text-gray-400 dark:text-neutral-500 uppercase tracking-widest">
-                {project.members?.length || 0} Thành viên
+              <span className="text-[10px] font-black text-gray-400 dark:text-neutral-500 uppercase tracking-widest">
+                {project.members?.length || 0} Members
               </span>
+            </div>
+            
+            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-500">
+               <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Open</span>
+               <div className="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">
+                  →
+               </div>
             </div>
           </div>
         )}

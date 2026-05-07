@@ -135,6 +135,7 @@ export default function ProfileTabs({
                         onChange={setActiveTab}
                         items={tabs}
                         className="profile-tabs-compact"
+                        centered
                     />
                 </div>
             </div>
@@ -203,17 +204,31 @@ export default function ProfileTabs({
                 .profile-tabs-compact .ant-tabs-nav::before {
                     display: none !important;
                 }
+                .profile-tabs-compact .ant-tabs-nav-list {
+                    width: 100% !important;
+                    display: flex !important;
+                    justify-content: space-around !important;
+                }
                 .profile-tabs-compact .ant-tabs-tab {
                     padding: 16px 0 !important;
-                    margin-right: 28px !important;
+                    margin: 0 !important;
+                    flex: 1 !important;
+                    display: flex !important;
+                    justify-content: center !important;
                 }
                 .profile-tabs-compact .ant-tabs-tab-btn {
                     font-weight: 900 !important;
-                    font-size: 11px !important;
+                    font-size: 10px !important;
                     text-transform: uppercase !important;
-                    letter-spacing: 0.18em !important;
+                    letter-spacing: 0.15em !important;
                     color: #94a3b8 !important;
                     transition: all 0.3s ease;
+                }
+                @media (min-width: 640px) {
+                    .profile-tabs-compact .ant-tabs-tab-btn {
+                        font-size: 11px !important;
+                        letter-spacing: 0.18em !important;
+                    }
                 }
                 .profile-tabs-compact .ant-tabs-tab-active .ant-tabs-tab-btn {
                     color: #3b82f6 !important;

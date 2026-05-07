@@ -187,10 +187,21 @@ export function NotificationMenu() {
     );
   }, [formatNotificationTime, handleNotificationClick, handleRespondInvite]);
 
+  const [placement, setPlacement] = useState<"bottom" | "bottomRight">("bottomRight");
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPlacement(window.innerWidth < 640 ? "bottom" : "bottomRight");
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const content = (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="w-[400px] bg-white dark:bg-[#0a0a0a] rounded-[24px] overflow-hidden border border-gray-100 dark:border-white/10 shadow-2xl"
+      className="w-[92vw] sm:w-[400px] bg-white dark:bg-[#0a0a0a] rounded-[24px] overflow-hidden border border-gray-100 dark:border-white/10 shadow-2xl"
     >
       <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
         <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Tín hiệu vũ trụ</h3>
@@ -268,6 +279,16 @@ export function NotificationMenu() {
             background: #3b82f6 !important;
             box-shadow: none !important;
         }
+        @media (max-width: 640px) {
+          .mobile-notification-dropdown {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 92vw !important;
+          }
+          .mobile-notification-dropdown > div {
+            width: 100% !important;
+          }
+        }
       `}</style>
     </div>
   );
@@ -275,11 +296,11 @@ export function NotificationMenu() {
   return (
     <Dropdown
       trigger={["click"]}
-      placement="bottomRight"
+      placement={placement}
       open={open}
       onOpenChange={setOpen}
       popupRender={() => content}
-      overlayClassName="rounded-3xl"
+      overlayClassName={cn("rounded-3xl", placement === "bottom" && "mobile-notification-dropdown")}
     >
       <div
         className={cn(

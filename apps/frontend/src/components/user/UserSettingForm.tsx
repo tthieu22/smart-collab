@@ -1,25 +1,28 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { 
-  Form, Input, Button, Avatar, message, Card, 
+import {
+  Form, Input, Button, Avatar, message, Card,
   Divider, Switch, Tag, Modal, Space, Typography,
   Alert, Statistic, Tooltip, List, Timeline, Empty,
   Spin, Badge
 } from "antd";
-import { 
-  UserOutlined, LockOutlined, MailOutlined, 
+import {
+  UserOutlined, LockOutlined, MailOutlined,
   GoogleOutlined, BellOutlined, InfoCircleOutlined,
   DeleteOutlined, CheckCircleFilled, ExclamationCircleFilled,
   EyeInvisibleOutlined, EyeTwoTone, SafetyCertificateOutlined,
   CloudUploadOutlined, HistoryOutlined, PoweroffOutlined,
   RightOutlined, DownloadOutlined, LoginOutlined,
-  EditOutlined, KeyOutlined, BlockOutlined, RocketOutlined
+  EditOutlined, KeyOutlined, BlockOutlined, RocketOutlined,
+  ArrowLeftOutlined
 } from "@ant-design/icons";
 import { useUserStore } from "@smart/store/user";
 import { autoRequest } from "@smart/services/auto.request";
 import { format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import { cn } from "@smart/lib/utils";
+import { UI_CONFIG } from "@smart/lib/constants";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -35,6 +38,7 @@ export function UserSettingForm() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteForm] = Form.useForm();
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [mobileView, setMobileView] = useState<"menu" | "content">("menu");
 
   // Timer for resend code
   useEffect(() => {
@@ -224,7 +228,7 @@ export function UserSettingForm() {
       const res = await autoRequest<any>("/auth/export-data", { method: "GET" });
       if (res.success) {
         const dataStr = JSON.stringify(res.data, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         const exportFileDefaultName = `user_data_${currentUser?.id}.json`;
 
         const linkElement = document.createElement('a');
@@ -282,6 +286,11 @@ export function UserSettingForm() {
     if (activeMenu === "devices") fetchDevices();
   }, [activeMenu, fetchDevices]);
 
+  const handleMenuClick = (key: string) => {
+    setActiveMenu(key);
+    setMobileView("content");
+  };
+
   const renderContent = () => {
     switch (activeMenu) {
       case "profile":
@@ -297,22 +306,22 @@ export function UserSettingForm() {
 
             <div className="flex flex-col items-center sm:flex-row gap-8 py-6 bg-gray-50/50 dark:bg-neutral-900/50 rounded-[24px] border border-gray-100 dark:border-neutral-800 p-6">
               <div className="relative group">
-                <Avatar 
-                  size={100} 
-                  src={currentUser?.avatar} 
-                  icon={!currentUser?.avatar && <UserOutlined />} 
+                <Avatar
+                  size={100}
+                  src={currentUser?.avatar}
+                  icon={!currentUser?.avatar && <UserOutlined />}
                   className="border-2 border-blue-500/20 shadow-2xl transition-transform group-hover:scale-105 duration-300"
                 />
                 <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white dark:border-neutral-900 cursor-pointer hover:bg-blue-700 transition-colors">
-                   <CloudUploadOutlined />
+                  <CloudUploadOutlined />
                 </div>
               </div>
               <div className="flex flex-col gap-2 flex-1">
                 <Title level={5} className="!m-0">{currentUser?.firstName} {currentUser?.lastName}</Title>
                 <Text type="secondary" className="text-xs">ID: {currentUser?.id}</Text>
                 <div className="flex gap-2 mt-1">
-                   <Button type="primary" size="small" className="rounded-lg h-8 px-4 font-medium">Thay đổi ảnh</Button>
-                   <Button type="text" danger size="small" className="rounded-lg h-8 font-medium">Xóa ảnh</Button>
+                  <Button type="primary" size="small" className="rounded-lg h-8 px-4 font-medium">Thay đổi ảnh</Button>
+                  <Button type="text" danger size="small" className="rounded-lg h-8 font-medium">Xóa ảnh</Button>
                 </div>
               </div>
             </div>
@@ -329,9 +338,9 @@ export function UserSettingForm() {
               <Form.Item label="Email" name="email">
                 <Input disabled prefix={<MailOutlined className="opacity-30" />} className="h-11 rounded-xl opacity-70" />
               </Form.Item>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
+              <Button
+                type="primary"
+                htmlType="submit"
                 loading={loading}
                 className="h-11 px-10 rounded-xl bg-blue-600 hover:bg-blue-700 border-none font-bold shadow-lg shadow-blue-500/20 mt-2"
               >
@@ -350,47 +359,47 @@ export function UserSettingForm() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-               <div className="lg:col-span-2 space-y-6">
-                  <Form form={passwordForm} layout="vertical" onFinish={onChangePassword}>
-                    <Form.Item label="Mật khẩu hiện tại" name="oldPassword" rules={[{ required: true, message: 'Nhập mật khẩu cũ' }]}>
-                      <Input.Password prefix={<LockOutlined className="opacity-30" />} className="h-11 rounded-xl" />
-                    </Form.Item>
-                    <Divider />
-                    <Form.Item label="Mật khẩu mới" name="newPassword" rules={[{ required: true, min: 8, message: 'Tối thiểu 8 ký tự' }]}>
-                      <Input.Password prefix={<KeyOutlined className="opacity-30" />} className="h-11 rounded-xl" />
-                    </Form.Item>
-                    <Form.Item label="Xác nhận mật khẩu mới" name="confirmNewPassword" rules={[{ required: true }, ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
-                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
-                      },
-                    })]}>
-                      <Input.Password prefix={<KeyOutlined className="opacity-30" />} className="h-11 rounded-xl" />
-                    </Form.Item>
-                    <Button type="primary" htmlType="submit" loading={loading} className="h-11 px-10 rounded-xl font-bold bg-neutral-900 dark:bg-white dark:text-neutral-950 border-none">
-                      Đổi mật khẩu
-                    </Button>
-                  </Form>
-               </div>
-               
-               <div className="space-y-4">
-                  <Card className="rounded-2xl border-none bg-orange-50 dark:bg-orange-900/10">
-                    <Title level={5} className="!text-orange-700 !m-0 flex items-center gap-2">
-                      <RocketOutlined /> Bảo mật thông minh
-                    </Title>
-                    <Paragraph className="text-orange-700/80 text-xs mt-2">
-                      Hệ thống sẽ tự động phát hiện mật khẩu yếu hoặc các đăng nhập bất thường để cảnh báo cho bạn.
-                    </Paragraph>
-                  </Card>
-                  <Card className="rounded-2xl border-none bg-blue-50 dark:bg-blue-900/10">
-                    <Title level={5} className="!text-blue-700 !m-0 flex items-center gap-2">
-                      <SafetyCertificateOutlined /> Xác thực 2 lớp (2FA)
-                    </Title>
-                    <Paragraph className="text-blue-700/80 text-xs mt-2">
-                      Sắp có: Thêm một lớp bảo mật bằng ứng dụng Authenticator.
-                    </Paragraph>
-                  </Card>
-               </div>
+              <div className="lg:col-span-2 space-y-6">
+                <Form form={passwordForm} layout="vertical" onFinish={onChangePassword}>
+                  <Form.Item label="Mật khẩu hiện tại" name="oldPassword" rules={[{ required: true, message: 'Nhập mật khẩu cũ' }]}>
+                    <Input.Password prefix={<LockOutlined className="opacity-30" />} className="h-11 rounded-xl" />
+                  </Form.Item>
+                  <Divider />
+                  <Form.Item label="Mật khẩu mới" name="newPassword" rules={[{ required: true, min: 8, message: 'Tối thiểu 8 ký tự' }]}>
+                    <Input.Password prefix={<KeyOutlined className="opacity-30" />} className="h-11 rounded-xl" />
+                  </Form.Item>
+                  <Form.Item label="Xác nhận mật khẩu mới" name="confirmNewPassword" rules={[{ required: true }, ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
+                      return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                    },
+                  })]}>
+                    <Input.Password prefix={<KeyOutlined className="opacity-30" />} className="h-11 rounded-xl" />
+                  </Form.Item>
+                  <Button type="primary" htmlType="submit" loading={loading} className="h-11 px-10 rounded-xl font-bold bg-neutral-900 dark:bg-white dark:text-neutral-950 border-none">
+                    Đổi mật khẩu
+                  </Button>
+                </Form>
+              </div>
+
+              <div className="space-y-4">
+                <Card className="rounded-2xl border-none bg-orange-50 dark:bg-orange-900/10">
+                  <Title level={5} className="!text-orange-700 !m-0 flex items-center gap-2">
+                    <RocketOutlined /> Bảo mật thông minh
+                  </Title>
+                  <Paragraph className="text-orange-700/80 text-xs mt-2">
+                    Hệ thống sẽ tự động phát hiện mật khẩu yếu hoặc các đăng nhập bất thường để cảnh báo cho bạn.
+                  </Paragraph>
+                </Card>
+                <Card className="rounded-2xl border-none bg-blue-50 dark:bg-blue-900/10">
+                  <Title level={5} className="!text-blue-700 !m-0 flex items-center gap-2">
+                    <SafetyCertificateOutlined /> Xác thực 2 lớp (2FA)
+                  </Title>
+                  <Paragraph className="text-blue-700/80 text-xs mt-2">
+                    Sắp có: Thêm một lớp bảo mật bằng ứng dụng Authenticator.
+                  </Paragraph>
+                </Card>
+              </div>
             </div>
 
             <Divider />
@@ -419,7 +428,7 @@ export function UserSettingForm() {
             {currentUser?.isVerified ? (
               <div className="py-12 flex flex-col items-center justify-center bg-green-50/30 dark:bg-green-900/5 rounded-3xl border-2 border-dashed border-green-200 dark:border-green-900/20">
                 <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-6 shadow-xl shadow-green-500/20">
-                   <CheckCircleFilled className="text-4xl text-green-500" />
+                  <CheckCircleFilled className="text-4xl text-green-500" />
                 </div>
                 <Title level={4} className="!text-green-700 !m-0 text-center">Xác thực thành công</Title>
                 <Text className="text-green-600/70 mt-2">Email {currentUser.email} đã được bảo vệ.</Text>
@@ -435,9 +444,9 @@ export function UserSettingForm() {
                 />
                 <Form form={otpForm} onFinish={onVerifyEmail} className="max-w-xs mx-auto text-center">
                   <Form.Item name="code" rules={[{ required: true, len: 6, message: 'Mã gồm 6 chữ số' }]}>
-                    <Input 
-                      placeholder="000000" 
-                      maxLength={6} 
+                    <Input
+                      placeholder="000000"
+                      maxLength={6}
                       className="h-16 text-3xl tracking-[0.4em] font-black text-center rounded-2xl border-2 border-orange-200 focus:border-orange-500 shadow-lg shadow-orange-500/5"
                     />
                   </Form.Item>
@@ -445,9 +454,9 @@ export function UserSettingForm() {
                     <Button type="primary" htmlType="submit" loading={loading} className="w-full h-12 rounded-xl font-bold bg-orange-500 hover:bg-orange-600 border-none shadow-lg shadow-orange-500/20">
                       Xác thực ngay
                     </Button>
-                    <Button 
-                      type="text" 
-                      disabled={resendTimer > 0} 
+                    <Button
+                      type="text"
+                      disabled={resendTimer > 0}
                       onClick={onResendCode}
                       className="text-orange-600 font-medium"
                     >
@@ -517,12 +526,12 @@ export function UserSettingForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-4 p-6 rounded-3xl bg-blue-50/30 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-900/20">
                 <div className="flex items-center justify-between">
-                   <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                      <MailOutlined className="text-xl" />
-                   </div>
-                   <Switch 
-                    checked={currentUser?.emailNotifications} 
-                    onChange={(checked) => handleToggleSetting("emailNotifications", checked)} 
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                    <MailOutlined className="text-xl" />
+                  </div>
+                  <Switch
+                    checked={currentUser?.emailNotifications}
+                    onChange={(checked) => handleToggleSetting("emailNotifications", checked)}
                   />
                 </div>
                 <div>
@@ -533,12 +542,12 @@ export function UserSettingForm() {
 
               <div className="flex flex-col gap-4 p-6 rounded-3xl bg-purple-50/30 dark:bg-purple-900/5 border border-purple-100 dark:border-purple-900/20">
                 <div className="flex items-center justify-between">
-                   <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
-                      <BellOutlined className="text-xl" />
-                   </div>
-                   <Switch 
-                    checked={currentUser?.pushNotifications} 
-                    onChange={(checked) => handleToggleSetting("pushNotifications", checked)} 
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                    <BellOutlined className="text-xl" />
+                  </div>
+                  <Switch
+                    checked={currentUser?.pushNotifications}
+                    onChange={(checked) => handleToggleSetting("pushNotifications", checked)}
                   />
                 </div>
                 <div>
@@ -559,25 +568,25 @@ export function UserSettingForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-               <Card className="rounded-2xl border-none shadow-sm bg-blue-600 text-white">
-                  <Statistic 
-                    title={<span className="text-blue-100">Tổng lượt truy cập</span>} 
-                    value={currentUser?.loginCount || 0} 
-                    valueStyle={{ color: '#fff', fontWeight: 900 }}
-                    prefix={<LoginOutlined />}
-                  />
-               </Card>
-               <Card className="rounded-2xl border-none shadow-sm bg-gray-50 dark:bg-neutral-900 md:col-span-2">
-                  <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
-                        <CheckCircleFilled />
-                     </div>
-                     <div>
-                        <Text className="block font-bold">Trạng thái bảo mật</Text>
-                        <Text type="success" className="text-xs">Mạnh mẽ - Mọi hoạt động đều bình thường</Text>
-                     </div>
+              <Card className="rounded-2xl border-none shadow-sm bg-blue-600 text-white">
+                <Statistic
+                  title={<span className="text-blue-100">Tổng lượt truy cập</span>}
+                  value={currentUser?.loginCount || 0}
+                  valueStyle={{ color: '#fff', fontWeight: 900 }}
+                  prefix={<LoginOutlined />}
+                />
+              </Card>
+              <Card className="rounded-2xl border-none shadow-sm bg-gray-50 dark:bg-neutral-900 md:col-span-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                    <CheckCircleFilled />
                   </div>
-               </Card>
+                  <div>
+                    <Text className="block font-bold">Trạng thái bảo mật</Text>
+                    <Text type="success" className="text-xs">Mạnh mẽ - Mọi hoạt động đều bình thường</Text>
+                  </div>
+                </div>
+              </Card>
             </div>
 
             <div className="space-y-4">
@@ -585,7 +594,7 @@ export function UserSettingForm() {
                 <Title level={5} className="!m-0">Nhật ký hoạt động</Title>
                 <Button type="text" size="small" onClick={fetchLogs} icon={<HistoryOutlined />}>Làm mới</Button>
               </div>
-              
+
               <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 {logsLoading ? (
                   <div className="py-12 text-center"><Spin /></div>
@@ -642,9 +651,9 @@ export function UserSettingForm() {
                         </div>
                       </div>
                     </div>
-                    <Button 
-                      danger 
-                      type="text" 
+                    <Button
+                      danger
+                      type="text"
                       onClick={() => onRemoveDevice(device.id)}
                       className="rounded-lg hover:bg-red-50"
                     >
@@ -675,8 +684,8 @@ export function UserSettingForm() {
                 <Title level={4} className="!mb-1">Thông tin tài khoản</Title>
                 <Text type="secondary">Chi tiết về dữ liệu người dùng của bạn.</Text>
               </div>
-              <Button 
-                icon={<DownloadOutlined />} 
+              <Button
+                icon={<DownloadOutlined />}
                 onClick={handleExportData}
                 loading={loading}
                 className="rounded-xl font-bold h-10 px-6 border-blue-500 text-blue-500"
@@ -690,17 +699,17 @@ export function UserSettingForm() {
                 <Statistic title="Email đăng ký" value={currentUser?.email || ""} valueStyle={{ fontSize: 16, fontWeight: 700 }} />
               </Card>
               <Card className="rounded-[24px] shadow-none border-gray-100 dark:border-neutral-800 bg-gray-50/30 dark:bg-neutral-900/30">
-                <Statistic 
-                  title="Vai trò hệ thống" 
-                  value={currentUser?.role || ""} 
-                  valueStyle={{ fontSize: 16, fontWeight: 700, color: currentUser?.role === 'ADMIN' ? '#f50' : '#2db7f5' }} 
+                <Statistic
+                  title="Vai trò hệ thống"
+                  value={currentUser?.role || ""}
+                  valueStyle={{ fontSize: 16, fontWeight: 700, color: currentUser?.role === 'ADMIN' ? '#f50' : '#2db7f5' }}
                 />
               </Card>
               <Card className="rounded-[24px] shadow-none border-gray-100 dark:border-neutral-800 bg-gray-50/30 dark:bg-neutral-900/30">
-                <Statistic 
-                  title="Ngày tham gia" 
-                  value={currentUser?.createdAt ? format(new Date(currentUser.createdAt), 'dd MMMM, yyyy', { locale: vi }) : "-"} 
-                  valueStyle={{ fontSize: 16, fontWeight: 700 }} 
+                <Statistic
+                  title="Ngày tham gia"
+                  value={currentUser?.createdAt ? format(new Date(currentUser.createdAt), 'dd MMMM, yyyy', { locale: vi }) : "-"}
+                  valueStyle={{ fontSize: 16, fontWeight: 700 }}
                 />
               </Card>
               <Card className="rounded-[24px] shadow-none border-gray-100 dark:border-neutral-800 bg-gray-50/30 dark:bg-neutral-900/30">
@@ -724,46 +733,81 @@ export function UserSettingForm() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-[750px] overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-8 h-full lg:h-[750px] overflow-hidden">
       {/* Sidebar - Scrollable independently */}
-      <div className="w-full lg:w-[280px] shrink-0 overflow-y-auto pr-2 custom-scrollbar lg:max-h-full">
+      <div className={cn(
+        "w-full lg:w-[280px] shrink-0 overflow-y-auto pr-2 custom-scrollbar lg:max-h-full",
+        mobileView === "content" ? "hidden lg:block" : "block"
+      )}>
+        {/* Mobile Back to Home/Previous Button - Styled like a tab */}
+        <div className="lg:hidden mb-6">
+          <div
+            onClick={() => window.history.back()}
+            className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-200 dark:hover:bg-neutral-700 transition-all active:scale-95 shadow-sm border border-gray-200/50 dark:border-neutral-700/50"
+          >
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-neutral-900 flex items-center justify-center text-blue-500 shadow-sm">
+              <ArrowLeftOutlined />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-black dark:text-white uppercase tracking-tight">Cài đặt</span>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Quản lý tài khoản</span>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-2 pb-8 lg:pb-0">
           {sidebarItems.map((item) => (
             <div
               key={item.key}
-              onClick={() => setActiveMenu(item.key)}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
-                activeMenu === item.key 
-                ? "bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-gray-100 font-semibold" 
-                : "hover:bg-gray-50 dark:hover:bg-neutral-900 text-gray-700 dark:text-gray-400"
-              }`}
+              onClick={() => handleMenuClick(item.key)}
+              className={cn(
+                "flex items-center justify-between px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-300 group",
+                activeMenu === item.key
+                  ? "bg-blue-50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 font-bold shadow-sm"
+                  : "hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-400"
+              )}
             >
               <div className="flex items-center gap-3">
-                <span className={`text-lg transition-colors ${activeMenu === item.key ? "text-blue-500" : "text-gray-400 group-hover:text-gray-600"}`}>
+                <span className={cn(
+                  "text-xl transition-colors",
+                  activeMenu === item.key ? "text-blue-500" : "text-gray-400 group-hover:text-gray-600"
+                )}>
                   {item.icon}
                 </span>
                 <span className="text-sm">{item.label}</span>
               </div>
-              <div className={`text-xs text-gray-400 transition-opacity ${activeMenu === item.key ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
-                ›
-              </div>
+              <RightOutlined className={cn(
+                "text-xs transition-all duration-300",
+                activeMenu === item.key ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
+              )} />
             </div>
           ))}
         </div>
       </div>
 
       {/* Main Content Area - Scrollable independently */}
-      <Card 
-        className="flex-1 border border-gray-100 dark:border-neutral-800 rounded-[32px] bg-white dark:bg-neutral-950 overflow-hidden flex flex-col"
-        style={{ boxShadow: '0 20px 50px -12px rgba(0,0,0,0.08)' }}
-        styles={{ body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' } }}
-      >
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-          <div className="max-w-5xl mx-auto h-full">
-             {renderContent()}
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0 bg-white dark:bg-neutral-950",
+        mobileView === "menu" ? "hidden lg:flex" : "flex"
+      )}>
+        {/* Mobile Back Button - Simple style */}
+        <div className="lg:hidden p-4 border-b border-gray-100 dark:border-neutral-900 bg-gray-50/30 dark:bg-neutral-900/10 mb-4">
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined className="text-blue-500" />}
+            onClick={() => setMobileView("menu")}
+            className="flex items-center gap-2 font-bold text-gray-500 hover:text-blue-600 p-0"
+          >
+            Quay lại danh sách
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 custom-scrollbar">
+          <div className={cn("max-w-5xl mx-auto h-full", UI_CONFIG.ANIMATION.FADE_IN)}>
+            {renderContent()}
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Delete Account Modal */}
       <Modal
@@ -783,7 +827,7 @@ export function UserSettingForm() {
           <Paragraph type="secondary" className="px-4">
             Dữ liệu sẽ được lưu trữ 30 ngày trước khi bị xóa hoàn toàn. Nhập mật khẩu để tiếp tục.
           </Paragraph>
-          
+
           <Form form={deleteForm} layout="vertical" onFinish={onDeleteAccount} className="px-4">
             <Form.Item name="password" rules={[{ required: true, message: 'Nhập mật khẩu để tiếp tục' }]}>
               <Input.Password placeholder="Mật khẩu bảo mật" className="h-12 rounded-xl text-center" />

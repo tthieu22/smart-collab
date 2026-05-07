@@ -72,7 +72,7 @@ export function PostHeader({ post, author }: { post: FeedPost, author: any }) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-gray-500 font-medium">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-500 font-medium">
           <span className="hover:underline cursor-pointer">@{author?.username || 'phi-hanh-gia'}</span>
           <span>•</span>
           <span className="flex items-center gap-1">

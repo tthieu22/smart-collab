@@ -12,6 +12,8 @@ import { NewsCard } from "@smart/components/news/NewsCard";
 import { Search, LayoutGrid, Newspaper, MessageSquare, ArrowLeft, Sparkles } from "lucide-react";
 import { PageHeader } from "@smart/components/ui/PageHeader";
 import Link from "next/link";
+import { UI_CONFIG } from "@smart/lib/constants";
+import { cn } from "@smart/lib/utils";
 
 const { Title } = Typography;
 
@@ -89,7 +91,11 @@ function SearchContent() {
     const paginatedPosts = results.posts.slice((postPage - 1) * pageSize, postPage * pageSize);
 
     return (
-        <div className="mx-auto w-full max-w-6xl space-y-8 pb-10 transition-all duration-500 pt-4 px-4 md:px-0">
+        <div className={cn(
+            UI_CONFIG.CONTAINER,
+            UI_CONFIG.MAX_WIDTH.WIDE,
+            UI_CONFIG.PAGE_SPACING
+        )}>
             {/* Header section */}
             <PageHeader
                 icon={<Search />}

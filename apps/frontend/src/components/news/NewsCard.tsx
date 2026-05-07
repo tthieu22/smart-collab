@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { ChevronRight, Calendar } from 'lucide-react';
 import type { NewsArticle } from '@smart/types/ai-autopost';
 
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
+
 interface NewsCardProps {
   article: NewsArticle;
   variant?: 'list' | 'grid';
@@ -45,10 +48,16 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
   };
 
   const content = (
-    <div className={`group relative flex overflow-hidden rounded-[24px] border border-gray-100 bg-white/50 backdrop-blur-xl transition-all duration-500 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-950 ring-1 ring-black/5 dark:ring-white/5 ${isGrid ? 'flex-col h-full' : 'flex-row min-h-[220px]'
-      }`}>
+    <div className={cn(
+      "group relative flex overflow-hidden",
+      UI_CONFIG.CARD.RADIUS,
+      UI_CONFIG.CARD.BORDER,
+      UI_CONFIG.CARD.BG,
+      UI_CONFIG.CARD.SHADOW,
+      isGrid ? 'flex-col h-full' : 'flex-col md:flex-row md:min-h-[220px]'
+    )}>
       {/* Media Section */}
-      <div className={`relative overflow-hidden z-0 ${isGrid ? 'h-48 w-full' : 'w-1/3 h-full shrink-0'
+      <div className={`relative overflow-hidden z-0 ${isGrid ? 'h-48 w-full' : 'w-full md:w-1/3 h-48 md:h-full shrink-0'
         }`}>
         {thumb?.url ? (
           <img
@@ -75,7 +84,10 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
       </div>
 
       {/* Content Section */}
-      <div className={`flex flex-1 flex-col justify-between ${isGrid ? 'p-4' : 'p-5'}`}>
+      <div className={cn(
+        "flex flex-1 flex-col justify-between",
+        isGrid ? UI_CONFIG.CARD.PADDING : UI_CONFIG.CARD.LIST_PADDING
+      )}>
         <div className="min-w-0">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest bg-blue-500/5 px-2 py-0.5 rounded-lg">

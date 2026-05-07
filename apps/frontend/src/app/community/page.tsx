@@ -5,6 +5,8 @@ import SiteLayout from '@smart/components/layouts/SiteLayout';
 import { PageHeader } from '@smart/components/ui/PageHeader';
 import { Button } from '@smart/components/ui/button';
 import { Users, Github, Slack, MessageSquare, Heart, Award } from 'lucide-react';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 
 export default function CommunityPage() {
     const channels = [
@@ -15,7 +17,11 @@ export default function CommunityPage() {
 
     return (
         <SiteLayout>
-            <div className="max-w-5xl mx-auto py-8 px-4">
+            <div className={cn(
+                UI_CONFIG.CONTAINER,
+                UI_CONFIG.MAX_WIDTH.STANDARD,
+                UI_CONFIG.PAGE_SPACING
+            )}>
                 <PageHeader
                     icon={<Users />}
                     title="Cộng đồng Smart Collab"

@@ -10,7 +10,7 @@ import ProjectActionBar from '@smart/components/project/ProjectActionBar';
 import ProjectGuestCursor from '@smart/components/project/ProjectGuestCursor';
 import { Loading } from '@smart/components/ui/loading';
 import { autoRequest } from '@smart/services/auto.request';
-import { message, Modal, Popover } from 'antd';
+import { message, Modal, Popover, Button } from 'antd';
 
 import dynamic from 'next/dynamic';
 
@@ -20,6 +20,8 @@ const Board = dynamic(() => import('@smart/components/project/board/Board'), { s
 const DragDropContextProvider = dynamic(() => import('@smart/components/project/dnd/DragDropProvider'), { ssr: false });
 const ProjectChat = dynamic(() => import('@smart/components/project/chat/ProjectChat'), { ssr: false });
 const ProjectRecycleBin = dynamic(() => import('@smart/components/project/recycle/ProjectRecycleBin'), { ssr: false });
+import { motion } from 'framer-motion';
+import { Monitor, Rocket, Star } from 'lucide-react';
 import ProjectPresence from '@smart/components/project/ProjectPresence';
 
 import SiteLayout from '@smart/components/layouts/SiteLayout';
@@ -45,6 +47,8 @@ export default function ProjectDetailPage({ params }: Props) {
     setCurrentProject,
     boards,
   } = projectStore();
+
+  const theme = useBoardStore((s) => s.theme);
 
   const [loading, setLoading] = useState(true);
   const activeCorrelationIdRef = useRef<string | null>(null);
@@ -75,8 +79,7 @@ export default function ProjectDetailPage({ params }: Props) {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       let components = saved ? JSON.parse(saved) : ['inbox', 'board'];
       if (!useUserStore.getState().currentUser) {
-        components = components.filter((c: string) => c !== 'inbox' && c !== 'calendar');
-        if (components.length === 0) components = ['board'];
+        components = ['board']; // Force only board for guests
       }
       return components;
     }
@@ -181,12 +184,10 @@ export default function ProjectDetailPage({ params }: Props) {
     };
   }, [projectId]);
 
-  // Tự động ẩn inbox/calendar nếu đăng xuất
+  // Tự động ẩn các component riêng tư/không cần thiết nếu đăng xuất hoặc là khách
   useEffect(() => {
     if (!currentUser) {
-      setActiveComponents((prev) =>
-        prev.filter((c) => c !== 'inbox' && c !== 'calendar')
-      );
+      setActiveComponents(['board']);
     }
   }, [currentUser]);
 
@@ -254,15 +255,87 @@ export default function ProjectDetailPage({ params }: Props) {
     : `${basePanel} min-w-[350px] max-w-[400px]`;
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter noScroll>
-      <div className="bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
+      {/* ===== MOBILE ONLY VIEW (UNIVERSE THEME) ===== */}
+      <div className={`md:hidden fixed inset-0 z-[10000] flex flex-col items-center justify-center p-8 text-center overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-slate-950' : 'bg-blue-50'}`}>
+        {/* Space Background Effects */}
+        <div className={`absolute inset-0 transition-opacity duration-1000 ${theme === 'dark' ? 'bg-[radial-gradient(circle_at_50%_50%,_#1e293b_0%,_#020617_100%)] opacity-100' : 'bg-[radial-gradient(circle_at_50%_50%,_#dbeafe_0%,_#eff6ff_100%)] opacity-100'}`} />
+        
+        {/* Animated Nebulas/Clouds */}
+        <div className={`absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-[100px] animate-pulse transition-colors duration-1000 ${theme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-400/20'}`} />
+        <div className={`absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-[100px] animate-pulse transition-colors duration-1000 ${theme === 'dark' ? 'bg-purple-500/10' : 'bg-indigo-400/20'}`} />
+        
+        {/* Content */}
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="relative z-10 flex flex-col items-center"
+        >
+          <div className="relative mb-8">
+            <div className={`w-24 h-24 rounded-3xl flex items-center justify-center border transition-all duration-500 ${theme === 'dark' ? 'bg-blue-600/20 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'bg-white border-blue-200 shadow-[0_10px_40px_rgba(59,130,246,0.15)]'}`}>
+              <Monitor size={48} className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'} />
+            </div>
+            <motion.div 
+              animate={{ 
+                y: [0, -10, 0],
+                rotate: [0, 5, 0]
+              }}
+              transition={{ repeat: Infinity, duration: 3 }}
+              className={`absolute -top-4 -right-4 w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-blue-100'}`}
+            >
+              <Rocket size={20} className="text-blue-500" />
+            </motion.div>
+          </div>
+
+          <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-4 border transition-all duration-500 ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-100 text-blue-600 border-blue-200'}`}>
+            Trạm điều khiển • PC ONLY
+          </div>
+          
+          <h2 className={`text-3xl font-black mb-4 uppercase tracking-tighter italic leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            DỰ ÁN QUÁ LỚN <br /> <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>CHO THIẾT BỊ NÀY!</span>
+          </h2>
+          
+          <p className={`text-sm font-medium max-w-[280px] leading-relaxed mb-8 transition-colors duration-500 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+            Hệ thống quản trị dự án Smart Collab yêu cầu một buồng lái rộng hơn (Máy tính) để có thể vận hành tối đa công suất.
+          </p>
+
+          <Button 
+            type="primary" 
+            size="large"
+            onClick={() => router.push('/')}
+            className={`h-14 px-10 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 border-none ${theme === 'dark' ? 'bg-blue-600 shadow-blue-600/20' : 'bg-blue-600 shadow-blue-500/30'}`}
+          >
+            Về căn cứ (Home)
+          </Button>
+
+          <div className={`mt-12 flex items-center gap-4 transition-colors duration-500 ${theme === 'dark' ? 'text-slate-600' : 'text-slate-400'}`}>
+            <div className="flex items-center gap-1">
+              <Star size={12} fill="currentColor" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Safe</span>
+            </div>
+            <div className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-blue-100'}`} />
+            <div className="flex items-center gap-1">
+              <Star size={12} fill="currentColor" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Secure</span>
+            </div>
+            <div className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-blue-100'}`} />
+            <div className="flex items-center gap-1">
+              <Star size={12} fill="currentColor" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Fast</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ===== DESKTOP CONTENT ===== */}
+      <div className="hidden md:flex bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex-col">
         <ProjectGuestCursor />
 
-
-
-        <ProjectActionBar
-          activeComponents={activeComponents}
-          onToggle={toggleComponent}
-        />
+        {currentUser && (
+          <ProjectActionBar
+            activeComponents={activeComponents}
+            onToggle={toggleComponent}
+          />
+        )}
 
         {/* ===== MAIN CONTENT ===== */}
         <div className="fixed inset-x-0 bottom-14 top-[74px]">

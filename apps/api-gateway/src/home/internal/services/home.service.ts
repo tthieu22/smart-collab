@@ -73,10 +73,11 @@ export class HomeService {
           pipeline,
         }) as any;
 
-        // Map _id to id for consistency
+        // Map _id to id and ensure authorId is string for consistency
         posts = rawPosts.map((p: any) => ({
           ...p,
           id: p._id.$oid || p._id,
+          authorId: p.authorId?.$oid || p.authorId,
           createdAt: p.createdAt?.$date ? new Date(p.createdAt.$date) : p.createdAt,
           updatedAt: p.updatedAt?.$date ? new Date(p.updatedAt.$date) : p.updatedAt,
         }));
@@ -116,9 +117,14 @@ export class HomeService {
       return acc;
     }, {});
 
-    // Fetch users
+    // Fetch users - Ensure all IDs are strings and not raw MongoDB objects
+    const sanitizedAuthorIds = Array.from(authorIds).map((id: any) => {
+      if (typeof id === 'object' && id?.$oid) return id.$oid;
+      return String(id);
+    });
+
     const users = await this.prisma.user.findMany({
-      where: { id: { in: Array.from(authorIds) } },
+      where: { id: { in: sanitizedAuthorIds } },
     });
 
     const userDTOs: UserDTO[] = users.map((u: any) => ({

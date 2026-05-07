@@ -14,6 +14,8 @@ import { PlusOutlined, RocketOutlined } from '@ant-design/icons';
 import { LayoutGrid, Columns, Square, Info, Plus } from 'lucide-react';
 import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
 import { PageHeader } from '@smart/components/ui/PageHeader';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 
 export default function ProjectListPage() {
   const allProjects = projectStore((s) => s.allProjects);
@@ -122,7 +124,7 @@ export default function ProjectListPage() {
         </button>
         <button
           onClick={() => setGridCols(3)}
-          className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`hidden lg:flex p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
           title="3 Columns"
         >
           <LayoutGrid size={18} />
@@ -152,8 +154,13 @@ export default function ProjectListPage() {
   );
 
   return (
-    <SiteLayout>
-      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500">
+    <SiteLayout fullWidth={false}>
+      <div className={cn(
+        UI_CONFIG.CONTAINER,
+        UI_CONFIG.MAX_WIDTH.WIDE,
+        UI_CONFIG.PAGE_SPACING,
+        UI_CONFIG.ANIMATION.FADE_IN
+      )}>
         <div ref={headerRef}>
           <PageHeader
             icon={<LayoutGrid />}
@@ -164,8 +171,12 @@ export default function ProjectListPage() {
         </div>
 
         {loading && projects.length === 0 ? (
-          <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-            }`}>
+          <div className={cn(
+            "grid gap-4",
+            gridCols === 1 && "grid-cols-1",
+            gridCols === 2 && "grid-cols-2",
+            gridCols === 3 && "grid-cols-2 lg:grid-cols-3"
+          )}>
             {[...Array(9)].map((_, i) => (
               <div key={i} className="h-[280px] w-full animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800" />
             ))}
@@ -173,8 +184,12 @@ export default function ProjectListPage() {
         ) : (
           <div className="space-y-4">
             {projects.length > 0 ? (
-              <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : gridCols === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-                }`}>
+              <div className={cn(
+                "grid gap-4",
+                gridCols === 1 && "grid-cols-1",
+                gridCols === 2 && "grid-cols-2",
+                gridCols === 3 && "grid-cols-2 lg:grid-cols-3"
+              )}>
                 {projects.map((project) => (
                   <ProjectCard key={project.id} project={project} gridCols={gridCols} />
                 ))}

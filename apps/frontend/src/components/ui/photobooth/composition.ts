@@ -61,40 +61,46 @@ export const generateComposition = async (
     }
   });
 
-  // 3. Draw Stickers
-  if (stickers.length > 0) {
-    const stickerImages = await Promise.all(
-      stickers.map(s => {
-        return new Promise<HTMLImageElement>((resolve) => {
+    const isEmoji = (url: string) => !url.startsWith('http') && !url.startsWith('data:') && !url.startsWith('/');
+
+    for (let i = 0; i < stickers.length; i++) {
+      const s = stickers[i];
+      
+      ctx.save();
+      const posX = (s.x / 100) * canvas.width;
+      const posY = (s.y / 100) * canvas.height;
+      ctx.translate(posX, posY);
+      ctx.rotate(s.rotation);
+
+      if (isEmoji(s.url)) {
+        // Draw Emoji as Text
+        const fontSize = canvas.width * 0.12 * s.scale;
+        ctx.font = `${fontSize}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // Add subtle shadow for emoji
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 15;
+        ctx.fillText(s.url, 0, 0);
+      } else {
+        // Draw Image Sticker
+        const img = await new Promise<HTMLImageElement>((resolve) => {
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.onload = () => resolve(img);
           img.onerror = () => resolve(new Image());
           img.src = s.url;
         });
-      })
-    );
 
-    stickers.forEach((s, i) => {
-      const img = stickerImages[i];
-      if (!img.complete || img.naturalWidth === 0) return;
-
-      ctx.save();
-      const posX = (s.x / 100) * canvas.width;
-      const posY = (s.y / 100) * canvas.height;
-
-      ctx.translate(posX, posY);
-      ctx.rotate(s.rotation);
-
-      // Base size: 18% of canvas width
-      const targetWidth = canvas.width * 0.18 * s.scale;
-      const intrinsicScale = targetWidth / img.width;
-      ctx.scale(intrinsicScale, intrinsicScale);
-
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        if (img.complete && img.naturalWidth > 0) {
+          const targetWidth = canvas.width * 0.18 * s.scale;
+          const intrinsicScale = targetWidth / img.width;
+          ctx.scale(intrinsicScale, intrinsicScale);
+          ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        }
+      }
       ctx.restore();
-    });
-  }
+    }
 
   // 4. Draw Premium Branding
   ctx.save();

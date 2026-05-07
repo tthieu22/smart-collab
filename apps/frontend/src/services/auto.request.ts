@@ -6,6 +6,8 @@ export interface AutoRequestOptions extends RequestInit {
 }
 
 const inFlightRequests = new Map<string, Promise<any>>();
+let isRefreshing = false;
+let refreshPromise: Promise<any> | null = null;
 
 export async function autoRequest<T>(
   endpoint: string,
@@ -51,20 +53,39 @@ export async function autoRequest<T>(
 
       let response = await fetch(url, config);
 
-      if (response.status === 401) {
-        const refreshRes = await fetch(`${APP_CONFIG.API_BASE_URL}${API_ENDPOINTS.AUTH.REFRESH}`, {
-          method: 'POST',
-          credentials: 'include',
-        });
-        const refreshData = await refreshRes.json();
+      if (response.status === 401 && !endpoint.includes(API_ENDPOINTS.AUTH.REFRESH)) {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = (async () => {
+            try {
+              const refreshRes = await fetch(`${APP_CONFIG.API_BASE_URL}${API_ENDPOINTS.AUTH.REFRESH}`, {
+                method: 'POST',
+                credentials: 'include',
+              });
+              const refreshData = await refreshRes.json();
+              if (refreshData.success && refreshData.data?.accessToken) {
+                setAccessToken(refreshData.data.accessToken);
+                return refreshData.data.accessToken;
+              }
+              return null;
+            } catch (e) {
+              return null;
+            } finally {
+              isRefreshing = false;
+              refreshPromise = null;
+            }
+          })();
+        }
 
-        if (refreshData.success && refreshData.data?.accessToken) {
-          setAccessToken(refreshData.data.accessToken);
-          config.headers = { ...config.headers, Authorization: `Bearer ${refreshData.data.accessToken}` };
+        const newAccessToken = await refreshPromise;
+        if (newAccessToken) {
+          config.headers = { ...config.headers, Authorization: `Bearer ${newAccessToken}` };
           response = await fetch(url, config);
         } else {
           clearAuth();
-          throw new Error('Refresh token failed');
+          // Avoid throwing if it's a known public route or just return the failed response
+          // For now, we'll throw to be caught by the try-catch
+          throw new Error('Session expired');
         }
       }
 

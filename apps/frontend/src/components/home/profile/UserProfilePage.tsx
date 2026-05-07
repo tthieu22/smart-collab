@@ -6,6 +6,8 @@ import { useHomeFeedBootstrap } from '@smart/hooks/useHomeFeed';
 import { useFeedStore } from '@smart/store/feed';
 import { App } from 'antd';
 import { Sparkles } from 'lucide-react';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 
 // Modulized components
 import ProfileHeader from './modules/ProfileHeader';
@@ -174,7 +176,11 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-5xl pb-20 px-4 md:px-0">
+      <div className={cn(
+        UI_CONFIG.CONTAINER,
+        UI_CONFIG.MAX_WIDTH.STANDARD,
+        UI_CONFIG.PAGE_SPACING
+      )}>
         <ProfileHeader
           profileUser={profileUser}
           targetUserId={targetUserId}

@@ -92,10 +92,10 @@ export function AvatarMenu() {
             <UserAvatar userId={meId} size="md" allowChangeMood={false} />
             <div className="overflow-hidden">
               <div className="font-black text-sm text-gray-900 dark:text-white truncate">
-                {currentUser?.email?.split("@")[0] || "Khách"}
+                {currentUser ? (`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email?.split("@")[0]) : "Phi Hành Gia Vô Danh"}
               </div>
               <div className="text-[11px] font-bold text-gray-500 truncate">
-                {currentUser?.email || "user@example.com"}
+                {currentUser?.email || "galaxy@smartcollab.space"}
               </div>
             </div>
           </div>

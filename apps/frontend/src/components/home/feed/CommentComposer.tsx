@@ -47,10 +47,10 @@ export default function CommentComposer({ postId }: { postId: string }) {
             addComment(postId, value.trim());
             setValue('');
           }}
-          className="gap-2"
+          className="h-9 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-sm transition-all active:scale-95 px-4 font-bold text-xs gap-1.5 border-none"
         >
-          <SendHorizonal size={16} />
-          Gửi
+          <SendHorizonal size={14} />
+          <span>Gửi</span>
         </Button>
       </div>
     </div>

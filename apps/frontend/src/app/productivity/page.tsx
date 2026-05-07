@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@smart/lib/utils';
+import { UI_CONFIG } from '@smart/lib/constants';
 import { motion } from 'framer-motion';
 
 // Sub-components
@@ -86,7 +87,11 @@ export default function ProductivityReportPage() {
                 <div className="absolute top-[20%] -left-[10%] w-[30%] h-[30%] bg-purple-500/10 blur-[120px] rounded-full delay-1000 animate-pulse" />
             </div>
 
-            <div className="max-w-6xl mx-auto px-6 py-12 relative z-10">
+            <div className={cn(
+                UI_CONFIG.CONTAINER,
+                UI_CONFIG.MAX_WIDTH.WIDE,
+                UI_CONFIG.PAGE_SPACING
+            )}>
                 {/* Navigation & Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div className="flex flex-col gap-6">
