@@ -16,9 +16,10 @@ import { PostHeader, ReactionSummary, PostActions } from './PostShared';
 
 interface PostDetailProps {
   postId: string;
+  onBack?: () => void;
 }
 
-export default function PostDetail({ postId }: PostDetailProps) {
+export default function PostDetail({ postId, onBack }: PostDetailProps) {
   const post = useFeedStore((s) => s.posts[postId]);
   const author = useFeedStore((s) => post ? s.users[post.authorId] : null);
   const fetchPostDetails = useFeedStore((s) => s.fetchPostDetails);
@@ -118,7 +119,13 @@ export default function PostDetail({ postId }: PostDetailProps) {
                 </button>
               </Dropdown>
               <button 
-                onClick={() => useFeedStore.getState().setActivePostId(null)}
+                onClick={() => {
+                  if (onBack) {
+                    onBack();
+                  } else {
+                    useFeedStore.getState().setActivePostId(null);
+                  }
+                }}
                 className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-all"
               >
                 <X size={20} />
