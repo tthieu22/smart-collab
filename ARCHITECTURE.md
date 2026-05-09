@@ -1,255 +1,109 @@
-# SmartCollab Monorepo Architecture
+# SmartCollab Architecture Documentation
 
-## 🏗️ System Architecture
+## 🏗️ System Overview
+SmartCollab is built as a **Modular Monolith** that integrates project management, social networking, and AI automation into a single high-performance ecosystem. This architecture balances scalability with development velocity, allowing for deep integration between modules while maintaining clean separation of concerns.
 
+### High-Level Architecture Diagram
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   Frontend (Next.js)                     │
+│                   Frontend (Next.js 15)                  │
 │                   Port 3000                              │
 └──────────────────────┬──────────────────────────────────┘
-                       │
+                       │ (JSON/WebSocket)
 ┌──────────────────────▼──────────────────────────────────┐
-│              API Gateway (NestJS)                        │
-│              Port 3100                                   │
-└──────────────┬──────────────────────┬───────────────────┘
-               │                      │
-   ┌───────────▼────────┐  ┌─────────▼────────┐
-   │  Project Service   │  │  Auth Service    │
-   │  (NestJS)          │  │  (NestJS)        │
-   │  Port 3002         │  │  Port 3001       │
-   │  PostgreSQL        │  │  MongoDB         │
-   └───────────┬────────┘  └─────────┬────────┘
-               │                      │
-   ┌───────────▼────────┐  ┌─────────▼────────┐
-   │ Realtime Service   │  │  Home Service    │
-   │ (NestJS WebSocket) │  │  (Spring Boot)   │
-   │ Port 3003          │  │  Port 3002       │
-   └────────────────────┘  └──────────────────┘
-               │
-   ┌───────────▼────────┐
-   │ Notification Svc   │
-   │ (Spring Boot)      │
-   │ Port 3004          │
-   └────────────────────┘
+│              Unified Backend (NestJS 11)                 │
+│              Port 8000                                   │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ Auth Module  │  │ Project Mod  │  │ Home Module  │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ AI Module    │  │ Realtime Mod │  │ Search Mod   │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘    │
+└──────────────┬───────────────┬───────────────┬───────────┘
+               │               │               │
+    ┌──────────▼────────┐  ┌───▼───┐  ┌────────▼────────┐
+    │  Primary DB       │  │ Cache │  │ Asset Storage   │
+    │  (MongoDB Atlas)  │  │(Redis)│  │ (Cloudinary)    │
+    └───────────────────┘  └───────┘  └─────────────────┘
 ```
-
-## 📦 Service Description
-
-### Frontend
-- **Technology:** Next.js 14
-- **Port:** 3000
-- **Purpose:** Web UI for project management
-- **Features:** Real-time updates via WebSocket, responsive design
-
-### API Gateway
-- **Technology:** NestJS
-- **Port:** 3100
-- **Purpose:** Central entry point, request routing, authentication
-- **Features:** JWT validation, rate limiting, request logging
-
-### Project Service
-- **Technology:** NestJS
-- **Port:** 3002
-- **Database:** PostgreSQL
-- **Purpose:** Project management (boards, cards, columns)
-- **Models:** Project, Board, Card, Column, etc.
-
-### Auth Service
-- **Technology:** NestJS
-- **Port:** 3001
-- **Database:** MongoDB
-- **Purpose:** User authentication and management
-- **Features:** JWT, Google OAuth, email verification, refresh tokens
-
-### Realtime Service
-- **Technology:** NestJS + Socket.io
-- **Port:** 3003
-- **Purpose:** WebSocket server for real-time updates
-- **Features:** Live collaboration, notifications, presence
-
-### Home Service (Spring Boot)
-- **Technology:** Spring Boot 3.3
-- **Port:** 3002 (Java services can run on same or different ports)
-- **Database:** MongoDB
-- **Purpose:** Home feed and social features
-- **Features:** Feed, posts, followers, notifications
-
-### Notification Service (Spring Boot)
-- **Technology:** Spring Boot 3.3
-- **Port:** 3004
-- **Database:** MongoDB
-- **Purpose:** Send notifications (email, in-app, SMS)
-- **Features:** Async processing, scheduled tasks, templating
-
-## 🔌 Message Queue & Cache
-
-### RabbitMQ
-- **Purpose:** Async communication between services
-- **Host:** 127.0.0.1:5672
-- **Credentials:** admin/admin
-- **Queues:**
-  - `project.events` - Project updates
-  - `user.notifications` - User notifications
-  - `email.queue` - Email sending
-
-### Redis
-- **Purpose:** Caching and session storage
-- **Host:** 127.0.0.1:6379
-- **Use Cases:**
-  - JWT token blacklist
-  - Session cache
-  - Real-time data cache
-  - Rate limiting
-
-## 📚 Shared Libraries
-
-### @smart-collab/shared
-- Common utilities and helpers
-- Shared DTOs and types
-- Database connection pooling
-- Configuration management
-
-### @smart-collab/events
-- Event type definitions
-- Event emitter patterns
-- Message queue schemas
-
-### @smart-collab/mailer
-- Email templates
-- Mail service implementation
-- SMTP configuration
-
-## 🗄️ Database Schema
-
-### PostgreSQL (Project Service)
-```sql
--- Main entities
-Projects, ProjectMembers, Boards, Columns, Cards
-CardComments, CardLabels, CardViews, Attachments
-ChecklistItems, EventStatistics
-```
-
-### MongoDB (Auth & Social Services)
-```javascript
-// Users and authentication
-Users, RefreshTokens
-
-// Social features
-Posts, Comments, Reactions, Notifications, Followers
-```
-
-## 🔐 Authentication Flow
-
-1. User logs in via `/api/auth/login` (Auth Service)
-2. Auth Service validates credentials
-3. Returns JWT access token + refresh token
-4. Client stores tokens
-5. Every request includes Bearer token
-6. API Gateway validates token
-7. Request routed to appropriate service
-
-## 🔄 Data Flow Example: Creating a Card
-
-```
-Frontend
-  │
-  ├─> POST /api/projects/:id/cards
-  │
-API Gateway
-  │ (Validates JWT)
-  │
-Project Service
-  │ (Saves to PostgreSQL)
-  │
-  ├─> Emit event to RabbitMQ
-  │
-Realtime Service
-  │ (Receives event)
-  │
-  └─> Broadcast via WebSocket to all connected clients
-```
-
-## 🌐 External Services
-
-### Cloudinary
-- Image upload and storage
-- Image transformation
-- CDN delivery
-
-### Email (SMTP)
-- Gmail SMTP for email sending
-- Used for notifications and verification
-
-### OAuth Providers
-- Google OAuth for social login
-
-### AI Services
-- OpenAI - Chat completions
-- Gemini - Image analysis
-- Groq - Fast inference
-- Claude - Advanced reasoning
-
-## ⚙️ Configuration Management
-
-### Environment Variables
-All services use `.env` files for configuration:
-- Database connections
-- API keys
-- Service ports
-- Message queue credentials
-- Email credentials
-
-### Shared Configuration
-Root-level `.env` for variables used by multiple services.
-
-## 📊 Monitoring & Logging
-
-### Spring Boot Services
-- Actuator endpoints: `/actuator/health`, `/actuator/metrics`
-- Prometheus metrics: `/actuator/prometheus`
-- Logs: Written to `java-service/logs/`
-
-### NestJS Services
-- Winston logger integration
-- Request/response logging
-- Error tracking
-
-### Frontend
-- Console logging
-- Error boundary integration
-- Analytics integration
-
-## 🚀 Deployment Architecture
-
-### Development
-All services run locally on different ports.
-
-### Production Recommendations
-- Use Docker containers for each service
-- Orchestrate with Kubernetes or Docker Compose
-- Separate PostgreSQL and MongoDB instances
-- Managed Redis and RabbitMQ services
-- CDN for static assets
-- Load balancer for API Gateway
-
-## 📈 Scalability Considerations
-
-### Horizontal Scaling
-- Stateless services can run multiple instances
-- Load balance via API Gateway
-- Use RabbitMQ for service-to-service communication
-
-### Database Scaling
-- PostgreSQL: Read replicas for reporting
-- MongoDB: Sharding for large collections
-- Redis: Cluster mode for high availability
-
-### Caching Strategy
-- Cache frequently accessed data in Redis
-- Implement cache invalidation on updates
-- Use CDN for static assets
 
 ---
 
-**Last Updated:** 2024
-**Version:** 1.0
+## 📦 Core Modules
+
+### 1. Auth Module
+- **Purpose:** Identity management, security, and access control.
+- **Features:**
+  - JWT-based authentication with Refresh Tokens.
+  - Google OAuth 2.0 integration.
+  - Role-Based Access Control (RBAC).
+  - Profile management and audit logs.
+
+### 2. Project Module
+- **Purpose:** Core workspace and task management engine.
+- **Features:**
+  - **Workspaces:** Multi-project and multi-board support.
+  - **Agile Tools:** Kanban boards, custom columns, and task cards.
+  - **Rich Metadata:** Labels, priorities, deadlines, and custom fields.
+  - **Collaboration:** Card members, comments, and attachments.
+
+### 3. Home (Social) Module
+- **Purpose:** Social engagement and real-time news feed.
+- **Features:**
+  - **News Feed:** High-performance social updates and AI-generated news.
+  - **Engagement:** Post reactions (Like, Love, etc.), comments, and sharing.
+  - **Networking:** Following/Follower system and user discovery.
+
+### 4. AI & Automation Module
+- **Purpose:** Intelligent task generation and project insights.
+- **AI Providers:** Gemini 2.0 Flash, Groq (Llama 3), OpenAI (GPT-4o).
+- **Capabilities:**
+  - **Strategic Generation:** Automated creation of project structures and task descriptions.
+  - **News Generation:** AI-driven industry news and project summaries.
+  - **Smart Suggestions:** Automated priority and deadline estimations.
+
+### 5. Realtime Module
+- **Purpose:** Live collaboration and instant notifications.
+- **Technology:** Socket.io integrated with NestJS Gateways.
+- **Features:**
+  - **Live Sync:** Real-time updates for board moves and card changes.
+  - **Presence:** Active user tracking within projects.
+  - **Notifications:** Instant alerts for mentions and assignments.
+
+---
+
+## 🗄️ Data Persistence
+
+### Unified MongoDB (Prisma)
+SmartCollab utilizes a unified MongoDB database via **Prisma ORM**. This provides the flexibility of a document store with the type-safety of a relational-like schema.
+
+- **Models:**
+  - **Users & Identity:** `User`, `RefreshToken`, `Device`.
+  - **Social:** `Post`, `NewsArticle`, `Comment`, `Reaction`, `Follower`.
+  - **Project:** `Project`, `Board`, `Column`, `Card`, `CardMember`.
+  - **Extensions:** `AuditLog`, `Notification`, `CustomField`.
+
+### Redis (Caching & Scaling)
+- **Use Cases:**
+  - Socket.io adapter for scaling real-time connections.
+  - Caching frequently accessed project metadata.
+  - Rate limiting and session management.
+
+---
+
+## 🔐 Security Architecture
+1. **Transport:** All communication is secured via TLS/SSL.
+2. **Authentication:** Stateless JWT authentication. Access tokens have a 15-minute TTL, while Refresh Tokens are stored securely in MongoDB.
+3. **Authorization:** Middleware and Guards implement strict RBAC and resource ownership checks (e.g., only project members can view boards).
+4. **Validation:** All inputs are strictly validated using `class-validator` and `Zod`.
+
+---
+
+## 🔄 Development & Lifecycle
+- **Monorepo:** Managed via **pnpm Workspaces** and **Turborepo**.
+- **Build System:** Unified TypeScript configuration across frontend and backend.
+- **CI/CD:** Optimized for containerized deployments (Docker) and cloud platforms like Railway or Vercel.
+
+**Last Updated:** May 2026
+**Version:** 2.0 (Modular Monolith Migration)

@@ -1,308 +1,127 @@
 # SmartCollab Monorepo Setup Guide
 
 ## 🎯 Overview
-
-This document provides a complete guide for setting up and running the SmartCollab monorepo with:
-- **Shared node_modules** at the root level (pnpm workspaces)
-- **Unified Prisma schema** at the root (PostgreSQL)
-- **5 Node.js microservices** (NestJS + 1 Next.js frontend)
-- **2 Java microservices** (Spring Boot)
-- **Shared libraries** for common functionality
+This document provides a step-by-step guide to setting up and running the SmartCollab ecosystem. The project is organized as a **Modular Monolith** within a **pnpm workspace**, ensuring efficient dependency management and developer experience.
 
 ## 📋 Prerequisites
+Ensure you have the following installed on your machine:
+- **Node.js**: >= 18.x
+- **pnpm**: >= 9.x
+- **MongoDB**: A local instance or a MongoDB Atlas cluster.
+- **Redis**: (Optional for local development, recommended for production scaling).
 
+## 🚀 Step-by-Step Setup
+
+### Step 1: Install Dependencies
+From the project root, run:
 ```bash
-Node.js >= 18
-pnpm >= 9.0.0
-Java 21 (for Spring Boot services)
-Maven 3.9+
-PostgreSQL 12+
-MongoDB (for auth service)
-Redis
-RabbitMQ
-```
-
-## 🚀 Quick Start
-
-### Step 1: Install Node Dependencies
-
-```bash
-# From project root
-cd C:\Users\hieut\Desktop\smart-collab
 pnpm install
 ```
+This command installs all dependencies for both the Backend and Frontend, utilizing pnpm's efficient hoisting mechanism.
 
-This will:
-- Create a **single `node_modules` at the root**
-- Hoist shared dependencies (Prisma, NestJS, etc.)
-- Link workspace packages (`@smart-collab/*`)
-- Generate Prisma clients
+### Step 2: Configure Environment Variables
+You need to set up `.env` files for the core applications.
 
-### Step 2: Setup Notification Service (Optional)
+1. **Backend (`apps/api-gateway/.env`):**
+   ```bash
+   DATABASE_URL="mongodb+srv://..."
+   JWT_SECRET="your_jwt_secret"
+   GOOGLE_CLIENT_ID="your_google_id"
+   GROQ_API_KEY="your_groq_key"
+   CLOUDINARY_URL="your_cloudinary_url"
+   ```
 
-The notification-service files need to be organized:
+2. **Frontend (`apps/frontend/.env.local`):**
+   ```bash
+   NEXT_PUBLIC_API_URL="http://localhost:8000"
+   ```
+
+### Step 3: Database Synchronization (Prisma)
+SmartCollab uses Prisma with the MongoDB connector. You must generate the client and push the schema to your database.
 
 ```bash
-# Option 1: Using Node.js setup script
-node setup-monorepo.js
+# Generate the Prisma client for the backend
+pnpm --filter api-gateway prisma generate
 
-# Option 2: Using Python setup script
-python setup-monorepo.py
-
-# Option 3: Manual setup with Windows cmd
-cd java-service\notification-service
-mkdir src\main\java\com\smartcollab\notification
-mkdir src\main\resources
-move NotificationServiceApplication.java src\main\java\com\smartcollab\notification\
-move application.yml src\main\resources\
+# Push the schema to MongoDB (Initial setup)
+pnpm --filter api-gateway prisma db push
 ```
 
-### Step 3: Generate Prisma Client
+### Step 4: Launch the Application
+You can start both the backend and frontend simultaneously using the workspace command:
 
 ```bash
-# From root directory
-pnpm prisma generate
-```
-
-This generates clients for all services using the shared schema.
-
-### Step 4: Database Migration (Optional)
-
-```bash
-# Push schema to PostgreSQL database
-pnpm prisma db push
-
-# Or run migrations
-pnpm prisma migrate dev
-```
-
-### Step 5: Start All Services
-
-```bash
-# From root directory - starts all services in parallel
+# Start all applications in parallel
 pnpm dev:all
-
-# Or start individual services:
-pnpm --filter auth run dev
-pnpm --filter project run dev
-pnpm --filter realtime run dev
-pnpm --filter api-gateway run dev
-pnpm --filter frontend run dev
 ```
 
-## 📁 Directory Structure
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs) (if enabled)
+
+---
+
+## 📁 Monorepo Structure
 
 ```
 smart-collab/
-├── prisma/                    # ✨ Shared Prisma schema
-│   └── schema.prisma          # All PostgreSQL models
 ├── apps/
-│   ├── auth/                  # Auth service (NestJS + MongoDB)
-│   ├── project/               # Project service (NestJS + PostgreSQL)
-│   ├── realtime/              # WebSocket service (NestJS)
-│   ├── api-gateway/           # API Gateway (NestJS)
-│   └── frontend/              # Frontend (Next.js)
+│   ├── api-gateway/       # ✨ Unified NestJS Backend
+│   │   ├── prisma/        # MongoDB Schema
+│   │   └── src/           # Modular logic (Auth, Project, AI, etc.)
+│   └── frontend/          # ✨ Next.js 15 Frontend
 ├── libs/
-│   ├── shared/                # Shared utilities (@smart-collab/shared)
-│   ├── events/                # Event definitions (@smart-collab/events)
-│   └── mailer/                # Mailer service (@smart-collab/mailer)
-├── java-service/              # Java microservices
-│   ├── pom.xml                # Parent POM for Maven
-│   ├── home-service/          # Home service (Spring Boot)
-│   └── notification-service/  # Notification service (Spring Boot)
-├── node_modules/              # ✨ Shared workspace node_modules
-├── pnpm-workspace.yaml        # Workspace configuration
-├── package.json               # Root package.json
-├── .npmrc                      # pnpm configuration
-├── tsconfig.base.json         # Base TypeScript configuration
-└── turbo.json                 # Turborepo configuration
+│   └── shared/            # Common utilities
+├── package.json           # Root workspace configuration
+└── turbo.json             # Turborepo build cache settings
 ```
 
-## 🔧 Environment Variables
+---
 
-All environment variables are kept in each service's `.env` file:
-- `apps/auth/.env`
-- `apps/project/.env`
-- `apps/realtime/.env`
-- `apps/api-gateway/.env`
-- `apps/frontend/.env`
-- `java-service/home-service/.env`
-- `java-service/notification-service/.env`
-- `.env` (root level for shared variables)
+## 🔧 Useful Commands
 
-The root `.env` is automatically loaded by the workspace.
-
-## 📦 Workspace Configuration
-
-### pnpm-workspace.yaml
-```yaml
-packages:
-  - 'apps/*'
-  - 'libs/*'
-  - 'java-service/*'
-```
-
-### .npmrc (Hoisting Strategy)
-```
-shamefully-hoist=true
-public-hoist-pattern[]=@prisma/*
-public-hoist-pattern[]=@nestjs/*
-public-hoist-pattern[]=rxjs
-```
-
-This ensures:
-- All Prisma clients share one instance
-- NestJS modules are properly shared
-- RxJS operators are deduplicated
-- No peer dependency conflicts
-
-## 🔗 Using Workspace Dependencies
-
-### Reference shared libraries:
-```typescript
-import { SharedService } from '@smart-collab/shared';
-import { EventEmitter } from '@smart-collab/events';
-import { MailerService } from '@smart-collab/mailer';
-```
-
-### Reference Prisma client:
-```typescript
-import { PrismaClient } from '@prisma/client';
-
-// All services use the same instance
-const prisma = new PrismaClient();
-```
-
-### Reference workspace packages:
-```json
-{
-  "dependencies": {
-    "@prisma/client": "workspace:*",
-    "prisma": "workspace:*"
-  }
-}
-```
-
-## 📊 Database Models
-
-The shared Prisma schema includes:
-
-### Project Service (PostgreSQL)
-- **Project** - Main project entity
-- **ProjectMember** - Project membership
-- **Board** - Kanban boards
-- **Column** - Board columns
-- **Card** - Task cards
-- **CardComment** - Card comments
-- **CardLabel** - Card labels
-- **CardView** - Different card views (board, calendar, etc.)
-- **Attachment** - File attachments
-- **ChecklistItem** - Task checklists
-- **EventStatistic** - Analytics data
-
-### Auth Service (MongoDB)
-- Uses separate MongoDB database
-- Models: User, RefreshToken, Post, Comment, Reaction, Notification, Follower
-
-## 🧪 Running Tests
-
+### Backend Specifics
 ```bash
-# Run all tests
-pnpm -r run test
+# Run only the backend
+pnpm --filter api-gateway run dev
 
-# Run tests for specific service
-pnpm --filter project run test
-
-# Run with coverage
-pnpm -r run test:cov
+# Open Prisma Studio (Database GUI)
+pnpm --filter api-gateway prisma studio
 ```
 
-## 🏗️ Building for Production
-
+### Frontend Specifics
 ```bash
-# Build all services
-pnpm build:all
+# Run only the frontend
+pnpm --filter frontend run dev
 
-# Build specific service
-pnpm --filter api-gateway run build
-
-# Build Java services
-cd java-service
-mvn clean package
+# Build for production
+pnpm --filter frontend run build
 ```
+
+---
 
 ## 🐛 Troubleshooting
 
-### Issue: "Cannot find module '@prisma/client'"
-**Solution:** Run `pnpm install` from root directory
+### Issue: "Prisma client not found"
+**Solution:** Ensure you have run `pnpm --filter api-gateway prisma generate`. If you are using VS Code, you may need to restart the TypeScript server.
 
-### Issue: Prisma client not generating
-**Solution:** Run `pnpm prisma generate`
+### Issue: "MongoDB connection timeout"
+**Solution:** Verify your `DATABASE_URL` in `apps/api-gateway/.env`. If using MongoDB Atlas, ensure your IP address is whitelisted in the Atlas Network Access settings.
 
-### Issue: Port already in use
-**Solution:** Change port in `.env` files or kill processes on those ports
+### Issue: "Port 8000 or 3000 already in use"
+**Solution:** Change the `PORT` variable in the respective `.env` files or terminate the process running on those ports.
+- **Windows:** `netstat -ano | findstr :8000` -> `taskkill /F /PID <PID>`
+- **macOS/Linux:** `lsof -i :8000` -> `kill -9 <PID>`
 
-### Issue: Database connection failed
-**Solution:** Check `.env` DATABASE_URL and ensure PostgreSQL is running
+---
 
-### Issue: node_modules in app folders
-**Solution:** Delete old `node_modules` in `apps/*/node_modules` - they're not needed with workspace setup
-
-## 📚 Useful Commands
-
-```bash
-# Clean install
-pnpm install --force
-
-# Update all dependencies
-pnpm update --recursive
-
-# Check dependency tree
-pnpm list
-
-# View workspace packages
-pnpm list --depth=0
-
-# Run Prisma Studio (database GUI)
-pnpm prisma studio
-
-# Generate new Prisma migration
-pnpm prisma migrate dev --name <migration_name>
-
-# Format all code
-pnpm -r run format
-
-# Lint all code
-pnpm -r run lint
-```
-
-## 🔒 Security Notes
-
-⚠️ **Important:** The `.env` files in this repository contain placeholder/demo credentials. 
-Replace with actual credentials before deploying to production:
-- Database passwords
-- API keys (JWT, OpenAI, Google OAuth)
-- Email credentials
-- Redis/RabbitMQ credentials
-
-## 📖 Additional Resources
-
-- [pnpm Workspaces](https://pnpm.io/workspaces)
-- [Prisma Documentation](https://www.prisma.io/docs/)
-- [NestJS Documentation](https://docs.nestjs.com/)
-- [Turborepo Documentation](https://turbo.build/repo/docs)
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-
-## ✅ Verification Checklist
-
-- [ ] Node.js and pnpm installed
-- [ ] Ran `pnpm install` successfully
-- [ ] No node_modules in individual app folders
-- [ ] Prisma client generated (`pnpm prisma generate`)
-- [ ] All environment variables configured
-- [ ] Database connections verified
-- [ ] Can start services (`pnpm dev:all`)
-- [ ] API Gateway runs on http://localhost:3000
+## ✅ Post-Setup Checklist
+- [ ] Dependencies installed (`pnpm install`)
+- [ ] Environment variables configured in `apps/api-gateway/.env`
+- [ ] Prisma client generated
+- [ ] Database schema pushed to MongoDB
+- [ ] Backend starts successfully on port 8000
+- [ ] Frontend starts successfully on port 3000
 
 ---
 
