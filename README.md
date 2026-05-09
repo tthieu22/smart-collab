@@ -114,11 +114,11 @@ graph TD
 
 | Service | Technology | Port | Database | Purpose |
 |---------|------------|------|----------|---------|
-| **Frontend** | Next.js | 3000 | - | Modern Web Interface |
+| **Frontend** | Next.js | Worker | - | Modern Web Interface |
 | **API Gateway** | NestJS | **8000** | Redis | **Main Entry Point**, Auth Proxy, Aggregation |
-| **Realtime** | NestJS | 3003 | Redis | WebSockets, Live Updates, Collaboration |
-| **Auth Service** | NestJS | 3001 | MongoDB | Identity management & JWT (Internal) |
-| **Project Service** | NestJS | 3002 | PostgreSQL | Project & Task engine (Internal) |
+| **Realtime** | NestJS | Worker | Redis | WebSockets, Live Updates, Collaboration |
+| **Auth Service** | NestJS | Worker | MongoDB | Identity management & JWT (Internal) |
+| **Project Service** | NestJS | Worker | PostgreSQL | Project & Task engine (Internal) |
 | **Home Service** | Spring Boot | Worker | MongoDB | Social Feed, Reactions & Java Workers |
 
 ## 💎 Prisma Architecture
