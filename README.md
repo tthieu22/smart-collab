@@ -13,6 +13,7 @@
 **A high-performance microservices monorepo for collaborative project management with real-time updates, AI-driven automation, and multi-language backend (Node.js + Java).**
 
 Repository: https://github.com/tthieu22/smart-collab
+**Live Demo**: [https://tthieu-smart-collab.vercel.app/](https://tthieu-smart-collab.vercel.app/)
 
 [Features](#-features) • [Visual Demos](#-visual-demos) • [Architecture](#-architecture) • [Service Overview](#-services-overview) • [Quick Start](#-quick-start)
 
