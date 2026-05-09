@@ -54,6 +54,11 @@ export class UserController {
     return this.authService.getFollowRelation({ targetId, observerId });
   }
 
+  @Get('search')
+  async search(@Query('q') q: string) {
+    return this.authService.searchUsers({ q });
+  }
+
   @Get(':id')
   async getUser(@Param('id') userId: string) {
     return this.authService.getCurrentUser({ userId });

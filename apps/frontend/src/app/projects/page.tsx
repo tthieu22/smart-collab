@@ -174,8 +174,8 @@ export default function ProjectListPage() {
           <div className={cn(
             "grid gap-4",
             gridCols === 1 && "grid-cols-1",
-            gridCols === 2 && "grid-cols-2",
-            gridCols === 3 && "grid-cols-2 lg:grid-cols-3"
+            gridCols === 2 && "grid-cols-1 md:grid-cols-2",
+            gridCols === 3 && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
           )}>
             {[...Array(9)].map((_, i) => (
               <div key={i} className="h-[280px] w-full animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800" />
@@ -187,8 +187,8 @@ export default function ProjectListPage() {
               <div className={cn(
                 "grid gap-4",
                 gridCols === 1 && "grid-cols-1",
-                gridCols === 2 && "grid-cols-2",
-                gridCols === 3 && "grid-cols-2 lg:grid-cols-3"
+                gridCols === 2 && "grid-cols-1 md:grid-cols-2",
+                gridCols === 3 && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
               )}>
                 {projects.map((project) => (
                   <ProjectCard key={project.id} project={project} gridCols={gridCols} />

@@ -130,6 +130,8 @@ export class HomeService {
     const userDTOs: UserDTO[] = users.map((u: any) => ({
       id: u.id,
       name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+      firstName: u.firstName,
+      lastName: u.lastName,
       username: u.email ? u.email.split('@')[0] : 'user',
       email: u.email,
       avatarUrl: u.avatar,
@@ -318,17 +320,32 @@ export class HomeService {
     const posts = await this.prisma.post.findMany({
       where: {
         authorId: userId,
-        media: { not: { equals: [] } } as any,
       },
       select: { media: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     });
     
-    // Flatten media
+    // Flatten media and filter out non-image/empty media
     const allMedia: any[] = [];
     posts.forEach((p: any) => {
-      if (Array.isArray(p.media)) {
-        p.media.forEach((m: any) => allMedia.push({ ...m, createdAt: p.createdAt }));
+      const media = p.media;
+      if (Array.isArray(media)) {
+        media.forEach((m: any) => {
+          if (m && typeof m === 'object' && m.url) {
+            allMedia.push({ 
+              ...m, 
+              createdAt: p.createdAt,
+              postId: (p as any).id 
+            });
+          } else if (typeof m === 'string') {
+            allMedia.push({
+              url: m,
+              type: 'image',
+              createdAt: p.createdAt,
+              postId: (p as any).id
+            });
+          }
+        });
       }
     });
     return allMedia;

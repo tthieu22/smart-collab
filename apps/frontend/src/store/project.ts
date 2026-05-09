@@ -223,7 +223,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
 
     // Cards + columnCards mapping
     project.cards?.forEach((card) => {
-      cards[card.id] = card;
+      cards[card.id] = { ...cards[card.id], ...card };
       if (card.columnId) {
         columnCards[card.columnId] = columnCards[card.columnId] || [];
         if (!columnCards[card.columnId].includes(card.id)) {
@@ -236,7 +236,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
     project.boards?.forEach((b) => {
       b.columns?.forEach((c) => {
         (c.cards || []).forEach((card) => {
-          cards[card.id] = card;
+          cards[card.id] = { ...cards[card.id], ...card };
           const colId = card.columnId || c.id;
           columnCards[colId] = columnCards[colId] || [];
           if (!columnCards[colId].includes(card.id)) {
@@ -356,7 +356,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
   addColumn: (boardId, column) =>
     set((s) => {
       const boardColumns = { ...s.boardColumns };
-      const columns = { ...s.columns, [column.id]: column };
+      const columns = { ...s.columns, [column.id]: { ...s.columns[column.id], ...column } };
 
       boardColumns[boardId] = boardColumns[boardId] || [];
 
@@ -390,7 +390,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
     }),
 
   updateColumn: (column) =>
-    set((s) => ({ columns: { ...s.columns, [column.id]: column } })),
+    set((s) => ({ columns: { ...s.columns, [column.id]: { ...s.columns[column.id], ...column } } })),
 
   removeColumn: (boardId, columnId) =>
     set((s) => {
@@ -471,7 +471,7 @@ export const projectStore = create<ProjectState>((set, get) => ({
         if (!columnCards[columnId].includes(card.id)) {
           columnCards[columnId].splice(position, 0, card.id);
         }
-        cards[card.id] = { ...card, position };
+        cards[card.id] = { ...cards[card.id], ...card, position };
       });
 
       columnCards[columnId].sort(

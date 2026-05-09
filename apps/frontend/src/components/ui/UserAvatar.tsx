@@ -165,10 +165,10 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
       <div className={cn(
         "relative h-full w-full shrink-0 overflow-hidden rounded-full ring-2 ring-white dark:ring-neutral-800 shadow-sm bg-gray-100 dark:bg-neutral-900"
       )}>
-        {user.avatarUrl ? (
+        {(user.avatar || user.avatarUrl) ? (
           previewable ? (
             <Image
-              src={upscaleGoogleAvatar(user.avatarUrl) || ''}
+              src={upscaleGoogleAvatar(user.avatar || user.avatarUrl) || ''}
               alt={user.name}
               className="!w-full !h-full object-cover transition-transform group-hover:scale-110 !rounded-full avatar-image"
               wrapperClassName="!h-full !w-full !rounded-full avatar-image-wrapper"
@@ -178,7 +178,7 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
             />
           ) : (
             <img
-              src={upscaleGoogleAvatar(user.avatarUrl) || ''}
+              src={upscaleGoogleAvatar(user.avatar || user.avatarUrl) || ''}
               alt={user.name}
               className="w-full h-full object-cover transition-transform group-hover:scale-110"
               onError={(e) => {

@@ -41,6 +41,9 @@ export interface ProjectMember {
   role: "OWNER" | "ADMIN" | "MEMBER"
   status: "PENDING" | "ACCEPTED" | "REJECTED"
   joinedAt: string
+  userName?: string | null
+  userAvatar?: string | null
+  userEmail?: string | null
   user?: UserCache | null
 }
 // types/project.ts
@@ -243,4 +246,6 @@ export interface Project {
   boards?: Board[];
   labels?: CardLabel[];
   views?: CardView[];
+  healthStatus?: "ON_TRACK" | "AT_RISK" | "DELAYED";
+  memberCount?: number;
 }

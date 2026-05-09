@@ -221,6 +221,8 @@ export class SocialService {
       },
     });
 
+    this.logger.log(`[NOTIFICATION] Created DB record ${notification.id} for ${recipientId}`);
+
     // Publish to RabbitMQ for Realtime service
     // Emit event for Realtime service
     this.eventEmitter.emit('notification.created', {

@@ -54,6 +54,7 @@ export const useCardDetail = (
   const [newComment, setNewComment] = useState('');
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
 
   const syncColumnsToStore = useCallback((columnList: Column[]) => {
     const store = projectStore.getState();
@@ -316,7 +317,7 @@ export const useCardDetail = (
 
   const generateSubtasks = useCallback(async () => {
     if (!card) return;
-    setLoading(true);
+    setIsGeneratingSubtasks(true);
     try {
       const res: any = await projectService.aiGenerateSubtasks(card.id);
       if (res.success) {
@@ -328,7 +329,7 @@ export const useCardDetail = (
     } catch (err) {
       message.error('AI breakdown thất bại');
     } finally {
-      setLoading(false);
+      setIsGeneratingSubtasks(false);
     }
   }, [card, updateCard]);
 
@@ -591,6 +592,7 @@ export const useCardDetail = (
       }
     },
     generateSubtasks,
+    isGeneratingSubtasks,
     onClose,
   };
 };

@@ -267,7 +267,10 @@ export default function Header() {
                 <ChevronRight size={18} />
               </button>
             </div>
-            <Search placeholder="Nhập tọa độ tìm kiếm..." />
+            <Search 
+              placeholder="Nhập tọa độ tìm kiếm..." 
+              onResultClick={() => setIsMobileSearchOpen(false)}
+            />
           </div>
         </Modal>
 

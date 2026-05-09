@@ -64,6 +64,8 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
     updateCover,
     updateCardOnServer,
     generateSubtasks,
+    isGeneratingSubtasks,
+    removeChecklistItem,
   } = useCardDetail(cardId, isOpen, onClose);
 
   const { token } = theme.useToken();
@@ -332,6 +334,8 @@ const CardDetailModal: React.FC<Props> = ({ cardId, isOpen, onClose }) => {
                     toggleChecklist={toggleChecklist}
                     progress={progress}
                     onAiBreakdown={generateSubtasks}
+                    loading={isGeneratingSubtasks}
+                    removeChecklistItem={removeChecklistItem}
                   />
                   <Divider style={{ margin: '20px 0' }} />
                   <AttachmentsSection

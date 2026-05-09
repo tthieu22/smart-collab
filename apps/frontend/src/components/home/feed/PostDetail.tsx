@@ -57,8 +57,8 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-4xl animate-in fade-in zoom-in-95 duration-500 min-h-screen flex flex-col">
-      <div className="flex-1 rounded-none md:rounded-[32px] bg-white dark:bg-neutral-950 border-0 md:border border-gray-100 dark:border-neutral-800 shadow-2xl ring-1 ring-black/5 dark:ring-white/5 relative flex flex-col">
+    <div className="w-full animate-in fade-in zoom-in-95 duration-500 flex flex-col">
+      <div className="flex-1 bg-white dark:bg-neutral-950 relative flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-50 dark:border-neutral-900 p-3 md:p-6 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl sticky top-0 z-30 rounded-t-none md:rounded-t-[32px]">
           <PostHeader post={post} author={author} />

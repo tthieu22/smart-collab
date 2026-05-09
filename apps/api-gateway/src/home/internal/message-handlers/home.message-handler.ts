@@ -1,5 +1,6 @@
 import { Controller, Logger, OnModuleInit } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { OnEvent } from '@nestjs/event-emitter';
 import { HomeService } from '../services/home.service';
 import { SocialService } from '../services/social.service';
 import { AutoPostService } from '../services/auto-post.service';
@@ -16,6 +17,25 @@ export class HomeMessageHandler implements OnModuleInit {
 
   onModuleInit() {
     this.logger.log('HomeMessageHandler initialized and ready for patterns');
+  }
+
+  @OnEvent('notification.create')
+  async handleNotificationCreate(@Payload() event: any) {
+    try {
+      const { data } = event;
+      this.logger.log(`[EVENT] Creating notification for user ${data?.recipientId} (type: ${data?.type})`);
+      await this.socialService.createNotification(
+        data.recipientId,
+        data.senderId,
+        data.type,
+        data.postId,
+        data.commentId,
+        data.projectId,
+        data.projectName
+      );
+    } catch (err: any) {
+      this.logger.error(`Failed to handle notification.create: ${err.message}`);
+    }
   }
 
   @MessagePattern({ cmd: 'home.feed.get' })

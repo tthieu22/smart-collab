@@ -23,6 +23,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@smart/lib/utils";
 import { UI_CONFIG } from "@smart/lib/constants";
+import { UserAvatar } from "@smart/components/ui/UserAvatar";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -82,6 +83,39 @@ export function UserSettingForm() {
       fetchLogs();
     }
   }, [activeMenu, fetchLogs]);
+
+  useEffect(() => {
+    const handleUploadAvatar = async (e: any) => {
+      const file = e.detail.file;
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('files', file);
+      formData.append('action', 'upload');
+      formData.append('projectFolder', 'avatars');
+
+      setLoading(true);
+      try {
+        const res: any = await autoRequest('/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (res.success && res.data?.[0]?.url) {
+          await onUpdateProfile({ avatar: res.data[0].url });
+        } else {
+          message.error('Upload ảnh thất bại');
+        }
+      } catch (err: any) {
+        message.error(err.message || 'Lỗi khi upload ảnh');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    window.addEventListener('upload-avatar', handleUploadAvatar);
+    return () => window.removeEventListener('upload-avatar', handleUploadAvatar);
+  }, [currentUser]);
 
   const onUpdateProfile = async (values: any) => {
     setLoading(true);
@@ -306,22 +340,33 @@ export function UserSettingForm() {
 
             <div className="flex flex-col items-center sm:flex-row gap-8 py-6 bg-gray-50/50 dark:bg-neutral-900/50 rounded-[24px] border border-gray-100 dark:border-neutral-800 p-6">
               <div className="relative group">
-                <Avatar
-                  size={100}
-                  src={currentUser?.avatar}
-                  icon={!currentUser?.avatar && <UserOutlined />}
-                  className="border-2 border-blue-500/20 shadow-2xl transition-transform group-hover:scale-105 duration-300"
+                <UserAvatar
+                  userId={currentUser?.id || ''}
+                  size="xl"
+                  allowChangeAvatar={true}
                 />
-                <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white dark:border-neutral-900 cursor-pointer hover:bg-blue-700 transition-colors">
-                  <CloudUploadOutlined />
-                </div>
               </div>
               <div className="flex flex-col gap-2 flex-1">
                 <Title level={5} className="!m-0">{currentUser?.firstName} {currentUser?.lastName}</Title>
                 <Text type="secondary" className="text-xs">ID: {currentUser?.id}</Text>
                 <div className="flex gap-2 mt-1">
-                  <Button type="primary" size="small" className="rounded-lg h-8 px-4 font-medium">Thay đổi ảnh</Button>
-                  <Button type="text" danger size="small" className="rounded-lg h-8 font-medium">Xóa ảnh</Button>
+                  <Button 
+                    type="primary" 
+                    size="small" 
+                    className="rounded-lg h-8 px-4 font-medium"
+                    onClick={() => document.getElementById(`avatar-upload-${currentUser?.id}`)?.click()}
+                  >
+                    Thay đổi ảnh
+                  </Button>
+                  <Button 
+                    type="text" 
+                    danger 
+                    size="small" 
+                    className="rounded-lg h-8 font-medium"
+                    onClick={() => onUpdateProfile({ avatar: null })}
+                  >
+                    Xóa ảnh
+                  </Button>
                 </div>
               </div>
             </div>

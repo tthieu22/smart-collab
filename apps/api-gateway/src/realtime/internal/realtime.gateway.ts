@@ -360,7 +360,8 @@ export class RealtimeGateway
   };
 
   public emitToUser = (userId: string, event: string, data: any) => {
-    this.userClients.get(userId)?.forEach((clientId) => {
+    const uid = String(userId);
+    this.userClients.get(uid)?.forEach((clientId) => {
       this.server.to(clientId).emit(event, data);
     });
   };

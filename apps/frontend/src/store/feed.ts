@@ -741,7 +741,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     try {
       const res = await autoRequest<{ success: boolean; data: any }>(`/home/user/profile-data`, {
         method: 'POST',
-        body: JSON.stringify({ targetUserId }),
+        body: JSON.stringify({ userId: targetUserId }),
       });
       return res.data;
     } catch (err: any) {
@@ -753,7 +753,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     try {
       const res = await autoRequest<{ success: boolean; data: any[] }>(`/home/user/media`, {
         method: 'POST',
-        body: JSON.stringify({ targetUserId }),
+        body: JSON.stringify({ userId: targetUserId }),
       });
       return res.data;
     } catch (err: any) {

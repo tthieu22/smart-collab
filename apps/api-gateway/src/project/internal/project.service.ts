@@ -206,6 +206,19 @@ export class ProjectService {
     return items;
   }
 
+  private mapMember(member: any) {
+    if (!member) return null;
+    return {
+      ...member,
+      user: {
+        id: member.userId,
+        firstName: member.userName || member.userEmail || 'User',
+        avatar: member.userAvatar,
+        email: member.userEmail,
+      },
+    };
+  }
+
   async getProjectStructure(projectId: string, userId?: string) {
     const project = await this.checkProjectAccess(projectId, userId, 'view');
 
@@ -234,6 +247,8 @@ export class ProjectService {
         originalFilename: true,
         uploadedById: true,
         members: true,
+        views: true,
+        customFields: true,
         boards: {
           where: { OR: [{ deletedAt: { isSet: false } }, { deletedAt: null }] },
           orderBy: { position: 'asc' },
@@ -404,13 +419,9 @@ export class ProjectService {
     }
 
     // Notify realtime
-    const fullProject = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      include: { members: true }
-    });
-
-    this.eventEmitter.emit('realtime.project.updated', {
-      project: this.mapMembers(fullProject)
+    this.eventEmitter.emit('project.member_added', {
+      projectId,
+      member: this.mapMember(member)
     });
 
     return { success: true, message: 'Member added successfully', data: member };
@@ -422,14 +433,27 @@ export class ProjectService {
       where: { projectId, userId },
     });
 
-    // Notify realtime
-    const fullProject = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      include: { members: true }
-    });
+    // Notify via persistent notification
+    try {
+      const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+      this.eventEmitter.emit('notification.create', {
+        data: {
+          recipientId: userId,
+          senderId: removedBy,
+          type: 'PROJECT_REMOVE',
+          projectId: projectId,
+          projectName: project!.name,
+          content: `Bạn đã bị xóa khỏi dự án ${project!.name}`,
+        }
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to send remove notification: ${err.message}`);
+    }
 
-    this.eventEmitter.emit('realtime.project.updated', {
-      project: this.mapMembers(fullProject)
+    // Notify realtime
+    this.eventEmitter.emit('project.member_removed', {
+      projectId,
+      userId
     });
 
     return { success: true, message: 'Member removed successfully' };
@@ -448,13 +472,13 @@ export class ProjectService {
     }
 
     // Notify realtime
-    const fullProject = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      include: { members: true }
+    const member = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId, userId } }
     });
 
-    this.eventEmitter.emit('realtime.project.updated', {
-      project: this.mapMembers(fullProject)
+    this.eventEmitter.emit('project.member_role_updated', {
+      projectId,
+      member: this.mapMember(member)
     });
 
     return { success: true, message: accept ? 'Invitation accepted' : 'Invitation declined' };
@@ -494,7 +518,33 @@ export class ProjectService {
     const [items, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
-        include: { members: true },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          visibility: true,
+          healthStatus: true,
+          ownerId: true,
+          color: true,
+          background: true,
+          fileUrl: true,
+          createdAt: true,
+          updatedAt: true,
+          members: {
+            take: 5,
+            select: {
+              id: true,
+              userId: true,
+              userName: true,
+              userAvatar: true,
+              userEmail: true,
+              role: true,
+            }
+          },
+          _count: {
+            select: { members: true }
+          }
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -504,10 +554,14 @@ export class ProjectService {
       }),
     ]);
 
-    const mappedItems = items.map((item: any) => ({
-      ...item,
-      id: item.id || item._id,
-    }));
+    const mappedItems = items.map((item: any) => {
+      const mapped = this.mapMembers(item);
+      return {
+        ...mapped,
+        id: item.id || item._id,
+        memberCount: item._count?.members || mapped.members?.length || 0
+      };
+    });
 
     return { items: mappedItems, total, page, limit };
   }

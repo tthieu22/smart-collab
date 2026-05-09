@@ -116,7 +116,7 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
   const onUpdateProfile = async (values: any) => {
     setLoading(true);
     try {
-      let avatarUrl = profileUser?.avatar || '';
+      let avatarUrl = profileUser?.avatar || profileUser?.avatarUrl || '';
 
       // Check if there is a pending avatar file to upload
       if (values.avatarFile) {
@@ -137,19 +137,37 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
       }
 
       const data = {
-        firstName: values.firstName ?? profileUser?.firstName,
-        lastName: values.lastName ?? profileUser?.lastName,
-        bio: values.bio ?? profileUser?.bio,
-        location: values.location ?? profileUser?.location,
-        website: values.website ?? profileUser?.website,
+        firstName: values.firstName !== undefined ? values.firstName : profileUser?.firstName,
+        lastName: values.lastName !== undefined ? values.lastName : profileUser?.lastName,
+        bio: values.bio !== undefined ? values.bio : profileUser?.bio,
+        location: values.location !== undefined ? values.location : profileUser?.location,
+        website: values.website !== undefined ? values.website : profileUser?.website,
         birthday: values.birthday ? values.birthday.toISOString() : (profileUser?.birthday || null),
         avatar: avatarUrl
       };
+      
       await updateProfile(data);
+      
+      // Update global user store if it's ME
+      if (isMe) {
+        const { useUserStore } = await import('@smart/store/user');
+        const currentUser = useUserStore.getState().currentUser;
+        if (currentUser) {
+          useUserStore.getState().setCurrentUser({
+            ...currentUser,
+            ...data,
+            name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || currentUser.email
+          } as any);
+        }
+      }
+
       message.success('Cập nhật trang cá nhân thành công');
       setIsEditModalOpen(false);
-      fetchUser(targetUserId);
+      
+      // Re-fetch user data to sync everything
+      await fetchUser(targetUserId);
     } catch (err) {
+      console.error('Update profile failed:', err);
       message.error('Cập nhật thất bại');
     } finally {
       setLoading(false);

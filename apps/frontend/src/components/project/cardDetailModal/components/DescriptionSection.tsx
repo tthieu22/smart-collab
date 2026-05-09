@@ -102,10 +102,10 @@ const DescriptionSection: React.FC<Props> = ({
 
   const aiMenu = {
     items: [
-      { key: 'generate', label: 'Generate from scratch' },
-      { key: 'continue', label: 'Continue writing' },
-      { key: 'improve', label: 'Improve writing' },
-      { key: 'shorten', label: 'Make shorter' },
+      { key: 'generate', label: 'Tạo nội dung mới' },
+      { key: 'continue', label: 'Viết tiếp' },
+      { key: 'improve', label: 'Cải thiện bài viết' },
+      { key: 'shorten', label: 'Rút gọn nội dung' },
     ],
     onClick: ({ key }: any) => onAIGenerate(key as any),
   };
@@ -121,7 +121,7 @@ const DescriptionSection: React.FC<Props> = ({
             marginBottom: 16,
           }}
         >
-          <Text strong>Description</Text>
+          <Text strong>Mô tả chi tiết</Text>
           <Dropdown menu={aiMenu}>
             <Button
               icon={<AIIcon />}
@@ -132,7 +132,7 @@ const DescriptionSection: React.FC<Props> = ({
                 border: 'none',
               }}
             >
-              AI Magic <Sparkles className="w-4 h-4 ml-1" />
+              Hỗ trợ bởi AI <Sparkles className="w-4 h-4 ml-1" />
             </Button>
           </Dropdown>
         </div>

@@ -3,6 +3,8 @@ import { IsString, IsOptional, IsInt, IsBoolean, IsArray } from 'class-validator
 export class UserDTO {
   id!: string;
   name!: string;
+  firstName?: string;
+  lastName?: string;
   username!: string;
   email!: string;
   avatarUrl?: string;

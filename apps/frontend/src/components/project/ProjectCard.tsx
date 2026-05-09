@@ -3,10 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import type { Project } from '@smart/types/project';
-
 import { projectStore } from '@smart/store/project';
 import { cn } from '@smart/lib/utils';
 import { UI_CONFIG } from '@smart/lib/constants';
+import { useUserStore } from '@smart/store/user';
+import { Tooltip } from 'antd';
 
 interface ProjectCardProps {
   project: Project;
@@ -26,6 +27,7 @@ export default function ProjectCard({
   disablePrefetch = false
 }: ProjectCardProps) {
   const prefetchProject = projectStore((s) => s.prefetchProject);
+  const currentUser = useUserStore((s) => s.currentUser);
 
   const bgStyle: React.CSSProperties = project.fileUrl
     ? { backgroundImage: `url(${project.fileUrl})` }
@@ -37,6 +39,17 @@ export default function ProjectCard({
 
   const isList = gridCols === 1;
 
+  // Determine health status color and label
+  const healthConfig = {
+    ON_TRACK: { color: 'text-blue-500', bg: 'bg-blue-500', label: 'On Track' },
+    AT_RISK: { color: 'text-amber-500', bg: 'bg-amber-500', label: 'At Risk' },
+    DELAYED: { color: 'text-red-500', bg: 'bg-red-500', label: 'Delayed' },
+  };
+
+  const health = healthConfig[project.healthStatus || 'ON_TRACK'];
+  const isOwner = project.ownerId === currentUser?.id;
+  const myRole = isOwner ? 'Owner' : (project.members?.find(m => m.userId === currentUser?.id)?.role || 'Member');
+
   const content = (
     <div
       onMouseEnter={() => !disablePrefetch && prefetchProject(project.id)}
@@ -46,7 +59,8 @@ export default function ProjectCard({
         UI_CONFIG.CARD.BORDER,
         UI_CONFIG.CARD.BG,
         UI_CONFIG.CARD.SHADOW,
-        isList ? "flex-col md:flex-row md:min-h-[220px]" : "flex-col h-full"
+        isList ? "flex-col md:flex-row md:min-h-[220px]" : "flex-col h-full",
+        className
       )}
     >
       {/* BACKGROUND IMAGE / COLOR CONTAINER */}
@@ -62,11 +76,16 @@ export default function ProjectCard({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-700" />
         
-        {project.visibility && (
-          <span className="absolute left-4 top-4 rounded-xl bg-white/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-md shadow-lg border border-white/20">
-            {project.visibility}
+        <div className="absolute left-4 top-4 flex flex-col gap-2">
+          {project.visibility && (
+            <span className="rounded-xl bg-white/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-md shadow-lg border border-white/20">
+              {project.visibility}
+            </span>
+          )}
+          <span className="w-fit rounded-xl bg-blue-600/40 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white backdrop-blur-md border border-white/10">
+            {myRole}
           </span>
-        )}
+        </div>
       </div>
 
       {/* PROJECT INFO */}
@@ -76,8 +95,10 @@ export default function ProjectCard({
       )}>
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-2">
-             <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-             <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Active Project</span>
+             <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", health.bg)} />
+             <span className={cn("text-[10px] font-black uppercase tracking-widest", health.color)}>
+               {health.label}
+             </span>
           </div>
           
           <h3 className={cn(
@@ -104,20 +125,25 @@ export default function ProjectCard({
           )}>
             <div className="flex items-center space-x-3">
               <div className="flex -space-x-2.5">
-                {[...Array(Math.min(project.members?.length || 0, 4))].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-8 w-8 rounded-full border-2 border-white bg-gray-200 dark:border-neutral-900 dark:bg-neutral-800 ring-2 ring-transparent group-hover:ring-blue-500/20 transition-all shadow-sm"
-                  />
-                ))}
-                {(project.members?.length || 0) > 4 && (
+                {(project.members || []).slice(0, 4).map((member, i) => {
+                  const avatar = member.userAvatar || member.user?.avatar;
+                  return (
+                    <Tooltip key={member.id || i} title={member.userName || member.user?.firstName || 'User'}>
+                      <div
+                        className="h-8 w-8 rounded-full border-2 border-white bg-cover bg-center bg-gray-200 dark:border-neutral-900 dark:bg-neutral-800 ring-2 ring-transparent group-hover:ring-blue-500/20 transition-all shadow-sm"
+                        style={avatar ? { backgroundImage: `url(${avatar})` } : {}}
+                      />
+                    </Tooltip>
+                  );
+                })}
+                {(project.memberCount || 0) > 4 && (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-50 text-[10px] font-black text-blue-600 dark:border-neutral-900 dark:bg-blue-900/30 dark:text-blue-400">
-                    +{(project.members?.length || 0) - 4}
+                    +{(project.memberCount || 0) - 4}
                   </div>
                 )}
               </div>
               <span className="text-[10px] font-black text-gray-400 dark:text-neutral-500 uppercase tracking-widest">
-                {project.members?.length || 0} Members
+                {project.memberCount || project.members?.length || 0} Members
               </span>
             </div>
             

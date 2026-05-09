@@ -249,7 +249,14 @@ export class CardService {
         content: String(data.content).trim(),
       },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        comments: {
+          orderBy: [{ createdAt: "asc" as const }],
+        }
+      }
+    });
   }
 
   private async handleAddLabel(cardId: string, data: any) {
@@ -260,14 +267,20 @@ export class CardService {
         color: data.color 
       },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: { labels: true }
+    });
   }
 
   private async handleRemoveLabel(cardId: string, data: any) {
     await this.prisma.cardLabel.delete({
       where: { id: data.labelId },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: { labels: true }
+    });
   }
 
   private async handleAddMember(cardId: string, data: any) {
@@ -281,7 +294,12 @@ export class CardService {
       },
     });
 
-    if (existing) return this.findCardDetailById(cardId);
+    if (existing) {
+      return this.prisma.card.findUnique({
+        where: { id: cardId },
+        include: { members: true }
+      });
+    }
 
     await this.prisma.cardMember.create({
       data: {
@@ -291,7 +309,10 @@ export class CardService {
         userAvatar: data.userAvatar,
       },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: { members: true }
+    });
   }
 
   private async handleRemoveMember(cardId: string, data: any) {
@@ -303,7 +324,10 @@ export class CardService {
         },
       },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: { members: true }
+    });
   }
 
   private async handleAddChecklistItem(cardId: string, data: any) {
@@ -314,7 +338,14 @@ export class CardService {
         position: data.position ?? 0,
       },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        checklist: {
+          orderBy: [{ position: "asc" as const }],
+        }
+      }
+    });
   }
 
   private async handleUpdateChecklistItem(cardId: string, data: any) {
@@ -325,14 +356,28 @@ export class CardService {
         done: data.done,
       },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        checklist: {
+          orderBy: [{ position: "asc" as const }],
+        }
+      }
+    });
   }
 
   private async handleRemoveChecklistItem(cardId: string, data: any) {
     await this.prisma.checklistItem.delete({
       where: { id: data.itemId },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        checklist: {
+          orderBy: [{ position: "asc" as const }],
+        }
+      }
+    });
   }
 
   private async handleAddAttachment(cardId: string, data: any, updatedById?: string) {
@@ -350,14 +395,28 @@ export class CardService {
         originalFilename: data.originalFilename ?? null,
       },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        attachments: {
+          orderBy: [{ uploadedAt: "desc" as const }],
+        }
+      }
+    });
   }
 
   private async handleRemoveAttachment(cardId: string, data: any) {
     await this.prisma.attachment.delete({
       where: { id: data.attachmentId },
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        attachments: {
+          orderBy: [{ uploadedAt: "desc" as const }],
+        }
+      }
+    });
   }
 
   private async handleUpdateCover(cardId: string, data: any, updatedById?: string) {
@@ -731,7 +790,14 @@ export class CardService {
       update: { value: data.value },
       create: { cardId, fieldId: data.fieldId, value: data.value }
     });
-    return this.findCardDetailById(cardId);
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        customFieldValues: {
+          include: { field: true }
+        }
+      }
+    });
   }
 
   async awardPoints(userId: string, projectId: string | null, points: number) {

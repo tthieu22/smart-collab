@@ -193,6 +193,17 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('search')
+  async search(@Query('q') query: string) {
+    try {
+      const users = await this.userService.search(query);
+      return { success: true, data: users };
+    } catch (error) {
+      return { success: false, message: error };
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {

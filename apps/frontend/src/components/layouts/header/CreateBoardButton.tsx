@@ -303,7 +303,7 @@ export default function CreateBoardButton({
           placement="bottomLeft"
           overlayClassName="modern-popover-wide"
           overlayStyle={{ maxWidth: 'calc(100vw - 24px)' }}
-          overlayInnerStyle={{ padding: 0, borderRadius: '24px', overflow: 'hidden' }}
+          styles={{ body: { padding: 0, borderRadius: '24px', overflow: 'hidden' } }}
           align={{ offset: [0, 8] }}
           getPopupContainer={(trigger) => trigger.parentElement || document.body}
         >

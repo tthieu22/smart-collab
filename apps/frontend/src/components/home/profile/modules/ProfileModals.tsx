@@ -81,8 +81,8 @@ export default function ProfileModals({
                 <Form
                     layout="vertical"
                     initialValues={{
-                        firstName: (profileUser.name || '').split(' ').slice(0, -1).join(' '),
-                        lastName: (profileUser.name || '').split(' ').slice(-1).join(' '),
+                        firstName: profileUser.firstName,
+                        lastName: profileUser.lastName,
                         bio: profileUser.bio,
                         location: profileUser.location,
                         website: profileUser.website,

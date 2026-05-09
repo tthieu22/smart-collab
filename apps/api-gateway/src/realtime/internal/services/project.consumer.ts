@@ -11,7 +11,7 @@ export class ProjectConsumer {
 
   @OnEvent('realtime.project.deleted')
   public async handleProjectDeleted(msg: any) {
-    this.logger.log(`[EVENT] Received project.deleted: ${JSON.stringify(msg)}`);
+    this.logger.log(`[EVENT] project.deleted: ${msg?.projectId}`);
     if (msg?.projectId) {
       this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.project.deleted', { projectId: msg.projectId });
     }
@@ -43,7 +43,7 @@ export class ProjectConsumer {
 
   @OnEvent('card.deleted')
   public async handleCardDeleted(msg: any) {
-    this.logger.log(`[EVENT] Received card.deleted: ${JSON.stringify(msg)}`);
+    this.logger.log(`[EVENT] card.deleted: ${msg?.cardId}`);
     if (msg?.projectId && msg?.cardId && msg?.columnId) {
       this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.card.deleted', {
         projectId: msg.projectId,
@@ -92,9 +92,10 @@ export class ProjectConsumer {
 
   @OnEvent('notification.created')
   public async handleNotificationCreated(msg: any) {
-    this.logger.log(`[NOTIFICATION] New notification for user ${msg?.recipientId}`);
-    if (msg?.recipientId) {
-      this.gateway.emitToUser(msg.recipientId, 'realtime.notification.new', msg);
+    const recipientId = String(msg?.recipientId || '');
+    this.logger.log(`[NOTIFICATION] New notification for user ${recipientId}. Type: ${msg?.type}`);
+    if (recipientId) {
+      this.gateway.emitToUser(recipientId, 'realtime.notification.created', msg);
     }
   }
 
@@ -108,7 +109,7 @@ export class ProjectConsumer {
 
   @OnEvent('board.created')
   public async handleBoardCreated(msg: any) {
-    this.logger.log(`[EVENT] Received board.created: ${JSON.stringify(msg)}`);
+    this.logger.log(`[EVENT] board.created: ${msg?.board?.id}`);
     if (msg?.board?.projectId) {
       this.gateway.server.to(`project:${msg.board.projectId}`).emit('realtime.board.created', msg.board);
     }
@@ -124,7 +125,7 @@ export class ProjectConsumer {
 
   @OnEvent('realtime.project.updated')
   public async handleProjectUpdated(msg: any) {
-    this.logger.log(`[EVENT] Received project.updated: ${JSON.stringify(msg)}`);
+    this.logger.log(`[EVENT] project.updated: ${msg?.project?.id}`);
     if (msg?.project?.id) {
       this.gateway.server.to(`project:${msg.project.id}`).emit('realtime.project.updated', msg.project);
     }
@@ -186,6 +187,7 @@ export class ProjectConsumer {
   public async handleMemberRemoved(msg: any) {
     if (msg?.projectId && msg?.userId) {
       this.gateway.server.to(`project:${msg.projectId}`).emit('realtime.project.member_removed', { userId: msg.userId });
+      this.gateway.emitToUser(msg.userId, 'realtime.project.member_removed', { projectId: msg.projectId });
     }
   }
 

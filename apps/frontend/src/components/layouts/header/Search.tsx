@@ -7,7 +7,12 @@ import debounce from "lodash/debounce";
 
 const { Text } = Typography;
 
-export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
+interface SearchProps {
+  placeholder?: string;
+  onResultClick?: () => void;
+}
+
+export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)...", onResultClick }: SearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({ projects: [], news: [], posts: [] });
@@ -43,6 +48,7 @@ export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
     if (value.trim()) {
       router.push(`/search?q=${encodeURIComponent(value.trim())}`);
       setFocused(false);
+      onResultClick?.();
     }
   };
 
@@ -51,6 +57,7 @@ export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)..." }) {
     if (type === 'project') router.push(`/projects/${id}`);
     else if (type === 'news') router.push(`/news/${id}`);
     else if (type === 'post') router.push(`/posts/${id}`);
+    onResultClick?.();
   };
 
   useEffect(() => {

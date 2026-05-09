@@ -15,58 +15,56 @@ export default function GlobalPostDetailModal() {
       footer={null}
       title={null}
       closable={false}
-      width={1000}
+      width={900}
+      centered
       destroyOnHidden
-      style={{ top: 0, paddingBottom: 0 }}
       styles={{
-        content: { padding: 0, borderRadius: 0, background: 'transparent', boxShadow: 'none' },
+        content: { padding: 0, borderRadius: 32 },
         body: { padding: 0 }
       }}
       className="post-detail-modal-responsive"
     >
       <style jsx global>{`
         .post-detail-modal-responsive {
-          max-width: 100vw !important;
-          margin: 0 !important;
-          top: 0 !important;
+          max-width: 95vw !important;
           padding-bottom: 0 !important;
-          height: 100vh;
         }
+        
         .post-detail-modal-responsive .ant-modal-content {
+          background-color: white !important;
+          border-radius: 0 !important;
           height: 100vh !important;
           overflow-y: auto;
           overflow-x: hidden;
-          background-color: white !important;
-          border-radius: 0 !important;
+          position: relative;
         }
+
         .dark .post-detail-modal-responsive .ant-modal-content {
           background-color: #0a0a0a !important;
         }
+
+        @media (min-width: 768px) {
+          .post-detail-modal-responsive {
+            max-width: 900px !important;
+          }
+          .post-detail-modal-responsive .ant-modal-content {
+            height: auto !important;
+            max-height: 90vh !important;
+            border-radius: 32px !important;
+            overflow-y: auto !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+          }
+        }
         
         .post-detail-modal-responsive .ant-modal-content::-webkit-scrollbar {
-          width: 4px;
+          width: 6px;
         }
         .post-detail-modal-responsive .ant-modal-content::-webkit-scrollbar-thumb {
           background: #e2e8f0;
           border-radius: 10px;
         }
         .dark .post-detail-modal-responsive .ant-modal-content::-webkit-scrollbar-thumb {
-          background: #1e293b;
-        }
-
-        @media (min-width: 768px) {
-          .post-detail-modal-responsive {
-            max-width: 1000px !important;
-            margin: 20px auto !important;
-            top: 20px !important;
-            height: auto;
-          }
-          .post-detail-modal-responsive .ant-modal-content {
-            height: auto !important;
-            max-height: calc(100vh - 40px);
-            border-radius: 32px !important;
-            background-color: transparent !important;
-          }
+          background: #262626;
         }
       `}</style>
       {activePostId && (

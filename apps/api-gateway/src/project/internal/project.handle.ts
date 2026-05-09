@@ -84,7 +84,7 @@ export class ProjectHandler {
 
   @MessagePattern({ cmd: 'project.add_member' })
   async handleAddMember(@Payload() payload: { projectId: string; userId: string; role?: string; addedBy?: string; userName?: string; userAvatar?: string; userEmail?: string }) {
-    this.logger.log(`[project.add_member] Received payload: ${JSON.stringify(payload)}`);
+    this.logger.log(`[project.add_member] ProjectId: ${payload.projectId}, UserId: ${payload.userId}`);
     try {
       const result = await this.projectService.addMember(
         payload.projectId, 
