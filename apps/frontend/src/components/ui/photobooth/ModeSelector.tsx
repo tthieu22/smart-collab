@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LayoutGrid, Image as ImageIcon, Layout, Columns, User, Calendar, MapPin } from 'lucide-react';
+import { LayoutGrid, Image as ImageIcon, Layout, Columns, User, Calendar, MapPin, Rows, Grid3X3, Monitor, Layers, PanelsTopLeft, AppWindow } from 'lucide-react';
 import { Input } from 'antd';
 import { PhotoboothMode } from './types';
 import { UI_CONFIG } from '@smart/lib/constants';
@@ -14,22 +14,85 @@ const MODES = [
         id: 'single' as PhotoboothMode,
         label: 'Chụp 1 ảnh',
         icon: ImageIcon,
-        description: 'Chụp một tấm duy nhất',
+        description: 'Chụp một tấm duy nhất sắc nét',
         color: 'from-blue-500 to-cyan-500'
     },
     {
+        id: 'grid-2-v' as PhotoboothMode,
+        label: '2 Ảnh Dọc',
+        icon: Columns,
+        description: 'Bố cục 2 ảnh đứng song song',
+        color: 'from-emerald-500 to-teal-500'
+    },
+    {
+        id: 'grid-2-h' as PhotoboothMode,
+        label: '2 Ảnh Ngang',
+        icon: Rows,
+        description: 'Bố cục 2 ảnh nằm ngang cổ điển',
+        color: 'from-rose-500 to-pink-500'
+    },
+    {
+        id: 'grid-3-v' as PhotoboothMode,
+        label: '3 Ảnh Dọc',
+        icon: Layout,
+        description: '3 tấm đứng phong cách nghệ thuật',
+        color: 'from-indigo-500 to-purple-500'
+    },
+    {
         id: 'grid-4' as PhotoboothMode,
-        label: '4 Ảnh (Grid)',
+        label: '4 Ảnh Grid',
         icon: LayoutGrid,
-        description: 'Bố cục 2x2 hiện đại',
+        description: 'Bố cục 2x2 hiện đại, cân đối',
         color: 'from-purple-500 to-pink-500'
     },
     {
-        id: 'strip-4' as PhotoboothMode,
-        label: '4 Ảnh (Dọc)',
+        id: 'grid-6' as PhotoboothMode,
+        label: '6 Ảnh Grid',
+        icon: PanelsTopLeft,
+        description: 'Bố cục 2x3 cho nhiều khoảnh khắc',
+        color: 'from-orange-500 to-red-500'
+    },
+    {
+        id: 'grid-9' as PhotoboothMode,
+        label: '9 Ảnh Grid',
+        icon: Grid3X3,
+        description: '9 ô vuông nhỏ cho bộ sưu tập cảm xúc',
+        color: 'from-cyan-500 to-blue-500'
+    },
+    {
+        id: 'strip-3' as PhotoboothMode,
+        label: '3 Ảnh Strip',
         icon: Columns,
-        description: 'Kiểu Hàn Quốc chuẩn, phong cách thời thượng',
+        description: 'Dải ảnh 3 tấm phong cách Retro',
+        color: 'from-yellow-500 to-amber-500'
+    },
+    {
+        id: 'strip-4' as PhotoboothMode,
+        label: '4 Ảnh Strip',
+        icon: Columns,
+        description: 'Dải ảnh 4 tấm chuẩn Hàn Quốc',
         color: 'from-amber-500 to-orange-500'
+    },
+    {
+        id: 'wide-1' as PhotoboothMode,
+        label: 'Cinema Wide',
+        icon: Monitor,
+        description: 'Góc rộng điện ảnh siêu chất',
+        color: 'from-slate-700 to-slate-900'
+    },
+    {
+        id: 'mixed-3' as PhotoboothMode,
+        label: 'Poster Mixed',
+        icon: AppWindow,
+        description: '1 chính lớn và 2 phụ nhỏ tinh tế',
+        color: 'from-fuchsia-500 to-purple-600'
+    },
+    {
+        id: 'mixed-4' as PhotoboothMode,
+        label: 'Magazine Style',
+        icon: Layers,
+        description: 'Phong cách tạp chí thời thượng',
+        color: 'from-sky-500 to-indigo-600'
     }
 ];
 
