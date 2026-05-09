@@ -38,13 +38,15 @@ Generate entire project structures, detailed task descriptions, and strategic ro
 ![AI Intelligence Demo](./assets/ai-demo.png)
 
 ### 📊 Multi-Dimensional Collaborative Workspace
-SmartCollab offers four distinct view modes to manage your projects from every angle. Switch seamlessly between views to gain unique insights and optimize your workflow.
+SmartCollab offers **six distinct view modes** to manage your projects from every angle. Switch seamlessly between views to gain unique insights and optimize your workflow.
 
 | View Mode | Description |
 | :--- | :--- |
 | **Kanban Board** | Classic drag-and-drop interface for agile task management and real-time collaboration. |
 | **Smart Dashboard** | AI-powered analytics, productivity metrics, and project health monitoring at a glance. |
 | **Timeline (Gantt)** | Visualize project milestones, task durations, and dependencies over time. |
+| **Calendar View** | Manage deadlines, schedule tasks, and track project tempo on a monthly layout. |
+| **Table View** | Structured list view for comprehensive data management and advanced filtering. |
 | **Geographic Map** | Track project locations and geographically-linked tasks on an interactive map. |
 
 #### 📋 Kanban Board View
@@ -55,6 +57,12 @@ SmartCollab offers four distinct view modes to manage your projects from every a
 
 #### ⏳ Timeline View
 ![Project Timeline](./assets/viewTimeLine.png)
+
+#### 📅 Calendar View
+![Project Calendar](./assets/calendarView.png)
+
+#### 📋 Table View
+![Project Table](./assets/TableView.png)
 
 #### 📍 Interactive Map View
 ![Project Map](./assets/viewMap.png)
@@ -76,9 +84,6 @@ Stay ahead with automated industry news and project intelligence. Our system gen
 - ✅ **Type-Safe** - Shared TypeScript types across frontend and Node.js services
 
 ## 🎬 Visual Demos
-
-### Dashboard Overview
-![Dashboard Mockup](./assets/detailproject.png)
 
 ### Video Walkthrough
 > [!TIP]
