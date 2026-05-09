@@ -37,17 +37,35 @@ Repository: https://github.com/tthieu22/smart-collab
 Generate entire project structures, detailed task descriptions, and strategic roadmaps in seconds. SmartCollab integrates with Gemini 2.0, Groq, and OpenAI to turn simple prompts into actionable project plans.
 ![AI Intelligence Demo](./assets/ai-demo.png)
 
-### 📊 Collaborative Workspace
-Experience a seamless Kanban-style workspace with real-time updates. Drag-and-drop cards, manage columns, and collaborate with your team with zero latency thanks to our optimized WebSocket gateway.
-![Workspace Demo](./assets/dashboard.png)
+### 📊 Multi-Dimensional Collaborative Workspace
+SmartCollab offers four distinct view modes to manage your projects from every angle. Switch seamlessly between views to gain unique insights and optimize your workflow.
+
+| View Mode | Description |
+| :--- | :--- |
+| **Kanban Board** | Classic drag-and-drop interface for agile task management and real-time collaboration. |
+| **Smart Dashboard** | AI-powered analytics, productivity metrics, and project health monitoring at a glance. |
+| **Timeline (Gantt)** | Visualize project milestones, task durations, and dependencies over time. |
+| **Geographic Map** | Track project locations and geographically-linked tasks on an interactive map. |
+
+#### 📋 Kanban Board View
+![Kanban Board](./assets/detailproject.png)
+
+#### 📈 AI Dashboard View
+![Project Dashboard](./assets/ViewDoashboardProject.png)
+
+#### ⏳ Timeline View
+![Project Timeline](./assets/viewTimeLine.png)
+
+#### 📍 Interactive Map View
+![Project Map](./assets/viewMap.png)
 
 ### 🚀 High-Performance Social Feed (Java-Powered)
-Connect with your team beyond just tasks. Our Java-based social engine handles high-throughput feeds, reactions, and follower systems with extreme efficiency and low latency.
-![Social Feed Demo](./assets/social-feed.png)
+Connect with your team beyond just tasks. Our Java-based social engine handles high-throughput feeds, reactions, and follower systems with extreme efficiency.
+![Social Feed Demo](./assets/feed.png)
 
-### 📱 Responsive & Mobile Optimized
-Manage your projects on the go. SmartCollab is built with a mobile-first approach, ensuring a premium experience across all devices, from desktop to mobile.
-![Mobile View Demo](./assets/mobile-view.png)
+### 📰 AI-Powered News & Intelligence
+Stay ahead with automated industry news and project intelligence. Our system generates relevant content and updates using advanced AI models to keep your team informed.
+![AI News Demo](./assets/news.png)
 
 ### Technical Highlights
 - ✅ **Monorepo with pnpm Workspaces** - Efficient dependency management and shared libraries
@@ -60,7 +78,7 @@ Manage your projects on the go. SmartCollab is built with a mobile-first approac
 ## 🎬 Visual Demos
 
 ### Dashboard Overview
-![Dashboard Mockup](./assets/dashboard.png)
+![Dashboard Mockup](./assets/detailproject.png)
 
 ### Video Walkthrough
 > [!TIP]
