@@ -30,6 +30,7 @@ export const PhotoboothSystem: React.FC<PhotoboothSystemProps> = ({ onCapture, o
     const [resultBlob, setResultBlob] = useState<Blob | null>(null);
     const [resultUrl, setResultUrl] = useState<string>('');
     const [stickers, setStickers] = useState<Sticker[]>([]);
+    const [cameraReady, setCameraReady] = useState(false);
 
     // Cleanup Result URL
     useEffect(() => {
@@ -71,6 +72,7 @@ export const PhotoboothSystem: React.FC<PhotoboothSystemProps> = ({ onCapture, o
 
     const handleStart = () => {
         playSound('click');
+        setCameraReady(false);
         setStep('select-mode');
     };
 
@@ -164,6 +166,7 @@ export const PhotoboothSystem: React.FC<PhotoboothSystemProps> = ({ onCapture, o
         setResultUrl('');
         setStickers([]);
         setErrorMessage(null);
+        setCameraReady(false);
         setStep('idle');
     };
 
@@ -196,10 +199,11 @@ export const PhotoboothSystem: React.FC<PhotoboothSystemProps> = ({ onCapture, o
                         <CameraView
                             isCapturing={isCapturing}
                             onCapture={handleCapture}
+                            onReady={() => setCameraReady(true)}
                             filter={config.filter}
                         />
 
-                        {step === 'countdown' && (
+                        {step === 'countdown' && cameraReady && (
                             <CountdownTimer seconds={config.countdown} onFinish={handleFinishCountdown} />
                         )}
 

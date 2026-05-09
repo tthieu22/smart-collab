@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface CameraViewProps {
     onCapture: (blob: Blob, dataUrl: string) => void;
+    onReady?: () => void;
     isCapturing: boolean;
     filter?: string;
     mirrored?: boolean;
@@ -13,6 +14,7 @@ interface CameraViewProps {
 
 export const CameraView: React.FC<CameraViewProps> = ({
     onCapture,
+    onReady,
     isCapturing,
     filter = 'none',
     mirrored = true
@@ -48,13 +50,6 @@ export const CameraView: React.FC<CameraViewProps> = ({
 
                 if (videoRef.current) {
                     videoRef.current.srcObject = s;
-                    videoRef.current.onloadedmetadata = () => {
-                        videoRef.current?.play().catch(e => {
-                            console.error("Video play error:", e);
-                            setError('Không thể tự động phát video. Vui lòng kiểm tra quyền.');
-                        });
-                        setLoading(false);
-                    };
                 }
             } catch (err: any) {
                 console.error('Error accessing camera:', err);
@@ -82,6 +77,12 @@ export const CameraView: React.FC<CameraViewProps> = ({
             navigator.mediaDevices.removeEventListener('devicechange', handleDisconnect);
         };
     }, []);
+
+    useEffect(() => {
+        if (stream && videoRef.current) {
+            videoRef.current.play().catch(e => console.warn("Video play effect failed:", e));
+        }
+    }, [stream]);
 
     // Handle capture trigger from parent
     useEffect(() => {
@@ -117,12 +118,31 @@ export const CameraView: React.FC<CameraViewProps> = ({
     }, [isCapturing, onCapture, mirrored, filter]);
 
     return (
-        <div className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center">
+        <div 
+            className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center cursor-pointer"
+            onClick={() => {
+                if (videoRef.current?.paused) {
+                    videoRef.current.play().catch(console.error);
+                }
+            }}
+        >
             <motion.video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
+                onCanPlay={() => {
+                    videoRef.current?.play().then(() => {
+                        setLoading(false);
+                        onReady?.();
+                        setError(null);
+                    }).catch(e => {
+                        console.error("Autoplay failed:", e);
+                        // Don't call onReady if it fails to play
+                        setLoading(false);
+                        setError('Trình duyệt chặn tự động phát Video. Vui lòng nhấn vào màn hình để bắt đầu.');
+                    });
+                }}
                 animate={{
                     scale: isCapturing ? [1, 0.98, 1] : 1,
                     filter: filter
