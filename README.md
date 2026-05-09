@@ -80,42 +80,46 @@ Manage your projects on the go. SmartCollab is built with a mobile-first approac
 ```mermaid
 graph TD
     Client[Frontend - Next.js] <--> Gateway[API Gateway - NestJS]
-    Gateway <--> Realtime[Realtime/WS Logic]
-    Gateway --> Auth[Auth Service - NestJS]
-    Gateway --> Project[Project Service - NestJS]
     
-    Gateway -- Events --> RabbitMQ[RabbitMQ Event Bus]
+    subgraph "Backend Services"
+        Gateway <--> Realtime[Realtime Service]
+        Gateway --> Auth[Auth Service]
+        Gateway --> Project[Project Service]
+    end
+    
+    Gateway -- "Async Events" --> RabbitMQ((RabbitMQ))
     RabbitMQ --> Home[Home Service - Java]
     
-    Auth [(MongoDB)]
-    Project [(PostgreSQL)]
-    Home [(MongoDB)]
+    Auth --- AuthDB[(MongoDB)]
+    Project --- ProjectDB[(PostgreSQL)]
+    Home --- HomeDB[(MongoDB)]
+    Gateway --- Redis[(Redis)]
+
+    style Gateway fill:#6366f1,color:#fff,stroke:#4f46e5,stroke-width:2px
+    style Client fill:#10b981,color:#fff,stroke:#059669,stroke-width:2px
 ```
 
 ### Services Communication
-```
-Frontend → API Gateway → Microservices
-           ↓
-        RabbitMQ (async events)
-           ↓
-       All Services
-```
+- **Client Entry**: All frontend requests go through the **API Gateway (Port 8000)**.
+- **Service Mesh**: Internal communication between services happens via **RabbitMQ** (async) or direct RPC.
+- **Real-time**: Handled via Socket.io integrated into the Gateway/Realtime service.
 
 ### Database Schema
 - **PostgreSQL** - Project, boards, cards, columns (relational data)
 - **MongoDB** - Users, posts, comments, notifications (document data)
-- **Redis** - Caching, sessions, rate limiting
-- **RabbitMQ** - Async service-to-service communication
+- **Redis** - Caching, sessions, rate limiting, and Socket.io adapter
+- **RabbitMQ** - Async service-to-service communication event bus
 
 ## 📋 Services Overview
 
 | Service | Technology | Port | Database | Purpose |
 |---------|------------|------|----------|---------|
 | **Frontend** | Next.js | 3000 | - | Modern Web Interface |
-| **API Gateway** | NestJS | 8000 | Redis | Entry point, Auth Proxy, WebSockets |
-| **Auth Service** | NestJS | 3001 | MongoDB | User identity & security |
-| **Project Service** | NestJS | 3002 | PostgreSQL | Project/Board/Task management |
-| **Home Service** | Spring Boot | Worker | MongoDB | Social Feed & Notifications |
+| **API Gateway** | NestJS | **8000** | Redis | **Main Entry Point**, Auth Proxy, Aggregation |
+| **Realtime** | NestJS | 3003 | Redis | WebSockets, Live Updates, Collaboration |
+| **Auth Service** | NestJS | 3001 | MongoDB | Identity management & JWT (Internal) |
+| **Project Service** | NestJS | 3002 | PostgreSQL | Project & Task engine (Internal) |
+| **Home Service** | Spring Boot | Worker | MongoDB | Social Feed, Reactions & Java Workers |
 
 ## 💎 Prisma Architecture
 
