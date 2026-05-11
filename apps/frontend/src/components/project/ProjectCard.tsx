@@ -44,9 +44,10 @@ export default function ProjectCard({
     ON_TRACK: { color: 'text-blue-500', bg: 'bg-blue-500', label: 'On Track' },
     AT_RISK: { color: 'text-amber-500', bg: 'bg-amber-500', label: 'At Risk' },
     DELAYED: { color: 'text-red-500', bg: 'bg-red-500', label: 'Delayed' },
-  };
+  } as const;
 
-  const health = healthConfig[project.healthStatus || 'ON_TRACK'];
+  const healthKey = ((project as any).healthStatus as keyof typeof healthConfig) || 'ON_TRACK';
+  const health = healthConfig[healthKey] || healthConfig.ON_TRACK;
   const isOwner = project.ownerId === currentUser?.id;
   const myRole = isOwner ? 'Owner' : (project.members?.find(m => m.userId === currentUser?.id)?.role || 'Member');
 
@@ -126,9 +127,9 @@ export default function ProjectCard({
             <div className="flex items-center space-x-3">
               <div className="flex -space-x-2.5">
                 {(project.members || []).slice(0, 4).map((member, i) => {
-                  const avatar = member.userAvatar || member.user?.avatar;
+                  const avatar = (member as any).userAvatar || member.user?.avatar;
                   return (
-                    <Tooltip key={member.id || i} title={member.userName || member.user?.firstName || 'User'}>
+                    <Tooltip key={member.id || i} title={(member as any).userName || member.user?.firstName || 'User'}>
                       <div
                         className="h-8 w-8 rounded-full border-2 border-white bg-cover bg-center bg-gray-200 dark:border-neutral-900 dark:bg-neutral-800 ring-2 ring-transparent group-hover:ring-blue-500/20 transition-all shadow-sm"
                         style={avatar ? { backgroundImage: `url(${avatar})` } : {}}
@@ -136,14 +137,14 @@ export default function ProjectCard({
                     </Tooltip>
                   );
                 })}
-                {(project.memberCount || 0) > 4 && (
+                {((project as any).memberCount || 0) > 4 && (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-50 text-[10px] font-black text-blue-600 dark:border-neutral-900 dark:bg-blue-900/30 dark:text-blue-400">
-                    +{(project.memberCount || 0) - 4}
+                    +{((project as any).memberCount || 0) - 4}
                   </div>
                 )}
               </div>
               <span className="text-[10px] font-black text-gray-400 dark:text-neutral-500 uppercase tracking-widest">
-                {project.memberCount || project.members?.length || 0} Members
+                {(project as any).memberCount || project.members?.length || 0} Members
               </span>
             </div>
             
