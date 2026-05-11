@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LayoutGrid, Image as ImageIcon, Layout, Columns, User, Calendar, MapPin } from 'lucide-react';
+import { LayoutGrid, Image as ImageIcon, Layout, Columns, User, Calendar, MapPin, Rows, Grid3X3, Monitor, Layers, PanelsTopLeft, AppWindow } from 'lucide-react';
 import { Input } from 'antd';
 import { PhotoboothMode } from './types';
+import { UI_CONFIG } from '@smart/lib/constants';
 
 interface ModeSelectorProps {
     onSelect: (mode: PhotoboothMode, userName: string) => void;
@@ -13,22 +14,85 @@ const MODES = [
         id: 'single' as PhotoboothMode,
         label: 'Chụp 1 ảnh',
         icon: ImageIcon,
-        description: 'Chụp một tấm duy nhất',
+        description: 'Chụp một tấm duy nhất sắc nét',
         color: 'from-blue-500 to-cyan-500'
     },
     {
+        id: 'grid-2-v' as PhotoboothMode,
+        label: '2 Ảnh Dọc',
+        icon: Columns,
+        description: 'Bố cục 2 ảnh đứng song song',
+        color: 'from-emerald-500 to-teal-500'
+    },
+    {
+        id: 'grid-2-h' as PhotoboothMode,
+        label: '2 Ảnh Ngang',
+        icon: Rows,
+        description: 'Bố cục 2 ảnh nằm ngang cổ điển',
+        color: 'from-rose-500 to-pink-500'
+    },
+    {
+        id: 'grid-3-v' as PhotoboothMode,
+        label: '3 Ảnh Dọc',
+        icon: Layout,
+        description: '3 tấm đứng phong cách nghệ thuật',
+        color: 'from-indigo-500 to-purple-500'
+    },
+    {
         id: 'grid-4' as PhotoboothMode,
-        label: '4 Ảnh (Grid)',
+        label: '4 Ảnh Grid',
         icon: LayoutGrid,
-        description: 'Bố cục 2x2 hiện đại',
+        description: 'Bố cục 2x2 hiện đại, cân đối',
         color: 'from-purple-500 to-pink-500'
     },
     {
-        id: 'strip-4' as PhotoboothMode,
-        label: '4 Ảnh (Dọc)',
+        id: 'grid-6' as PhotoboothMode,
+        label: '6 Ảnh Grid',
+        icon: PanelsTopLeft,
+        description: 'Bố cục 2x3 cho nhiều khoảnh khắc',
+        color: 'from-orange-500 to-red-500'
+    },
+    {
+        id: 'grid-9' as PhotoboothMode,
+        label: '9 Ảnh Grid',
+        icon: Grid3X3,
+        description: '9 ô vuông nhỏ cho bộ sưu tập cảm xúc',
+        color: 'from-cyan-500 to-blue-500'
+    },
+    {
+        id: 'strip-3' as PhotoboothMode,
+        label: '3 Ảnh Strip',
         icon: Columns,
-        description: 'Kiểu Hàn Quốc chuẩn, phong cách thời thượng',
+        description: 'Dải ảnh 3 tấm phong cách Retro',
+        color: 'from-yellow-500 to-amber-500'
+    },
+    {
+        id: 'strip-4' as PhotoboothMode,
+        label: '4 Ảnh Strip',
+        icon: Columns,
+        description: 'Dải ảnh 4 tấm chuẩn Hàn Quốc',
         color: 'from-amber-500 to-orange-500'
+    },
+    {
+        id: 'wide-1' as PhotoboothMode,
+        label: 'Cinema Wide',
+        icon: Monitor,
+        description: 'Góc rộng điện ảnh siêu chất',
+        color: 'from-slate-700 to-slate-900'
+    },
+    {
+        id: 'mixed-3' as PhotoboothMode,
+        label: 'Poster Mixed',
+        icon: AppWindow,
+        description: '1 chính lớn và 2 phụ nhỏ tinh tế',
+        color: 'from-fuchsia-500 to-purple-600'
+    },
+    {
+        id: 'mixed-4' as PhotoboothMode,
+        label: 'Magazine Style',
+        icon: Layers,
+        description: 'Phong cách tạp chí thời thượng',
+        color: 'from-sky-500 to-indigo-600'
     }
 ];
 
@@ -36,62 +100,81 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelect }) => {
     const [userName, setUserName] = useState('');
 
     return (
-        <div className="w-full h-full bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-8 overflow-y-auto">
+        <div className="w-full h-full bg-white dark:bg-[#020617] flex flex-col items-center justify-start p-4 sm:p-8 md:p-12 overflow-y-auto relative custom-scrollbar transition-colors duration-500">
+            {/* Background elements */}
+            <div className="absolute inset-0 opacity-[0.05] dark:opacity-10 pointer-events-none">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#3b82f6_0%,_transparent_50%)]" />
+            </div>
+
             <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="text-center mb-12"
+                className="text-center mb-6 sm:mb-12 z-10 pt-6 sm:pt-10"
             >
-                <h2 className="text-3xl font-black text-slate-800 dark:text-white mb-2 tracking-tight uppercase">Bắt đầu trải nghiệm ✨</h2>
-                <p className="text-slate-500 dark:text-white/40 font-medium">Chọn phong cách và để lại dấu ấn của bạn</p>
+                <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white mb-2 tracking-tighter uppercase italic">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                        {UI_CONFIG.PHOTOBOOTH.TITLE.split(' ')[0]}
+                    </span> {UI_CONFIG.PHOTOBOOTH.TITLE.split(' ')[1]}
+                </h2>
+                <p className="text-slate-500 dark:text-white/40 font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[9px] sm:text-[10px]">
+                    {UI_CONFIG.PHOTOBOOTH.SUBTITLE}
+                </p>
             </motion.div>
 
             {/* User Branding Card */}
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-full max-w-sm bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl p-6 mb-12 backdrop-blur-xl shadow-xl dark:shadow-none"
+                className="w-full max-w-md bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl sm:rounded-[32px] p-5 sm:p-8 mb-6 sm:mb-10 backdrop-blur-2xl shadow-xl dark:shadow-2xl relative overflow-hidden group shrink-0"
             >
-                <div className="flex items-center gap-3 mb-4 text-blue-600 dark:text-blue-400">
-                    <User size={18} />
-                    <span className="text-xs font-bold uppercase tracking-widest">Thông tin cá nhân</span>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-600 opacity-50" />
+                
+                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center">
+                        <User size={14} className="text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">Tên hiển thị trên ảnh</span>
                 </div>
+                
                 <Input
-                    placeholder="Nhập tên của bạn (Tùy chọn)"
+                    placeholder="Nhập tên hiển thị trên ảnh..."
                     value={userName}
                     onChange={e => setUserName(e.target.value)}
-                    className="bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder:text-slate-300 dark:placeholder:text-white/20 h-12 rounded-xl focus:border-blue-500 hover:border-blue-500 transition-all"
+                    className="bg-white dark:bg-black/40 border-gray-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/20 h-12 sm:h-14 rounded-xl sm:rounded-2xl focus:border-blue-500 hover:border-blue-500 transition-all text-sm sm:text-base font-bold"
                 />
-                <div className="flex items-center justify-between mt-4 text-[10px] text-slate-400 dark:text-white/30 font-medium px-1">
-                    <div className="flex items-center gap-1"><Calendar size={10} /> {new Date().toLocaleDateString()}</div>
-                    <div className="flex items-center gap-1"><MapPin size={10} /> Smart Office</div>
+                
+                <div className="flex items-center justify-between mt-4 sm:mt-6 text-[9px] sm:text-[10px] text-slate-400 dark:text-white/30 font-black uppercase tracking-widest px-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2"><Calendar size={11} className="text-blue-500/40 dark:text-blue-500/50" /> {new Date().toLocaleDateString('vi-VN')}</div>
+                    <div className="flex items-center gap-1.5 sm:gap-2"><MapPin size={11} className="text-blue-500/40 dark:text-blue-500/50" /> {UI_CONFIG.PHOTOBOOTH.LOCATION}</div>
                 </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl w-full z-10 pb-8 sm:pb-0">
                 {MODES.map((mode, index) => (
                     <motion.button
                         key={mode.id}
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.1 + index * 0.1 }}
-                        whileHover={{ y: -10, scale: 1.02 }}
+                        whileHover={{ y: -8 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => onSelect(mode.id, userName)}
-                        className="relative group overflow-hidden bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl p-8 flex flex-col items-center text-center hover:shadow-2xl dark:hover:bg-white/10 transition-all duration-300"
+                        className="relative group bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl sm:rounded-[32px] p-5 sm:p-8 flex flex-col items-center text-center hover:border-blue-500/50 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-all duration-500 shadow-sm hover:shadow-xl dark:shadow-none"
                     >
-                        <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${mode.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-500 group-hover:rotate-3`}>
-                            <mode.icon className="w-10 h-10 text-white" />
+                        <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl bg-gradient-to-br ${mode.color} flex items-center justify-center mb-4 sm:mb-6 shadow-2xl relative group-hover:scale-110 transition-transform duration-500`}>
+                            <div className="absolute inset-0 bg-white/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <mode.icon className="w-7 h-7 sm:w-10 sm:h-10 text-white relative z-10" />
                         </div>
 
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">{mode.label}</h3>
-                        <p className="text-slate-500 dark:text-white/40 text-sm leading-relaxed">{mode.description}</p>
+                        <h3 className="text-base sm:text-xl font-black text-slate-900 dark:text-white mb-1 sm:mb-2 uppercase tracking-tight">{mode.label}</h3>
+                        <p className="text-slate-500 dark:text-white/40 text-[10px] sm:text-xs font-medium leading-relaxed px-2 sm:px-4">{mode.description}</p>
 
-                        <div className="mt-6 px-4 py-1.5 bg-slate-100 dark:bg-white/10 rounded-full text-[10px] text-slate-500 dark:text-white/60 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
-                            Chọn ngay
+                        <div className="mt-4 sm:mt-8 px-5 sm:px-6 py-1.5 sm:py-2 bg-blue-500 text-white rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest sm:opacity-0 group-hover:opacity-100 transition-all transform sm:translate-y-2 group-hover:translate-y-0 shadow-lg shadow-blue-500/30">
+                            Bắt đầu chụp
                         </div>
 
-                        <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 dark:from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {/* Animated border line */}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-1 bg-blue-500 group-hover:w-1/2 transition-all duration-500 rounded-full" />
                     </motion.button>
                 ))}
             </div>

@@ -4,6 +4,7 @@ import React from 'react';
 import { Modal, ConfigProvider, theme } from 'antd';
 import { Camera } from 'lucide-react';
 import { PhotoboothSystem } from './photobooth/PhotoboothSystem';
+import { UI_CONFIG } from '@smart/lib/constants';
 
 interface CameraModalProps {
   open: boolean;
@@ -19,26 +20,15 @@ export const CameraModal: React.FC<CameraModalProps> = ({ open, onClose, onCaptu
       open={open}
       onCancel={onClose}
       footer={null}
+      closable={false}
       destroyOnHidden
-      width={1100}
+      width="95vw"
       centered
-      title={
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center dark:bg-blue-500/20">
-            <Camera size={20} className="text-blue-500" />
-          </div>
-          <div>
-            <h3 className="font-extrabold text-lg text-gray-800 dark:text-gray-100 m-0 leading-none">Smart Photobooth</h3>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">High Quality AI Capture</p>
-          </div>
-        </div>
-      }
       styles={{
         body: {
           padding: 0,
-          height: '80vh',
-          maxHeight: '800px',
-          overflow: 'hidden',
+          height: '90vh',
+          overflow: 'auto',
           backgroundColor: '#000'
         },
         mask: {
@@ -46,8 +36,9 @@ export const CameraModal: React.FC<CameraModalProps> = ({ open, onClose, onCaptu
           backgroundColor: 'rgba(0,0,0,0.6)'
         },
         content: {
-          borderRadius: '24px',
+          borderRadius: '32px',
           overflow: 'hidden',
+          padding: 0,
           border: '1px solid rgba(255,255,255,0.1)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
         }

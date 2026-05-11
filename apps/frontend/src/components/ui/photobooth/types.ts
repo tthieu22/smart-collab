@@ -10,7 +10,7 @@ export type PhotoboothStep =
   | 'error'         // NEW: Error handling
   | 'timeout';      // NEW: Idle auto-reset
 
-export type PhotoboothMode = 'single' | 'grid-4' | 'strip-4' | 'grid-6';
+export type PhotoboothMode = 'single' | 'grid-2-v' | 'grid-2-h' | 'grid-3-v' | 'grid-4' | 'grid-6' | 'grid-9' | 'strip-3' | 'strip-4' | 'wide-1' | 'mixed-3' | 'mixed-4';
 
 export interface PhotoSlot {
   x: number;
