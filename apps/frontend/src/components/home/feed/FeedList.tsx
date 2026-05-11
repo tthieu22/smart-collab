@@ -8,14 +8,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SwitcherOutlined } from '@ant-design/icons';
 
 export default function FeedList() {
-  const { postIds, isLoading, hasMore, fetchNextPage, reloadFeed } = useFeedStore();
+  const { postIds, isLoading, hasMore, error, fetchNextPage, reloadFeed } = useFeedStore();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       const target = entries[0];
-      if (target.isIntersecting && hasMore && !isLoading && postIds.length > 0) {
-        fetchNextPage();
+      if (target.isIntersecting && hasMore && !isLoading && !error && postIds.length > 0 && !isFetchingRef.current) {
+        isFetchingRef.current = true;
+        fetchNextPage().finally(() => {
+          isFetchingRef.current = false;
+        });
       }
     }, {
       rootMargin: '400px',
@@ -27,7 +31,7 @@ export default function FeedList() {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, isLoading, fetchNextPage, postIds.length]);
+  }, [hasMore, isLoading, error, fetchNextPage, postIds.length]);
 
   return (
     <div className="space-y-6 pb-20 relative min-h-[500px]">
@@ -69,6 +73,23 @@ export default function FeedList() {
             /* Invisible sentinel to trigger next load */
             <div className="h-10 w-full" />
           )}
+        </div>
+      )}
+
+      {error && (
+        <div className="py-10 text-center space-y-4">
+          <div className="inline-block p-6 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-800">
+            <p className="text-red-600 dark:text-red-400 font-medium mb-4">{error}</p>
+            <button
+              onClick={() => {
+                useFeedStore.getState().setError(null);
+                fetchNextPage();
+              }}
+              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all"
+            >
+              Thử lại
+            </button>
+          </div>
         </div>
       )}
 

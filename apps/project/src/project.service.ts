@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BoardService } from './board/board.service';
 import { ProjectMessage } from './dto/project.dto';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { SearchService } from './search/search.service';
 
 @Injectable()
 export class ProjectService {
@@ -10,6 +11,7 @@ export class ProjectService {
     private readonly prisma: PrismaService,
     private readonly boardService: BoardService,
     private readonly amqpConnection: AmqpConnection,
+    private readonly searchService: SearchService,
   ) {}
 
   private readonly logger = new Logger(ProjectService.name);
@@ -120,6 +122,9 @@ export class ProjectService {
       include: { members: true },
     });
 
+    // 🔍 Index to Elasticsearch
+    await this.searchService.indexProject(fullProject);
+
     return { fullProject, defaultBoard };
   }
 
@@ -151,15 +156,23 @@ export class ProjectService {
       project: updated,
     });
 
+    // 🔍 Update index in Elasticsearch
+    await this.searchService.indexProject(updated);
+
     return updated;
   }
 
   async deleteProject(projectId: string, userId?: string) {
     await this.checkProjectAccess(projectId, userId, 'admin');
-    return this.prisma.project.update({ 
+    const project = await this.prisma.project.update({ 
       where: { id: projectId },
       data: { deletedAt: new Date() }
     });
+
+    // 🔍 Remove from Elasticsearch index
+    await this.searchService.removeProject(projectId);
+
+    return project;
   }
 
   async restoreProject(projectId: string, userId?: string) {

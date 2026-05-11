@@ -3,10 +3,12 @@ package com.smartcollab.home.service;
 import com.smartcollab.home.model.AutoPostEventLog;
 import com.smartcollab.home.model.AutoPostSettings;
 import com.smartcollab.home.model.NewsArticle;
+import com.smartcollab.home.model.NewsDocument;
 import com.smartcollab.home.model.User;
 import com.smartcollab.home.repository.AutoPostEventLogRepository;
 import com.smartcollab.home.repository.AutoPostSettingsRepository;
 import com.smartcollab.home.repository.NewsArticleRepository;
+import com.smartcollab.home.repository.NewsSearchRepository;
 import com.smartcollab.home.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +36,10 @@ public class AutoPostService {
     private final AutoPostSettingsRepository settingsRepository;
     private final AutoPostEventLogRepository eventLogRepository;
     private final NewsArticleRepository newsArticleRepository;
+    private final NewsSearchRepository newsSearchRepository;
     private final UserRepository userRepository;
     private final RabbitTemplate rabbitTemplate;
+
 
     @PostConstruct
     public void init() {
@@ -201,6 +205,22 @@ public class AutoPostService {
             article.setUpdatedAt(LocalDateTime.now());
 
             newsArticleRepository.save(article);
+
+            // 🔍 Index to Elasticsearch
+            try {
+                NewsDocument doc = NewsDocument.builder()
+                        .id(article.getId())
+                        .title(article.getTitle())
+                        .content(article.getContent())
+                        .authorId(article.getAuthorId())
+                        .createdAt(java.sql.Timestamp.valueOf(article.getCreatedAt()))
+                        .build();
+                newsSearchRepository.save(doc);
+                log.info("[AutoPost] Indexed news to Elasticsearch: {}", article.getId());
+            } catch (Exception e) {
+                log.error("[AutoPost] Failed to index news to Elasticsearch: {}", e.getMessage());
+            }
+
             saved++;
         }
 

@@ -4,7 +4,9 @@ export interface SearchResults {
   projects: any[];
   news: any[];
   posts: any[];
+  users: any[];
 }
+
 
 class SearchService {
   async search(query: string): Promise<SearchResults> {
@@ -15,7 +17,7 @@ class SearchService {
       return res;
     } catch (err: any) {
       console.error("Search failed:", err);
-      return { projects: [], news: [], posts: [] };
+      return { projects: [], news: [], posts: [], users: [] };
     }
   }
 }

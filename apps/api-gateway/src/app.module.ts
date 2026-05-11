@@ -15,6 +15,7 @@ import { UserModule } from './user/user.module';
 import { SearchModule } from './search/search.module';
 import { HealthModule } from './health/health.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     SearchModule,
     HealthModule,
     RealtimeModule,
+    AiModule,
   ],
 })
 export class AppModule {}

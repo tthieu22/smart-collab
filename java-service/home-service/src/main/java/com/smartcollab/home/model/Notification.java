@@ -10,11 +10,21 @@ import java.time.LocalDateTime;
 public class Notification {
     @Id
     private String id;
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String recipientId;
+    
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String senderId;
+    
     private String type;
+    
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String postId;
+    
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String commentId;
+    
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String projectId;
     private String projectName;
     private boolean isRead;

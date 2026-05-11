@@ -3,8 +3,10 @@ package com.smartcollab.home.controller;
 import com.smartcollab.home.model.Comment;
 import com.smartcollab.home.model.Post;
 import com.smartcollab.home.model.Reaction;
+import com.smartcollab.home.model.PostDocument;
 import com.smartcollab.home.repository.CommentRepository;
 import com.smartcollab.home.repository.PostRepository;
+import com.smartcollab.home.repository.PostSearchRepository;
 import com.smartcollab.home.repository.ReactionRepository;
 import com.smartcollab.home.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ public class SocialController {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final ReactionRepository reactionRepository;
+    private final PostSearchRepository postSearchRepository;
     private final NotificationService notificationService;
     private final com.smartcollab.home.repository.UserRepository userRepository;
 
@@ -34,7 +37,24 @@ public class SocialController {
         post.setAuthorId(userId);
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
-        return postRepository.save(post);
+        Post saved = postRepository.save(post);
+
+        // 🔍 Index to Elasticsearch
+        try {
+            PostDocument doc = PostDocument.builder()
+                    .id(saved.getId())
+                    .title(saved.getTitle())
+                    .content(saved.getContent())
+                    .authorId(saved.getAuthorId())
+                    .createdAt(saved.getCreatedAt())
+                    .build();
+            postSearchRepository.save(doc);
+        } catch (Exception e) {
+            // Log error but don't fail the request
+            System.err.println("Error indexing post to ES: " + e.getMessage());
+        }
+
+        return saved;
     }
 
     @PostMapping("/post/{id}/like")

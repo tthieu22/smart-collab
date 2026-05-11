@@ -571,7 +571,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   },
 
   reloadFeed: async () => {
-    set({ isLoading: true, postIds: [], readPostIds: [], page: 0, hasMore: true });
+    set({ isLoading: true, postIds: [], readPostIds: [], page: 0, hasMore: true, error: null });
     try {
       const data = await autoRequest<FeedDataset>('/home/feed', { method: 'GET' });
       get().bootstrap(data);

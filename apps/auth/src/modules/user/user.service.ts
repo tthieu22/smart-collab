@@ -9,6 +9,7 @@ import dayjs from 'dayjs';
 import { syncCreateUser, syncDeleteUser, syncUpdateUser } from '../../message-handlers/common/sync.helper';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { SearchService } from '../search/search.service';
 
 @Injectable()
 export class UserService {
@@ -17,6 +18,7 @@ export class UserService {
     private readonly mailerService: MailerService,
     @Inject('HOME_SERVICE') private readonly homeClient: ClientProxy,
     @Inject('PROJECT_SERVICE') private readonly projectClient: ClientProxy,
+    private readonly searchService: SearchService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -56,6 +58,9 @@ export class UserService {
       subject: 'Verify your email',
       text: `Your verification code is: ${emailVerificationCode}`,
     });
+
+    // 🔍 Index to Elasticsearch
+    await this.searchService.indexUser(createdUser);
 
     const { password, ...userWithoutPassword } = createdUser;
     return userWithoutPassword;
@@ -214,6 +219,9 @@ export class UserService {
 
     await this.createLog(id, 'UPDATE_PROFILE', 'Updated profile information');
 
+    // 🔍 Update index in Elasticsearch
+    await this.searchService.indexUser(updatedUser);
+
     if (!updatedUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -223,6 +231,10 @@ export class UserService {
   async remove(id: string): Promise<void> {
     const result = await this.prisma.user.delete({ where: { id } });
     await syncDeleteUser(id);
+
+    // 🔍 Remove from Elasticsearch index
+    await this.searchService.removeUser(id);
+
     if (!result) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -246,9 +258,14 @@ export class UserService {
       }
     }
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: createGoogleUserDto,
     });
+
+    // 🔍 Index to Elasticsearch
+    await this.searchService.indexUser(user);
+
+    return user;
   }
 
   async changePassword(

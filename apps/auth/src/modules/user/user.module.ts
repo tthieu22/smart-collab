@@ -5,9 +5,13 @@ import { PrismaModule } from '../../../prisma/prisma.module';
 import { ClientsModule } from '@nestjs/microservices';
 import { rabbitmqConfig } from '../../config/rabbitmq.config';
 
+import { SearchModule } from '../search/search.module';
+
 @Module({
   imports: [
+    SearchModule,
     PrismaModule,
+
     ClientsModule.register([
       {
         name: 'HOME_SERVICE',

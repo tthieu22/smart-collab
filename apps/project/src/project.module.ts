@@ -27,10 +27,13 @@ import { AutomationConsumer } from './automation/automation.consumer';
 import { AutomationHandler } from './automation/automation.handle';
 import { MeetingService } from './meeting/meeting.service';
 import { MeetingHandler } from './meeting/meeting.handle';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
+    SearchModule,
     PrismaModule,
+
     BoardModule,
     ConfigModule.forRoot({ isGlobal: true }),
     SharedRabbitMQModule,

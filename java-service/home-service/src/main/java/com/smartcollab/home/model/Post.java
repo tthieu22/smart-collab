@@ -14,6 +14,7 @@ public class Post {
     private String id;
     
     @org.springframework.data.mongodb.core.index.Indexed
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String authorId;
     
     private String title;

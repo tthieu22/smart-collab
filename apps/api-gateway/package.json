@@ -7,10 +7,12 @@
     "build": "nest build"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.17.0",
     "@golevelup/nestjs-rabbitmq": "^6.0.2",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.6",
+    "@nestjs/elasticsearch": "^11.1.0",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/microservices": "^11.1.6",
     "@nestjs/passport": "^10.0.3",

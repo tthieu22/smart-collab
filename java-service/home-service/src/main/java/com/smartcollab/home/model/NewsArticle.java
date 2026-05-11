@@ -13,6 +13,7 @@ import java.util.Map;
 public class NewsArticle {
     @Id
     private String id;
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String authorId;
     /** NEWS = bản tin; TIP = mẹo / hướng dẫn (hiển thị sidebar). */
     private String category;

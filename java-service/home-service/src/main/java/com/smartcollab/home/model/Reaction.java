@@ -12,8 +12,10 @@ public class Reaction {
     private String id;
     
     @org.springframework.data.mongodb.core.index.Indexed
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String postId;
     
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
     private String authorId;
     private String type;
     private LocalDateTime createdAt;
