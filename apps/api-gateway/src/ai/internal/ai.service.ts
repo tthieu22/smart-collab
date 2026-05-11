@@ -61,7 +61,9 @@ export class InternalAiService {
     this.logger.log(`➡️ Bridge RPC -> ${cmd}`);
 
     if (cmd.startsWith('home.')) {
-      return this.homeService.send({ cmd }, payload) as any;
+      // Home handlers expect { userId, payload } or { payload }
+      const wrapped = payload?.payload ? payload : { payload };
+      return this.homeService.send({ cmd }, wrapped) as any;
     }
     if (cmd.startsWith('auth.')) {
       // Mapping for some auth bridge methods if needed

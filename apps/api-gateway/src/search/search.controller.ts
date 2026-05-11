@@ -22,7 +22,7 @@ export class SearchController {
     // 2. Search news/posts via Home
     const home = await this.homeService.send(
       { cmd: 'home.news.search' },
-      { q: query }
+      { payload: { q: query } }
     );
 
     return {
