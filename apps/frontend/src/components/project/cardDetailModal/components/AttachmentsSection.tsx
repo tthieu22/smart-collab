@@ -35,7 +35,7 @@ const AttachmentsSection: React.FC<Props> = ({
       >
         <PaperClipOutlined style={{ fontSize: 18, color: token.colorPrimary }} />
         <Text strong style={{ color: token.colorText }}>
-          Attachments
+          Tệp đính kèm
         </Text>
       </div>
 
@@ -108,7 +108,7 @@ const AttachmentsSection: React.FC<Props> = ({
           }}
         >
           <Button loading={loading} icon={<PlusOutlined />} style={{ borderRadius: token.borderRadiusLG }}>
-            Upload File
+            Tải lên tệp
           </Button>
         </Upload>
       </Space>

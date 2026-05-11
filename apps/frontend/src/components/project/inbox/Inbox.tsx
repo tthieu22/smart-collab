@@ -23,15 +23,7 @@ export default function Inbox({ board, className }: InboxProps) {
   const { currentUser } = useUserStore();
   const isGuest = !currentUser;
 
-  if (!board) {
-    return (
-      <div className="p-4 text-center text-red-600">
-        Không tìm thấy Inbox
-      </div>
-    );
-  }
-
-  const columnIds = boardColumns[board.id] || [];
+  const columnIds = boardColumns[board?.id || ''] || [];
 
   /** ✅ FIX sort: không mutate */
   const sortedColumns: ColumnType[] = useMemo(() => {
@@ -48,11 +40,19 @@ export default function Inbox({ board, className }: InboxProps) {
 
   /** ✅ Droppable riêng, KHÔNG scroll */
   const { setNodeRef } = useDroppable({
-    id: `inbox-${board.id}`,
-    data: { type: 'INBOX', boardId: board.id },
+    id: `inbox-${board?.id || 'fallback'}`,
+    data: { type: 'INBOX', boardId: board?.id || 'fallback' },
   });
 
   const isDark = theme === 'dark';
+
+  if (!board) {
+    return (
+      <div className="p-4 text-center text-red-600">
+        Không tìm thấy Inbox
+      </div>
+    );
+  }
 
   if (isGuest) {
     return (

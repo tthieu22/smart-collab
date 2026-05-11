@@ -129,10 +129,10 @@ export default function ProjectRecycleBin({ projectId }: { projectId: string }) 
             <DeleteOutlined className="text-base" />
           </div>
           <h1 className={`text-sm font-bold tracking-tight m-0 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Thùng rác
+            Hố Đen
           </h1>
           <div className={`h-4 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'} mx-1`} />
-          <Tooltip title="Các mục trong thùng rác sẽ tự động bị xóa vĩnh viễn sau 30 ngày">
+          <Tooltip title="Các mục trong hố đen sẽ bị nghiền nát vĩnh viễn sau 30 ngày">
             <InfoCircleOutlined className="text-neutral-400 cursor-help" />
           </Tooltip>
         </div>
@@ -242,7 +242,7 @@ export default function ProjectRecycleBin({ projectId }: { projectId: string }) 
             <Empty
               description={
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-sm font-bold text-neutral-400">Thùng rác đang trống sạch</span>
+                  <span className="text-sm font-bold text-neutral-400">Hố đen đang tĩnh lặng (Trống)</span>
                   <span className="text-[10px] opacity-40 uppercase tracking-widest font-black">Tốt lắm! Bạn đang quản lý công việc rất gọn gàng</span>
                 </div>
               }

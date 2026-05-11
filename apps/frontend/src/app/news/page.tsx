@@ -11,6 +11,11 @@ import { NewsCard } from '@smart/components/news/NewsCard';
 import { PremiumPagination } from '@smart/components/ui/PremiumPagination';
 import { PageHeader } from '@smart/components/ui/PageHeader';
 import { Card } from '@smart/components/ui/card';
+import { useUserStore } from '@smart/store/user';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { message } from 'antd';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 
 export default function NewsPage() {
   const {
@@ -22,6 +27,9 @@ export default function NewsPage() {
   } = useNewsStore();
 
   const [gridCols, setGridCols] = useState<1 | 2 | 3>(3);
+  const { currentUser, isAdmin: checkIsAdmin } = useUserStore();
+  const isAdmin = checkIsAdmin();
+  const [isAiPosting, setIsAiPosting] = useState(false);
 
   // Pagination states
   const [q] = useState('');
@@ -39,54 +47,89 @@ export default function NewsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleAiPostNow = async () => {
+    if (isAiPosting) return;
+    setIsAiPosting(true);
+    try {
+      const res = await newsService.runAutoPostNow();
+      if (res.success) {
+        message.success('AI đã tạo bài viết mới thành công!');
+        fetchPublished({ page: 0, limit });
+      } else {
+        message.error(res.message || 'Không thể tạo bài viết AI');
+      }
+    } catch (err: any) {
+      message.error('Lỗi khi gọi AI: ' + err.message);
+    } finally {
+      setIsAiPosting(false);
+    }
+  };
+
   if (isLoading && articles.length === 0) {
     return null;
   }
 
   const extra = (
-    <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
-      <button
-        onClick={() => setGridCols(1)}
-        className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-        title="1 Column"
-      >
-        <Square size={18} />
-      </button>
-      <button
-        onClick={() => setGridCols(2)}
-        className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-        title="2 Columns"
-      >
-        <Columns size={18} />
-      </button>
-      <button
-        onClick={() => setGridCols(3)}
-        className={`p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
-        title="3 Columns"
-      >
-        <LayoutGrid size={18} />
-      </button>
+    <div className="flex items-center gap-3">
+      {isAdmin && (
+        <button
+          onClick={handleAiPostNow}
+          disabled={isAiPosting}
+          className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none font-bold text-xs md:text-sm whitespace-nowrap"
+        >
+          {isAiPosting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+          <span className="hidden xs:inline">AI Post News</span>
+          <span className="xs:hidden">AI Post</span>
+        </button>
+      )}
+      <div className="flex items-center bg-gray-100 dark:bg-neutral-900 p-1 rounded-xl ring-1 ring-black/5">
+        <button
+          onClick={() => setGridCols(1)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 1 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="1 Column"
+        >
+          <Square size={18} />
+        </button>
+        <button
+          onClick={() => setGridCols(2)}
+          className={`p-2 rounded-lg transition-all ${gridCols === 2 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="2 Columns"
+        >
+          <Columns size={18} />
+        </button>
+        <button
+          onClick={() => setGridCols(3)}
+          className={`hidden lg:flex p-2 rounded-lg transition-all ${gridCols === 3 ? 'bg-white dark:bg-neutral-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600'}`}
+          title="3 Columns"
+        >
+          <LayoutGrid size={18} />
+        </button>
+      </div>
     </div>
   );
 
   return (
-    <SiteLayout>
-      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10 transition-all duration-500">
+    <SiteLayout fullWidth={false}>
+      <div className={cn(
+        UI_CONFIG.CONTAINER,
+        UI_CONFIG.MAX_WIDTH.STANDARD,
+        UI_CONFIG.PAGE_SPACING
+      )}>
         <PageHeader
           icon={<Newspaper className="w-5 h-5" />}
-          title="Tin tức mới nhất"
-          description="Quản lý và theo dõi các tin tức, bài viết mới nhất từ hệ thống."
+          title="Tin tức công nghệ"
+          description="Cập nhật những tin tức và thông tin mới nhất."
           extra={extra}
         />
 
         {error && <Card className="bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20 py-3 px-4 text-sm text-red-600 dark:text-red-400">{error}</Card>}
 
-        <div className={`min-h-[500px] ${gridCols === 1
-          ? 'space-y-4'
-          : gridCols === 2
-            ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
-            : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-          }`}>
+        <div className={cn(
+          "min-h-[500px] grid gap-4 lg:gap-6",
+          gridCols === 1 && "grid-cols-1",
+          gridCols === 2 && "grid-cols-1 md:grid-cols-2",
+          gridCols === 3 && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+        )}>
           {isLoading ? (
             <div className={`flex flex-col items-center justify-center py-20 gap-4 opacity-50 ${gridCols !== 1 ? 'col-span-full' : ''}`}>
               <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />

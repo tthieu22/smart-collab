@@ -51,6 +51,7 @@ export const useNewsStore = create<NewsState>((set, get) => ({
 
     try {
       const res = await newsService.listPublished(params);
+      console.log('[NewsStore] Fetched news:', res);
       set({
         articles: res.data,
         total: res.total,
@@ -58,7 +59,8 @@ export const useNewsStore = create<NewsState>((set, get) => ({
         lastFetchedAt: !params.q ? now : get().lastFetchedAt, // Only update timestamp if it's general feed
         isLoading: false
       });
-    } catch {
+    } catch (err: any) {
+      console.error('[NewsStore] Fetch error:', err);
       set({ error: 'Không thể tải tin tức', isLoading: false });
     }
   },

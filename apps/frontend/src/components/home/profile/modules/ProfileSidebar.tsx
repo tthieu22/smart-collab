@@ -107,9 +107,9 @@ export default function ProfileSidebar({
                         <div className="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
                             <LayoutGrid size={14} className="text-indigo-500" />
                         </div>
-                        <span className="text-[10px] font-black tracking-[0.2em] text-gray-800 dark:text-gray-100 uppercase">Khoảnh khắc</span>
+                        <span className="text-[10px] font-black tracking-[0.2em] text-gray-800 dark:text-gray-100 uppercase">Hình ảnh</span>
                     </div>
-                    {userMedia.length > 0 && (
+                    {userMedia?.length > 0 && (
                         <button
                             onClick={() => setIsGalleryModalOpen(true)}
                             className="text-[9px] font-black text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-widest"
@@ -120,7 +120,7 @@ export default function ProfileSidebar({
                 </div>
 
                 <div className="p-3.5">
-                    {userMedia.length > 0 ? (
+                    {userMedia?.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2">
                             <Image.PreviewGroup>
                                 {userMedia.slice(0, 9).map((m, i) => (
@@ -137,7 +137,7 @@ export default function ProfileSidebar({
                         </div>
                     ) : (
                         <div className="py-8 text-center bg-gray-50/30 dark:bg-neutral-950/10 rounded-xl border border-dashed border-gray-100 dark:border-neutral-800/50">
-                            <p className="text-[10px] text-gray-400 italic">Chưa có khoảnh khắc...</p>
+                            <p className="text-[10px] text-gray-400 italic">Chưa có hình ảnh nào...</p>
                         </div>
                     )}
                 </div>

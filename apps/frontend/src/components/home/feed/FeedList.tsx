@@ -8,18 +8,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SwitcherOutlined } from '@ant-design/icons';
 
 export default function FeedList() {
-  const { postIds, isLoading, hasMore, error, fetchNextPage, reloadFeed } = useFeedStore();
+  const { postIds, isLoading, hasMore, fetchNextPage, reloadFeed } = useFeedStore();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const isFetchingRef = useRef(false);
+
+  const stateRef = useRef({ hasMore, isLoading, postIdsLength: postIds.length });
+  useEffect(() => {
+    stateRef.current = { hasMore, isLoading, postIdsLength: postIds.length };
+  }, [hasMore, isLoading, postIds.length]);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       const target = entries[0];
-      if (target.isIntersecting && hasMore && !isLoading && !error && postIds.length > 0 && !isFetchingRef.current) {
-        isFetchingRef.current = true;
-        fetchNextPage().finally(() => {
-          isFetchingRef.current = false;
-        });
+      const state = stateRef.current;
+      if (target.isIntersecting && state.hasMore && !state.isLoading && state.postIdsLength > 0) {
+        fetchNextPage();
       }
     }, {
       rootMargin: '400px',
@@ -31,7 +33,7 @@ export default function FeedList() {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, isLoading, error, fetchNextPage, postIds.length]);
+  }, [fetchNextPage]);
 
   return (
     <div className="space-y-6 pb-20 relative min-h-[500px]">
@@ -43,7 +45,7 @@ export default function FeedList() {
             <Spin size="large" />
           </div>
           <div className="text-center space-y-1">
-            <p className="text-neutral-700 dark:text-neutral-200 font-semibold tracking-tight">Đang làm mới bảng tin</p>
+            <p className="text-neutral-700 dark:text-neutral-200 font-semibold tracking-tight">Đang tải bài viết mới...</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-500 animate-pulse">Vui lòng chờ trong giây lát...</p>
           </div>
         </div>
@@ -76,23 +78,6 @@ export default function FeedList() {
         </div>
       )}
 
-      {error && (
-        <div className="py-10 text-center space-y-4">
-          <div className="inline-block p-6 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-800">
-            <p className="text-red-600 dark:text-red-400 font-medium mb-4">{error}</p>
-            <button
-              onClick={() => {
-                useFeedStore.getState().setError(null);
-                fetchNextPage();
-              }}
-              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all"
-            >
-              Thử lại
-            </button>
-          </div>
-        </div>
-      )}
-
       {!hasMore && postIds.length > 0 && (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -101,9 +86,9 @@ export default function FeedList() {
         >
           <div className="inline-block px-10 py-8 bg-white dark:bg-neutral-900 rounded-[32px] shadow-xl border border-neutral-100 dark:border-neutral-800 max-w-sm mx-auto">
             <div className="text-4xl mb-4 animate-bounce">✨</div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Bạn đã bắt kịp mọi thứ!</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Bạn đã xem hết bài viết!</h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
-              Bạn đã xem hết các bài viết mới nhất. Hãy quay lại sau hoặc làm mới để xem lại.
+              Tất cả bài viết mới nhất đã được hiển thị. Hãy quay lại sau để cập nhật thêm.
             </p>
             <button
               onClick={() => {
@@ -116,7 +101,7 @@ export default function FeedList() {
               className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
             >
               <SwitcherOutlined />
-              Làm mới bảng tin
+              Tải lại bảng tin
             </button>
           </div>
         </motion.div>
@@ -124,8 +109,8 @@ export default function FeedList() {
 
       {!hasMore && postIds.length === 0 && !isLoading && (
         <div className="py-20 text-center text-neutral-500 dark:text-neutral-400">
-          <p className="text-lg font-medium">Chưa có bài viết nào để hiển thị.</p>
-          <p className="text-sm opacity-60 mt-1">Hãy theo dõi thêm bạn bè để thấy bài viết của họ!</p>
+          <p className="text-lg font-medium">Hiện tại chưa có bài viết nào mới.</p>
+          <p className="text-sm opacity-60 mt-1">Hãy theo dõi thêm người dùng khác để xem bài viết của họ!</p>
         </div>
       )}
     </div>

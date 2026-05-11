@@ -17,7 +17,9 @@ import { Avatar, Button, Spin, Mentions, Popover, Tooltip, Upload, Image, Modal,
 import { message } from '@smart/providers/AntdStaticProvider';
 import { useUserStore } from '@smart/store/user';
 import { getProjectSocketManager } from '@smart/store/realtime';
+import { uploadService } from '@smart/services/upload.service';
 import { autoRequest } from '@smart/services/auto.request';
+import { projectStore } from '@smart/store/project';
 
 const { Option } = Mentions;
 
@@ -42,6 +44,7 @@ interface ProjectMember {
 }
 
 export default function ProjectChat({ projectId }: { projectId: string }) {
+  const { currentProject } = projectStore();
   const { currentUser } = useUserStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -177,28 +180,24 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
 
   const onFileUpload = async (options: any) => {
     const { file, onSuccess, onError } = options;
+    const folder = currentProject?.folderPath || projectId;
+
     setUploading(true);
-    const formData = new FormData();
-    formData.append('files', file);
-    formData.append('action', 'upload');
-    formData.append('projectFolder', projectId);
 
     try {
-      const res = await autoRequest<{ success: boolean; data: any[] }>('/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      console.log('[ProjectChat] Starting upload to folder:', folder);
+      const res = await uploadService.uploadFiles(folder, [file]);
 
       if (res.success) {
-        setAttachments(prev => [...prev, ...res.data]);
+        setAttachments((prev) => [...prev, ...res.data]);
         onSuccess(res.data);
+        message.success('Tải lên thành công');
       } else {
-        message.error('Upload failed: ' + (res as any).data);
-        onError(res.data);
+        throw new Error(res.data || 'Upload failed');
       }
-    } catch (err) {
-      console.error(err);
-      message.error('Upload error');
+    } catch (err: any) {
+      console.error('[ProjectChat] Upload error:', err);
+      message.error(err.message || 'Lỗi tải lên tệp');
       onError(err);
     } finally {
       setUploading(false);
@@ -286,17 +285,17 @@ export default function ProjectChat({ projectId }: { projectId: string }) {
             <MessageOutlined className="text-base" />
           </div>
           <h1 className={`text-sm font-bold tracking-tight m-0 dark:text-gray-100 text-gray-800`}>
-            Project Chat
+            Kênh Truyền Tin
           </h1>
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <div className={`h-4 w-[1px] dark:bg-white/20 bg-gray-300 mx-1`} />
-          <Tooltip title="Trò chuyện trực tiếp với các thành viên trong dự án">
+          <Tooltip title="Kênh truyền tin trực tiếp với phi hành đoàn">
             <InfoCircleOutlined className="text-neutral-400 cursor-help" />
           </Tooltip>
         </div>
 
         <div className="flex items-center gap-2">
-          <Tooltip title="Tạo cuộc họp mới">
+          <Tooltip title="Mở cổng truyền hình (Họp)">
             <Button
               type="text"
               size="small"

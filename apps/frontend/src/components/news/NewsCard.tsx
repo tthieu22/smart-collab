@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { ChevronRight, Calendar } from 'lucide-react';
 import type { NewsArticle } from '@smart/types/ai-autopost';
 
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
+
 interface NewsCardProps {
   article: NewsArticle;
   variant?: 'list' | 'grid';
@@ -13,7 +16,20 @@ interface NewsCardProps {
 
 export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) {
   const thumb = article.media?.find((m) => m.type?.toLowerCase() === 'image') ?? article.media?.[0];
-  const excerpt = article.content.replace(/\s+/g, ' ').trim();
+  const getSafeExcerpt = (text: string) => {
+    let cleanText = text;
+    try {
+      if (text.trim().startsWith('{')) {
+        const parsed = JSON.parse(text);
+        cleanText = parsed.content || parsed.title || text;
+      }
+    } catch {
+      cleanText = text;
+    }
+    return cleanText.replace(/\s+/g, ' ').trim();
+  };
+
+  const excerpt = getSafeExcerpt(article.content);
   const isGrid = variant === 'grid';
 
   const excerptShort = excerpt.length > (isGrid ? 100 : 180)
@@ -32,21 +48,27 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
   };
 
   const content = (
-    <div className={`group relative flex overflow-hidden rounded-[24px] border border-gray-100 bg-white/50 backdrop-blur-xl transition-all duration-500 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-950 ring-1 ring-black/5 dark:ring-white/5 ${isGrid ? 'flex-col h-full' : 'flex-row min-h-[220px]'
-      }`}>
+    <div className={cn(
+      "group relative flex overflow-hidden",
+      UI_CONFIG.CARD.RADIUS,
+      UI_CONFIG.CARD.BORDER,
+      UI_CONFIG.CARD.BG,
+      UI_CONFIG.CARD.SHADOW,
+      isGrid ? 'flex-col h-full' : 'flex-col md:flex-row md:min-h-[220px]'
+    )}>
       {/* Media Section */}
-      <div className={`relative overflow-hidden z-0 ${isGrid ? 'h-48 w-full' : 'w-1/3 h-full shrink-0'
+      <div className={`relative overflow-hidden z-0 ${isGrid ? 'h-48 w-full' : 'w-full md:w-[280px] h-48 md:h-auto md:min-h-[220px] shrink-0'
         }`}>
         {thumb?.url ? (
           <img
             src={thumb.url}
             alt={article.title}
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-neutral-900 overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-neutral-900 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 animate-pulse" />
-            <span className="relative text-[10px] font-black text-gray-400 uppercase tracking-widest">Smart Discovery</span>
+            <span className="relative text-[10px] font-black text-gray-400 uppercase tracking-widest">Không có ảnh</span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-40 group-hover:opacity-20 transition-opacity duration-700" />
@@ -56,13 +78,16 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
             ? 'bg-amber-500/20 text-amber-100 border-amber-500/20'
             : 'bg-indigo-500/20 text-indigo-100 border-indigo-500/20'
             }`}>
-            {article.category || 'Discovery'}
+            {article.category || 'Tin Tức'}
           </span>
         </div>
       </div>
 
       {/* Content Section */}
-      <div className={`flex flex-1 flex-col justify-between ${isGrid ? 'p-4' : 'p-5'}`}>
+      <div className={cn(
+        "flex flex-1 flex-col justify-between",
+        isGrid ? UI_CONFIG.CARD.PADDING : UI_CONFIG.CARD.LIST_PADDING
+      )}>
         <div className="min-w-0">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest bg-blue-500/5 px-2 py-0.5 rounded-lg">
@@ -75,7 +100,7 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
 
           <h3 className={`font-bold leading-tight text-gray-900 dark:text-gray-100 mb-2.5 transition-all duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 ${isGrid ? 'text-[16px] line-clamp-2' : 'text-lg line-clamp-2'
             }`}>
-            {article.title || 'Untitled Discovery'}
+            {article.title || 'Chưa có tiêu đề'}
           </h3>
           <p className={`text-gray-800 dark:text-gray-200 font-medium leading-relaxed mb-4 ${isGrid ? 'text-[13px] line-clamp-2' : 'text-[15px] line-clamp-3'
             }`}>
@@ -86,7 +111,7 @@ export function NewsCard({ article, variant = 'list', actions }: NewsCardProps) 
         <div className="flex items-center justify-between mt-auto">
           <div className="flex items-center gap-1.5 group/btn">
             <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] transition-all group-hover/btn:mr-1">
-              Explore Story
+              Xem chi tiết
             </span>
             <div className="h-7 w-7 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 transition-all group-hover/btn:bg-blue-600 group-hover/btn:text-white">
               <ChevronRight size={14} strokeWidth={3} />

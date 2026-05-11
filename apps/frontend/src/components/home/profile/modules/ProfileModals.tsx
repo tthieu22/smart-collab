@@ -81,8 +81,8 @@ export default function ProfileModals({
                 <Form
                     layout="vertical"
                     initialValues={{
-                        firstName: (profileUser.name || '').split(' ').slice(0, -1).join(' '),
-                        lastName: (profileUser.name || '').split(' ').slice(-1).join(' '),
+                        firstName: profileUser.firstName,
+                        lastName: profileUser.lastName,
                         bio: profileUser.bio,
                         location: profileUser.location,
                         website: profileUser.website,
@@ -139,7 +139,7 @@ export default function ProfileModals({
                 className="profile-gallery-standard"
             >
                 <div className="max-h-[70vh] overflow-y-auto mt-6 pr-2 custom-scrollbar">
-                    {userMedia.length > 0 ? (
+                    {userMedia?.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                             <Image.PreviewGroup>
                                 {userMedia.map((m, i) => (

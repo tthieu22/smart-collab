@@ -7,21 +7,18 @@ import {
   LayoutDashboard,
   Layers,
   Newspaper,
-  Settings,
-  Sparkles
 } from "lucide-react";
 import { cn } from "@smart/lib/utils";
 import { useFeedStore } from "@smart/store/feed";
 
-export function Navbar() {
+export function Navbar({ vertical = false }: { vertical?: boolean }) {
   const pathname = usePathname();
   const reloadFeed = useFeedStore((s) => s.reloadFeed);
 
   const items = [
-    { key: "/", icon: <LayoutDashboard size={18} />, label: "Feed" },
+    { key: "/", icon: <LayoutDashboard size={18} />, label: "Bảng tin" },
     { key: "/projects", icon: <Layers size={18} />, label: "Dự án" },
     { key: "/news", icon: <Newspaper size={18} />, label: "Tin tức" },
-    { key: "/admin/ai-auto-post", icon: <Settings size={18} />, label: "Cấu hình AI" },
   ];
 
   const handleItemClick = (e: React.MouseEvent, key: string) => {
@@ -32,7 +29,10 @@ export function Navbar() {
   };
 
   return (
-    <nav className="flex items-center gap-1 bg-gray-100/50 dark:bg-white/5 p-1 rounded-xl border border-gray-200/50 dark:border-white/5">
+    <nav className={cn(
+      "flex gap-1 p-1 rounded-xl",
+      vertical ? "flex-col bg-transparent border-none" : "items-center bg-gray-100/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/5"
+    )}>
       {items.map((item) => {
         const isActive = pathname === item.key || (item.key !== "/" && pathname.startsWith(item.key));
 
@@ -42,19 +42,20 @@ export function Navbar() {
             key={item.key}
             onClick={(e) => handleItemClick(e, item.key)}
             className={cn(
-              "relative px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-300 flex items-center gap-2 group",
+              "relative px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300 flex items-center gap-3 group",
+              vertical ? "w-full" : "",
               isActive
                 ? "bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm shadow-black/5"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5"
             )}
           >
             <span className={cn(
-              "transition-transform duration-300 group-hover:scale-110",
+              "transition-transform duration-300 group-hover:scale-110 shrink-0",
               isActive && "text-blue-600 dark:text-blue-400"
             )}>
               {item.icon}
             </span>
-            <span className="hidden xl:block">{item.label}</span>
+            <span className={cn(vertical ? "block" : "hidden xl:block")}>{item.label}</span>
 
             {isActive && (
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full border-2 border-white dark:border-neutral-800 animate-pulse" />

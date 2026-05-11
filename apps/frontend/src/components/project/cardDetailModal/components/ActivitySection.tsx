@@ -32,7 +32,7 @@ const ActivitySection: React.FC<Props> = ({ comments, newComment, setNewComment,
       >
         <MessageOutlined style={{ fontSize: 18, color: token.colorSuccess }} />
         <Text strong style={{ color: token.colorText }}>
-          Activity
+          Hoạt động
         </Text>
       </div>
 

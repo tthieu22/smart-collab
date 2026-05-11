@@ -1,63 +1,63 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Input, List, Card, Empty, Spin, Tag, Typography, Avatar } from "antd";
-import { SearchOutlined, CloseCircleFilled, ProjectOutlined, GlobalOutlined, FileTextOutlined, UserOutlined } from "@ant-design/icons";
+import { Input, List, Card, Empty, Spin, Tag, Typography } from "antd";
+import { SearchOutlined, CloseCircleFilled, ProjectOutlined, GlobalOutlined, FileTextOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { searchService, SearchResults } from "@smart/services/search.service";
+import debounce from "lodash/debounce";
 
 const { Text } = Typography;
 
-export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
+interface SearchProps {
+  placeholder?: string;
+  onResultClick?: () => void;
+}
+
+export function Search({ placeholder = "Dò quét thiên hà (Ctrl + K)...", onResultClick }: SearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [results, setResults] = useState<SearchResults>({ projects: [], news: [], posts: [], users: [] });
+  const [results, setResults] = useState<SearchResults>({ projects: [], news: [], posts: [] });
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Debounce query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(query);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  const fetchSuggestions = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setResults({ projects: [], news: [], posts: [], users: [] });
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await searchService.search(q);
-      setResults(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchSuggestions = useCallback(
+    debounce(async (q: string) => {
+      if (!q.trim()) {
+        setResults({ projects: [], news: [], posts: [] });
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await searchService.search(q);
+        setResults(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }, 500),
+    []
+  );
 
   useEffect(() => {
-    fetchSuggestions(debouncedQuery);
-  }, [debouncedQuery, fetchSuggestions]);
+    fetchSuggestions(query);
+  }, [query, fetchSuggestions]);
 
   const handleSearch = (q?: string) => {
     const value = q ?? query;
     if (value.trim()) {
       router.push(`/search?q=${encodeURIComponent(value.trim())}`);
       setFocused(false);
+      onResultClick?.();
     }
   };
 
-  const handleSelect = (type: 'project' | 'news' | 'post' | 'user', id: string) => {
+  const handleSelect = (type: 'project' | 'news' | 'post', id: string) => {
     setFocused(false);
     if (type === 'project') router.push(`/projects/${id}`);
     else if (type === 'news') router.push(`/news/${id}`);
     else if (type === 'post') router.push(`/posts/${id}`);
-    else if (type === 'user') router.push(`/users/${id}`);
+    onResultClick?.();
   };
 
   useEffect(() => {
@@ -83,7 +83,9 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const hasResults = results.projects.length > 0 || results.news.length > 0 || results.posts.length > 0 || results.users?.length > 0;
+  const hasResults = (results?.projects?.length || 0) > 0 || 
+                     (results?.news?.length || 0) > 0 || 
+                     (results?.posts?.length || 0) > 0;
 
   return (
     <div ref={containerRef} className="relative w-full max-w-[700px]">
@@ -129,24 +131,10 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không tìm thấy kết quả" />
           )}
 
-          {results.users && results.users.length > 0 && (
+          {(results?.projects?.length || 0) > 0 && (
             <div className="search-group">
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
-                <UserOutlined style={{ marginRight: 8 }} /> THÀNH VIÊN
-              </div>
-              {results.users.map(u => (
-                <div key={u.id} className="suggestion-item" onClick={() => handleSelect('user', u.id)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Avatar size="small" src={u.avatar}>{u.firstName?.charAt(0)}</Avatar>
-                  <span>{u.firstName} {u.lastName} <Text type="secondary" style={{ fontSize: '12px' }}>({u.email})</Text></span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {results.projects.length > 0 && (
-            <div className="search-group" style={{ marginTop: 8 }}>
-              <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
-                <ProjectOutlined style={{ marginRight: 8 }} /> DỰ ÁN
+                <ProjectOutlined style={{ marginRight: 8 }} /> THIÊN HÀ
               </div>
               {results.projects.map(p => (
                 <div key={p.id} className="suggestion-item" onClick={() => handleSelect('project', p.id)}>
@@ -156,10 +144,10 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
             </div>
           )}
 
-          {results.news.length > 0 && (
+          {(results?.news?.length || 0) > 0 && (
             <div className="search-group" style={{ marginTop: 8 }}>
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
-                <GlobalOutlined style={{ marginRight: 8 }} /> TIN TỨC
+                <GlobalOutlined style={{ marginRight: 8 }} /> TIN TỨC VŨ TRỤ
               </div>
               {results.news.map(n => (
                 <div key={n.id} className="suggestion-item" onClick={() => handleSelect('news', n.id)}>
@@ -169,10 +157,10 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
             </div>
           )}
 
-          {results.posts.length > 0 && (
+          {(results?.posts?.length || 0) > 0 && (
             <div className="search-group" style={{ marginTop: 8 }}>
               <div style={{ padding: '4px 16px', background: '#fafafa', fontWeight: 600, fontSize: '12px', color: '#8c8c8c' }}>
-                <FileTextOutlined style={{ marginRight: 8 }} /> BÀI VIẾT
+                <FileTextOutlined style={{ marginRight: 8 }} /> NHẬT KÝ TRẠM
               </div>
               {results.posts.map(p => (
                 <div key={p.id} className="suggestion-item" onClick={() => handleSelect('post', p.id)}>
@@ -181,7 +169,6 @@ export function Search({ placeholder = "Tìm kiếm thông minh..." }) {
               ))}
             </div>
           )}
-
 
           <style jsx>{`
             .suggestion-item {

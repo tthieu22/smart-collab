@@ -667,7 +667,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
         isLoading: false,
       });
     } catch (err: any) {
-      set({ error: err.message, isLoading: false });
+      set({ error: err.message, isLoading: false, hasMore: false });
     }
   },
   updateUserMood: async (mood) => {

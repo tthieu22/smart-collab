@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Space, Input, Checkbox, Progress, Typography, theme, Button } from 'antd';
-import { CheckSquareOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons';
+import { CheckSquareOutlined, PlusOutlined, SyncOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ChecklistItem } from '@smart/types/project';
 
 const { Text } = Typography;
@@ -13,8 +13,10 @@ interface Props {
   setNewChecklistItem: (v: string) => void;
   addChecklistItem: () => void;
   toggleChecklist: (id: string) => void;
+  removeChecklistItem: (id: string) => void;
   progress: number;
   onAiBreakdown?: () => void;
+  loading?: boolean;
 }
 
 const ChecklistSection: React.FC<Props> = ({
@@ -23,8 +25,10 @@ const ChecklistSection: React.FC<Props> = ({
   setNewChecklistItem,
   addChecklistItem,
   toggleChecklist,
+  removeChecklistItem,
   progress,
   onAiBreakdown,
+  loading = false,
 }) => {
   const { token } = theme.useToken();
 
@@ -60,7 +64,7 @@ const ChecklistSection: React.FC<Props> = ({
       >
         <CheckSquareOutlined style={{ fontSize: 18, color: token.colorPrimary }} />
         <Text strong style={{ color: token.colorText }}>
-          Checklist ({progress}%)
+          Danh sách công việc ({progress}%)
         </Text>
         <Progress
           percent={progress}
@@ -72,11 +76,12 @@ const ChecklistSection: React.FC<Props> = ({
         <Button 
           size="small" 
           type="text" 
-          icon={<SyncOutlined />} 
+          loading={loading}
+          icon={!loading && <SyncOutlined />} 
           onClick={onAiBreakdown}
           style={{ color: '#2563eb', fontWeight: 600 }}
         >
-          AI Breakdown
+          {loading ? 'Đang tạo...' : 'AI Phân rã'}
         </Button>
       </div>
 
@@ -84,20 +89,38 @@ const ChecklistSection: React.FC<Props> = ({
         {checklist.map(item => (
           <div
             key={item.id}
+            className="group"
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              justifyContent: 'space-between'
+            }}
+          >
+            <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: 8,
               color: item.done ? token.colorTextDisabled : token.colorText,
               textDecoration: item.done ? 'line-through' : 'none',
-            }}
-          >
-            <Checkbox
-              checked={item.done}
-              onChange={() => toggleChecklist(item.id)}
-              style={{ color: token.colorPrimary }}
+              flex: 1
+            }}>
+              <Checkbox
+                checked={item.done}
+                onChange={() => toggleChecklist(item.id)}
+                style={{ color: token.colorPrimary }}
+              />
+              <span>{item.title}</span>
+            </div>
+            
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined style={{ fontSize: 14 }} />}
+              onClick={() => removeChecklistItem(item.id)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
             />
-            <span>{item.title}</span>
           </div>
         ))}
 

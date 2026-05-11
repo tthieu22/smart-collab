@@ -1,12 +1,23 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Space, Tag, Avatar, Button, Typography, Modal, Input, theme, List, Tooltip } from 'antd';
+import { Space, Tag, Avatar, Button, Typography, Modal, Input, theme, List, Tooltip, Divider } from 'antd';
 import { PlusOutlined, UserOutlined, CloseOutlined } from '@ant-design/icons';
 import { useBoardStore } from '@smart/store/setting';
 import { projectStore } from '@smart/store/project';
 
 const { Text } = Typography;
+
+const DEFAULT_LABEL_SUGGESTIONS = [
+  { name: 'Lỗi (Bug)', color: '#EF4444' },
+  { name: 'Tính năng', color: '#3B82F6' },
+  { name: 'Khẩn cấp', color: '#F59E0B' },
+  { name: 'Tài liệu', color: '#10B981' },
+  { name: 'Thiết kế', color: '#8B5CF6' },
+  { name: 'Tối ưu (Refactor)', color: '#6366F1' },
+  { name: 'Ưu tiên cao', color: '#DC2626' },
+  { name: 'Ưu tiên thấp', color: '#94A3B8' },
+];
 
 interface Label {
   id: string;
@@ -132,6 +143,17 @@ const LabelsAndMembers: React.FC<Props> = ({
     onAddLabel?.(newLabel);
     setIsLabelModalOpen(false);
   };
+
+  const handleApplySuggestion = (sug: { name: string; color: string }) => {
+    const newLabel: Label = {
+      id: `label_${Date.now()}`,
+      name: sug.name,
+      color: sug.color,
+    };
+    onAddLabel?.(newLabel);
+    setIsLabelModalOpen(false);
+  };
+
   const handleLabelModalCancel = () => setIsLabelModalOpen(false);
 
   // Xử lý modal member
@@ -144,7 +166,7 @@ const LabelsAndMembers: React.FC<Props> = ({
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="large">
       <div>
-        <Text strong style={{ color: token.colorText, display: 'block', marginBottom: 8 }}>Labels:</Text>
+        <Text strong style={{ color: token.colorText, display: 'block', marginBottom: 8 }}>Nhãn:</Text>
         <div className="flex flex-wrap gap-2 items-center">
           {labels.map(l => (
             <Tag
@@ -169,7 +191,7 @@ const LabelsAndMembers: React.FC<Props> = ({
       </div>
 
       <div>
-        <Text strong style={{ color: token.colorText, display: 'block', marginBottom: 8 }}>Members:</Text>
+        <Text strong style={{ color: token.colorText, display: 'block', marginBottom: 8 }}>Thành viên:</Text>
         <div className="flex flex-wrap gap-2 items-center">
           {cardMembers.map(m => (
             <Tooltip title={m.userName} key={m.userId}>
@@ -201,59 +223,82 @@ const LabelsAndMembers: React.FC<Props> = ({
 
       {/* Modal thêm Label */}
       <Modal
-        title="Tạo nhãn mới"
+        title="Thêm nhãn mới"
         open={isLabelModalOpen}
         onOk={handleLabelModalOk}
         onCancel={handleLabelModalCancel}
         okText="Tạo nhãn"
         cancelText="Hủy"
         centered
+        width={420}
       >
         <div className="py-4">
-          <Text type="secondary" className="mb-2 block">Tên nhãn</Text>
-          <Input
-            placeholder="Ví dụ: Quan trọng, Khẩn cấp..."
-            value={newLabelName}
-            onChange={e => setNewLabelName(e.target.value)}
-            style={{ marginBottom: 16 }}
-            autoFocus
-          />
+          <div className="mb-6">
+            <Text type="secondary" className="mb-3 block font-medium">Gợi ý nhãn nhanh:</Text>
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_LABEL_SUGGESTIONS.map(sug => (
+                <Tag
+                  key={sug.name}
+                  color={sug.color}
+                  className="cursor-pointer hover:scale-105 transition-transform px-3 py-1 rounded-md border-none font-medium"
+                  onClick={() => handleApplySuggestion(sug)}
+                >
+                  {sug.name}
+                </Tag>
+              ))}
+            </div>
+          </div>
 
-          <Text type="secondary" className="mb-2 block">Chọn màu sắc</Text>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            {colors.map(color => (
-              <div
-                key={color}
-                onClick={() => setSelectedColor(color)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 6,
-                  backgroundColor: color,
-                  cursor: 'pointer',
-                  border: selectedColor === color ? `2px solid ${token.colorPrimary}` : '2px solid transparent',
-                  boxShadow: selectedColor === color ? '0 0 0 2px rgba(0,0,0,0.05)' : 'none',
-                  transition: 'all 0.2s'
-                }}
-              />
-            ))}
+          <Divider style={{ margin: '20px 0' }}>Hoặc tạo tùy chỉnh</Divider>
 
-            <Tooltip title="Màu tùy chỉnh">
-              <input
-                type="color"
-                value={selectedColor}
-                onChange={e => setSelectedColor(e.target.value)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 6,
-                  border: `1px solid #ccc`,
-                  cursor: 'pointer',
-                  padding: 0,
-                  backgroundColor: 'transparent',
-                }}
-              />
-            </Tooltip>
+          <div className="mb-4">
+            <Text type="secondary" className="mb-2 block font-medium">Tên nhãn</Text>
+            <Input
+              placeholder="Ví dụ: Quan trọng, Khẩn cấp..."
+              value={newLabelName}
+              onChange={e => setNewLabelName(e.target.value)}
+              className="rounded-lg h-10"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <Text type="secondary" className="mb-2 block font-medium">Chọn màu sắc</Text>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              {colors.map(color => (
+                <div
+                  key={color}
+                  onClick={() => setSelectedColor(color)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    backgroundColor: color,
+                    cursor: 'pointer',
+                    border: selectedColor === color ? `2px solid ${token.colorPrimary}` : '1px solid rgba(0,0,0,0.05)',
+                    transform: selectedColor === color ? 'scale(1.1)' : 'scale(1)',
+                    transition: 'all 0.2s'
+                  }}
+                />
+              ))}
+
+              <Tooltip title="Màu tùy chỉnh">
+                <input
+                  type="color"
+                  value={selectedColor}
+                  onChange={e => setSelectedColor(e.target.value)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    border: `1px solid rgba(0,0,0,0.1)`,
+                    cursor: 'pointer',
+                    padding: 0,
+                    backgroundColor: 'transparent',
+                  }}
+                />
+              </Tooltip>
+            </div>
           </div>
         </div>
       </Modal>

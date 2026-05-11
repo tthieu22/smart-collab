@@ -6,6 +6,8 @@ import { useHomeFeedBootstrap } from '@smart/hooks/useHomeFeed';
 import { useFeedStore } from '@smart/store/feed';
 import { App } from 'antd';
 import { Sparkles } from 'lucide-react';
+import { UI_CONFIG } from '@smart/lib/constants';
+import { cn } from '@smart/lib/utils';
 
 // Modulized components
 import ProfileHeader from './modules/ProfileHeader';
@@ -64,6 +66,22 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
     }
   }, [targetUserId]);
 
+  useEffect(() => {
+    const handleUploadAvatar = (e: any) => {
+      const { file } = e.detail;
+      if (file) {
+        onUpdateProfile({ 
+          firstName: profileUser?.firstName, 
+          lastName: profileUser?.lastName, 
+          avatarFile: file 
+        });
+      }
+    };
+
+    window.addEventListener('upload-avatar', handleUploadAvatar);
+    return () => window.removeEventListener('upload-avatar', handleUploadAvatar);
+  }, [profileUser]);
+
   const handleFollow = async () => {
     if (!targetUserId) return;
     try {
@@ -98,7 +116,7 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
   const onUpdateProfile = async (values: any) => {
     setLoading(true);
     try {
-      let avatarUrl = profileUser?.avatar || '';
+      let avatarUrl = profileUser?.avatar || profileUser?.avatarUrl || '';
 
       // Check if there is a pending avatar file to upload
       if (values.avatarFile) {
@@ -119,19 +137,37 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
       }
 
       const data = {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        bio: values.bio,
-        location: values.location,
-        website: values.website,
-        birthday: values.birthday ? values.birthday.toISOString() : null,
+        firstName: values.firstName !== undefined ? values.firstName : profileUser?.firstName,
+        lastName: values.lastName !== undefined ? values.lastName : profileUser?.lastName,
+        bio: values.bio !== undefined ? values.bio : profileUser?.bio,
+        location: values.location !== undefined ? values.location : profileUser?.location,
+        website: values.website !== undefined ? values.website : profileUser?.website,
+        birthday: values.birthday ? values.birthday.toISOString() : (profileUser?.birthday || null),
         avatar: avatarUrl
       };
+      
       await updateProfile(data);
+      
+      // Update global user store if it's ME
+      if (isMe) {
+        const { useUserStore } = await import('@smart/store/user');
+        const currentUser = useUserStore.getState().currentUser;
+        if (currentUser) {
+          useUserStore.getState().setCurrentUser({
+            ...currentUser,
+            ...data,
+            name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || currentUser.email
+          } as any);
+        }
+      }
+
       message.success('Cập nhật trang cá nhân thành công');
       setIsEditModalOpen(false);
-      fetchUser(targetUserId);
+      
+      // Re-fetch user data to sync everything
+      await fetchUser(targetUserId);
     } catch (err) {
+      console.error('Update profile failed:', err);
       message.error('Cập nhật thất bại');
     } finally {
       setLoading(false);
@@ -149,7 +185,7 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
                 <Sparkles size={16} className="text-blue-400 animate-pulse" />
               </div>
             </div>
-            <p className="text-gray-400 font-medium tracking-widest uppercase text-[10px]">Đang tải vũ trụ cá nhân...</p>
+            <p className="text-gray-400 font-medium tracking-widest uppercase text-[10px]">Đang tải trang cá nhân...</p>
           </div>
         </div>
       </SiteLayout>
@@ -158,7 +194,11 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-5xl pb-20 px-4 md:px-0">
+      <div className={cn(
+        UI_CONFIG.CONTAINER,
+        UI_CONFIG.MAX_WIDTH.STANDARD,
+        UI_CONFIG.PAGE_SPACING
+      )}>
         <ProfileHeader
           profileUser={profileUser}
           targetUserId={targetUserId}

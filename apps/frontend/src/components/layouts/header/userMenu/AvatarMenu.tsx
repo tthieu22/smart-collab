@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useUserStore } from "@smart/store/user";
-import { useAuth } from "@smart/hooks/useAuth";
+import { useAuthStore } from "@smart/store/auth";
 import { useBoardStore } from "@smart/store/setting";
 import UserAvatar from "@smart/components/ui/UserAvatar";
 import { cn } from "@smart/lib/utils";
@@ -23,7 +23,7 @@ export function AvatarMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { currentUser, clearUserStore } = useUserStore();
-  const { logout } = useAuth();
+  const { logout: authLogout } = useAuthStore();
   const isUserAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
 
   const meId = currentUser?.id || "";
@@ -69,7 +69,9 @@ export function AvatarMenu() {
     } else if (key === "user-setting") {
       navigateLater("/user/settings");
     } else if (key === "logout") {
-      logout();
+      authLogout();
+      clearUserStore();
+      navigateLater("/auth/login");
     } else if (key === "ai-auto-post") {
       navigateLater("/admin/ai-auto-post");
     } else if (key === "theme-light") {
@@ -90,10 +92,10 @@ export function AvatarMenu() {
             <UserAvatar userId={meId} size="md" allowChangeMood={false} />
             <div className="overflow-hidden">
               <div className="font-black text-sm text-gray-900 dark:text-white truncate">
-                {currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : (currentUser?.email?.split("@")[0] || "Khách")}
+                {currentUser ? (`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email?.split("@")[0]) : "Phi Hành Gia Vô Danh"}
               </div>
               <div className="text-[11px] font-bold text-gray-500 truncate">
-                {currentUser?.email || "user@example.com"}
+                {currentUser?.email || "galaxy@smartcollab.space"}
               </div>
             </div>
           </div>
@@ -104,12 +106,12 @@ export function AvatarMenu() {
     {
       key: "profile",
       icon: <User size={16} />,
-      label: <span className="text-xs font-bold">Thông tin cá nhân</span>,
+      label: <span className="text-xs font-bold">Dữ Liệu Phi Hành Gia</span>,
     },
     {
       key: "user-setting",
       icon: <Settings size={16} />,
-      label: <span className="text-xs font-bold">Cài đặt người dùng</span>,
+      label: <span className="text-xs font-bold">Cấu Hình Trạm Điều Hành</span>,
     },
     {
       key: "theme",
@@ -149,17 +151,23 @@ export function AvatarMenu() {
       ]
     },
     ...(isUserAdmin ? [
+      { type: 'divider' },
+      {
+        key: "admin-section",
+        label: <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Khu Vực Quản Trị</span>,
+        disabled: true,
+      },
       {
         key: "ai-auto-post",
-        icon: <Bot size={16} />,
-        label: <span className="text-xs font-bold">AI Auto Post</span>,
+        icon: <Bot size={16} className="text-blue-500" />,
+        label: <span className="text-xs font-bold">Quản Trị Bản Tin (AI)</span>,
       }
     ] : []),
     { type: 'divider' },
     {
       key: "logout",
       icon: <LogOut size={16} />,
-      label: <span className="text-xs font-bold">Đăng xuất</span>,
+      label: <span className="text-xs font-bold">Rời Trạm / Đóng Khoang</span>,
       danger: true,
     },
   ];

@@ -10,7 +10,7 @@ import ProjectActionBar from '@smart/components/project/ProjectActionBar';
 import ProjectGuestCursor from '@smart/components/project/ProjectGuestCursor';
 import { Loading } from '@smart/components/ui/loading';
 import { autoRequest } from '@smart/services/auto.request';
-import { message, Modal, Popover } from 'antd';
+import { message, Modal, Popover, Button } from 'antd';
 
 import dynamic from 'next/dynamic';
 
@@ -20,6 +20,8 @@ const Board = dynamic(() => import('@smart/components/project/board/Board'), { s
 const DragDropContextProvider = dynamic(() => import('@smart/components/project/dnd/DragDropProvider'), { ssr: false });
 const ProjectChat = dynamic(() => import('@smart/components/project/chat/ProjectChat'), { ssr: false });
 const ProjectRecycleBin = dynamic(() => import('@smart/components/project/recycle/ProjectRecycleBin'), { ssr: false });
+import { motion } from 'framer-motion';
+import { Monitor, Rocket, Star } from 'lucide-react';
 import ProjectPresence from '@smart/components/project/ProjectPresence';
 
 import SiteLayout from '@smart/components/layouts/SiteLayout';
@@ -45,6 +47,8 @@ export default function ProjectDetailPage({ params }: Props) {
     setCurrentProject,
     boards,
   } = projectStore();
+
+  const theme = useBoardStore((s) => s.theme);
 
   const [loading, setLoading] = useState(true);
   const activeCorrelationIdRef = useRef<string | null>(null);
@@ -75,8 +79,7 @@ export default function ProjectDetailPage({ params }: Props) {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       let components = saved ? JSON.parse(saved) : ['inbox', 'board'];
       if (!useUserStore.getState().currentUser) {
-        components = components.filter((c: string) => c !== 'inbox' && c !== 'calendar');
-        if (components.length === 0) components = ['board'];
+        components = ['board']; // Force only board for guests
       }
       return components;
     }
@@ -181,12 +184,10 @@ export default function ProjectDetailPage({ params }: Props) {
     };
   }, [projectId]);
 
-  // Tự động ẩn inbox/calendar nếu đăng xuất
+  // Tự động ẩn các component riêng tư/không cần thiết nếu đăng xuất hoặc là khách
   useEffect(() => {
     if (!currentUser) {
-      setActiveComponents((prev) =>
-        prev.filter((c) => c !== 'inbox' && c !== 'calendar')
-      );
+      setActiveComponents(['board']);
     }
   }, [currentUser]);
 
@@ -254,17 +255,16 @@ export default function ProjectDetailPage({ params }: Props) {
     : `${basePanel} min-w-[350px] max-w-[400px]`;
   return (
     <SiteLayout hideLeftSidebar hideRightSidebar fullWidth hideFooter noScroll>
-      <div className="bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex flex-col">
+      {/* ===== MAIN PROJECT CONTENT ===== */}
+      <div className="flex bg-white dark:bg-neutral-950 overflow-hidden min-h-[calc(100vh-56px)] flex-col">
         <ProjectGuestCursor />
 
-        <div className="fixed top-[84px] right-8 z-50">
-          <ProjectPresence projectId={projectId} />
-        </div>
-
-        <ProjectActionBar
-          activeComponents={activeComponents}
-          onToggle={toggleComponent}
-        />
+        {currentUser && (
+          <ProjectActionBar
+            activeComponents={activeComponents}
+            onToggle={toggleComponent}
+          />
+        )}
 
         {/* ===== MAIN CONTENT ===== */}
         <div className="fixed inset-x-0 bottom-14 top-[74px]">

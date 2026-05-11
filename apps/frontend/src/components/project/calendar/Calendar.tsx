@@ -93,17 +93,6 @@ export default function Calendar({
     clientY: number;
   } | null>(null);
 
-  if (isGuest) {
-    return (
-      <div className={`relative flex-1 ${theme === 'dark' ? 'bg-[#141517]' : 'bg-white'} ${className ?? ''}`}>
-        <LoginOverlay 
-          title="Lịch trình dự án" 
-          description="Đăng nhập để xem và quản lý thời hạn, sự kiện và tiến độ công việc của bạn trên lịch trình trực quan."
-        />
-      </div>
-    );
-  }
-
   useEffect(() => {
     if (calendarColumn?.id) {
       registerScrollContainer?.(calendarColumn.id, scrollContainerRef.current);
@@ -513,10 +502,6 @@ export default function Calendar({
     );
   }, [boards, cards, columnsMap, dragPointer, draggingCalendarCardId]);
 
-  if (!calendarColumn) {
-    return <div className="p-4 text-center text-red-600">Không tìm thấy cột cho calendar</div>;
-  }
-
   const calendarPlugins = useMemo(() => [timeGridPlugin, dayGridPlugin, interactionPlugin, listPlugin], []);
   const calendarViews = useMemo(() => ({
     timeGridThreeDay: { type: 'timeGrid', duration: { days: 3 }, buttonText: '3 ngày' },
@@ -541,6 +526,21 @@ export default function Calendar({
       setCurrentDate(newDate);
     }
   }, [currentDate]);
+
+  if (isGuest) {
+    return (
+      <div className={`relative flex-1 ${theme === 'dark' ? 'bg-[#141517]' : 'bg-white'} ${className ?? ''}`}>
+        <LoginOverlay
+          title="Lịch Dự Án"
+          description="Đăng nhập để xem và quản lý thời hạn, sự kiện và tiến độ công việc của bạn trên lịch trình trực quan."
+        />
+      </div>
+    );
+  }
+
+  if (!calendarColumn) {
+    return <div className="p-4 text-center text-red-600">Không tìm thấy cột cho calendar</div>;
+  }
 
   return (
     <>

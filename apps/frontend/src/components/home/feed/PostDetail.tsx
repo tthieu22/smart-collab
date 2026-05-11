@@ -2,13 +2,17 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useFeedStore } from '@smart/store/feed';
-import UserAvatar from '@smart/components/ui/UserAvatar';
-import { Card } from '@smart/components/ui/card';
 import { Button } from '@smart/components/ui/button';
-import { Heart, MessageCircle, Send, Bookmark, ChevronLeft } from 'lucide-react';
+import {
+  MoreHorizontal,
+  ExternalLink,
+  X
+} from 'lucide-react';
 import CommentList from './CommentList';
 import CommentComposer from './CommentComposer';
-import Link from 'next/link';
+import { Dropdown, MenuProps, Avatar } from 'antd';
+import { cn } from '@smart/lib/utils';
+import { PostHeader, ReactionSummary, PostActions } from './PostShared';
 
 interface PostDetailProps {
   postId: string;
@@ -20,9 +24,6 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
   const author = useFeedStore((s) => post ? s.users[post.authorId] : null);
   const fetchPostDetails = useFeedStore((s) => s.fetchPostDetails);
   const fetchComments = useFeedStore((s) => s.fetchComments);
-  const toggleReaction = useFeedStore((s) => s.toggleReaction);
-  const sharePost = useFeedStore((s) => s.sharePost);
-  const toggleBookmark = useFeedStore((s) => s.toggleBookmark);
   const [mediaIndex, setMediaIndex] = useState(0);
 
   const media = useMemo(() => post?.media || [], [post?.media]);
@@ -39,132 +40,149 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
     setMediaIndex(0);
   }, [postId]);
 
-
-  useEffect(() => {
-    if (!media.length) {
-      setMediaIndex(0);
-      return;
-    }
-    if (mediaIndex > media.length - 1) {
-      setMediaIndex(media.length - 1);
-    }
-  }, [media, mediaIndex]);
-
   if (!post) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      <div className="flex h-96 items-center justify-center bg-white dark:bg-neutral-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg"></div>
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse">Đang tải dữ liệu...</span>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {onBack && (
-        <Button variant="ghost" className="mb-4" onClick={onBack}>
-          <ChevronLeft size={20} /> Quay lại
-        </Button>
-      )}
+  const dropdownItems: MenuProps['items'] = [
+    { key: 'copy', label: 'Sao chép liên kết' },
+    { key: 'report', label: 'Báo cáo bài viết', danger: true },
+  ];
 
-      <div className="grid grid-cols-1 overflow-hidden rounded-2xl bg-white border border-gray-100 dark:bg-neutral-950 dark:border-neutral-800 md:grid-cols-5 lg:grid-cols-6 shadow-xl">
-        {/* Media Block */}
-        <div className="col-span-1 border-b border-gray-100 dark:border-neutral-800 md:col-span-3 lg:col-span-4 md:border-b-0 md:border-r bg-black flex items-center justify-center min-h-[400px]">
-          {media.length > 0 && currentMedia ? (
-            <div className="relative w-full h-full flex items-center justify-center">
-              {currentMedia.type === 'image' ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={currentMedia.url}
-                  alt={currentMedia.alt || 'Post media'}
-                  className="max-h-full max-w-full object-contain"
-                />
-              ) : (
-                <video src={currentMedia.url} controls className="max-h-full max-w-full" />
-              )}
-              {media.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className="absolute left-3 rounded-full bg-black/50 text-white px-3 py-1"
-                    onClick={() => setMediaIndex((prev) => (prev - 1 + media.length) % media.length)}
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    className="absolute right-3 rounded-full bg-black/50 text-white px-3 py-1"
-                    onClick={() => setMediaIndex((prev) => (prev + 1) % media.length)}
-                  >
-                    ›
-                  </button>
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/50 text-white text-xs px-2 py-1">
-                    {mediaIndex + 1}/{media.length}
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="text-gray-500 italic">Không có phương tiện</div>
-          )}
+  return (
+    <div className="w-full animate-in fade-in zoom-in-95 duration-500 flex flex-col">
+      <div className="flex-1 bg-white dark:bg-neutral-950 relative flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-50 dark:border-neutral-900 p-3 md:p-6 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl sticky top-0 z-30 rounded-t-none md:rounded-t-[32px]">
+          <PostHeader post={post} author={author} />
+
+          <div className="flex items-center gap-2">
+            <Dropdown menu={{ items: dropdownItems }} trigger={['click']} placement="bottomRight">
+              <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-neutral-900 text-gray-400 transition-all">
+                <MoreHorizontal size={20} />
+              </button>
+            </Dropdown>
+            <button
+              onClick={() => {
+                if (onBack) {
+                  onBack();
+                } else {
+                  useFeedStore.getState().setActivePostId(null);
+                }
+              }}
+              className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-all"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        {/* Content & Comments Block */}
-        <div className="col-span-1 flex flex-col md:col-span-2 lg:col-span-2 min-h-[500px] md:h-auto">
-          {/* Header */}
-          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-neutral-800 p-4">
-            <UserAvatar userId={post.authorId} size="md" />
-            <div className="min-w-0">
-              <Link href={`/profile/${author?.id || post.authorId}`} className="block font-semibold hover:underline truncate">
-                {author?.name || 'User'}
-              </Link>
-              <div className="text-xs text-gray-500">
-                {new Date(post.createdAt).toLocaleString()}
-              </div>
-            </div>
-          </div>
+        {/* Content & Media Scroll Area */}
+        <div className="flex-1 flex flex-col">
+          <div className="p-4 md:p-8">
+            {/* Title & Text */}
+            {post.title && !post.backgroundStyle && (
+              <h2 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white leading-tight mb-4 px-1">
+                {post.title}
+              </h2>
+            )}
 
-          {/* Body/Comments Scroll Area */}
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            <div className="mb-6 whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">
+            <div className={cn(
+              "mb-6 whitespace-pre-wrap leading-relaxed",
+              post.backgroundStyle 
+                ? cn("-mx-4 md:-mx-8 p-10 md:p-16 flex flex-col items-center justify-center min-h-[300px] md:min-h-[400px] text-center font-black text-2xl md:text-4xl shadow-inner text-white", post.backgroundStyle) 
+                : "text-[16px] md:text-[17px] text-gray-800 dark:text-gray-200 px-1"
+            )}>
               {post.content}
             </div>
 
-            <div className="border-t border-gray-50 dark:border-neutral-900 pt-4">
-              <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">Bình luận</h3>
-              <CommentList postId={post.id} />
-            </div>
-          </div>
+            {/* Media Block - Integrated inside content */}
+            {media.length > 0 && !post.backgroundStyle && (
+              <div className="mb-8 -mx-1">
+                <div className={cn(
+                  "relative w-full overflow-hidden rounded-[24px] bg-gray-100 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-lg",
+                  media.length > 1 ? "aspect-video" : ""
+                )}>
+                  {currentMedia.type === 'image' ? (
+                    <img
+                      src={currentMedia.url}
+                      alt={currentMedia.alt || 'Post media'}
+                      className="w-full h-full object-contain bg-black/5"
+                    />
+                  ) : (
+                    <video src={currentMedia.url} controls className="w-full h-full object-contain bg-black" />
+                  )}
 
-          {/* Footer Actions */}
-          <div className="border-t border-gray-100 dark:border-neutral-800 p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => toggleReaction(post.id, 'like')}
-                  className={`transition-transform active:scale-125 ${post.myReaction ? 'text-red-500' : 'text-gray-600 dark:text-gray-400'}`}
-                >
-                  <Heart size={24} fill={post.myReaction ? 'currentColor' : 'none'} />
-                </button>
-                <button className="text-gray-600 dark:text-gray-400">
-                  <MessageCircle size={24} />
-                </button>
-                <button onClick={() => sharePost(post.id)} className="text-gray-600 dark:text-gray-400">
-                  <Send size={24} />
-                </button>
+                  {media.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-white hover:bg-black/60 transition-all backdrop-blur-md border border-white/10"
+                        onClick={() => setMediaIndex((prev) => (prev - 1 + media.length) % media.length)}
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-white hover:bg-black/60 transition-all backdrop-blur-md border border-white/10"
+                        onClick={() => setMediaIndex((prev) => (prev + 1) % media.length)}
+                      >
+                        ›
+                      </button>
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 backdrop-blur-md text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest border border-white/10">
+                        {mediaIndex + 1} / {media.length}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => toggleBookmark(post.id)}
-                className={post.bookmarkedByMe ? 'text-blue-500' : 'text-gray-600 dark:text-gray-400'}
-              >
-                <Bookmark size={24} fill={post.bookmarkedByMe ? 'currentColor' : 'none'} />
-              </button>
-            </div>
-            <div className="mb-4 text-xs font-semibold">
-              {Object.values(post.reactionSummary || {}).reduce((a, b) => a + b, 0)} lượt thích
+            )}
+
+            {post.linkUrl && !post.backgroundStyle && (
+              <div className="mb-8 px-1">
+                <a
+                  href={post.linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[13px] font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all border border-blue-100/50 dark:border-blue-900/30 shadow-sm"
+                >
+                  <ExternalLink size={16} />
+                  Xem bài viết gốc
+                </a>
+              </div>
+            )}
+
+            {/* Reaction Stats & Actions */}
+            <div className="border-t border-gray-50 dark:border-neutral-900 pt-6">
+              <div className="flex items-center justify-between mb-6 px-1">
+                <ReactionSummary post={post} />
+                <div className="text-[11px] text-gray-400 font-black uppercase tracking-widest opacity-80">
+                  {post.commentCount || 0} BÌNH LUẬN • {post.shareCount || 0} CHIA SẺ
+                </div>
+              </div>
+              <PostActions post={post} layout="full" />
             </div>
 
-            <CommentComposer postId={post.id} />
+            {/* Comments Area */}
+            <div className="border-t border-gray-50 dark:border-neutral-900 mt-8 pt-8">
+              <div className="text-[11px] font-black text-gray-400 mb-6 px-1 uppercase tracking-widest">Bình luận</div>
+              <div className="mt-4">
+                <CommentList postId={post.id} />
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Sticky Comment Composer */}
+        <div className="sticky bottom-0 z-30 bg-white/90 dark:bg-neutral-950/90 backdrop-blur-2xl border-t border-gray-100 dark:border-neutral-900 p-3 md:p-4 rounded-b-none md:rounded-b-[32px]">
+          <CommentComposer postId={post.id} />
         </div>
       </div>
     </div>
