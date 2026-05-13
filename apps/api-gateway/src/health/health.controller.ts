@@ -16,7 +16,7 @@ export class HealthController {
   async check() {
     try {
       // Kiểm tra DB nhanh
-      await (this.prisma as any).$queryRaw`SELECT 1`;
+      await this.prisma.$runCommandRaw({ ping: 1 });
       return {
         status: 'ok',
         info: {
