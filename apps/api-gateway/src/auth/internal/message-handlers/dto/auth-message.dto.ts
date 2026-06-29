@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsNotEmpty, IsBoolean } from 'class-validator';
 
 export class LoginMessageDto {
   @IsEmail()
@@ -8,6 +8,10 @@ export class LoginMessageDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  bypassVerification?: boolean;
 }
 
 export class RegisterMessageDto {
@@ -26,6 +30,10 @@ export class RegisterMessageDto {
   @IsString()
   @IsOptional()
   lastName?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  bypassVerification?: boolean;
 }
 
 export class RefreshMessageDto {

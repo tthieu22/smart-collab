@@ -7,6 +7,7 @@ export interface AuthResponse {
 export interface LoginRequest {
   email: string;
   password: string;
+  bypassVerification?: boolean;
 }
 
 export interface RegisterRequest {
@@ -14,6 +15,7 @@ export interface RegisterRequest {
   password: string;
   firstName?: string;
   lastName?: string;
+  bypassVerification?: boolean;
 }
 
 export interface RefreshRequest {

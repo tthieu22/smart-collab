@@ -72,11 +72,15 @@ export class AuthMessageHandler {
       }
 
       if (!user.isVerified) {
-        return {
-          success: false,
-          message: 'Email chưa được xác thực',
-          data: { needsVerified: true },
-        };
+        if (loginDto.bypassVerification) {
+          await this.userService.forceVerifyEmail(user.email);
+        } else {
+          return {
+            success: false,
+            message: 'Email chưa được xác thực',
+            data: { needsVerified: true },
+          };
+        }
       }
 
       if (!user.password) {
@@ -156,11 +160,12 @@ export class AuthMessageHandler {
         firstName: registerDto.firstName ?? null,
         lastName: registerDto.lastName ?? null,
         role: 'USER',
+        isVerified: registerDto.bypassVerification ? true : false,
       });
 
       return {
         success: true,
-        message: 'Đăng ký thành công, vui lòng xác thực email',
+        message: registerDto.bypassVerification ? 'Đăng ký thành công' : 'Đăng ký thành công, vui lòng xác thực email',
         data: {
           id: newUser.id,
           email: newUser.email,
