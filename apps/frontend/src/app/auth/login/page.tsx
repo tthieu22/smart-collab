@@ -77,7 +77,11 @@ export default function LoginPage() {
       setLocalLoading(true);
       setLoading(true);
 
-      const res = await authService.login({ email, password });
+      const res = await authService.login({
+        email,
+        password,
+        bypassVerification: APP_CONFIG.BYPASS_EMAIL_VERIFICATION,
+      });
       
       if (!res.success) {
         if (res.data?.needsVerified) {

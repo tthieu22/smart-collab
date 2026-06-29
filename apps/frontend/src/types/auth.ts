@@ -21,6 +21,7 @@ export interface User {
 export interface LoginCredentials {
   email: string;
   password: string;
+  bypassVerification?: boolean;
 }
 
 export interface LoginResponse {
@@ -104,6 +105,7 @@ export interface RegisterRequest {
   lastName: string;
   email: string;
   password: string;
+  bypassVerification?: boolean;
 }
 
 export interface RegisterResponse extends ApiResponse {

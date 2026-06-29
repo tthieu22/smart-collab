@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
 export const APP_CONFIG = {
   API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'AuthNexus',
+  BYPASS_EMAIL_VERIFICATION: true, // Bật tắt xác thực email khi đăng ký / đăng nhập
 } as const;
 
 export const UI_CONFIG = {

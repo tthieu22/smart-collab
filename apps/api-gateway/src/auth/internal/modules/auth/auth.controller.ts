@@ -75,11 +75,15 @@ export class AuthController {
       return { success: false, message: 'Thông tin tài khoản không chính xác' };
     }
     if (!user.isVerified) {
-      return {
-        success: false,
-        message: 'Email chưa được xác thực',
-        data: { needsVerified: true },
-      };
+      if (dto.bypassVerification) {
+        await this.users.forceVerifyEmail(user.email);
+      } else {
+        return {
+          success: false,
+          message: 'Email chưa được xác thực',
+          data: { needsVerified: true },
+        };
+      }
     }
 
     const sessionId = randomBytes(16).toString('hex');
@@ -129,7 +133,6 @@ export class AuthController {
     };
   }
 
-  /** 📝 Register */
   @Post('register')
   @HttpCode(201)
   async register(@Body() dto: RegisterDto): Promise<ApiResponse> {
@@ -143,11 +146,12 @@ export class AuthController {
         firstName: dto.firstName ?? null,
         lastName: dto.lastName ?? null,
         role: "USER",
+        isVerified: dto.bypassVerification ? true : false,
       });
 
       return {
         success: true,
-        message: 'Đăng ký thành công, vui lòng xác thực email',
+        message: dto.bypassVerification ? 'Đăng ký thành công' : 'Đăng ký thành công, vui lòng xác thực email',
         data: newUser,
       };
     } catch (error) {

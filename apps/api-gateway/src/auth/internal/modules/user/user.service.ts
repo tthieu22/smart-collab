@@ -36,7 +36,7 @@ export class UserService {
         avatar: createUserDto.avatar ?? null,
         password: hashedPassword,
         role: createUserDto.role ?? 'USER',
-        isVerified: false,
+        isVerified: createUserDto.isVerified ?? false,
         emailVerificationCode,
         emailVerificationCodeExpires,
         createdAt: new Date(),
@@ -44,14 +44,16 @@ export class UserService {
     });
 
     // Send verification email
-    try {
-      await this.mailerService.sendMail({
-        to: createdUser.email,
-        subject: 'Verify your email',
-        text: `Your verification code is: ${emailVerificationCode}`,
-      });
-    } catch (err) {
-      console.error('Failed to send verification email', err);
+    if (!createdUser.isVerified) {
+      try {
+        await this.mailerService.sendMail({
+          to: createdUser.email,
+          subject: 'Verify your email',
+          text: `Your verification code is: ${emailVerificationCode}`,
+        });
+      } catch (err) {
+        console.error('Failed to send verification email', err);
+      }
     }
 
     const { password, ...userWithoutPassword } = createdUser;
@@ -552,4 +554,16 @@ export class UserService {
       throw new Error('Mã khôi phục không chính xác hoặc đã hết hạn');
     }
   }
+
+  async forceVerifyEmail(email: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { email },
+      data: {
+        isVerified: true,
+        emailVerificationCode: null,
+        emailVerificationCodeExpires: null,
+      },
+    });
+  }
 }
+

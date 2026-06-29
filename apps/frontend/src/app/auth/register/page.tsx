@@ -9,6 +9,9 @@ import { authService } from '@smart/services/auth.service';
 import { ApiResponse, RegisterRequest } from '@smart/types/auth';
 import { useNotificationStore } from '@smart/store/notification';
 import { useBoardStore } from '@smart/store/setting';
+import { useAuthStore } from '@smart/store/auth';
+import { useUserStore } from '@smart/store/user';
+import { ROUTES, APP_CONFIG } from '@smart/lib/constants';
 import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
@@ -17,6 +20,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { addNotification } = useNotificationStore();
   const { resolvedTheme, setTheme } = useBoardStore();
+  const { login: storeLogin, setAccessToken } = useAuthStore();
+  const { setCurrentUser, setUserInitialized } = useUserStore();
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
@@ -36,15 +41,39 @@ export default function RegisterPage() {
         lastName: values.lastName,
         email: values.email,
         password: values.password,
+        bypassVerification: APP_CONFIG.BYPASS_EMAIL_VERIFICATION,
       };
       const res: ApiResponse = await authService.register(payload);
 
       if (res.success === false) {
         addNotification(res.message || 'Đăng ký không thành công', 'error');
       } else {
-        addNotification('Đăng ký thành công! Hãy đăng nhập.', 'success');
-        const searchStr = searchParams.toString();
-        router.push(`/auth/login${searchStr ? `?${searchStr}` : ''}`);
+        if (APP_CONFIG.BYPASS_EMAIL_VERIFICATION) {
+          addNotification('Đăng ký thành công! Đang tự động đăng nhập...', 'success');
+          try {
+            const loginRes = await authService.login({
+              email: values.email,
+              password: values.password,
+              bypassVerification: true,
+            });
+            if (loginRes.success && loginRes.data?.accessToken && loginRes.data?.user) {
+              storeLogin(loginRes.data.accessToken);
+              setAccessToken(loginRes.data.accessToken);
+              setCurrentUser(loginRes.data.user);
+              setUserInitialized(true);
+              router.push(ROUTES.HOME);
+            } else {
+              router.push(ROUTES.LOGIN);
+            }
+          } catch (loginErr: any) {
+            addNotification('Tự động đăng nhập thất bại. Vui lòng đăng nhập thủ công.', 'warning');
+            router.push(ROUTES.LOGIN);
+          }
+        } else {
+          addNotification('Đăng ký thành công! Hãy đăng nhập.', 'success');
+          const searchStr = searchParams.toString();
+          router.push(`/auth/login${searchStr ? `?${searchStr}` : ''}`);
+        }
       }
     } catch (err: any) {
       addNotification(err.message || 'Đăng ký không thành công', 'error');

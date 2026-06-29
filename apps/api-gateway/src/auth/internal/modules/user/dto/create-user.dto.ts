@@ -61,4 +61,8 @@ export class CreateUserDto {
   @IsBoolean()
   @IsOptional()
   pushNotifications?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isVerified?: boolean;
 }
