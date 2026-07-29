@@ -305,7 +305,6 @@ export default function CreateBoardButton({
           overlayStyle={{ maxWidth: 'calc(100vw - 24px)' }}
           styles={{ body: { padding: 0, borderRadius: '24px', overflow: 'hidden' } }}
           align={{ offset: [0, 8] }}
-          getPopupContainer={(trigger) => trigger.parentElement || document.body}
         >
           {children || (
             <Button type="primary" icon={<RocketOutlined />} className="h-9 rounded-full px-5 bg-gradient-to-r from-blue-600 to-indigo-600 border-none shadow-lg shadow-blue-500/20 font-bold">
