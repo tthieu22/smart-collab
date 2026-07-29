@@ -59,10 +59,13 @@ export function NotificationMenu() {
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        const data = await autoRequest<any[]>("/home/notifications", { method: "GET" });
-        if (mounted) setNotifications(data || []);
-      } catch {
-        // Keep showing realtime items if history API fails.
+        const res = await autoRequest<any>("/home/notifications", { method: "GET" });
+        if (mounted) {
+          const list = Array.isArray(res) ? res : (res?.data || []);
+          setNotifications(list);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notification history", err);
       } finally {
         if (mounted) setLoading(false);
       }

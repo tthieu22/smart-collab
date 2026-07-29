@@ -31,10 +31,13 @@ export const NotificationProvider = ({
     let mounted = true;
     const loadNotifications = async () => {
       try {
-        const data = await autoRequest<any[]>('/home/notifications', { method: 'GET' });
-        if (mounted) setUserNotifications(data || []);
-      } catch {
-        // Keep app usable even if notification history endpoint is temporarily unavailable.
+        const res = await autoRequest<any>('/home/notifications', { method: 'GET' });
+        if (mounted) {
+          const list = Array.isArray(res) ? res : (res?.data || []);
+          setUserNotifications(list);
+        }
+      } catch (err) {
+        console.error('Failed to load notifications', err);
       }
     };
     loadNotifications();

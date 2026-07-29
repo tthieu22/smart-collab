@@ -388,7 +388,17 @@ export class ProjectService {
   }
 
   async addMember(projectId: string, userId: string, role: string = 'MEMBER', userName?: string, userAvatar?: string, addedBy?: string, userEmail?: string) {
-    await this.checkProjectAccess(projectId, addedBy, 'edit');
+    const projectAccess = await this.checkProjectAccess(projectId, addedBy, 'edit');
+
+    if (projectAccess && projectAccess.visibility === 'PRIVATE') {
+      const updatedProject = await this.prisma.project.update({
+        where: { id: projectId },
+        data: { visibility: 'WORKSPACE' },
+      });
+      this.eventEmitter.emit('realtime.project.updated', {
+        project: updatedProject,
+      });
+    }
 
     const existing = await this.prisma.projectMember.findFirst({
       where: { projectId, userId },
