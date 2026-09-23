@@ -66,7 +66,7 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   if (!user && currentUser && userId === currentUser.id) {
     user = {
       ...currentUser,
-      name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email?.split('@')[0] || 'Phi Hành Gia',
+      name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email?.split('@')[0] || 'Người dùng',
     } as any;
   }
 
@@ -74,8 +74,8 @@ export const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   if (!user) {
     user = {
       id: userId,
-      name: 'Phi Hành Gia Vô Danh',
-      email: 'galaxy@smartcollab.space',
+      name: 'Người dùng',
+      email: 'user@smartcollab.com',
       avatarUrl: null,
       mood: null
     } as any;

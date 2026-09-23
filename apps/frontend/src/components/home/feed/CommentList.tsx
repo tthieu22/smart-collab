@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useFeedStore } from '@smart/store/feed';
-import { Rocket, Clock } from 'lucide-react';
+import { ThumbsUp, Clock } from 'lucide-react';
 import UserAvatar from '@smart/components/ui/UserAvatar';
 import dayjs from 'dayjs';
 import { cn } from '@smart/lib/utils';
@@ -46,7 +46,7 @@ export default function CommentList({ postId, limit }: CommentListProps) {
           onClick={() => setActivePostId(postId)}
           className="text-[11px] font-bold text-blue-500 hover:text-blue-600 dark:text-blue-400 mb-2 px-1 transition-colors"
         >
-          Xem thêm {commentIds.length - (limit || 0)} bản tin phản hồi khác...
+          Xem thêm {commentIds.length - (limit || 0)} bình luận khác...
         </button>
       )}
 
@@ -58,7 +58,7 @@ export default function CommentList({ postId, limit }: CommentListProps) {
             <div className="rounded-2xl bg-gray-100/80 dark:bg-neutral-900/80 px-3 py-2 border border-gray-100/50 dark:border-neutral-800/50 group-hover/comment:border-blue-500/20 transition-all">
               <div className="flex items-center justify-between gap-2 mb-0.5">
                 <div className="text-[12px] font-bold text-gray-900 dark:text-white truncate">
-                  {c.author?.name || 'Phi hành gia'}
+                  {c.author?.name || 'Người dùng'}
                 </div>
                 <div className="text-[10px] text-gray-500 flex items-center gap-1 shrink-0">
                   <Clock size={8} />
@@ -77,14 +77,14 @@ export default function CommentList({ postId, limit }: CommentListProps) {
                   c.likedByMe ? "text-blue-500" : "hover:text-blue-500"
                 )}
               >
-                <Rocket size={10} className={cn(!c.likedByMe && "-rotate-45")} fill={c.likedByMe ? "currentColor" : "none"} />
-                {c.likeCount ? <span>{c.likeCount}</span> : "Cất cánh"}
+                <ThumbsUp size={10} fill={c.likedByMe ? "currentColor" : "none"} />
+                {c.likeCount ? <span>{c.likeCount}</span> : "Thích"}
               </button>
               <button 
                 onClick={() => setActivePostId(postId)}
                 className="hover:text-blue-500"
               >
-                Đáp lại
+                Trả lời
               </button>
             </div>
           </div>

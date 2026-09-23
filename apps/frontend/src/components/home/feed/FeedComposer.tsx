@@ -7,7 +7,7 @@ import { useFeedStore, type DraftImage } from '@smart/store/feed';
 import { useShallow } from 'zustand/react/shallow';
 import UserAvatar from '@smart/components/ui/UserAvatar';
 import {
-  Rocket,
+  Send,
   X,
   Link as LinkIcon,
   Type,
@@ -117,9 +117,9 @@ export default function FeedComposer() {
     try {
       await publishDraft();
       setIsExpanded(false);
-      message.success('Tín hiệu đã được phóng thành công!');
+      message.success('Đăng bài viết thành công!');
     } catch (err) {
-      message.error('Lỗi khi phóng tín hiệu.');
+      message.error('Lỗi khi đăng bài viết.');
     }
   };
 
@@ -156,7 +156,7 @@ export default function FeedComposer() {
               className="flex-1 h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-gray-50/50 dark:bg-neutral-900/50 border border-gray-100 dark:border-neutral-800/50 px-4 sm:px-6 flex items-center text-gray-500 dark:text-gray-400 text-[13px] sm:text-[15px] cursor-pointer hover:bg-white dark:hover:bg-neutral-800 hover:border-blue-200 dark:hover:border-blue-900/30 transition-all shadow-inner group truncate"
             >
               <span className="truncate group-hover:text-blue-500 transition-colors">
-                Bạn muốn truyền tín hiệu gì, {me?.firstName || 'phi hành gia'}?
+                Bạn đang nghĩ gì, {me?.firstName || 'bạn'}?
               </span>
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function FeedComposer() {
                   value={draftText}
                   onChange={(e) => setDraftText(e.target.value)}
                   disabled={isLoading}
-                  placeholder="Nhập nội dung tín hiệu của bạn..."
+                  placeholder="Nhập nội dung bài viết của bạn..."
                   className={cn(
                     "w-full min-h-[140px] sm:min-h-[200px] md:min-h-[280px] resize-none px-5 py-6 sm:px-8 sm:py-10 text-sm sm:text-base md:text-[19px] outline-none transition-all disabled:opacity-60 leading-relaxed bg-transparent custom-scrollbar",
                     draftBackgroundStyle ? "text-center font-black flex items-center justify-center placeholder:text-white/40 text-white text-lg sm:text-xl md:text-2xl" : "dark:text-gray-100"
@@ -215,7 +215,7 @@ export default function FeedComposer() {
                   value={draftLinkUrl}
                   onChange={(e) => setDraftLinkUrl(e.target.value)}
                   disabled={isLoading}
-                  placeholder="Nguồn tín hiệu gốc (http://...)"
+                  placeholder="Liên kết đính kèm (http://...)"
                   className="w-full rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/30 pl-11 pr-5 py-2.5 text-[11px] sm:text-[12px] outline-none focus:border-blue-400 focus:bg-white dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-300 transition-all disabled:opacity-60 italic font-medium"
                 />
               </div>
@@ -254,9 +254,9 @@ export default function FeedComposer() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Rocket size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  <span className="hidden xs:inline text-xs sm:text-sm">Phóng tín hiệu</span>
-                  <span className="xs:hidden text-xs">Phóng</span>
+                  <Send size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                  <span className="hidden xs:inline text-xs sm:text-sm">Đăng bài</span>
+                  <span className="xs:hidden text-xs">Đăng</span>
                 </>
               )}
             </Button>

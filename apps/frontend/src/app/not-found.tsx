@@ -46,14 +46,14 @@ export default function NotFound() {
             "text-2xl md:text-3xl font-bold tracking-tight",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            {isDark ? "Bạn đang trôi dạt trong vô định..." : "Bạn đã bay lạc tới tầng mây khác..."}
+            Không tìm thấy trang yêu cầu
           </h2>
           <p className={cn(
             "text-sm md:text-base max-w-lg mx-auto mb-10 leading-relaxed font-medium",
             isDark ? "text-blue-100/60" : "text-gray-500"
           )}>
-            Tín hiệu từ trang bạn yêu cầu đã biến mất. 
-            Đừng hoảng loạn, hãy điều hướng về căn cứ an toàn để tiếp tục công việc.
+            Trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển. 
+            Hãy quay về trang chủ để tiếp tục công việc của bạn.
           </p>
         </motion.div>
 

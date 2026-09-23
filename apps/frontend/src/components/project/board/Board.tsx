@@ -174,14 +174,12 @@ export default function Board({ board }: Props) {
     const guests = onlineUsers.filter(id => !memberIds.has(id));
 
     const spaceNames = [
-      'Tiểu Hành Tinh', 'Sao Chổi', 'Tinh Vân', 'Hố Đen', 'Thiên Thạch',
-      'Siêu Tân Tinh', 'Quasar', 'Pulsar', 'Vệ Tinh', 'Bụi Vũ Trụ',
-      'Thiên Hà Lùn', 'Sao Biến Quang', 'Mưa Sao Băng', 'Nhật Thực', 'Nguyệt Thực'
+      'Khách truy cập'
     ];
 
     return guests.map((id, index) => ({
       id,
-      name: spaceNames[index % spaceNames.length] + ' ' + (Math.floor(index / spaceNames.length) + 1),
+      name: spaceNames[0] + ' ' + (index + 1),
       isGuest: true
     }));
   }, [onlineUsers, currentProject]);
@@ -191,10 +189,10 @@ export default function Board({ board }: Props) {
       <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-            Phi hành đoàn ({currentProject?.members?.length || 0})
+            Thành viên ({currentProject?.members?.length || 0})
           </span>
           <span className="text-[10px] font-medium px-1.5 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded">
-            {activeProjectMembers.length + guestMembers.length} đang du hành
+            {activeProjectMembers.length + guestMembers.length} đang online
           </span>
         </div>
       </div>
@@ -228,7 +226,7 @@ export default function Board({ board }: Props) {
                       {name} {member.userId === currentUser?.id && '(Bạn)'}
                     </span>
                     {member.role === 'OWNER' && (
-                      <span className="text-[9px] px-1 bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 rounded font-bold uppercase">Captain</span>
+                      <span className="text-[9px] px-1 bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 rounded font-bold uppercase">Trưởng nhóm</span>
                     )}
                   </div>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{member.user?.email}</span>
@@ -258,7 +256,7 @@ export default function Board({ board }: Props) {
                     <span className="text-sm font-semibold text-gray-900 dark:text-white truncate italic">
                       {guest.name}
                     </span>
-                    <span className="text-[9px] text-purple-500 font-bold uppercase tracking-tighter">Nhà du hành ẩn danh</span>
+                    <span className="text-[9px] text-purple-500 font-bold uppercase tracking-tighter">Khách vãng lai</span>
                   </div>
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                 </div>

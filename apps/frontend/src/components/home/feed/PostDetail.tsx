@@ -45,7 +45,7 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
       <div className="flex h-96 items-center justify-center bg-white dark:bg-neutral-950">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent shadow-lg"></div>
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse">Đang đồng bộ tín hiệu...</span>
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse">Đang tải bài viết...</span>
         </div>
       </div>
     );
@@ -154,7 +154,7 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[13px] font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all border border-blue-100/50 dark:border-blue-900/30 shadow-sm"
                 >
                   <ExternalLink size={16} />
-                  Khám phá nguồn tín hiệu gốc
+                  Mở liên kết nguồn
                 </a>
               </div>
             )}
@@ -164,7 +164,7 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
               <div className="flex items-center justify-between mb-6 px-1">
                 <ReactionSummary post={post} />
                 <div className="text-[11px] text-gray-400 font-black uppercase tracking-widest opacity-80">
-                  {post.commentCount || 0} TRUYỀN TIN • {post.shareCount || 0} CHIA SẺ
+                  {post.commentCount || 0} BÌNH LUẬN • {post.shareCount || 0} CHIA SẺ
                 </div>
               </div>
               <PostActions post={post} layout="full" />
@@ -172,7 +172,7 @@ export default function PostDetail({ postId, onBack }: PostDetailProps) {
 
             {/* Comments Area */}
             <div className="border-t border-gray-50 dark:border-neutral-900 mt-8 pt-8">
-              <div className="text-[11px] font-black text-gray-400 mb-6 px-1 uppercase tracking-widest">Tín hiệu phản hồi</div>
+              <div className="text-[11px] font-black text-gray-400 mb-6 px-1 uppercase tracking-widest">Bình luận</div>
               <div className="mt-4">
                 <CommentList postId={post.id} />
               </div>

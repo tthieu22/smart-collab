@@ -92,10 +92,10 @@ export function AvatarMenu() {
             <UserAvatar userId={meId} size="md" allowChangeMood={false} />
             <div className="overflow-hidden">
               <div className="font-black text-sm text-gray-900 dark:text-white truncate">
-                {currentUser ? (`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email?.split("@")[0]) : "Phi Hành Gia Vô Danh"}
+                {currentUser ? (`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email?.split("@")[0]) : "Người dùng"}
               </div>
               <div className="text-[11px] font-bold text-gray-500 truncate">
-                {currentUser?.email || "galaxy@smartcollab.space"}
+                {currentUser?.email || "user@smartcollab.com"}
               </div>
             </div>
           </div>
@@ -106,12 +106,12 @@ export function AvatarMenu() {
     {
       key: "profile",
       icon: <User size={16} />,
-      label: <span className="text-xs font-bold">Dữ Liệu Phi Hành Gia</span>,
+      label: <span className="text-xs font-bold">Thông tin cá nhân</span>,
     },
     {
       key: "user-setting",
       icon: <Settings size={16} />,
-      label: <span className="text-xs font-bold">Cấu Hình Trạm Điều Hành</span>,
+      label: <span className="text-xs font-bold">Cài đặt tài khoản</span>,
     },
     {
       key: "theme",
@@ -167,7 +167,7 @@ export function AvatarMenu() {
     {
       key: "logout",
       icon: <LogOut size={16} />,
-      label: <span className="text-xs font-bold">Rời Trạm / Đóng Khoang</span>,
+      label: <span className="text-xs font-bold">Đăng xuất</span>,
       danger: true,
     },
   ];

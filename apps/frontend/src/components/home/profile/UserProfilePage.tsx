@@ -185,7 +185,7 @@ export default function UserProfilePage({ userId }: { userId?: string }) {
                 <Sparkles size={16} className="text-blue-400 animate-pulse" />
               </div>
             </div>
-            <p className="text-gray-400 font-medium tracking-widest uppercase text-[10px]">Đang tải vũ trụ cá nhân...</p>
+            <p className="text-gray-400 font-medium tracking-widest uppercase text-[10px]">Đang tải thông tin cá nhân...</p>
           </div>
         </div>
       </SiteLayout>

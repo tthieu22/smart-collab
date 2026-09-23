@@ -133,7 +133,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelect }) => {
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center">
                         <User size={14} className="text-blue-600 dark:text-blue-400" />
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">Định danh phi hành gia</span>
+                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">Tên hiển thị</span>
                 </div>
                 
                 <Input

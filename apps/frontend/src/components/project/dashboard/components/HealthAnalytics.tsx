@@ -102,7 +102,7 @@ const HealthAnalytics: React.FC<Props> = ({
     <Card
       bordered={false}
       style={glassStyle}
-      title={<div className="flex justify-between items-center"><span className="flex items-center gap-2"><HeartOutlined className="text-red-500" /> Năng Lượng Thiên Hà (AI)</span></div>}
+      title={<div className="flex justify-between items-center"><span className="flex items-center gap-2"><HeartOutlined className="text-red-500" /> Sức Khỏe Dự Án (AI)</span></div>}
     >
       {!health ? (
         <div className="py-20 flex flex-col items-center justify-center opacity-40">

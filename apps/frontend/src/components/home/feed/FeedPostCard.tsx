@@ -171,7 +171,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
 
       {/* COMMENT SECTION INTEGRATED */}
       <div className="bg-gray-50/50 dark:bg-black/20 px-4 pb-4 pt-2 border-t border-gray-50 dark:border-neutral-900">
-        <div className="text-[11px] font-bold text-gray-400 mb-3 px-1">Tín hiệu phản hồi</div>
+        <div className="text-[11px] font-bold text-gray-400 mb-3 px-1">Bình luận</div>
 
         <div className="flex items-center gap-2.5 mb-5">
           <UserAvatar userId={currentUser?.id || ''} size="sm" />
@@ -180,7 +180,7 @@ export default function FeedPostCard({ postId }: { postId: string }) {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendComment()}
-              placeholder="Gửi bản tin đến phi hành đoàn..."
+              placeholder="Viết bình luận..."
               className="h-9 bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 hover:border-blue-400 focus:border-blue-500 rounded-xl text-[12px] dark:text-gray-300 transition-all"
               disabled={isSubmitting}
             />

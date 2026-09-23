@@ -117,8 +117,8 @@ export default function NewsPage() {
       )}>
         <PageHeader
           icon={<Newspaper className="w-5 h-5" />}
-          title="Bản Tin Thiên Hà"
-          description="Cập nhật những biến động và tín hiệu mới nhất từ khắp các dải ngân hà."
+          title="Tin Tức & Thông Báo"
+          description="Cập nhật những tin tức và thông báo mới nhất từ hệ thống."
           extra={extra}
         />
 

@@ -92,7 +92,7 @@ export default function ProjectSwitchModal({ isOpen, onClose }: ProjectSwitchMod
             </div>
             <div>
               <h1 className={`text-lg font-bold tracking-tight m-0 dark:text-gray-100 text-gray-800`}>
-                Du hành Thiên hà
+                Chuyển Đổi Dự Án
               </h1>
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium m-0">
                 Chọn dự án bạn muốn truy cập nhanh
@@ -101,7 +101,7 @@ export default function ProjectSwitchModal({ isOpen, onClose }: ProjectSwitchMod
           </div>
 
           <Input
-            placeholder="Tìm kiếm tọa độ thiên hà..."
+            placeholder="Tìm kiếm dự án..."
             prefix={<SearchOutlined className="opacity-40" />}
             size="large"
             className="w-72 bg-neutral-100 dark:bg-white/5 border-none rounded-xl h-10"

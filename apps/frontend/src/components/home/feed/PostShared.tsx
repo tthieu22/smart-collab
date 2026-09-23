@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Popover, Tooltip } from 'antd';
 import { 
-  Rocket, 
+  ThumbsUp, 
   MessageCircle, 
   Share2, 
   Bookmark, 
@@ -38,12 +38,12 @@ export const MOODS = [
 ];
 
 export const REACTION_CONFIG: Record<FeedReactionType, { label: string, color: string, emoji: string }> = {
-  like: { label: 'Cất cánh', color: 'text-blue-600', emoji: '🚀' },
-  love: { label: 'Yêu thích', color: 'text-red-500', emoji: '✨' },
-  haha: { label: 'Haha', color: 'text-amber-500', emoji: '🔥' },
-  wow: { label: 'Wow', color: 'text-emerald-500', emoji: '🪐' },
-  sad: { label: 'Buồn', color: 'text-blue-400', emoji: '🌑' },
-  angry: { label: 'Phẫn nộ', color: 'text-orange-600', emoji: '💥' },
+  like: { label: 'Thích', color: 'text-blue-600', emoji: '👍' },
+  love: { label: 'Yêu thích', color: 'text-red-500', emoji: '❤️' },
+  haha: { label: 'Haha', color: 'text-amber-500', emoji: '😆' },
+  wow: { label: 'Wow', color: 'text-emerald-500', emoji: '😮' },
+  sad: { label: 'Buồn', color: 'text-blue-400', emoji: '😢' },
+  angry: { label: 'Phẫn nộ', color: 'text-orange-600', emoji: '😡' },
 };
 
 export const visibilityIcons = {
@@ -63,7 +63,7 @@ export function PostHeader({ post, author }: { post: FeedPost, author: any }) {
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           <Link href={`/profile/${author?.id || post.authorId}`} className="font-bold text-[15px] text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate">
-            {author?.name || 'Phi hành gia'}
+            {author?.name || 'Người dùng'}
           </Link>
           {author?.verified && <Star size={12} className="text-blue-500 fill-blue-500" />}
           {post.mood && (
@@ -73,7 +73,7 @@ export function PostHeader({ post, author }: { post: FeedPost, author: any }) {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-500 font-medium">
-          <span className="hover:underline cursor-pointer">@{author?.username || 'phi-hanh-gia'}</span>
+          <span className="hover:underline cursor-pointer">@{author?.username || 'user'}</span>
           <span>•</span>
           <span className="flex items-center gap-1">
             <Clock size={10} />
@@ -157,8 +157,8 @@ export function PostActions({ post, layout = 'compact' }: { post: FeedPost, layo
               : "hover:bg-gray-100 dark:hover:bg-neutral-900 text-gray-500 dark:text-gray-400"
           )}
         >
-          <Rocket size={layout === 'compact' ? 16 : 20} className={cn(post.myReaction ? "" : "-rotate-45 group-hover:rotate-0 transition-transform")} />
-          <span>{myReactionData?.label || 'Cất cánh'}</span>
+          <ThumbsUp size={layout === 'compact' ? 16 : 20} />
+          <span>{myReactionData?.label || 'Thích'}</span>
         </button>
       </Popover>
 
@@ -167,7 +167,7 @@ export function PostActions({ post, layout = 'compact' }: { post: FeedPost, layo
         className={cn(btnClass, "hover:bg-gray-100 dark:hover:bg-neutral-900 text-gray-500 dark:text-gray-400")}
       >
         <MessageCircle size={layout === 'compact' ? 16 : 20} />
-        <span>Truyền tin</span>
+        <span>Bình luận</span>
         {layout === 'compact' && <span className="ml-1 opacity-60 font-medium">{post.commentCount || 0}</span>}
       </button>
 
