@@ -1,5 +1,6 @@
 import { Controller, Get, UseGuards, Req, Param, Patch, Body, Query, Post } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { AuthService } from '../auth/auth.service';
 
 @Controller('users')
@@ -13,6 +14,7 @@ export class UserController {
   }
 
   @Get('suggestions')
+  @Public()
   async getSuggestions(
     @Req() req: any,
     @Query('page') page?: number,
@@ -20,7 +22,7 @@ export class UserController {
     @Query('type') type?: string,
   ) {
     return this.authService.getSuggestions({
-      userId: req.user.userId,
+      userId: req.user?.userId || '',
       page: page ? Number(page) : 1,
       limit: limit ? Number(limit) : 5,
       type,
@@ -33,6 +35,7 @@ export class UserController {
   }
 
   @Get()
+  @Public()
   async searchUsers(@Query('q') q: string) {
     return this.authService.searchUsers({ q });
   }

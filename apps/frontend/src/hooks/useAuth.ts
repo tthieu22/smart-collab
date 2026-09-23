@@ -63,7 +63,7 @@ export const useAuth = () => {
       if (!isPublicPath) {
         clearAuth();
         clearUserStore();
-        router.push(ROUTES.LOGIN);
+        router.push(ROUTES.HOME);
       }
       return null;
     } finally {

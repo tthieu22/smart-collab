@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Body, Req, UseGuards, Param, Query } from
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { HomeService } from './home.service';
 
 @Controller('home')
@@ -9,6 +10,7 @@ export class HomeController {
   constructor(private readonly homeService: HomeService) {}
 
   @Get('feed')
+  @Public()
   @UseGuards(JwtAuthGuard)
   async getFeed(
     @Req() req: any,
@@ -19,7 +21,7 @@ export class HomeController {
     return this.homeService.send(
       { cmd: 'home.feed.get' },
       { 
-        userId: req.user.userId,
+        userId: req.user?.userId || '',
         payload: { page, limit, excludeIds }
       }
     );
@@ -35,6 +37,7 @@ export class HomeController {
   }
 
   @Get('post/:id')
+  @Public()
   @UseGuards(JwtAuthGuard)
   async getPost(@Param('id') postId: string) {
     return this.homeService.send({ cmd: 'home.post.get' }, { 
@@ -43,6 +46,7 @@ export class HomeController {
   }
 
   @Get('post/:id/comments')
+  @Public()
   @UseGuards(JwtAuthGuard)
   async getComments(@Param('id') postId: string) {
     return this.homeService.send({ cmd: 'home.post.comments.get' }, { 
@@ -154,12 +158,14 @@ export class HomeController {
   }
 
   @Get('news/:id')
+  @Public()
   @UseGuards(JwtAuthGuard)
   async getNewsArticle(@Param('id') id: string) {
     return this.homeService.send({ cmd: 'home.news.get' }, { payload: { id } });
   }
 
   @Get('news')
+  @Public()
   @UseGuards(JwtAuthGuard)
   async listNewsForUser(
     @Query('category') category?: string,

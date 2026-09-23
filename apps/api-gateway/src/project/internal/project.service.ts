@@ -495,8 +495,112 @@ export class ProjectService {
   }
 
   async getAllProjects(userId?: string, page: number = 1, limit: number = 10, search?: string) {
-    if (!userId) {
-      return { items: [], total: 0, page, limit };
+    const hasValidUser = userId && typeof userId === 'string' && userId.trim().length === 24;
+
+    // Khi CHƯA ĐĂNG NHẬP: Lấy 1 vài dự án public nhiều thành viên, không phân trang
+    if (!hasValidUser) {
+      let publicProjects = await this.prisma.project.findMany({
+        where: {
+          visibility: { in: ['PUBLIC', 'public'] },
+          OR: [
+            { deletedAt: { isSet: false } },
+            { deletedAt: null }
+          ],
+          ...(search ? {
+            name: { contains: search.trim(), mode: 'insensitive' }
+          } : {})
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          visibility: true,
+          healthStatus: true,
+          ownerId: true,
+          color: true,
+          background: true,
+          fileUrl: true,
+          createdAt: true,
+          updatedAt: true,
+          members: {
+            take: 5,
+            select: {
+              id: true,
+              userId: true,
+              userName: true,
+              userAvatar: true,
+              userEmail: true,
+              role: true,
+            }
+          },
+          _count: {
+            select: { members: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+
+      // Nếu không có dự án nào có tag PUBLIC, lấy các dự án không bị xóa làm preview
+      if (publicProjects.length === 0) {
+        publicProjects = await this.prisma.project.findMany({
+          where: {
+            OR: [
+              { deletedAt: { isSet: false } },
+              { deletedAt: null }
+            ],
+            ...(search ? {
+              name: { contains: search.trim(), mode: 'insensitive' }
+            } : {})
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            visibility: true,
+            healthStatus: true,
+            ownerId: true,
+            color: true,
+            background: true,
+            fileUrl: true,
+            createdAt: true,
+            updatedAt: true,
+            members: {
+              take: 5,
+              select: {
+                id: true,
+                userId: true,
+                userName: true,
+                userAvatar: true,
+                userEmail: true,
+                role: true,
+              }
+            },
+            _count: {
+              select: { members: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        });
+      }
+
+      // Ưu tiên hiển thị các dự án có nhiều thành viên tham gia nhất
+      publicProjects.sort((a: any, b: any) => {
+        const countA = a._count?.members || a.members?.length || 0;
+        const countB = b._count?.members || b.members?.length || 0;
+        return countB - countA;
+      });
+
+      const previewProjects = publicProjects.slice(0, 6);
+
+      return {
+        items: previewProjects,
+        total: previewProjects.length,
+        page: 1,
+        limit: previewProjects.length,
+        isGuestPreview: true,
+      };
     }
 
     const skip = (page - 1) * limit;
@@ -668,8 +772,24 @@ export class ProjectService {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
+    const hasValidProject = projectId && typeof projectId === 'string' && projectId.trim().length === 24;
+    const hasValidUser = userId && typeof userId === 'string' && userId.trim().length === 24;
+
+    if (!hasValidProject && !hasValidUser) {
+      return {
+        boost: 0,
+        completed: 0,
+        target: 5,
+        isTeamMode: false,
+        trend: 'neutral',
+        topPerformer: null,
+        streak: 0,
+        dailyStats: []
+      };
+    }
+
     const baseWhere: any = {};
-    if (projectId) {
+    if (hasValidProject) {
       baseWhere.projectId = projectId;
     } else {
       baseWhere.OR = [

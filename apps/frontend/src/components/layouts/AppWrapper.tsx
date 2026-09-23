@@ -6,6 +6,7 @@ import { Header } from '@smart/components/layouts';
 import { useAIStore } from '@smart/store/ai';
 import { AIChatWindow } from '../shared/AIChatWindow';
 import { DemoNoticeModal } from '../shared/DemoNoticeModal';
+import { LoginPromptModal } from '../shared/LoginPromptModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@smart/lib/utils';
@@ -28,6 +29,7 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex flex-col min-h-screen relative">
       <DemoNoticeModal />
+      <LoginPromptModal />
       <div className="sticky top-0 z-50">
         <Header />
       </div>

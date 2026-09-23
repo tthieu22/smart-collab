@@ -15,7 +15,7 @@ import {
   BgColorsOutlined,
   CheckOutlined,
   UploadOutlined,
-  RocketOutlined,
+  RobotOutlined,
 } from "@ant-design/icons";
 import { cn } from "@smart/lib/utils";
 import { UI_CONFIG } from "@smart/lib/constants";
@@ -188,7 +188,7 @@ export function ManualCreationContent({
                 }}
                 onClick={onOpenAi}
               >
-                <RocketOutlined className="text-white text-lg group-hover:scale-110 transition-transform" />
+                <RobotOutlined className="text-white text-lg group-hover:scale-110 transition-transform" />
                 <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Button>
             </div>

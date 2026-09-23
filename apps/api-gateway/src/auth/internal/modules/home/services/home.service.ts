@@ -12,11 +12,14 @@ export class HomeService {
     const skip = page * limit;
 
     // 1. Get following IDs
-    const followings = await this.prisma.follower.findMany({
-      where: { followerId: currentUserId },
-      select: { followingId: true },
-    });
-    const followingIds = followings.map((f: any) => f.followingId);
+    let followingIds: string[] = [];
+    if (currentUserId && typeof currentUserId === 'string' && currentUserId.trim().length === 24) {
+      const followings = await this.prisma.follower.findMany({
+        where: { followerId: currentUserId },
+        select: { followingId: true },
+      });
+      followingIds = followings.map((f: any) => f.followingId);
+    }
 
     let posts = [];
 

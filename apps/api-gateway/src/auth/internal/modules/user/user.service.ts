@@ -380,30 +380,31 @@ export class UserService {
   }
 
   async getSuggestions(userId: string, page: number = 1, limit: number = 5, filter?: string) {
-    if (!userId) return { items: [], total: 0 };
-    
     const skip = (page - 1) * limit;
 
     let followingIds: string[] = [];
-    try {
-      const following = await this.prisma.follower.findMany({
-        where: { followerId: userId },
-        select: { followingId: true },
-      });
-      followingIds = following.map((f: any) => f.followingId).filter(Boolean);
-    } catch (err) {
-      console.error('[getSuggestions] Failed to fetch following list', err);
+    if (userId && typeof userId === 'string' && userId.trim().length === 24) {
+      try {
+        const following = await this.prisma.follower.findMany({
+          where: { followerId: userId },
+          select: { followingId: true },
+        });
+        followingIds = following.map((f: any) => f.followingId).filter(Boolean);
+      } catch (err) {
+        console.error('[getSuggestions] Failed to fetch following list', err);
+      }
     }
     
-    const excludeIds = [userId, ...followingIds].filter(id => !!id);
+    const excludeIds = [userId, ...followingIds].filter(id => id && typeof id === 'string' && id.trim().length === 24);
+    const whereClause = excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {};
 
     let suggestions: any[] = [];
     let total = 0;
 
     if (filter === 'ACTIVE') {
-      total = await this.prisma.user.count({ where: { id: { notIn: excludeIds } } });
+      total = await this.prisma.user.count({ where: whereClause });
       suggestions = await this.prisma.user.findMany({
-        where: { id: { notIn: excludeIds } },
+        where: whereClause,
         orderBy: { loginCount: 'desc' },
         skip, take: limit,
         select: { 
@@ -412,9 +413,9 @@ export class UserService {
         }
       });
     } else if (filter === 'NEW') {
-      total = await this.prisma.user.count({ where: { id: { notIn: excludeIds } } });
+      total = await this.prisma.user.count({ where: whereClause });
       suggestions = await this.prisma.user.findMany({
-        where: { id: { notIn: excludeIds } },
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip, take: limit,
         select: { 
@@ -424,9 +425,9 @@ export class UserService {
       });
     } else {
       // Default behavior
-      total = await this.prisma.user.count({ where: { id: { notIn: excludeIds } } });
+      total = await this.prisma.user.count({ where: whereClause });
       suggestions = await this.prisma.user.findMany({
-        where: { id: { notIn: excludeIds } },
+        where: whereClause,
         orderBy: { loginCount: 'desc' },
         skip, take: limit,
         select: { 

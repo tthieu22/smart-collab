@@ -5,7 +5,6 @@ import {
   PlusOutlined,
   CheckOutlined,
   UploadOutlined,
-  RocketOutlined
 } from "@ant-design/icons";
 import {
   Button,
@@ -25,11 +24,13 @@ import { AIModal } from "./create-board/AIModal";
 export default function CreateBoardButton({
   children,
   forceAiOpen = false,
-  onAiClose
+  onAiClose,
+  mode = 'popover'
 }: {
   children?: React.ReactNode;
   forceAiOpen?: boolean;
   onAiClose?: () => void;
+  mode?: 'popover' | 'modal';
 }) {
   const router = useRouter();
   const { colors, images } = useBoardStore();
@@ -286,11 +287,11 @@ export default function CreateBoardButton({
 
   return (
     <>
-      {isMobile ? (
-        <div onClick={() => setOpen(true)}>
+      {isMobile || mode === 'modal' ? (
+        <div onClick={() => setOpen(true)} className="inline-block cursor-pointer">
           {children || (
             <Button type="primary" icon={<PlusOutlined />} className="h-9 rounded-full px-5 bg-gradient-to-r from-blue-600 to-indigo-600 border-none shadow-lg shadow-blue-500/20 font-bold">
-              Create
+              Tạo dự án
             </Button>
           )}
         </div>
@@ -307,31 +308,31 @@ export default function CreateBoardButton({
           align={{ offset: [0, 8] }}
         >
           {children || (
-            <Button type="primary" icon={<RocketOutlined />} className="h-9 rounded-full px-5 bg-gradient-to-r from-blue-600 to-indigo-600 border-none shadow-lg shadow-blue-500/20 font-bold">
-              Create
+            <Button type="primary" icon={<PlusOutlined />} className="h-9 rounded-full px-5 bg-gradient-to-r from-blue-600 to-indigo-600 border-none shadow-lg shadow-blue-500/20 font-bold">
+              Tạo dự án
             </Button>
           )}
         </Popover>
       )}
 
-      {/* Manual Modal (Mobile Only) */}
+      {/* Manual Modal (Mobile or mode === 'modal') */}
       <Modal
-        open={isMobile && open}
+        open={(isMobile || mode === 'modal') && open}
         onCancel={() => setOpen(false)}
         footer={null}
-        width="100%"
+        width={isMobile ? "100%" : 680}
         centered
-        className="mobile-create-modal"
+        className="create-project-centered-modal"
         styles={{ 
           content: { backgroundColor: 'transparent', boxShadow: 'none', padding: 0 },
           body: { padding: 0, overflow: 'hidden' }
         }}
       >
-        <div className="bg-white dark:bg-neutral-950 rounded-[24px] border border-gray-200 dark:border-neutral-800 overflow-hidden shadow-2xl">
-          <div className="px-6 py-4 border-b border-gray-100 dark:border-neutral-900 bg-gray-50/50 dark:bg-neutral-900/50 flex items-center">
-            <div className="font-black text-lg uppercase tracking-tight dark:text-white">Tạo bảng mới</div>
+        <div className="bg-white dark:bg-[#14151f] rounded-[28px] border border-gray-200 dark:border-neutral-800 overflow-hidden shadow-2xl">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-neutral-800 bg-gray-50/50 dark:bg-neutral-900/50 flex items-center justify-between">
+            <div className="font-black text-lg uppercase tracking-tight text-gray-900 dark:text-white">Tạo Dự Án Mới</div>
           </div>
-          <div className="p-1">
+          <div className="p-4 sm:p-6">
             {manualContent}
           </div>
         </div>

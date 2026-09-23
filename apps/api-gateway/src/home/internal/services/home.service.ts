@@ -10,13 +10,17 @@ export class HomeService {
 
   async getFeed(currentUserId: string, page: number, limit: number, excludeIds: string[] = []): Promise<FeedResponseDTO> {
     const skip = page * limit;
+    const validExcludeIds = (excludeIds || []).filter(id => id && typeof id === 'string' && id.trim().length === 24);
 
-    // 1. Get following IDs
-    const followings = await this.prisma.follower.findMany({
-      where: { followerId: currentUserId },
-      select: { followingId: true },
-    });
-    const followingIds = followings.map((f: any) => f.followingId);
+    // 1. Get following IDs (chỉ query khi có userId hợp lệ)
+    let followingIds: string[] = [];
+    if (currentUserId && typeof currentUserId === 'string' && currentUserId.trim().length === 24) {
+      const followings = await this.prisma.follower.findMany({
+        where: { followerId: currentUserId },
+        select: { followingId: true },
+      });
+      followingIds = followings.map((f: any) => f.followingId).filter(Boolean);
+    }
 
     let posts = [];
 
@@ -25,7 +29,7 @@ export class HomeService {
       posts = await this.prisma.post.findMany({
         where: {
           authorId: { in: followingIds },
-          id: { notIn: excludeIds },
+          id: { notIn: validExcludeIds },
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -38,7 +42,7 @@ export class HomeService {
         const currentBatchIds = posts.map((p: any) => p.id);
         const others = await this.prisma.post.findMany({
           where: {
-            id: { notIn: [...excludeIds, ...currentBatchIds] },
+            id: { notIn: [...validExcludeIds, ...currentBatchIds] },
           },
           orderBy: { createdAt: 'desc' },
           take: remaining,
@@ -47,7 +51,7 @@ export class HomeService {
       }
     } else {
       posts = await this.prisma.post.findMany({
-        where: { id: { notIn: excludeIds } },
+        where: validExcludeIds.length > 0 ? { id: { notIn: validExcludeIds } } : {},
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: skip,
@@ -90,13 +94,17 @@ export class HomeService {
 
     const postIds = posts.map((p: any) => p.id);
     const authorIds = new Set<string>(posts.map((p: any) => p.authorId as string));
-    authorIds.add(currentUserId);
+    if (currentUserId && typeof currentUserId === 'string' && currentUserId.trim().length === 24) {
+      authorIds.add(currentUserId);
+    }
 
     // Fetch comments
     const allComments = await this.prisma.comment.findMany({
       where: { postId: { in: postIds } },
     });
-    allComments.forEach((c: any) => authorIds.add(c.authorId as string));
+    allComments.forEach((c: any) => {
+      if (c.authorId) authorIds.add(c.authorId as string);
+    });
 
     // Group comments by post
     const commentsByPostId = allComments.reduce((acc: any, c: any) => {
@@ -117,15 +125,17 @@ export class HomeService {
       return acc;
     }, {});
 
-    // Fetch users - Ensure all IDs are strings and not raw MongoDB objects
+    // Fetch users - Ensure all IDs are strings and valid 24-char ObjectIds
     const sanitizedAuthorIds = Array.from(authorIds).map((id: any) => {
       if (typeof id === 'object' && id?.$oid) return id.$oid;
       return String(id);
-    });
+    }).filter((id: string) => id && id.trim().length === 24);
 
-    const users = await this.prisma.user.findMany({
-      where: { id: { in: sanitizedAuthorIds } },
-    });
+    const users = sanitizedAuthorIds.length > 0 
+      ? await this.prisma.user.findMany({
+          where: { id: { in: sanitizedAuthorIds } },
+        })
+      : [];
 
     const userDTOs: UserDTO[] = users.map((u: any) => ({
       id: u.id,

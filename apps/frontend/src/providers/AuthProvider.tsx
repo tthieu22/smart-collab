@@ -17,28 +17,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (isInitialized) {
-      // Các route luôn cho phép không cần login
-      const isPublicPath = 
-        pathname === ROUTES.LOGIN || 
-        pathname === ROUTES.REGISTER || 
-        pathname === ROUTES.VERIFY ||
+      // Các route chỉ cho phép khi đã đăng nhập
+      const isProtectedPath =
+        pathname?.startsWith('/admin') ||
+        pathname?.startsWith('/user/settings');
+
+      // Các trang xác thực (login, register...)
+      const isAuthPage =
+        pathname === ROUTES.LOGIN ||
+        pathname === ROUTES.REGISTER ||
         pathname === ROUTES.FORGOT_PASSWORD ||
         pathname === ROUTES.RESET_PASSWORD ||
-        pathname.startsWith('/projects/') || // Cho phép xem project public
-        pathname.startsWith('/auth/google/callback');
+        pathname?.startsWith('/auth/google/callback');
 
       if (!accessToken) {
-        if (!isPublicPath) {
-          router.replace(ROUTES.LOGIN);
+        // Nếu chưa đăng nhập mà truy cập route yêu cầu đăng nhập -> chuyển về trang Home
+        if (isProtectedPath) {
+          router.replace(ROUTES.HOME);
         }
       } else {
-        // Nếu đã có token và đang ở trang login/register/etc -> đẩy về trang chủ
-        if (isPublicPath && !pathname.startsWith('/projects/')) {
+        // Nếu đã có token và đang ở trang login/register -> chuyển về trang Home
+        if (isAuthPage) {
           router.replace(ROUTES.HOME);
         }
         
-        if (isUserInitialized && !user && !isPublicPath) {
-          router.replace(ROUTES.LOGIN);
+        if (isUserInitialized && !user && isProtectedPath) {
+          router.replace(ROUTES.HOME);
         }
       }
     }

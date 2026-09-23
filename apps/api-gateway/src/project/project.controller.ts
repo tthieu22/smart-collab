@@ -60,9 +60,10 @@ export class ProjectController {
   }
 
   /** GET ALL PROJECTS */
+  @Public()
   @Post('get-all')
   async getAllProjects(@Body() body: { userId?: string, page?: number, limit?: number, search?: string }, @Req() req: any) {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId || body.userId;
     const page = body.page ? Number(body.page) : 1;
     const limit = body.limit ? Number(body.limit) : 10;
     const search = body.search;
@@ -177,8 +178,9 @@ export class ProjectController {
   }
 
   @Post('analytics')
+  @Public()
   async getAnalytics(@Body() body: { projectId?: string }, @Req() req: any) {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || '';
     return this.projectService.send({ cmd: 'project.analytics' }, { 
       userId, 
       projectId: body.projectId 
