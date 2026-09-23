@@ -30,26 +30,58 @@ export class LlmService {
       });
 
       this.logger.log('✅ Groq initialized');
+    } else {
+      this.logger.warn('⚠️ GROQ_API_KEY is not defined in environment variables');
     }
 
     if (openrouterKey) {
       this.openrouterKey = openrouterKey;
       this.logger.log('✅ OpenRouter initialized');
+    } else {
+      this.logger.warn('⚠️ OPENROUTER_API_KEY is not defined in environment variables');
     }
+  }
+
+  private formatError(err: any): string {
+    if (!err) return 'Unknown error';
+    const status = err.status || err.response?.status;
+    const code = err.code || err.cause?.code;
+    const serverMessage =
+      err.error?.message ||
+      err.response?.data?.error?.message ||
+      (typeof err.response?.data === 'string' ? err.response?.data : null) ||
+      (err.response?.data ? JSON.stringify(err.response.data) : null);
+
+    const parts: string[] = [];
+    if (status) parts.push(`HTTP ${status}`);
+    if (code) parts.push(`Code ${code}`);
+    if (serverMessage) parts.push(`Details: ${serverMessage}`);
+    else if (err.message) parts.push(err.message);
+
+    return parts.length > 0 ? parts.join(' | ') : String(err);
   }
 
   async complete(prompt: string): Promise<LlmResponse> {
     try {
       return await this.withRetry(() => this.completeGroq(prompt));
-    } catch (err) {
-      this.logger.warn('⚠️ Groq failed → fallback OpenRouter');
+    } catch (err: any) {
+      this.logger.error(`❌ Groq failed: ${this.formatError(err)}`);
+      this.logger.warn('⚠️ Falling back to OpenRouter...');
 
       try {
         return await this.completeOpenRouter(prompt);
-      } catch (err) {
-        this.logger.warn('⚠️ OpenRouter failed → fallback Ollama');
+      } catch (openRouterErr: any) {
+        this.logger.error(`❌ OpenRouter failed: ${this.formatError(openRouterErr)}`);
+        this.logger.warn('⚠️ Falling back to Ollama...');
 
-        return await this.completeOllama(prompt);
+        try {
+          return await this.completeOllama(prompt);
+        } catch (ollamaErr: any) {
+          this.logger.error(`❌ Ollama failed: ${this.formatError(ollamaErr)}`);
+          throw new Error(
+            `All LLM providers failed.\n- Groq: ${this.formatError(err)}\n- OpenRouter: ${this.formatError(openRouterErr)}\n- Ollama: ${this.formatError(ollamaErr)}`,
+          );
+        }
       }
     }
   }
@@ -57,21 +89,36 @@ export class LlmService {
   async completeText(prompt: string): Promise<LlmResponse> {
     try {
       return await this.withRetry(() => this.completeGroq(prompt, false));
-    } catch (err) {
-      this.logger.warn('⚠️ Groq text failed → fallback OpenRouter');
+    } catch (err: any) {
+      this.logger.error(`❌ Groq text failed: ${this.formatError(err)}`);
+      this.logger.warn('⚠️ Falling back to OpenRouter...');
+
       try {
         return await this.completeOpenRouter(prompt, false);
-      } catch (err) {
-        this.logger.warn('⚠️ OpenRouter text failed → fallback Ollama');
-        return await this.completeOllama(prompt, false);
+      } catch (openRouterErr: any) {
+        this.logger.error(`❌ OpenRouter text failed: ${this.formatError(openRouterErr)}`);
+        this.logger.warn('⚠️ Falling back to Ollama...');
+
+        try {
+          return await this.completeOllama(prompt, false);
+        } catch (ollamaErr: any) {
+          this.logger.error(`❌ Ollama text failed: ${this.formatError(ollamaErr)}`);
+          throw new Error(
+            `All LLM providers failed.\n- Groq: ${this.formatError(err)}\n- OpenRouter: ${this.formatError(openRouterErr)}\n- Ollama: ${this.formatError(ollamaErr)}`,
+          );
+        }
       }
     }
   }
 
   async completeCustom(system: string, user: string): Promise<LlmResponse> {
     try {
+      if (!this.groq) {
+        throw new Error('Groq client not initialized (GROQ_API_KEY is missing)');
+      }
+      const model = this.config.get<string>('GROQ_MODEL') || 'openai/gpt-oss-20b';
       const res = await this.groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model,
         temperature: 0.7,
         messages: [
           { role: 'system', content: system },
@@ -82,16 +129,19 @@ export class LlmService {
         content: res.choices?.[0]?.message?.content?.trim() || '', 
         provider: 'groq' 
       };
-    } catch (err) {
-      this.logger.error('Groq custom chat failed', err);
-      // Basic fallback
+    } catch (err: any) {
+      this.logger.error(`❌ Groq custom chat failed: ${this.formatError(err)}`);
       return { content: 'Xin lỗi, tôi đang gặp sự cố. Bạn có thể hỏi lại sau không?', provider: 'error' };
     }
   }
 
   private async completeGroq(prompt: string, isJson = true): Promise<LlmResponse> {
+    if (!this.groq) {
+      throw new Error('Groq client not initialized (GROQ_API_KEY is missing or invalid)');
+    }
+    const model = this.config.get<string>('GROQ_MODEL') || 'openai/gpt-oss-20b';
     const res = await this.groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model,
       temperature: isJson ? 0.3 : 0.7,
       messages: [
         {
@@ -121,7 +171,7 @@ export class LlmService {
 
   private async completeOpenRouter(prompt: string, isJson = true): Promise<LlmResponse> {
     if (!this.openrouterKey) {
-      throw new Error('OpenRouter not configured');
+      throw new Error('OpenRouter not configured (OPENROUTER_API_KEY is missing)');
     }
 
     const res = await axios.post(
