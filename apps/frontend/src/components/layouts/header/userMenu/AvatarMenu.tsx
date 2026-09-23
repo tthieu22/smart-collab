@@ -10,7 +10,8 @@ import {
   Moon,
   Monitor,
   Check,
-  ChevronRight
+  ChevronRight,
+  Info
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useUserStore } from "@smart/store/user";
@@ -80,6 +81,8 @@ export function AvatarMenu() {
       handleSetTheme("dark");
     } else if (key === "theme-system") {
       handleSetTheme("system");
+    } else if (key === "demo-info") {
+      window.dispatchEvent(new CustomEvent('open-demo-notice'));
     }
   };
 
@@ -164,6 +167,11 @@ export function AvatarMenu() {
       }
     ] : []),
     { type: 'divider' },
+    {
+      key: "demo-info",
+      icon: <Info size={16} className="text-blue-500" />,
+      label: <span className="text-xs font-bold">Thông tin bản Demo</span>,
+    },
     {
       key: "logout",
       icon: <LogOut size={16} />,

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Header } from '@smart/components/layouts';
 import { useAIStore } from '@smart/store/ai';
 import { AIChatWindow } from '../shared/AIChatWindow';
+import { DemoNoticeModal } from '../shared/DemoNoticeModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@smart/lib/utils';
@@ -16,11 +17,17 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   const isAllowedPage = pathname === '/' || pathname === '/feed' || pathname === '/projects' || pathname === '/news';
 
   if (isAuthPage) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <DemoNoticeModal />
+      </>
+    );
   }
 
   return (
     <div className="flex flex-col min-h-screen relative">
+      <DemoNoticeModal />
       <div className="sticky top-0 z-50">
         <Header />
       </div>

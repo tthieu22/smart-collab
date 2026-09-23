@@ -11,7 +11,7 @@ interface GlobalLoadingProps {
   text?: string;
 }
 
-export default function GlobalLoading({ loading, text = 'Đang kết nối trạm điều hành...' }: GlobalLoadingProps) {
+export default function GlobalLoading({ loading, text = 'Đang tải dữ liệu...' }: GlobalLoadingProps) {
   const antIcon = <LoadingOutlined style={{ fontSize: 40 }} spin />;
 
   return (

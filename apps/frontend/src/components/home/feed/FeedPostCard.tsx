@@ -157,9 +157,9 @@ export default function FeedPostCard({ postId }: { postId: string }) {
         <div className="flex items-center justify-between mt-5 mb-4 px-1">
           <ReactionSummary post={post} />
           <div className="flex flex-col xs:flex-row items-end xs:items-center gap-1 xs:gap-3 text-[10px] sm:text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-            <span className="hover:text-blue-500 cursor-pointer">{post.commentCount || 0} truyền tin</span>
+            <span className="hover:text-blue-500 cursor-pointer">{post.commentCount || 0} bình luận</span>
             <span className="hidden xs:inline mx-0.5 opacity-30">•</span>
-            <span className="hover:text-blue-500 cursor-pointer">{post.shareCount || 0} chia sẻ</span>
+            <span className="hover:text-blue-500 cursor-pointer">{post.shareCount || 0} lượt chia sẻ</span>
           </div>
         </div>
 

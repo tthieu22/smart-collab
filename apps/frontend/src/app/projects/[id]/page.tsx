@@ -21,7 +21,7 @@ const DragDropContextProvider = dynamic(() => import('@smart/components/project/
 const ProjectChat = dynamic(() => import('@smart/components/project/chat/ProjectChat'), { ssr: false });
 const ProjectRecycleBin = dynamic(() => import('@smart/components/project/recycle/ProjectRecycleBin'), { ssr: false });
 import { motion } from 'framer-motion';
-import { Monitor, Rocket, Star } from 'lucide-react';
+import { Monitor, Laptop, Star } from 'lucide-react';
 import ProjectPresence from '@smart/components/project/ProjectPresence';
 
 import SiteLayout from '@smart/components/layouts/SiteLayout';
@@ -282,20 +282,20 @@ export default function ProjectDetailPage({ params }: Props) {
               transition={{ repeat: Infinity, duration: 3 }}
               className={`absolute -top-4 -right-4 w-12 h-12 rounded-2xl flex items-center justify-center border shadow-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-blue-100'}`}
             >
-              <Rocket size={20} className="text-blue-500" />
+              <Laptop size={20} className="text-blue-500" />
             </motion.div>
           </div>
 
           <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-4 border transition-all duration-500 ${theme === 'dark' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-100 text-blue-600 border-blue-200'}`}>
-            Trạm điều khiển • PC ONLY
+            Bảng Quản Trị • Dành cho PC
           </div>
           
           <h2 className={`text-3xl font-black mb-4 uppercase tracking-tighter italic leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-            DỰ ÁN QUÁ LỚN <br /> <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>CHO THIẾT BỊ NÀY!</span>
+            DỰ ÁN TỐI ƯU <br /> <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>CHO MÀN HÌNH LỚN!</span>
           </h2>
           
           <p className={`text-sm font-medium max-w-[280px] leading-relaxed mb-8 transition-colors duration-500 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-            Hệ thống quản trị dự án Smart Collab yêu cầu một buồng lái rộng hơn (Máy tính) để có thể vận hành tối đa công suất.
+            Không gian làm việc dự án Smart Collab được tối ưu hóa cho màn hình máy tính (PC/Laptop) để đạt hiệu suất cao nhất.
           </p>
 
           <Button 

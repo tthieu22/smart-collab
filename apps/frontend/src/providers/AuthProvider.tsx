@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      <GlobalLoading loading={!isInitialized} text="Đang chuẩn bị phi thuyền cộng tác..." />
+      <GlobalLoading loading={!isInitialized} text="Đang chuẩn bị không gian làm việc..." />
       {isInitialized && children}
     </>
   );
